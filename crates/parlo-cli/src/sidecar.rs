@@ -226,6 +226,27 @@ mod tests {
     }
 
     #[test]
+    fn talks_to_the_python_sidecar_when_present() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../engines/hibiki");
+        if !dir.join("serve.py").exists()
+            || Command::new("python").arg("--version").output().is_err()
+        {
+            return;
+        }
+
+        let mut engine = SidecarEngine::spawn(&dir).expect("sidecar should start");
+        assert_eq!(engine.id(), "hibiki");
+        assert_eq!(engine.target_languages(), vec!["en".to_string()]);
+
+        let frame = Frame::new(AudioFormat::mono(16_000).unwrap(), vec![0.1; 320]);
+        let error = engine.process(&frame).unwrap_err().to_string();
+        assert!(
+            error.contains("not wired") || error.contains("torch"),
+            "unexpected error: {error}"
+        );
+    }
+
+    #[test]
     fn parses_sidecar_errors() {
         let response: Response =
             serde_json::from_str(r#"{"op":"error","seq":1,"error":"torch is not installed"}"#)
