@@ -52,7 +52,7 @@ impl Error for EngineError {}
 pub trait Engine: Send {
     fn id(&self) -> &str;
 
-    fn target_languages(&self) -> &[&str];
+    fn target_languages(&self) -> Vec<String>;
 
     fn latency_ms(&self) -> u32;
 
@@ -89,8 +89,8 @@ impl Engine for EchoEngine {
         self.id
     }
 
-    fn target_languages(&self) -> &[&str] {
-        &["en"]
+    fn target_languages(&self) -> Vec<String> {
+        vec!["en".to_string()]
     }
 
     fn latency_ms(&self) -> u32 {
@@ -121,6 +121,7 @@ mod tests {
         assert_eq!(audio.format(), format);
         assert_eq!(audio.samples(), &[0.5, -0.5]);
         assert_eq!(engine.latency_ms(), 1_200);
+        assert_eq!(engine.target_languages(), vec!["en".to_string()]);
     }
 
     #[test]
