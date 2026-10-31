@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you reference Parlo in academic work, cite this repository."
+title: "Parlo"
+abstract: "Real-time voice translation that keeps your voice and runs locally."
+authors:
+  - name: "Parlo contributors"
+repository-code: "https://github.com/Pedromrn0903/parlo"
+license: MIT
+type: software
+keywords:
+  - speech translation
+  - voice cloning
+  - local first
+  - privacy
+  - rust
