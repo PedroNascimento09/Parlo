@@ -37,6 +37,9 @@ const settingsStt = document.getElementById("settings-stt");
 const settingsSwap = document.getElementById("settings-swap");
 const settingsApply = document.getElementById("settings-apply");
 const settingsNote = document.getElementById("settings-note");
+const welcomeBox = document.getElementById("welcome");
+const welcomeInstall = document.getElementById("welcome-install");
+const welcomeStatus = document.getElementById("welcome-status");
 
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 30;
@@ -55,6 +58,7 @@ let player = null;
 let localUpdate = { available: false, latest: "", notes: "" };
 let modelsTimer = null;
 let modelsPolling = false;
+let welcomeTimer = null;
 let modelsDownloading = false;
 let chosenFile = null;
 let dubbing = false;
@@ -463,6 +467,61 @@ function formatSize(bytes) {
   return megabytes + " MB";
 }
 
+function setWelcomeStatus(message) {
+  welcomeStatus.textContent = message || "";
+  welcomeStatus.hidden = !message;
+}
+
+function startWelcomeClock() {
+  stopWelcomeClock();
+  const started = Date.now();
+  const tick = () =>
+    setWelcomeStatus(
+      "Downloading models, " +
+        formatClock((Date.now() - started) / 1000) +
+        " elapsed. This can take a few minutes, and the page can stay open.",
+    );
+  tick();
+  welcomeTimer = setInterval(tick, 1000);
+}
+
+function stopWelcomeClock() {
+  clearInterval(welcomeTimer);
+  welcomeTimer = null;
+}
+
+function reflectFirstRun(ready, downloading) {
+  const firstRun = document.body.classList.contains("first-run");
+  if (ready) {
+    if (firstRun) {
+      stopWelcomeClock();
+      setWelcomeStatus("");
+      document.body.classList.remove("first-run");
+      welcomeBox.hidden = true;
+      setProgress("The models are ready. Parlo works offline from now on.");
+    }
+    return;
+  }
+  if (!firstRun) {
+    document.body.classList.add("first-run");
+    welcomeBox.hidden = false;
+  }
+  if (downloading) {
+    welcomeInstall.hidden = true;
+    if (!welcomeTimer) {
+      startWelcomeClock();
+    }
+    return;
+  }
+  stopWelcomeClock();
+  welcomeInstall.hidden = false;
+  welcomeInstall.disabled = modelsPolling;
+  welcomeInstall.textContent = "Download models";
+  setWelcomeStatus(
+    "The models are missing. They are a one time download of about 800 MB, and after that everything works offline.",
+  );
+}
+
 function describeModels(state) {
   modelsList.replaceChildren();
   for (const model of state.models || []) {
@@ -491,6 +550,7 @@ function describeModels(state) {
     modelsDownloading = false;
     modelsNote.textContent = "Everything the translator needs is on this machine, so you can speak now.";
     modelsInstall.hidden = true;
+    reflectFirstRun(true, false);
     return true;
   }
 
@@ -499,12 +559,14 @@ function describeModels(state) {
     modelsNote.textContent =
       "Downloading models, this can take a few minutes on a normal connection. You can leave this page open.";
     modelsInstall.hidden = true;
+    reflectFirstRun(false, true);
     return false;
   }
 
   modelsNote.textContent = "Some models are missing. They are a one time download and stay on this machine.";
   modelsInstall.hidden = false;
   modelsInstall.disabled = modelsPolling;
+  reflectFirstRun(false, false);
   return false;
 }
 
@@ -536,6 +598,9 @@ function stopPollingModels() {
   modelsTimer = null;
   modelsInstall.disabled = false;
   modelsInstall.textContent = "Download models";
+  stopWelcomeClock();
+  welcomeInstall.disabled = false;
+  welcomeInstall.textContent = "Download models";
 }
 
 async function downloadModels() {
@@ -546,6 +611,9 @@ async function downloadModels() {
   modelsDownloading = false;
   modelsInstall.disabled = true;
   modelsInstall.textContent = "Downloading…";
+  welcomeInstall.disabled = true;
+  welcomeInstall.textContent = "Downloading…";
+  startWelcomeClock();
   modelsNote.textContent = "Downloading the models. This takes a while on a slow connection; the page stays usable meanwhile.";
   try {
     const response = await fetch("/models", {
@@ -561,6 +629,7 @@ async function downloadModels() {
     if (!response.ok) {
       stopPollingModels();
       modelsNote.textContent = detail.error || "The download could not start. Try again, or run parlo app once more.";
+      setWelcomeStatus(modelsNote.textContent);
       return;
     }
     modelsTimer = setInterval(async () => {
@@ -575,15 +644,20 @@ async function downloadModels() {
         stopPollingModels();
         modelsNote.textContent =
           "The download stopped before the models were complete. Check the connection, then press Download models again.";
+        setWelcomeStatus(
+          "The download stopped before the models were complete. Check the connection, then press Download models again.",
+        );
       }
     }, 5000);
   } catch (failure) {
     stopPollingModels();
     modelsNote.textContent = "The download could not start. Try again, or run parlo app once more.";
+    setWelcomeStatus(modelsNote.textContent);
   }
 }
 
 modelsInstall.addEventListener("click", () => downloadModels());
+welcomeInstall.addEventListener("click", () => downloadModels());
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 

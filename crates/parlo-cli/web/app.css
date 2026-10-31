@@ -422,6 +422,46 @@ footer {
   align-self: flex-end;
 }
 
+.welcome {
+  margin: 0 0 32px;
+  max-width: 60ch;
+}
+
+.welcome h1 {
+  margin: 0 0 16px;
+  max-width: 22ch;
+  font-size: clamp(30px, 6vw, 44px);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.welcome-lede {
+  margin: 0 0 14px;
+  max-width: 52ch;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.welcome-install {
+  margin-top: 12px;
+  padding: 12px 24px;
+  font-size: 16px;
+}
+
+.welcome-status {
+  margin-top: 18px;
+}
+
+body.first-run .hero,
+body.first-run .talk,
+body.first-run .translation,
+body.first-run .models,
+body.first-run .dub {
+  display: none;
+}
+
 .models {
   margin: 28px 0 0;
   padding: 20px 22px 22px;
