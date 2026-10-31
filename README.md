@@ -95,6 +95,8 @@ python engines/cascade/scripts/compare.py out/voice --models base small --thread
 
 Ten short recordings are enough to decide between `base` and `small` on your own microphone, which is the only honest way to measure this.
 
+Building the recorder on Linux needs the ALSA headers: `sudo apt install libasound2-dev pkg-config`. With no microphone attached, `record --list` prints nothing and `record` says so instead of writing a silent file.
+
 ### Run the real translator
 
 The CPU cascade is installed with two commands and runs offline afterwards:
