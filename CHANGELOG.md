@@ -4,8 +4,14 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Changed
+
+- The default engine is now the universal CPU cascade with permissive licenses; Hibiki-Zero becomes an optional premium engine because its weights are CC BY-NC-SA 4.0.
+
 ### Added
 
+- `parlo engines` lists available engines with licenses, hardware, and voice levels.
+- `parlo profile` recommends a hardware profile and voice level from the detected CPU.
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.
 - `parlo translate --engine sidecar` drives the Python sidecar over the JSON protocol instead of the echo engine.
 - Engines report their target languages as owned strings, so adapters are no longer limited to static language lists.
