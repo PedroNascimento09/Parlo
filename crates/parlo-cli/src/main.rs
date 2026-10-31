@@ -10,6 +10,7 @@ use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, Pipel
 mod config;
 mod dub;
 mod engines;
+mod install;
 mod mic;
 mod models;
 mod playback;
@@ -38,6 +39,8 @@ fn main() -> ExitCode {
         Some("config") => config_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("speakers") => list_speakers(),
+        Some("install") => install_command(&args[1..]),
+        Some("uninstall") => uninstall_command(&args[1..]),
         Some("profile") => print_profile(),
         Some("--version" | "-V") => {
             println!("parlo {VERSION}");
@@ -78,6 +81,8 @@ fn print_help() {
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
     println!("            [--play --speaker N]            play it to an output device");
     println!("  speakers                           list output devices by number");
+    println!("  install [--dir PATH] [--no-shortcut]  install for this user with a menu entry");
+    println!("  uninstall [--purge]                remove the install, keep models unless purged");
     println!("  captions [--seconds N]             translate the microphone as text, no voice");
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!("  update [--check]                   install the latest release in place");
@@ -220,6 +225,41 @@ fn list_engines() -> Result<(), String> {
         engines::default_engine().id,
         engines::default_engine().license.label()
     );
+    Ok(())
+}
+
+fn install_command(args: &[String]) -> Result<(), String> {
+    let mut dir = None;
+    let mut shortcut = true;
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--dir" => {
+                index += 1;
+                dir = Some(PathBuf::from(args.get(index).ok_or("--dir needs a value")?));
+            }
+            "--no-shortcut" => shortcut = false,
+            other => return Err(format!("unknown option: {other}")),
+        }
+        index += 1;
+    }
+    for line in install::install(dir, shortcut)? {
+        println!("{line}");
+    }
+    Ok(())
+}
+
+fn uninstall_command(args: &[String]) -> Result<(), String> {
+    let mut purge = false;
+    for argument in args {
+        match argument.as_str() {
+            "--purge" => purge = true,
+            other => return Err(format!("unknown option: {other}")),
+        }
+    }
+    for line in install::uninstall(purge)? {
+        println!("{line}");
+    }
     Ok(())
 }
 
