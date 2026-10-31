@@ -73,7 +73,7 @@ hardware profile
 
 ```text
 engines
-  cascade  available MIT + GPL-3.0    any recent CPU           cpu ok   GPL TTS, check terms
+  cascade  available MIT + GPL-3.0 + CC-BY  any recent CPU      cpu ok   GPL TTS, CC-BY model
            Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice, 3 cloned voice
   echo     available MIT              any                      cpu ok   commercial use ok
            Echo for development | 1 neutral voice

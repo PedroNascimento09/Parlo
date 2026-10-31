@@ -49,7 +49,7 @@ impl License {
     pub fn label(self) -> &'static str {
         match self {
             Self::Mit => "MIT",
-            Self::MitGpl3 => "MIT + GPL-3.0",
+            Self::MitGpl3 => "MIT + GPL-3.0 + CC-BY",
             Self::CcByNcSa4 => "CC BY-NC-SA 4.0",
             Self::Proprietary => "vendor terms",
         }
@@ -58,7 +58,7 @@ impl License {
     pub fn commercial_note(self) -> &'static str {
         match self {
             Self::Mit => "commercial use ok",
-            Self::MitGpl3 => "GPL TTS, check terms",
+            Self::MitGpl3 => "GPL TTS, CC-BY model",
             Self::CcByNcSa4 => "non commercial",
             Self::Proprietary => "check vendor terms",
         }
@@ -236,7 +236,8 @@ mod tests {
         assert_eq!(License::Mit.commercial_note(), "commercial use ok");
         assert_eq!(License::CcByNcSa4.commercial_note(), "non commercial");
         assert_eq!(License::Proprietary.commercial_note(), "check vendor terms");
-        assert_eq!(License::MitGpl3.commercial_note(), "GPL TTS, check terms");
+        assert_eq!(License::MitGpl3.commercial_note(), "GPL TTS, CC-BY model");
+        assert_eq!(License::MitGpl3.label(), "MIT + GPL-3.0 + CC-BY");
     }
 
     #[test]
