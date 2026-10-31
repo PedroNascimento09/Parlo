@@ -73,12 +73,16 @@ hardware profile
 
 ```text
 engines
-  cascade  planned   MIT              any recent CPU           commercial use ok
-           Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice
-  echo     available MIT              any                      commercial use ok
+  cascade  planned   MIT              any recent CPU           cpu ok   commercial use ok
+           Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice, 3 cloned voice
+  echo     available MIT              any                      cpu ok   commercial use ok
            Echo for development | 1 neutral voice
-  hibiki   planned   CC BY-NC-SA 4.0  NVIDIA 8 to 12 GB VRAM   non commercial
+  hibiki   planned   CC BY-NC-SA 4.0  NVIDIA 8 to 12 GB VRAM   gpu      non commercial
            Hibiki-Zero premium | 4 end to end transfer
+  cloud    planned   vendor terms     any                      cpu ok   check vendor terms
+           Cloud with your key | 4 end to end transfer
+
+default engine: cascade (MIT)
 ```
 
 ## Engine strategy
