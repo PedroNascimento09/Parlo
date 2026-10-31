@@ -95,6 +95,17 @@ python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisp
 
 Ten short recordings are enough to compare Parakeet and Whisper on your own microphone, which is the only honest way to measure this.
 
+The local API is one command and binds only to loopback:
+
+```bash
+cargo run --release -p parlo-cli -- serve --port 8787 --token secret
+curl http://127.0.0.1:8787/health
+curl -s -H "Authorization: Bearer secret" --data-binary @out/16k.wav \
+  http://127.0.0.1:8787/translate --output out/translated.wav
+```
+
+It accepts 16 kHz mono PCM16 WAV and returns the same format, so a desktop app can talk to it without linking the models.
+
 On Windows, double-click `TESTAR-VOZ.cmd` in the repository root: it records ten clips with prompts, compares Parakeet and Whisper on them, runs the live test, and writes `out/voice/report.txt`.
 
 To translate live, without writing a file first:

@@ -9,6 +9,7 @@ use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, Pipel
 mod engines;
 mod mic;
 mod record;
+mod serve;
 mod sidecar;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -23,6 +24,7 @@ fn main() -> ExitCode {
         Some("mic") => mic_command(&args[1..]),
         Some("record") => record_command(&args[1..]),
         Some("listen") => listen_command(&args[1..]),
+        Some("serve") => serve_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("profile") => print_profile(),
         Some("--version" | "-V") => {
@@ -58,6 +60,7 @@ fn print_help() {
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
+    println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!("  engines                            list engines, licenses and voice levels");
     println!("  profile                            detect hardware and recommend a mode");
     println!();
@@ -388,6 +391,42 @@ fn record_command(args: &[String]) -> Result<(), String> {
         println!("  warning          the microphone level is very low, check the input device, mute and gain");
     }
     Ok(())
+}
+
+fn serve_command(args: &[String]) -> Result<(), String> {
+    let mut port = 8787u16;
+    let mut token = None;
+    let mut engine = "cascade".to_string();
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "--port" => {
+                index += 1;
+                port = args
+                    .get(index)
+                    .ok_or("--port needs a value")?
+                    .parse()
+                    .map_err(|_| "port must be a number".to_string())?;
+            }
+            "--token" => {
+                index += 1;
+                token = Some(args.get(index).ok_or("--token needs a value")?.clone());
+            }
+            "--engine" => {
+                index += 1;
+                engine = args.get(index).cloned().ok_or("--engine needs a value")?;
+            }
+            other => return Err(format!("unknown option: {other}")),
+        }
+        index += 1;
+    }
+
+    serve::run(
+        port,
+        token.unwrap_or_else(serve::new_token),
+        build_engine(&engine)?,
+    )
 }
 
 fn listen_command(args: &[String]) -> Result<(), String> {
