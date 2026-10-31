@@ -40,27 +40,43 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic`, `record`, `listen`, `captions` | Working |
+| CLI: `doctor`, `demo`, `translate`, `dub`, `engines`, `profile`, `mic`, `record`, `listen`, `captions`, `speakers` | Working |
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
 | Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.11 on 4 threads with Parakeet v3 |
 | File dubbing: `parlo dub video.mp4 --to en`, subtitles included | Working, needs ffmpeg |
 | Captions mode: `parlo captions`, translated text with no voice | Working, about 2.2 s behind while speaking |
+| Playback: `parlo listen --play --speaker N`, or `parlo speakers` to list devices | Working, Windows verified by stream, not by ear yet |
+| Self-contained engine: the release archive carries `parlo` and a `parlo-engine` folder | Working, no Python needed |
 | Hibiki-Zero premium engine | Optional, not wired |
 | App interface | Working, opened by `parlo app` in the browser |
 
-## Try it in 20 seconds
+## Try it
+
+### From a release: no Python, no Rust
+
+Download the archive for your system from the latest release, unzip it, and run the program inside:
+
+```bash
+parlo app
+```
+
+On Windows use `parlo.exe app`. The archive holds two things: `parlo`, the interface and the command line, and a folder named `parlo-engine` holding the offline translation engine and its libraries, about 900 MB once unpacked. Keep that folder next to `parlo`, because the program looks for it there. The interface opens in your browser; the first time, the Models panel downloads what it needs into your user data folder, roughly 800 MB once, and everything works offline afterwards. The first launch therefore needs a network connection once, and `ffmpeg` on `PATH` is needed only for dubbing files.
+
+Models, settings and the downloaded pieces live in `%APPDATA%\parlo` on Windows, `~/Library/Application Support/parlo` on macOS, and `$XDG_DATA_HOME/parlo` (usually `~/.local/share/parlo`) elsewhere. `PARLO_MODELS_DIR` points the models at another folder, and `parlo update` replaces the running copy in place, so no version is ever installed by uninstalling the old one.
+
+Archives published before v0.3.0 contain only `parlo` and need the source checkout below.
+
+### From a source checkout
 
 Requires Rust 1.83 or newer. No other dependency.
-
-### The app
 
 ```bash
 cargo run --release -p parlo-cli -- app
 ```
 
-The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level confirms the microphone, the translated sentence appears with the translated voice. Nothing is installed and the audio never leaves the machine; when a tagged release is newer than the running one, a banner offers it with its notes linked and an **Install update** button that installs over the running copy, and `parlo update` does the same from a terminal. Guide: [docs/APP.md](docs/APP.md).
+The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level confirms the microphone, the translated sentence appears with the translated voice. Nothing is installed and the audio never leaves the machine; when a tagged release is newer than the running one, a banner offers it with its notes linked and an **Install update** button that installs over the running copy, and `parlo update` does the same from a terminal. The same page carries the language and recogniser settings, a models panel that downloads whatever is missing, and a drop zone that dubs a video or a recording offline. Those choices are written to the config file, so the next start keeps them. Guide: [docs/APP.md](docs/APP.md).
 
 Everything below is also available on the command line.
 
@@ -128,7 +144,18 @@ To translate live, without writing a file first:
 cargo run --release -p parlo-cli -- listen out/live.wav --seconds 10
 ```
 
-`listen` prints how long it ran, how many frames passed the voice gate, and **how many seconds after start the first translated audio was ready**. Playback is still the virtual microphone's job; this writes a file. The pipeline applies the same automatic gain after the voice gate, up to +24 dB, so a quiet microphone still reaches the engine. The gate opens at -55 dBFS, below the -39.7 to -46.2 dBFS that measured laptop speech occupies in 100 ms windows and above a room floor of -63.9 to -67.0 dBFS.
+`listen` prints how long it ran, how many frames passed the voice gate, and **how many seconds after start the first translated audio was ready**.
+
+Add `--play` to hear the translation while you speak, on any output device:
+
+```bash
+parlo speakers                                  # list output devices by number
+parlo listen out/live.wav --seconds 30 --play --speaker 1
+```
+
+The translated voice is rate matched to the device and queued in a bounded buffer, so a slow machine drops the oldest audio instead of falling further behind. On Windows and macOS this is also the interim route into a call app: point `--speaker` at a virtual cable such as VB-Cable and pick that cable as the microphone in Discord, Meet or Teams. The Linux answer is the PipeWire microphone built into `parlo mic`.
+
+The pipeline applies the same automatic gain after the voice gate, up to +24 dB, so a quiet microphone still reaches the engine. The gate opens at -55 dBFS, below the -39.7 to -46.2 dBFS that measured laptop speech occupies in 100 ms windows and above a room floor of -63.9 to -67.0 dBFS.
 
 `record` prints the peak level in dBFS and the gain it applied: each file is peak-normalised towards -1 dBFS, boosted by at most +24 dB and never attenuated. That is the same idea as the automatic gain control in a chat app, and the reason a laptop microphone sounds loud in Discord and quiet here: the operating system hands over the raw signal, so the recorder is where the difference is made up. It still warns when the microphone captured almost nothing, which is almost always a muted input, the wrong device, or a Windows privacy setting rather than a code problem.
 

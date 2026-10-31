@@ -6,18 +6,19 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- The release archive now carries the engine, and models, settings and downloads moved to the per-user data directory: `%APPDATA%\parlo` on Windows, `~/Library/Application Support/parlo` on macOS, `$XDG_DATA_HOME/parlo` elsewhere, overridable with `PARLO_MODELS_DIR` and `PARLO_DATA_DIR`.
+- The local API refuses a `Host` header that is not the local address and a write whose `Origin` is not the page, which closes DNS rebinding and cross-site writes against the loopback port.
+- The hardware profiles follow the plan again: `ultra`, `high`, `medium` and `basic`, with GPU memory read from `nvidia-smi` when it exists and the high and ultra profiles reserved for a GPU the machine actually has.
+- On the same 24 sentence battery, Whisper `small` scored 0.217 clean against 0.215 for Parakeet, and degraded faster under noise (0.309 against 0.197 at 10 dB), so Parakeet stays the default on accuracy as well as speed.
 - The cascade uses Parakeet TDT 0.6B v3 through sherpa-onnx for recognition: 0.113 real time factor on 4 threads with a 2.5 second window, against 0.309 for Whisper `base`, with fewer name errors. `PARLO_CASCADE_STT=whisper` keeps the old recogniser, and `PARLO_CASCADE_MODEL` applies only to it.
 - The setup script downloads Parakeet by default, and caches Whisper only when asked with `--stt whisper`.
 - A window sweep with Parakeet confirms the 2.5 second default: shorter windows save about half a second and lose words, so the next latency gain has to come from a sentence boundary, not a smaller cut.
 - Models warm up at startup, moving the 12 to 21 second load time away from the first sentence.
 - A glossary file corrects names the recogniser mishears, starting with `Parlo`.
-
 - Piper is GPL-3.0-or-later, not MIT. It stays a separate, user-installed program; the registry and documentation now say so.
 - The cascade segment window defaults to 2.5 seconds and is configurable with `PARLO_CASCADE_SEGMENT`; at 1.2 seconds the real time factor was 2.66.
 - Speech recognition runs without beam search and without a second voice activity filter, since the pipeline already gates silence.
-
 - The default engine is now the universal CPU cascade with permissive licenses; Hibiki-Zero becomes an optional premium engine because its weights are CC BY-NC-SA 4.0.
-
 - The recorder peak normalises every clip towards -1 dBFS with a +24 dB ceiling instead of writing the raw signal, after a laptop Realtek microphone measured between -24.7 and -32.2 dBFS peak.
 - The voice gate default moved from -45 to -55 dBFS RMS, because that microphone's speech sits between -39.7 and -46.2 dBFS in 100 millisecond windows against a room noise floor of -63.9 to -67.0 dBFS.
 - Live listening and the local API apply automatic gain inside the pipeline after the voice gate, up to +24 dB, so a quiet microphone still reaches the cascade engine.
@@ -37,10 +38,22 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.
 - `parlo translate --engine sidecar` drives the Python sidecar over the JSON protocol instead of the echo engine.
 - Engines report their target languages as owned strings, so adapters are no longer limited to static language lists.
+- Offline dubbing: `parlo dub video.mp4 --to en` extracts the audio, recognises each spoken segment, translates it, speaks it in the target voice at its original start time, and writes a video with a replaced audio track plus a `.srt`; `--keep-background` mixes music under the dub at 0.18 and `--json` writes the lines.
+- A dub panel in the app: drop a video or audio file on the page, watch elapsed time while the local server works, then download the dubbed file and read the translated lines.
+- Captions mode: `parlo captions` translates the microphone to text with no speech synthesis, using a 1.2 s window by default. Measured warm on Parakeet at 958 to 1266 ms of processing per segment, so a caption lands about 2.2 s after the words start.
+- Language and recogniser settings inside the page, with `GET /settings` and `POST /settings` on the local API. Applying a change reloads the models in about twenty seconds and is written to the config file.
+- `--stt parakeet|whisper` on `config`, `app`, `serve`, `listen` and `captions`, and an `stt` field in the config file.
+- `parlo speakers` lists output devices, and `parlo listen --play --speaker N` plays the translated voice to one of them through a bounded queue and rate matched resampling.
+- `parlo-engine`: the cascade packaged with PyInstaller into one self-contained executable, preferred by the CLI when it sits beside the binary, so a release user installs no Python. The release workflow builds it per platform and ships it inside the archives.
+- `parlo config` reads and writes `config.json` (engine, recogniser, language pair, port, device), and `app`, `serve`, `listen` and `translate` start from it.
+- `POST /dub` on the local API, uploads limited to 512 MiB, and `GET /dub/<id>` serving the produced file back only from an allowlist of files the server wrote.
+- `docs/THREAT-MODEL.md`, an initial threat model written against the code, with what is protected, who could attack and what is still open.
+- A reference battery of 24 Portuguese sentences with seeded noise and automatic word error rate scoring, so a recognition regression shows up as a number without anyone recording anything.
 
 ### Fixed
 
 - The live test produced no translated audio at all from 20 seconds of speech on a quiet microphone, because so few frames cleared the gate that the cascade never completed a 2.5 second segment.
+- The input stream error was swallowed, so a device that disappeared mid recording ended as a short silent file; capture now ends with `the input device stopped` instead.
 
 ### Planned
 

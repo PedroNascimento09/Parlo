@@ -8,6 +8,64 @@ Install Rust from [rustup.rs](https://rustup.rs). Parlo needs 1.83 or newer:
 rustup show
 ```
 
+## The engine was not found after unpacking the archive
+
+A release archive holds three things: `parlo` (or `parlo.exe`), a directory `parlo-engine`, and `README.md`. The translator lives in that directory, so running `parlo` on its own, or moving the binary somewhere else, leaves it with nothing to translate with. The error is `cannot start ... in engines/cascade`.
+
+Keep the three items together in the same folder and start from there:
+
+```bash
+parlo app
+```
+
+If the engine has to live elsewhere, point at it:
+
+```bash
+PARLO_ENGINE=/path/to/parlo-engine/parlo-engine parlo translate in.wav out.wav --engine cascade
+```
+
+On Windows the same thing is `set PARLO_ENGINE=C:\path\parlo-engine\parlo-engine.exe` before the command. From a source checkout there is no `parlo-engine` directory and Parlo uses `python serve.py` instead, which needs the venv from [the cascade guide](../engines/cascade/README.md).
+
+## The app says the models are missing
+
+The archive does not carry the models; they are about 800 MB and are downloaded once into the per-user data directory:
+
+| System | Models |
+|---|---|
+| Windows | `%APPDATA%\parlo\models` |
+| macOS | `~/Library/Application Support/parlo/models` |
+| Linux | `$XDG_DATA_HOME/parlo/models`, or `~/.local/share/parlo/models` |
+
+The **Models** panel in `parlo app` starts the download, and the panel keeps saying so while it runs. To fetch them without the app, run the engine by hand:
+
+```bash
+parlo-engine/parlo-engine.exe --download-models
+```
+
+`PARLO_MODELS_DIR` points both the app and the engine at another folder, which is useful when the models live on a different drive.
+
+## An update left two versions of the engine
+
+`parlo update` replaces the running binary in place. If the archive was unpacked by hand rather than installed by the updater, replace the whole folder, not only `parlo`: an old `parlo-engine` next to a new `parlo` works, but it runs the older engine, and the version it reports is the one printed at startup.
+
+Delete the old archive folder, unpack the new one, and keep `parlo`, `parlo-engine` and `README.md` together.
+
+## The data directory is not writable
+
+Without a writable data directory there is nowhere to put the config file or the models, and the download fails at once. Check the folder named in the table above, or choose another one:
+
+```bash
+PARLO_DATA_DIR=/path/with/write/access parlo app
+```
+
+`PARLO_DATA_DIR` moves the config and the models together; `PARLO_MODELS_DIR` moves only the models.
+
+## The engine prints `warmup deferred`
+
+A line like `warmup deferred for voice: ...` on stderr means a model could not be loaded while the engine started. The engine keeps running and loads it on the first request, which then reports its own error if the model is genuinely unusable. It is not fatal by itself, and it is expected in some packaged builds.
+
+The two lines worth reading in a failure are the `error:` line the CLI prints, which says what failed, and the line right before it on stderr, which comes from the engine and usually names the missing file or the device. `parlo doctor` reports the platform, the profile and the audio setup, and belongs in a bug report next to both lines.
+
 ## `parlo doctor` says "engine: echo (no model installed)"
 
 Expected. The prototype ships with the echo engine so latency and framing can be tested without downloading weights. Model integration is tracked in [ROADMAP.md](../ROADMAP.md).

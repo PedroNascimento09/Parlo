@@ -1,10 +1,18 @@
 # The app
 
-Parlo's interface is served by the same `parlo` binary you already built. Nothing is installed, there is no driver and no account, and the page runs on `127.0.0.1` in your usual browser.
+Parlo's interface is served by the same `parlo` binary, from a release archive or a checkout. Nothing is installed, there is no driver and no account, and the page runs on `127.0.0.1` in your usual browser.
 
 ## Start it
 
-Double-click `scripts/parlo-app.cmd` on Windows, or run `scripts/parlo-app.sh` on Linux and macOS: the first run builds the binary, then every run opens the interface for you. From a terminal the same thing is:
+From a release, unzip the archive and run the program inside it:
+
+```bash
+parlo app
+```
+
+On Windows that is `parlo.exe app`. The archive also contains a folder named `parlo-engine`, the self-contained translation engine with its libraries, about 900 MB once unpacked; it must stay next to `parlo`, because the program looks for it beside itself, and no Python is involved. Models are not in the archive: the Models panel downloads them on first use into `%APPDATA%\parlo\models` on Windows, `~/Library/Application Support/parlo/models` on macOS, or `$XDG_DATA_HOME/parlo/models` elsewhere, and `PARLO_MODELS_DIR` moves them. That first download is roughly 800 MB, so the first launch needs a network connection once, and everything works offline afterwards. The config file sits beside that folder.
+
+From a source checkout, double-click `scripts/parlo-app.cmd` on Windows, or run `scripts/parlo-app.sh` on Linux and macOS: the first run builds the binary, then every run opens the interface for you. From a terminal the same thing is:
 
 ```bash
 cargo run --release -p parlo-cli -- app
@@ -25,7 +33,7 @@ The page is a single column built around the one thing you do most:
 | Result card | The translated sentence, selectable so a name or a word can be copied, and the translated voice playing back under it. |
 | Settings | Language pair and recogniser, loaded from the server and applied with one button. Changing either reloads the models. |
 | Status group | The engine in use, how long the app has been running, and whether the microphone opened. |
-| Models panel | One row per model with its size on disk or `Missing`, and a **Download models** button when something is absent. It never blocks the record card. |
+| Models panel | One row per model with its size on disk or `Missing`, and a **Download models** button when something is absent. It never blocks the record card, the first run of a released archive starts here, and while the download runs the panel says it is working instead of looking stuck. |
 | Dub panel | Drop a video or audio file on the page, or pick one, and the local server dubs it into the other language. The translated lines appear while it works and the new file downloads from the same panel. |
 
 ## Languages and the recogniser
@@ -60,6 +68,12 @@ parlo update
 ```
 
 The check prints the version it found; the update downloads the build for your system, stages it, and replaces the binary about two seconds after the old process exits. It keeps a copy of the previous binary next to it as `parlo.previous`, so a bad release can be put back by renaming the file.
+
+## First run
+
+A released archive starts with no models. The page loads, the record card says the microphone is ready, and the Models panel lists what is missing with one **Download models** button: about 800 MB into the user data folder, once, after which the machine can be offline for good. Nothing needs to be installed, and the uploads never happen.
+
+If dubbing is what you came for, `ffmpeg` must also be on `PATH`; the dub panel says so in a sentence instead of failing halfway through a file.
 
 ## Privacy
 
