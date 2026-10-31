@@ -48,6 +48,18 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Measured latency and quality benchmarks.
 - Linux virtual microphone automation.
 
+## [0.1.1] - 2026-10-31
+
+### Added
+
+- `parlo app` serves one page from the same binary and opens it in the browser with the session token, so the translator needs no command in front of you: hold the control to speak, hear the translated voice, watch the input level, and see the engine and version.
+- The page offers a newer release when the GitHub feed has one, with the notes linked, and never installs anything without a click.
+- Every push to `main` publishes the `nightly` prerelease for the three build targets.
+
+### Changed
+
+- The roadmap gains a `v0.4 App` phase and the later phases move up one number, since an interface comes before dubbing a video and a native shell.
+
 ## [0.1.0] - 2026-10-31
 
 First tagged release of the command line prototype. Everything under `[Unreleased]` above describes this same code, and the release notes live in `docs/releases/v0.1.0.md`.
