@@ -10,6 +10,8 @@ cargo run --release -p parlo-cli -- app
 
 The command prints the token and the address, then opens the browser with the token already in the URL. Keep that terminal window open while you use the interface: closing it stops the app.
 
+Add `--from en --to pt` to translate the other way round; the cascade runs one direction per process, so the pair is fixed when the app starts. `parlo translate` and `parlo listen` take the same two flags.
+
 ## What the screen does
 
 The page is a single column built around the one thing you do most:

@@ -63,6 +63,7 @@ fn print_help() {
     println!("  app [--port N] [--engine NAME]     open the microphone translator in a browser");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
+    println!("            [--from pt --to en]             language pair for the cascade");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
@@ -292,12 +293,24 @@ fn translate(args: &[String]) -> Result<(), String> {
 fn parse_translate_args(args: &[String]) -> Result<(&String, &String, String), String> {
     let mut engine = "echo".to_string();
     let mut paths: Vec<&String> = Vec::new();
+    let mut direction = ("pt".to_string(), "en".to_string());
     let mut index = 0;
     while index < args.len() {
         let arg = &args[index];
         if arg == "--engine" {
             index += 1;
             engine = args.get(index).cloned().ok_or("--engine needs a value")?;
+        } else if arg == "--from" || arg == "--to" {
+            index += 1;
+            let value = args
+                .get(index)
+                .cloned()
+                .ok_or(format!("{arg} needs a value"))?;
+            if arg == "--from" {
+                direction.0 = value;
+            } else {
+                direction.1 = value;
+            }
         } else if arg.starts_with("--") {
             return Err(format!("unknown option: {arg}"));
         } else {
@@ -305,12 +318,33 @@ fn parse_translate_args(args: &[String]) -> Result<(&String, &String, String), S
         }
         index += 1;
     }
+    set_direction(&direction.0, &direction.1)?;
     match paths.as_slice() {
         [input, output] => Ok((input, output, engine)),
         _ => Err(
-            "usage: parlo translate <in.wav> <out.wav> [--engine echo|sidecar|cascade]".to_string(),
+            "usage: parlo translate <in.wav> <out.wav> [--engine echo|sidecar|cascade] [--from pt] [--to en]".to_string(),
         ),
     }
+}
+
+fn set_direction(from: &str, to: &str) -> Result<(), String> {
+    for (value, label) in [(from, "--from"), (to, "--to")] {
+        if value.len() != 2
+            || !value
+                .chars()
+                .all(|character| character.is_ascii_alphabetic())
+        {
+            return Err(format!(
+                "{label} needs a two letter language code, got {value}"
+            ));
+        }
+    }
+    if from.eq_ignore_ascii_case(to) {
+        return Err("the source and target language must differ".to_string());
+    }
+    env::set_var("PARLO_CASCADE_SOURCE", from.to_ascii_lowercase());
+    env::set_var("PARLO_CASCADE_TARGET", to.to_ascii_lowercase());
+    Ok(())
 }
 
 fn build_engine(name: &str) -> Result<Box<dyn Engine>, String> {
@@ -421,10 +455,20 @@ fn serve_command(args: &[String]) -> Result<(), String> {
     let mut port = 8787u16;
     let mut token = None;
     let mut engine = "cascade".to_string();
+    let mut from = "pt".to_string();
+    let mut to = "en".to_string();
     let mut index = 0;
 
     while index < args.len() {
         match args[index].as_str() {
+            "--from" => {
+                index += 1;
+                from = args.get(index).cloned().ok_or("--from needs a value")?;
+            }
+            "--to" => {
+                index += 1;
+                to = args.get(index).cloned().ok_or("--to needs a value")?;
+            }
             "--port" => {
                 index += 1;
                 port = args
@@ -446,6 +490,7 @@ fn serve_command(args: &[String]) -> Result<(), String> {
         index += 1;
     }
 
+    set_direction(&from, &to)?;
     serve::run(
         port,
         token.unwrap_or_else(serve::new_token),
@@ -490,10 +535,20 @@ fn update_command(args: &[String]) -> Result<(), String> {
 fn app_command(args: &[String]) -> Result<(), String> {
     let mut port = 8787u16;
     let mut engine = "cascade".to_string();
+    let mut from = "pt".to_string();
+    let mut to = "en".to_string();
     let mut index = 0;
 
     while index < args.len() {
         match args[index].as_str() {
+            "--from" => {
+                index += 1;
+                from = args.get(index).cloned().ok_or("--from needs a value")?;
+            }
+            "--to" => {
+                index += 1;
+                to = args.get(index).cloned().ok_or("--to needs a value")?;
+            }
             "--port" => {
                 index += 1;
                 port = args
@@ -511,6 +566,7 @@ fn app_command(args: &[String]) -> Result<(), String> {
         index += 1;
     }
 
+    set_direction(&from, &to)?;
     serve::run(port, serve::new_token(), build_engine(&engine)?, true)
 }
 
@@ -519,10 +575,20 @@ fn listen_command(args: &[String]) -> Result<(), String> {
     let mut seconds = 10.0f32;
     let mut engine_name = "cascade".to_string();
     let mut device = None;
+    let mut from = "pt".to_string();
+    let mut to = "en".to_string();
     let mut index = 0;
 
     while index < args.len() {
         match args[index].as_str() {
+            "--from" => {
+                index += 1;
+                from = args.get(index).cloned().ok_or("--from needs a value")?;
+            }
+            "--to" => {
+                index += 1;
+                to = args.get(index).cloned().ok_or("--to needs a value")?;
+            }
             "--seconds" => {
                 index += 1;
                 seconds = args
@@ -550,6 +616,7 @@ fn listen_command(args: &[String]) -> Result<(), String> {
         index += 1;
     }
 
+    set_direction(&from, &to)?;
     let (microphone, input) = record::open_input(device)?;
     let output = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
     let mut pipeline = Pipeline::new(
