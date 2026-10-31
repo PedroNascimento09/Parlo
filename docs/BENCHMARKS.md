@@ -22,13 +22,16 @@ No speech model is integrated yet, so there are no translation quality numbers t
 
 ## Hardware profiles
 
-| Profile | Typical hardware | Expected mode |
-|---|---|---|
-| High | Apple Silicon with 16 GB or more, or a recent NVIDIA GPU | Hibiki-Zero, about 2 seconds |
-| Medium | Modern laptop CPU, integrated GPU | Cascade with small models, about 4 seconds |
-| Basic | Older CPU, no GPU | Cascade, noticeably slower, warn the user before install |
+Design targets, measured before publishing. The reference machine for the project is an ordinary PC without an NVIDIA GPU, on purpose: if Parlo is good there, it is good for most people.
 
-Detection happens on first run, and the user can override the profile. Reporting a high profile on basic hardware is the fastest way to lose trust.
+| Profile | Reference hardware | Mode | Latency target |
+|---|---|---|---|
+| Ultra | NVIDIA 12 GB or more, or recent Apple Silicon | Cascade level 3, or Hibiki-Zero | 2 to 3 s |
+| High | Any GPU with 6 GB or more, or Apple Silicon | Cascade level 2 to 3 | 2.5 to 4 s |
+| Medium | 8+ core CPU, 16 GB RAM, weak or no GPU | Cascade on CPU, level 1 to 2 | 3 to 5 s |
+| Basic | 4 core CPU, 8 GB RAM, older laptop | Captions or light neutral voice | Captions under 2 s, voice 5 to 8 s |
+
+Detection happens on first run. The current prototype reads CPU cores only, and says so in `parlo profile`; GPU and memory detection arrive with v0.2. Reporting a high profile on basic hardware is the fastest way to lose trust.
 
 ## Reproduce the pipeline benchmark
 
