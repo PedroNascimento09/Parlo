@@ -7,6 +7,7 @@ const sub = talk.querySelector(".talk-sub");
 const meterFill = document.getElementById("meter-fill");
 const progress = document.getElementById("progress");
 const errorBox = document.getElementById("error");
+const translation = document.getElementById("translation");
 const updateBox = document.getElementById("update");
 const updateVersion = document.getElementById("update-version");
 const updateLink = document.getElementById("update-link");
@@ -47,6 +48,30 @@ function clearError() {
 function setProgress(message) {
   progress.textContent = message || "";
   progress.hidden = !message;
+}
+
+function clearTranslation() {
+  translation.textContent = "";
+  translation.hidden = true;
+}
+
+function showTranslation(encoded) {
+  if (!encoded) {
+    clearTranslation();
+    return;
+  }
+  try {
+    const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+    const text = new TextDecoder().decode(bytes).trim();
+    if (!text) {
+      clearTranslation();
+      return;
+    }
+    translation.textContent = text;
+    translation.hidden = false;
+  } catch (failure) {
+    clearTranslation();
+  }
 }
 
 function describeMicrophoneError(failure) {
@@ -202,6 +227,7 @@ async function begin() {
   }
   clearError();
   setProgress("");
+  clearTranslation();
   stopPlayback();
   try {
     await ensureAudio();
@@ -261,6 +287,7 @@ async function finish() {
       throw new Error(detail.error || "The translator answered with status " + response.status + ".");
     }
     const audio = await response.blob();
+    showTranslation(response.headers.get("X-Parlo-Transcript"));
     setProgress("Playing the translation.");
     play(audio);
   } catch (failure) {

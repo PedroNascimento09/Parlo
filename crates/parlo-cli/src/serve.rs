@@ -3,6 +3,8 @@ use std::net::{TcpListener, TcpStream};
 use std::process::Command;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine as _;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Engine, Pipeline, PipelineConfig, Wav};
 
@@ -231,8 +233,15 @@ fn handle(
     }
 
     let mut samples = Vec::new();
+    let mut transcript = String::new();
     for chunk in wav.samples.chunks(320) {
         for output in pipeline.push(chunk) {
+            if let Some(text) = output.transcript {
+                if !transcript.is_empty() {
+                    transcript.push(' ');
+                }
+                transcript.push_str(&text);
+            }
             if let Some(error) = output.error {
                 return respond_json(
                     stream,
@@ -251,7 +260,31 @@ fn handle(
         format: AudioFormat::mono(16_000).map_err(|error| error.to_string())?,
         samples,
     };
-    respond(stream, "200 OK", "audio/wav", &write_pcm16(&translated)).map(|()| Flow::Serve)
+    respond_audio(stream, &write_pcm16(&translated), &transcript).map(|()| Flow::Serve)
+}
+
+fn transcript_header(transcript: &str) -> String {
+    if transcript.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "X-Parlo-Transcript: {}\r\nAccess-Control-Expose-Headers: X-Parlo-Transcript\r\n",
+            BASE64.encode(transcript)
+        )
+    }
+}
+
+fn respond_audio(stream: &mut TcpStream, body: &[u8], transcript: &str) -> Result<(), String> {
+    let header = transcript_header(transcript);
+    let head = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: audio/wav\r\nContent-Length: {}\r\n{header}Connection: close\r\n\r\n",
+        body.len()
+    );
+    stream
+        .write_all(head.as_bytes())
+        .and_then(|()| stream.write_all(body))
+        .and_then(|()| stream.flush())
+        .map_err(|error| error.to_string())
 }
 
 fn json_string(value: &str) -> String {
@@ -397,6 +430,14 @@ mod tests {
     fn compares_without_short_circuiting_on_length() {
         assert!(!constant_time_eq("abc", "ab"));
         assert!(constant_time_eq("abc", "abc"));
+    }
+
+    #[test]
+    fn the_transcript_header_is_base64_and_absent_when_empty() {
+        assert_eq!(transcript_header(""), "");
+        let header = transcript_header("olá mundo");
+        assert!(header.starts_with("X-Parlo-Transcript: b2zDoSBtdW5kbw=="));
+        assert!(header.contains("Access-Control-Expose-Headers"));
     }
 
     #[test]

@@ -236,6 +236,19 @@ h1 {
   font-weight: 500;
 }
 
+.translation {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 18px;
+  line-height: 1.45;
+  min-height: 2.9em;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
 footer {
   margin-top: 28px;
   color: var(--muted);
