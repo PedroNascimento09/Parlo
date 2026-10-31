@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-10-31
+
 ### Changed
 
 - The release archive now carries the engine, and models, settings and downloads moved to the per-user data directory: `%APPDATA%\parlo` on Windows, `~/Library/Application Support/parlo` on macOS, `$XDG_DATA_HOME/parlo` elsewhere, overridable with `PARLO_MODELS_DIR` and `PARLO_DATA_DIR`.

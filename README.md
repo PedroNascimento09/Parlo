@@ -66,7 +66,7 @@ On Windows use `parlo.exe app`. The archive holds two things: `parlo`, the inter
 
 Models, settings and the downloaded pieces live in `%APPDATA%\parlo` on Windows, `~/Library/Application Support/parlo` on macOS, and `$XDG_DATA_HOME/parlo` (usually `~/.local/share/parlo`) elsewhere. `PARLO_MODELS_DIR` points the models at another folder, and `parlo update` replaces the running copy in place, so no version is ever installed by uninstalling the old one.
 
-Archives published before v0.3.0 contain only `parlo` and need the source checkout below.
+Archives published before v0.1.6 contain only `parlo` and need the source checkout below.
 
 To keep it instead of running it from the downloads folder, install it for your user and get a menu entry:
 
