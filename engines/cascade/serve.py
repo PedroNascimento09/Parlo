@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import sys
@@ -18,6 +19,9 @@ def main() -> int:
         target=os.environ.get("PARLO_CASCADE_TARGET", "en"),
         voice=Path(voice) if voice else None,
     )
+    if os.environ.get("PARLO_CASCADE_WARMUP", "1") != "0":
+        with contextlib.redirect_stdout(sys.stderr):
+            engine.warmup()
     for line in sys.stdin:
         if not line.strip():
             continue
