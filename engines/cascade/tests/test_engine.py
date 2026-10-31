@@ -1,7 +1,15 @@
 import importlib.util
 import unittest
 
-from parlo_cascade import CascadeEngine, float_to_pcm16, pcm16_to_float, resample, rms
+from parlo_cascade import (
+    CascadeEngine,
+    apply_glossary,
+    float_to_pcm16,
+    load_glossary,
+    pcm16_to_float,
+    resample,
+    rms,
+)
 
 HAS_NUMPY = importlib.util.find_spec("numpy") is not None
 
@@ -30,6 +38,33 @@ class HelpersTest(unittest.TestCase):
     def test_rms_detects_silence_and_level(self):
         self.assertEqual(rms([0.0] * 100), 0.0)
         self.assertAlmostEqual(rms([0.5] * 100), 0.5, places=5)
+
+
+class GlossaryTest(unittest.TestCase):
+    def test_replaces_names_without_case_sensitivity(self):
+        self.assertEqual(apply_glossary("palo falou", {"Palo": "Parlo"}), "Parlo falou")
+
+    def test_leaves_unrelated_words_alone(self):
+        self.assertEqual(apply_glossary("o palacio", {"Palo": "Parlo"}), "o palacio")
+
+    def test_parses_pairs_and_ignores_noise(self):
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".txt", delete=False, encoding="utf-8"
+        ) as handle:
+            handle.write("# comment\nPalo=Parlo\nbroken\n\n")
+            path = Path(handle.name)
+        try:
+            self.assertEqual(load_glossary(path), {"Palo": "Parlo"})
+        finally:
+            path.unlink()
+
+    def test_missing_file_is_an_empty_glossary(self):
+        from pathlib import Path
+
+        self.assertEqual(load_glossary(Path("does-not-exist.txt")), {})
 
 
 class EngineTest(unittest.TestCase):
