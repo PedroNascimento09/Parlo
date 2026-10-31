@@ -6,7 +6,7 @@ Parlo is built so that a privacy claim is something you can check, not something
 
 - Audio is captured, processed, and written locally. It is never uploaded.
 - There is no telemetry, no analytics, no crash reporting, and no account system.
-- The app does not phone home to check for updates unless you enable update checks.
+- The app asks the GitHub releases API for the latest version when it starts, and nothing else. That request carries no audio, no identifiers and no telemetry; blocking `api.github.com` disables only the update banner.
 - No model weights are bundled or downloaded silently.
 
 ## How to verify

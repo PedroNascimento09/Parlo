@@ -98,6 +98,20 @@ Models load at startup, so the first sentence is not the one that waits: startup
 - The first request after start is slow because the models load lazily; warm-up lands in v0.2.
 - The translated voice is neutral, not yours. Levels 2 to 4 are separate work.
 
+## Reference battery
+
+`scripts/battery.py` keeps recognition honest with a number instead of an impression. It holds twenty-four Portuguese sentences with names, numbers and dates, synthesises each one with the local Piper voice, and recognises it in three conditions: clean, 20 dB signal to noise, and 10 dB. Noise is drawn from a seeded generator, so a run is reproducible, and the score is the word error rate against the sentence text.
+
+```bash
+python engines/cascade/scripts/battery.py --out out/battery.json
+python engines/cascade/scripts/battery.py --limit 5
+python engines/cascade/scripts/battery.py --stt whisper --model small
+```
+
+The number covers recognition only: translation quality and the generated voice are not scored, and `--stt whisper` is the way to compare recognisers on the same sentences. A clean mean above 0.5 makes the script exit non-zero, so it can gate a build later.
+
+Synthetic speech is a fair stand-in for a regression test, not for a user: it shares one voice, one accent and no room, no microphone and no human hesitation. A recorded set from several speakers and microphones is still required before v1.0, and this battery does not replace it.
+
 ## Tests
 
 ```bash
