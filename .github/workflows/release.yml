@@ -3,6 +3,11 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and attach
+        required: true
 
 permissions:
   contents: write
@@ -26,6 +31,8 @@ jobs:
             archive: parlo-windows-x86_64.zip
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -49,14 +56,19 @@ jobs:
           cache: pip
           cache-dependency-path: engines/cascade/requirements.txt
 
-      - name: Install engine requirements
+      - name: Install the cpu build of torch
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pyinstaller -r engines/cascade/requirements.txt
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install engine requirements
+        run: python -m pip install pyinstaller -r engines/cascade/requirements.txt
 
       - name: Build the engine
         working-directory: engines/cascade
-        run: pyinstaller --noconfirm --clean parlo-engine.spec
+        run: |
+          pyinstaller --noconfirm --clean parlo-engine.spec
+          du -sh dist/parlo-engine
 
       - name: Package unix
         if: runner.os != 'Windows'
@@ -82,5 +94,6 @@ jobs:
       - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: ${{ matrix.archive }}
           generate_release_notes: true
