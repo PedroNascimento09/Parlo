@@ -19,6 +19,23 @@ pub fn devices() -> Result<Vec<String>, String> {
         .collect())
 }
 
+pub fn probe(seconds: f32) -> Result<Vec<(usize, String, f32)>, String> {
+    let names = devices()?;
+    let mut results = Vec::new();
+    for (index, name) in names.into_iter().enumerate() {
+        let peak = capture(seconds, Some(index))
+            .map(|recording| {
+                recording
+                    .samples
+                    .iter()
+                    .fold(0.0f32, |highest, sample| highest.max(sample.abs()))
+            })
+            .unwrap_or(0.0);
+        results.push((index, name, peak));
+    }
+    Ok(results)
+}
+
 pub fn open_input(device_index: Option<usize>) -> Result<(cpal::Device, AudioFormat), String> {
     let (device, supported) = open(device_index)?;
     let format = AudioFormat::mono(supported.sample_rate().0).map_err(|error| error.to_string())?;

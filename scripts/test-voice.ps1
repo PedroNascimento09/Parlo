@@ -2,7 +2,8 @@ param(
     [int]$Clips = 10,
     [int]$Seconds = 6,
     [switch]$Auto,
-    [switch]$SkipLive
+    [switch]$SkipLive,
+    [Nullable[int]]$Device = $null
 )
 
 $ErrorActionPreference = "Continue"
@@ -40,13 +41,40 @@ Write-Host "TESTE DE VOZ DO PARLO"
 Write-Host "Fala alto e claro, a um palmo do microfone."
 Write-Host ""
 
+$chosen = $Device
+if ($null -eq $chosen) {
+    Write-Host "A procurar o microfone: fala em voz normal durante a sonda de 3 segundos por dispositivo."
+    Write-Host ""
+    $probe = & $exe record --probe --seconds 3 2>&1
+    $probe | ForEach-Object { Write-Host $_ }
+    $lines += $probe
+    $best = -120.0
+    $bestIndex = $null
+    foreach ($line in $probe) {
+        if ($line -match "^\s*(\d+)\s+.*?(-?\d+\.\d)\s*dBFS") {
+            $level = [double]$matches[2]
+            if ($level -gt $best) { $best = $level; $bestIndex = [int]$matches[1] }
+        }
+    }
+    if (($null -eq $bestIndex) -or ($best -lt -34)) {
+        Write-Host ""
+        Write-Host "NENHUM DISPOSITIVO OUVIU VOZ."
+        Write-Host "Fala durante a sonda, e verifica Definicoes > Sistema > Som > Entrada."
+        Write-Host "Se o Discord te ouve, diz ao agente o resultado da sonda acima."
+        $lines | Set-Content -Path $report -Encoding UTF8
+        exit 1
+    }
+    Write-Host ("A usar o dispositivo {0} com {1} dBFS" -f $bestIndex, $best)
+    $chosen = $bestIndex
+}
+
 for ($i = 1; $i -le $Clips; $i++) {
     $prompt = $prompts[($i - 1) % $prompts.Count]
     Write-Host ""
     Write-Host ("Frase {0} de {1}: {2}" -f $i, $Clips, $prompt)
     if (-not $Auto) { Read-Host "Enter para gravar" | Out-Null }
     Write-Host ("A GRAVAR {0} SEGUNDOS... fala agora" -f $Seconds)
-    $chunk = & $exe record (Join-Path $voice ("{0:D2}.wav" -f $i)) --seconds $Seconds 2>&1
+    $chunk = & $exe record (Join-Path $voice ("{0:D2}.wav" -f $i)) --seconds $Seconds --device $chosen 2>&1
     $chunk | ForEach-Object { Write-Host $_ }
     $lines += $chunk
     if (($chunk | Out-String) -match "level is very low") {

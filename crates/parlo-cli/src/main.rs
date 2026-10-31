@@ -330,11 +330,13 @@ fn record_command(args: &[String]) -> Result<(), String> {
     let mut seconds = 5.0f32;
     let mut device = None;
     let mut list = false;
+    let mut probe = false;
     let mut index = 0;
 
     while index < args.len() {
         match args[index].as_str() {
             "--list" => list = true,
+            "--probe" => probe = true,
             "--seconds" => {
                 index += 1;
                 seconds = args
@@ -365,6 +367,20 @@ fn record_command(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
 
+    if probe {
+        let seconds = seconds.max(1.0);
+        println!("listening to every input for {seconds:.0} s, speak normally throughout");
+        for (index, name, peak) in record::probe(seconds)? {
+            let decibels = if peak > 0.0 {
+                20.0 * peak.log10()
+            } else {
+                -120.0
+            };
+            println!("{index}  {name:<40} {decibels:>7.1} dBFS");
+        }
+        return Ok(());
+    }
+
     let recording = record::capture(seconds, device)?;
     let rate = recording.format.sample_rate();
     let duration = recording.samples.len() as f32 / rate as f32;
@@ -387,7 +403,7 @@ fn record_command(args: &[String]) -> Result<(), String> {
         path.display()
     );
     println!("  peak             {decibels:.1} dBFS");
-    if peak < 0.08 {
+    if peak < 0.03 {
         println!("  warning          the microphone level is very low, check the input device, mute and gain");
     }
     Ok(())
