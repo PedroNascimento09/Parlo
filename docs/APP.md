@@ -1,28 +1,35 @@
 # The app
 
-Parlo's interface is served by the same `parlo` binary, from a release archive or a checkout. Nothing is installed, there is no driver and no account, and the page runs on `127.0.0.1` in your usual browser.
+Parlo opens as a window of its own. The window, `parlo-app`, is a thin native shell around a page that the `parlo` binary serves from `127.0.0.1`; there is no address bar because there is no browser, nothing is installed, and no account is involved.
 
 ## Start it
 
-From a release, unzip the archive and run the program inside it:
+From a release, unzip the archive and double-click `parlo-app`, which is `parlo-app.exe` on Windows. The archive carries three things: `parlo`, the command line; `parlo-app`, the window; and a folder named `parlo-engine`, the self-contained translation engine with its libraries, about 900 MB once unpacked. The engine folder must stay next to the other two, because the window looks for it beside itself, and no Python is involved. From a terminal, `parlo app` opens the window when `parlo-app` sits beside `parlo`, and falls back to the browser otherwise. Models are not in the archive: the Models panel downloads them on first use into `%APPDATA%\parlo\models` on Windows, `~/Library/Application Support/parlo/models` on macOS, or `$XDG_DATA_HOME/parlo/models` elsewhere, and `PARLO_MODELS_DIR` moves them. That first download is roughly 800 MB, so the first launch needs a network connection once, and everything works offline afterwards. The config file sits beside that folder.
+
+To keep the release somewhere permanent, `parlo install` copies both programs and the engine folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, and writes one menu entry that opens the window rather than a console. `--dir` installs somewhere else and `--no-shortcut` skips the entry. `parlo uninstall` removes both and keeps your models, because redownloading 800 MB on a whim is not a kindness; `--purge` removes them as well.
+
+From a source checkout, double-click `scripts/parlo-app.cmd` on Windows, or run `scripts/parlo-app.sh` on Linux and macOS: the first run builds the programs, then every run opens the window. From a terminal the same thing is:
 
 ```bash
-parlo app
+cargo build --release -p parlo-cli -p parlo-app
+target/release/parlo-app
 ```
 
-On Windows that is `parlo.exe app`. The archive also contains a folder named `parlo-engine`, the self-contained translation engine with its libraries, about 900 MB once unpacked; it must stay next to `parlo`, because the program looks for it beside itself, and no Python is involved. Models are not in the archive: the Models panel downloads them on first use into `%APPDATA%\parlo\models` on Windows, `~/Library/Application Support/parlo/models` on macOS, or `$XDG_DATA_HOME/parlo/models` elsewhere, and `PARLO_MODELS_DIR` moves them. That first download is roughly 800 MB, so the first launch needs a network connection once, and everything works offline afterwards. The config file sits beside that folder.
+The window starts the server behind it and stops it on the way out, so no terminal has to stay open. Both programs have to be built, because the window looks for `parlo` beside itself.
 
-To keep the release somewhere permanent, `parlo install` copies the program and the engine folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, and writes one menu entry that opens the app. `--dir` installs somewhere else and `--no-shortcut` skips the entry. `parlo uninstall` removes both and keeps your models, because redownloading 800 MB on a whim is not a kindness; `--purge` removes them as well.
+The language pair and the recogniser are chosen inside the page. `parlo app --from en --to pt --stt whisper` starts the browser version with those values instead of the window, and they are written to the config file, which the window reads too, so the next start of either keeps them.
 
-From a source checkout, double-click `scripts/parlo-app.cmd` on Windows, or run `scripts/parlo-app.sh` on Linux and macOS: the first run builds the binary, then every run opens the interface for you. From a terminal the same thing is:
+## The window
 
-```bash
-cargo run --release -p parlo-cli -- app
-```
+`parlo-app` does one thing before the page appears: it starts `parlo serve` on a free loopback port with a fresh token, waits for the local server to answer `/health`, and only then loads the page with the token already in the address. The page, the endpoints and the behaviour described below are identical to the browser version.
 
-The command prints the token and the address, then opens the browser with the token already in the URL. Keep that terminal window open while you use the interface: closing it stops the app.
+While the engine loads, the window shows a quiet starting screen with a pulsing mark. A cold start measured about 18 seconds on the reference machine, and the window waits up to four minutes before giving up, which leaves room for a first run that is still fetching models.
 
-The language pair and the recogniser are chosen inside the page, and the same values can be set before it starts with `--from en --to pt --stt whisper`. They are written to the config file, so the next start keeps them. `parlo translate`, `parlo listen` and `parlo captions` take the same flags.
+If the engine never answers, a failure screen replaces it: close Parlo and open it again, and if it repeats, the reason is in `parlo-app.log` and `parlo-engine.log` in the system temporary folder, `%TEMP%` on Windows.
+
+Closing the window stops the engine. If the window's own process is killed outright, the engine sees the pipe to its parent close and exits by itself, so no copy is left holding a port.
+
+The window needs the system webview: WebView2 on Windows, which Windows 10 and 11 already have through Edge, and WebKitGTK on Linux. It is not packaged as a `.msi` or a `.dmg` yet, so a release is still an archive that is unzipped and opened.
 
 ## What the screen does
 
@@ -45,7 +52,7 @@ The `Live` toggle beside the record control turns the page into an interpreter t
 
 Every window costs its own 2.5 seconds plus the processing time published in [BENCHMARKS.md](BENCHMARKS.md), so the wait per sentence is about three seconds. Live mode cannot remove that window: it is how the recogniser knows a sentence ended. It refuses to start while a file is dubbing, and it needs the models installed, because there is nothing to translate with until they are there.
 
-Live mode is not the way into a call. A page in a browser cannot present itself as a microphone, so until the virtual microphone ships the practical route on Windows and macOS is a virtual cable with `parlo listen --play --speaker N`, described in the README.
+Live mode is not the way into a call. Neither a window nor a page can present itself as a microphone, so until the virtual microphone ships the practical route on Windows and macOS is a virtual cable with `parlo listen --play --speaker N`, described in the README.
 
 ## Languages and the recogniser
 
@@ -69,7 +76,9 @@ The dub panel is for recordings, not for a call: drop a video or an audio file o
 
 Releases are tags `vX.Y.Z`, and only a tagged release reaches a user: nothing is published per commit, so the version in the banner is a release and never a change that happened to land on `main`.
 
-The interface checks the latest published release when it starts and shows a slim banner with its version and a link to the notes. The same banner carries an **Install update** button: it asks the local server, which downloads the build, stages it and replaces the binary a couple of seconds after the server stops, so the page loses its connection for a moment on purpose. Start `parlo app` again and the new version runs. Nothing is installed without that click.
+The interface checks the latest published release when it starts and shows a slim banner with its version and a link to the notes. The same banner carries an **Install update** button: it asks the local server, which downloads the build, stages it and replaces the `parlo` binary a couple of seconds after the engine stops. Nothing is installed without that click, and nothing has to be uninstalled either.
+
+That replacement is not silent, to be plain about it: the window loses its connection to the server on purpose, so close Parlo and open it again and the new version runs. The window program itself is not replaced by that button yet, only the binary behind the page, so a change to the interface arrives without a reinstall while a change to the window needs the newer archive.
 
 To install that update over the running copy, without uninstalling anything:
 
@@ -92,7 +101,7 @@ The page talks to two places only: the local server on `127.0.0.1`, and the GitH
 
 ## Limitations
 
-- Windows is the only platform validated end to end so far; Linux and macOS are covered by unit tests alone.
+- Windows is the only platform validated end to end so far, the window included; macOS and Linux are compiled and tested by CI, but `parlo-app` has not been run there.
 - Portuguese and English only.
 - Machine translation quality, not human quality.
 - The first translation arrives a few seconds after you start speaking, and live mode keeps that wait for every window.

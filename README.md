@@ -8,13 +8,13 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square"></a>
-  <img alt="Rust" src="https://img.shields.io/badge/rust-1.83%2B-b7410e?style=flat-square&logo=rust">
+  <img alt="Rust" src="https://img.shields.io/badge/rust-1.85%2B-b7410e?style=flat-square&logo=rust">
   <img alt="Runtime dependencies" src="https://img.shields.io/badge/core%20dependencies-none-4c566a?style=flat-square">
   <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-4c566a?style=flat-square">
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, which now ships inside the `parlo-engine` program. That bundle is therefore distributed under the GPL while the `parlo` binary stays MIT; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning and an installed desktop shell do not exist yet, the interface is served locally by `parlo app` and opens in your browser, and the cascade is chosen with `--engine cascade` on the command line or is the default in the app.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, which now ships inside the `parlo-engine` program. That bundle is therefore distributed under the GPL while the `parlo` binary stays MIT; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. The interface opens in its own window (`parlo-app`, a thin native shell around the page the binary serves on loopback), and voice cloning and a virtual microphone do not exist yet. The cascade is chosen with `--engine cascade` on the command line or is the default in the app.
 
 Version numbers follow the milestones in [ROADMAP.md](ROADMAP.md), and only tagged releases reach users: **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
 
@@ -50,19 +50,19 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Playback: `parlo listen --play --speaker N`, or `parlo speakers` to list devices | Working, Windows verified by stream, not by ear yet |
 | Self-contained engine: the release archive carries `parlo` and a `parlo-engine` folder | Working, no Python needed |
 | Hibiki-Zero premium engine | Optional, not wired |
-| App interface | Working, opened by `parlo app` in the browser |
+| App interface | Working: `parlo-app` opens it in a native window, `parlo app` falls back to the browser |
 
 ## Try it
 
 ### From a release: no Python, no Rust
 
-Download the archive for your system from the latest release, unzip it, and run the program inside:
+Download the archive for your system from the latest release, unzip it, and double-click the window program inside:
 
-```bash
-parlo app
+```text
+parlo-app
 ```
 
-On Windows use `parlo.exe app`. The archive holds two things: `parlo`, the interface and the command line, and a folder named `parlo-engine` holding the offline translation engine and its libraries, about 900 MB once unpacked. Keep that folder next to `parlo`, because the program looks for it there. The interface opens in your browser; the first time, the Models panel downloads what it needs into your user data folder, roughly 800 MB once, and everything works offline afterwards. The first launch therefore needs a network connection once, and `ffmpeg` on `PATH` is needed only for dubbing files.
+On Windows that is `parlo-app.exe`. The archive holds three things: `parlo-app`, the window; `parlo`, the command line behind it; and a folder named `parlo-engine` holding the offline translation engine and its libraries, about 900 MB once unpacked. Keep the folder next to the programs, because that is where they look for it. The window loads its own engine, shows a starting screen for the roughly eighteen seconds the models take to load, then hands you the interface; the first time, the Models panel downloads what it needs into your user data folder, roughly 800 MB once, and everything works offline afterwards. The first launch therefore needs a network connection once, and `ffmpeg` on `PATH` is needed only for dubbing files. On Windows the window uses WebView2, which comes with Windows 10 and 11; on Linux it uses WebKitGTK.
 
 Models, settings and the downloaded pieces live in `%APPDATA%\parlo` on Windows, `~/Library/Application Support/parlo` on macOS, and `$XDG_DATA_HOME/parlo` (usually `~/.local/share/parlo`) elsewhere. `PARLO_MODELS_DIR` points the models at another folder, and `parlo update` replaces the running copy in place, so no version is ever installed by uninstalling the old one.
 
@@ -74,17 +74,18 @@ To keep it instead of running it from the downloads folder, install it for your 
 parlo install
 ```
 
-That copies `parlo` and the `parlo-engine` folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, adds a Start Menu entry on Windows or an application menu entry on Linux, and prints the command to open it. macOS gets no menu entry yet; open `~/Applications/Parlo/parlo app` from a terminal or add it to the Dock once. `parlo uninstall` removes the program and the menu entry and leaves your models alone; add `--purge` to remove those too.
+That copies `parlo`, `parlo-app` and the `parlo-engine` folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, adds a Start Menu entry on Windows or an application menu entry on Linux that opens the window, and prints the path to it. macOS gets no menu entry yet; open `~/Applications/Parlo/parlo-app` from a terminal or add it to the Dock once. `parlo uninstall` removes the programs and the menu entry and leaves your models alone; add `--purge` to remove those too.
 
 ### From a source checkout
 
-Requires Rust 1.83 or newer. No other dependency.
+Requires Rust 1.85 or newer. No other dependency.
 
 ```bash
-cargo run --release -p parlo-cli -- app
+cargo build --release -p parlo-cli -p parlo-app
+target/release/parlo-app
 ```
 
-The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level confirms the microphone, the translated sentence appears with the translated voice. Nothing is installed and the audio never leaves the machine; when a tagged release is newer than the running one, a banner offers it with its notes linked and an **Install update** button that installs over the running copy, and `parlo update` does the same from a terminal. The same page carries the language and recogniser settings, a models panel that downloads whatever is missing, and a drop zone that dubs a video or a recording offline; a `Live` toggle keeps it listening, translating one 2.5 second window at a time and speaking each one in order. Those choices are written to the config file, so the next start keeps them. Guide: [docs/APP.md](docs/APP.md).
+That opens the window, which starts the engine itself and looks for `parlo` beside itself, so both programs are built. `cargo run --release -p parlo-cli -- app` is the same interface in a browser, which is what `parlo app` falls back to when `parlo-app` is not beside it. Either way, hold or click the main control to speak, the input level confirms the microphone, the translated sentence appears with the translated voice. Nothing is installed and the audio never leaves the machine; when a tagged release is newer than the running one, a banner offers it with its notes linked and an **Install update** button that installs over the running copy, and `parlo update` does the same from a terminal. The same page carries the language and recogniser settings, a models panel that downloads whatever is missing, and a drop zone that dubs a video or a recording offline; a `Live` toggle keeps it listening, translating one 2.5 second window at a time and speaking each one in order. Those choices are written to the config file, so the next start keeps them. Guide: [docs/APP.md](docs/APP.md).
 
 Everything below is also available on the command line.
 

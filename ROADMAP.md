@@ -26,13 +26,13 @@ Something shareable that needs neither a virtual microphone nor an NVIDIA card: 
 
 **Exit criterion:** dub a five minute video with your own voice in three commands, on a PC without an NVIDIA card, and at least three outsiders use it without help. The commands and the drag and drop panel are here and dubbing was measured end to end on a 6.6 second clip, so what is left is the one thing code cannot close: three outsiders dubbing a five minute video unaided.
 
-Note: the browser interface from `parlo app` shipped ahead of this milestone as a preview. It does not change the order here, and the tray app, installers and virtual microphone stay in v0.5.
+Note: the interface shipped ahead of this milestone, first as a local page from `parlo app` and now in a native window from `parlo-app`. It does not change the order here, and the tray app, installers and virtual microphone stay in v0.5.
 
 ## v0.5 Native
 
 Own virtual microphone: a PipeWire node on Linux, an Audio Server Plug-in on macOS and a signed driver on Windows, or a documented third party cable as an interim answer. Clean install and uninstall, the right name and icon in call apps, a minimal tray app to switch on and off and pick languages, code signing and notarisation, and `.dmg`, `.msi`, AppImage and `.deb` built in CI.
 
-**Exit criterion:** a clean machine installs and shows Parlo in Zoom, Meet, and Teams in under five minutes, on two operating systems. Partly met: the release archive carries a self-contained engine, `parlo install` copies it into a per-user directory with a menu entry and an icon, and `parlo uninstall` removes it, while the virtual microphone, the tray app, signing, notarisation and the four installer formats are all still open, and a call app still sees the system microphone.
+**Exit criterion:** a clean machine installs and shows Parlo in Zoom, Meet, and Teams in under five minutes, on two operating systems. Partly met: the release archive carries a self-contained engine, `parlo-app` opens the interface in a native window instead of a browser and owns the engine it starts, `parlo install` copies both programs into a per-user directory with a menu entry that opens the window and an icon, and `parlo uninstall` removes it. Still open: the virtual microphone, the tray app, signing, notarisation and the four installer formats, so a call app still sees the system microphone and the first launch is an unzip rather than a signed installer.
 
 ## v0.6 Alpha
 

@@ -4,6 +4,22 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-10-31
+
+### Added
+
+- `parlo-app`, a native window built on Tauri 2, so Parlo no longer opens in a browser. It starts `parlo serve` on a free loopback port with a fresh token, waits for `/health`, and shows the page in its own window with a starting screen while the engine loads and a plain failure screen, naming both log files, after four minutes without an answer.
+- Closing the window stops the engine, and `PARLO_APP_GUARD` makes the engine exit when its parent's pipe closes, so a crashed window leaves no process holding the port.
+- `parlo app` opens the window when `parlo-app` sits beside `parlo`, and falls back to the browser otherwise.
+- The release archive carries `parlo-app` next to `parlo` and `parlo-engine`.
+
+### Changed
+
+- `parlo install` copies both programs and points the Start Menu or desktop entry at the window instead of a console.
+- The engine log is written to `parlo-engine.log` in the temporary folder when the window starts it, because a double-clicked app has no console.
+- The minimum Rust version is 1.85.
+- `scripts/parlo-app.cmd` and `scripts/parlo-app.sh` build both programs and open the window.
+
 ## [0.1.6] - 2026-10-31
 
 ### Changed
