@@ -413,7 +413,7 @@ fn listen_command(args: &[String]) -> Result<(), String> {
         index += 1;
     }
 
-    let input = record::input_format(device)?;
+    let (microphone, input) = record::open_input(device)?;
     let output = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
     let mut pipeline = Pipeline::new(
         PipelineConfig::new(input, output),
@@ -427,7 +427,7 @@ fn listen_command(args: &[String]) -> Result<(), String> {
     let mut first_error = None;
     let started = std::time::Instant::now();
 
-    record::chunks(seconds, device, |block| {
+    record::chunks(microphone, seconds, |block| {
         for out in pipeline.push(&block) {
             if out.voice {
                 voiced += 1;

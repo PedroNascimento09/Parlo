@@ -19,9 +19,10 @@ pub fn devices() -> Result<Vec<String>, String> {
         .collect())
 }
 
-pub fn input_format(device_index: Option<usize>) -> Result<AudioFormat, String> {
-    let (_, supported) = open(device_index)?;
-    AudioFormat::mono(supported.sample_rate().0).map_err(|error| error.to_string())
+pub fn open_input(device_index: Option<usize>) -> Result<(cpal::Device, AudioFormat), String> {
+    let (device, supported) = open(device_index)?;
+    let format = AudioFormat::mono(supported.sample_rate().0).map_err(|error| error.to_string())?;
+    Ok((device, format))
 }
 
 pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, String> {
@@ -61,11 +62,13 @@ pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, S
     })
 }
 
-pub fn chunks<F>(seconds: f32, device_index: Option<usize>, mut on_chunk: F) -> Result<(), String>
+pub fn chunks<F>(device: cpal::Device, seconds: f32, mut on_chunk: F) -> Result<(), String>
 where
     F: FnMut(Vec<f32>) -> bool,
 {
-    let (device, supported) = open(device_index)?;
+    let supported = device
+        .default_input_config()
+        .map_err(|error| format!("cannot read the input format: {error}"))?;
     let config: cpal::StreamConfig = supported.config();
     let (sender, receiver) = mpsc::channel();
 
@@ -83,7 +86,8 @@ where
     let deadline = Instant::now() + Duration::from_secs_f32(seconds.max(0.5));
 
     while Instant::now() < deadline {
-        match receiver.recv_timeout(Duration::from_millis(100)) {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        match receiver.recv_timeout(remaining.min(Duration::from_millis(100))) {
             Ok(block) => {
                 if !on_chunk(block) {
                     break;
