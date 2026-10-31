@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import os
+import sys
 import re
 import time
 import wave
@@ -128,10 +129,21 @@ class CascadeEngine:
         return self._ready
 
     def warmup(self) -> None:
-        if not self._ready or not self.voice_path.exists():
+        if not self._ready:
             return
-        self._load_stt()
+        stages = [("recognition", self._load_stt), ("translation", self._translate_warmup)]
+        if self.voice_path.exists():
+            stages.append(("voice", self._synthesize_warmup))
+        for label, stage in stages:
+            try:
+                stage()
+            except Exception as error:
+                print(f"warmup deferred for {label}: {error}", file=sys.stderr)
+
+    def _translate_warmup(self) -> None:
         self._translate("warmup")
+
+    def _synthesize_warmup(self) -> None:
         self._synthesize("warmup")
 
     def _load_stt(self):
