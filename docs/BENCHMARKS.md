@@ -62,7 +62,7 @@ parlo record out/voice-01.wav --seconds 6
 
 ### Measurement validity
 
-Everything above uses synthetic Piper speech. The comparison of Parakeet and Whisper therefore proves a direction, not a final ranking, and it does not prove anything about a 4 core laptop: limiting threads on a 12 core desktop approximates core count, not clock speed, memory bandwidth, or thermal throttling.
+Everything above uses synthetic Piper speech on the reference 12 core desktop. The comparison of Parakeet and Whisper proves a direction, not a final ranking. Slower machines are untested: limiting threads approximates core count, not clock speed, memory bandwidth, or thermal throttling, so a weak laptop is a known limit rather than a promise. The project targets the reference machine and does not gate on four core hardware.
 
 The decisive test is ten recordings of a real voice, run through both recognisers:
 
