@@ -67,9 +67,11 @@ The second row is why Parakeet is the default: it is faster on the recogniser an
 Two policies are enforced by tests:
 
 - The default engine requires no GPU and contains no non-commercial model.
-- A non-commercial or GPU-bound engine is never the default and is never bundled in the installer.
+- A non-commercial or GPU-bound engine is never the default and is never bundled in the release archive.
 
-One honest exception: the default cascade uses Piper for speech synthesis, and `piper-tts` is GPL-3.0-or-later. Parlo's code stays MIT, Piper runs as a separate user-installed program, and the licence is disclosed here and in `parlo engines`. A one-click installer cannot ship it without making the distribution GPL, so replacing Piper with a permissive synthesiser (Kokoro, Apache-2.0, to verify) is a v0.2 decision.
+One honest exception, and it changed with the packaging: the default cascade uses Piper for speech synthesis, and `piper-tts` is GPL-3.0-or-later. `parlo-engine` bundles the `piper` package, its phonemiser bindings and the espeak-ng data they load, so that program is one combined work and is distributed under **GPL-3.0-or-later**; this repository is its corresponding source and [`parlo-engine.spec`](../engines/cascade/parlo-engine.spec) is the build. The `parlo` command line program stays MIT. Before the bundle existed, Piper was invoked as a separate user-installed program, which is what kept the two apart, and that is no longer the case.
+
+The consequence is the reason the project wants to replace Piper with a permissive synthesiser (Kokoro, Apache-2.0, to verify): that would let the whole distribution stay MIT. It is a decision about measured quality, not a date. The component by component table is in [LICENSES.md](LICENSES.md), and `parlo engines` prints the same policy from the registry.
 
 Hibiki-Zero's weights are **non-commercial**. It can be used at home and in research, not in paid work, and the app must say so before downloading it. The universal cascade exists so nobody is forced into that licence to get a working product.
 

@@ -14,7 +14,7 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning and an installed desktop shell do not exist yet, the interface is served locally by `parlo app` and opens in your browser, and the cascade is chosen with `--engine cascade` on the command line or is the default in the app.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, which now ships inside the `parlo-engine` program. That bundle is therefore distributed under the GPL while the `parlo` binary stays MIT; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning and an installed desktop shell do not exist yet, the interface is served locally by `parlo app` and opens in your browser, and the cascade is chosen with `--engine cascade` on the command line or is the default in the app.
 
 Version numbers follow the milestones in [ROADMAP.md](ROADMAP.md), and only tagged releases reach users: **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
 
@@ -205,12 +205,14 @@ One product, several engines, one quality ladder. The default must stay usable f
 
 | Engine | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | Permissive only | **Default** |
-| B. Captions | Text overlay | Any CPU | Permissive only | Weak hardware |
+| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | MIT program, GPL-3.0 engine bundle | **Default** |
+| B. Captions | Text overlay | Any CPU | MIT program, GPL-3.0 engine bundle | Weak hardware |
 | C. Hibiki-Zero | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | D. Cloud with your key | Voice | Any | Vendor terms | Opt-in, off by default |
 
-**Hibiki-Zero is non-commercial.** Its weights are CC BY-NC-SA 4.0, which is why it is a downloadable option with a visible licence warning, never the default engine and never inside the installer. The default path uses only permissively licensed components and `parlo engines` prints that policy.
+**Hibiki-Zero is non-commercial.** Its weights are CC BY-NC-SA 4.0, which is why it is a downloadable option with a visible licence warning, never the default engine and never inside the archive.
+
+**The default path is not permissive end to end, and saying otherwise would be wrong.** Piper is GPL-3.0-or-later and it is compiled into `parlo-engine`, so that program is distributed under the GPL while the `parlo` binary stays MIT. The recogniser weights are CC-BY-4.0 and the Argos translation models are MIT. The full table, and what it asks of you, is in [docs/LICENSES.md](docs/LICENSES.md).
 
 ## Hardware profiles
 
@@ -296,4 +298,4 @@ The speech-to-speech approach builds on [Hibiki-Zero](https://github.com/kyutai-
 
 ## License
 
-MIT for the code. Model weights keep their own licenses, listed by `parlo engines`. See [LICENSE](LICENSE).
+The `parlo` command line program is MIT, see [LICENSE](LICENSE). The `parlo-engine` bundle that ships beside it in a release archive is **GPL-3.0-or-later**, because it contains Piper and the espeak-ng data Piper loads, and this repository is its corresponding source. Model weights keep their own licences, listed by `parlo engines`. The component by component table, and what each licence asks of you, is [docs/LICENSES.md](docs/LICENSES.md).

@@ -15,10 +15,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - A window sweep with Parakeet confirms the 2.5 second default: shorter windows save about half a second and lose words, so the next latency gain has to come from a sentence boundary, not a smaller cut.
 - Models warm up at startup, moving the 12 to 21 second load time away from the first sentence.
 - A glossary file corrects names the recogniser mishears, starting with `Parlo`.
-- Piper is GPL-3.0-or-later, not MIT. It stays a separate, user-installed program; the registry and documentation now say so.
+- Piper is GPL-3.0-or-later, not MIT. The packaged engine now contains Piper and the espeak-ng data, so `parlo-engine` is distributed under the GPL-3.0-or-later while the `parlo` command line program stays MIT; `docs/LICENSES.md` states the split.
 - The cascade segment window defaults to 2.5 seconds and is configurable with `PARLO_CASCADE_SEGMENT`; at 1.2 seconds the real time factor was 2.66.
 - Speech recognition runs without beam search and without a second voice activity filter, since the pipeline already gates silence.
-- The default engine is now the universal CPU cascade with permissive licenses; Hibiki-Zero becomes an optional premium engine because its weights are CC BY-NC-SA 4.0.
+- The default engine is the universal CPU cascade, MIT apart from the GPL synthesiser it bundles in `parlo-engine`; Hibiki-Zero becomes an optional premium engine because its weights are CC BY-NC-SA 4.0.
 - The recorder peak normalises every clip towards -1 dBFS with a +24 dB ceiling instead of writing the raw signal, after a laptop Realtek microphone measured between -24.7 and -32.2 dBFS peak.
 - The voice gate default moved from -45 to -55 dBFS RMS, because that microphone's speech sits between -39.7 and -46.2 dBFS in 100 millisecond windows against a room noise floor of -63.9 to -67.0 dBFS.
 - Live listening and the local API apply automatic gain inside the pipeline after the voice gate, up to +24 dB, so a quiet microphone still reaches the cascade engine.

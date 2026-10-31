@@ -9,9 +9,9 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
 | Speech synthesis | Piper (`pt_BR-faber-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
 
-Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code stays MIT, and Piper is treated as a separate program: the user installs it, runs it as a sidecar, and the licence is shown in the README and by `parlo engines`. It is never bundled in an installer.
+Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code stays MIT, and the command line program `parlo` is MIT on its own. The packaged engine, `parlo-engine`, contains Piper and the espeak-ng data and is therefore distributed under the GPL-3.0-or-later, with this repository as its corresponding source. [docs/LICENSES.md](../../docs/LICENSES.md) states the split.
 
-If Parlo later ships a one-click installer, the synthesiser has to change or the whole product becomes GPL. Kokoro (Apache-2.0) is the first candidate to evaluate; that decision belongs to v0.2, not to a prototype.
+A permissive synthesiser would let the whole distribution stay MIT. Kokoro (Apache-2.0) is the first candidate to evaluate.
 
 No model here is non-commercial, which is why this is the default and Hibiki-Zero is not.
 
