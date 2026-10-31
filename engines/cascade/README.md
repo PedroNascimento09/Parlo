@@ -27,6 +27,13 @@ On Linux and macOS replace `.venv/Scripts/python` with `.venv/bin/python`.
 
 The setup script downloads the Piper voices, the Parakeet v3 model, and the Argos Portuguese to English packages. Add `--stt whisper` to cache faster-whisper instead, or `--stt both`. Everything lands in `engines/cascade/models` and the user's model cache, both outside Git.
 
+```bash
+python engines/cascade/scripts/setup_models.py --stt both --whisper small
+python engines/cascade/scripts/setup_models.py --stt whisper --whisper medium
+```
+
+The first installs Parakeet and caches Whisper `small` so the two can be compared; the second caches only `medium`.
+
 ## Run
 
 ```bash
@@ -39,6 +46,10 @@ The CLI looks for `.venv` next to the engine, in `engines/`, or at the project r
 |---|---|---|
 | `PARLO_PYTHON` | detected `.venv`, else `python` | Interpreter with the cascade requirements installed |
 | `PARLO_CASCADE_DIR` | `engines/cascade` | Directory containing `serve.py` |
+| `PARLO_CASCADE_STT` | `parakeet` | Recogniser backend, `parakeet` or `whisper` |
+| `PARLO_CASCADE_MODEL` | `base` | Whisper size when `PARLO_CASCADE_STT=whisper`: `tiny`, `base`, `small`, `medium`, `large-v3` |
+| `PARLO_CASCADE_THREADS` | `4` | Threads used by the recogniser |
+| `PARLO_CASCADE_SEGMENT` | `2.5` | Seconds of speech buffered before a segment is translated |
 
 ## How it behaves
 
@@ -68,7 +79,10 @@ The recogniser matters more than the window. With 4 threads, which approximates 
 | parakeet v3 (default) | **0.113** | 0.092 |
 | whisper base | 0.309 | 0.153 |
 
-Peak resident memory for a run is about 1.3 GB, of which 640 MB is the recogniser. Parakeet is the default because it is both faster and more accurate. `PARLO_CASCADE_STT=whisper` switches back, and only then does `PARLO_CASCADE_MODEL` (`tiny`, `base`, `small`) matter. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition was the whole bill and no longer is.
+Peak resident memory for a run is about 1.3 GB, of which 640 MB is the recogniser. Parakeet is the default because it is both faster and more accurate. `PARLO_CASCADE_STT=whisper` switches back, and only then does `PARLO_CASCADE_MODEL` matter: `tiny`, `base`, `small`, `medium`, or `large-v3`, all int8 on CPU through faster-whisper. An unknown size stops the server at startup with the list of supported ones instead of downloading something unexpected. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition was the whole bill and no longer is.
+
+That comparison covers recognition alone. On this project's own recordings the whole cascade, translation and synthesis included, measured mean RTF 0.45 with Parakeet and 1.27 with Whisper base over ten 6 second clips from a laptop microphone, Windows 11, 4 threads.
+
 
 This is the "fast consecutive" mode from the plan, not simultaneous speech.
 

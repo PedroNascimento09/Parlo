@@ -16,6 +16,8 @@
 
 > **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
 
+Version numbers follow the milestones in [ROADMAP.md](ROADMAP.md): **v0.1.0** is the first tagged release and its notes are in [docs/releases/v0.1.0.md](docs/releases/v0.1.0.md).
+
 ---
 
 ## Why another translator
@@ -132,6 +134,13 @@ PARLO_PYTHON=.venv/bin/python cargo run --release -p parlo-cli -- translate in.w
 ```
 
 On Windows use `.venv/Scripts/python`. Installation details and limits: [engines/cascade/README.md](engines/cascade/README.md).
+
+The numbers below are the whole cascade, translation and synthesis included, on ten 6 second clips recorded with a laptop Realtek microphone on Windows 11 with 4 threads. Other Whisper sizes (`small`, `medium`, `large-v3`) are selected with `PARLO_CASCADE_MODEL` and documented in [docs/ENGINES.md](docs/ENGINES.md).
+
+| Recogniser | Download | Measured mean RTF on ten 6 s clips |
+|---|---|---|
+| **Parakeet TDT 0.6B v3 int8** (default) | 640 MB | **0.45** |
+| Whisper base int8 | 145 MB | 1.27 |
 
 ## Engine strategy
 

@@ -14,6 +14,7 @@ MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
 REQUIRED_MODULES = ("argostranslate", "piper", "numpy", "sherpa_onnx")
 DEFAULT_THREADS = 4
 STT_BACKENDS = ("parakeet", "whisper")
+WHISPER_SIZES = ("tiny", "base", "small", "medium", "large-v3")
 PARAKEET_DIR = MODEL_DIR / "parakeet"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
 VOICES = {
@@ -106,6 +107,10 @@ class CascadeEngine:
         self.stt = os.environ.get("PARLO_CASCADE_STT", "parakeet").lower()
         if self.stt not in STT_BACKENDS:
             raise ValueError(f"unknown recogniser {self.stt}, expected {STT_BACKENDS}")
+        if self.stt == "whisper" and self.model_name not in WHISPER_SIZES:
+            raise ValueError(
+                f"unknown whisper model {self.model_name}, expected {WHISPER_SIZES}"
+            )
         threads = os.environ.get("PARLO_CASCADE_THREADS")
         self.threads = int(threads) if threads else DEFAULT_THREADS
         self.glossary = load_glossary(GLOSSARY_FILE)

@@ -71,7 +71,11 @@ def warm_translation(source: str, target: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stt", choices=["parakeet", "whisper", "both"], default="parakeet")
-    parser.add_argument("--whisper", default="base")
+    parser.add_argument(
+        "--whisper",
+        choices=["tiny", "base", "small", "medium", "large-v3"],
+        default="base",
+    )
     args = parser.parse_args()
 
     install_voices()

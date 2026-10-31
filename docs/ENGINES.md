@@ -33,6 +33,37 @@ Rules an adapter must follow:
 
 The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today in both directions: Parakeet TDT 0.6B v3 int8 through sherpa-onnx, Argos, and a Piper neutral voice in the target language. The recogniser is CC-BY-4.0, the runtime Apache-2.0. Measured at 0.113 real time factor on 4 threads with a 2.5 second window; Whisper base remains available with `PARLO_CASCADE_STT=whisper` at 0.309.
 
+## Recogniser models
+
+Parakeet is the default because it measured both faster and more accurate on the clips this project tests with. Whisper stays available as a fallback for machines that cannot spare the 640 MB.
+
+| Setting | Recogniser | Download |
+|---|---|---|
+| `PARLO_CASCADE_STT=parakeet` (default) | Parakeet TDT 0.6B v3 int8 via sherpa-onnx | About 640 MB, into `engines/cascade/models/parakeet/` |
+| `PARLO_CASCADE_STT=whisper` with `PARLO_CASCADE_MODEL=tiny`, `base`, `small`, `medium`, or `large-v3` | faster-whisper on CPU with int8 | The size the name implies, in the Hugging Face cache |
+
+Both run on 4 threads unless `PARLO_CASCADE_THREADS` says otherwise.
+
+An unknown `PARLO_CASCADE_MODEL` fails at startup with an error that lists the supported sizes, instead of handing the name to faster-whisper and downloading something unexpected. The cascade server refuses to start rather than run a model nobody asked for.
+
+Fetch what you need before the first run, because the engine does not download models by itself:
+
+```bash
+python engines/cascade/scripts/setup_models.py --stt both --whisper small
+python engines/cascade/scripts/setup_models.py --stt whisper --whisper medium
+```
+
+The first command installs Parakeet and caches Whisper `small`, so both can be compared; the second caches only `medium`. Voices and the Argos packages are always installed.
+
+Two measurements that must not be read against each other, because they count different work:
+
+| What was measured | Conditions | Result |
+|---|---|---|
+| Whole cascade, recognition plus translation plus synthesis | Ten 6 second Portuguese clips from a laptop Realtek microphone, Windows 11, 4 threads | Parakeet mean RTF 0.45, Whisper base mean RTF 1.27 |
+| Recognition only | 4.95 seconds of synthetic Portuguese speech, 4 threads, 2.5 second window | Parakeet v3 0.113, Whisper base 0.309 |
+
+The second row is why Parakeet is the default: it is faster on the recogniser and it keeps more words. The first row is what a user feels on ordinary hardware, where translation and synthesis are part of the wait.
+
 Two policies are enforced by tests:
 
 - The default engine requires no GPU and contains no non-commercial model.

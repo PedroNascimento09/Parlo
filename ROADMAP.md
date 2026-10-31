@@ -2,13 +2,13 @@
 
 No dates. A phase ends when its exit criterion is met, not when the code is written. If a criterion fails, the phase does not happen.
 
-## v0.1 Spark (current)
+## v0.1 Spark (released as v0.1.0)
 
 Prove the pipeline on modest hardware. Command line only, echo engine, no models.
 
-**Exit criterion:** pipeline, CLI, engine registry, and microphone commands tested on Linux, macOS, and Windows; licences verified; a demo that makes people ask where to get it.
+**Exit criterion:** pipeline, CLI, engine registry, and microphone commands tested on Linux, macOS, and Windows; licences verified; a demo that makes people ask where to get it. The pipeline, the CLI, and the microphone commands ran end to end on Windows, while the Linux and macOS paths are covered by unit tests only, so this criterion is met on one platform and outstanding on two.
 
-## v0.2 Foundation
+## v0.2 Foundation (current)
 
 Turn the prototype into something that survives a real call: a local engine service with a stable protocol, cold start measured, a reproducible benchmark, and an authenticated local API bound to `127.0.0.1`.
 

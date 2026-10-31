@@ -50,6 +50,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [0.1.0] - 2026-10-31
 
+First tagged release of the command line prototype. Everything under `[Unreleased]` above describes this same code, and the release notes live in `docs/releases/v0.1.0.md`.
+
 ### Added
 
 - Streaming pipeline with 20 ms frames, voice gate, resampling from 48 kHz to 16 kHz, and an engine boundary.

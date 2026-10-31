@@ -99,6 +99,39 @@ class EngineTest(unittest.TestCase):
         finally:
             os.environ.pop("PARLO_CASCADE_STT", None)
 
+    def test_unknown_whisper_model_is_rejected(self):
+        import os
+
+        os.environ["PARLO_CASCADE_STT"] = "whisper"
+        os.environ["PARLO_CASCADE_MODEL"] = "enormous"
+        try:
+            with self.assertRaises(ValueError) as raised:
+                CascadeEngine()
+            self.assertIn("enormous", str(raised.exception))
+        finally:
+            os.environ.pop("PARLO_CASCADE_STT", None)
+            os.environ.pop("PARLO_CASCADE_MODEL", None)
+
+    def test_known_whisper_model_is_accepted(self):
+        import os
+
+        os.environ["PARLO_CASCADE_STT"] = "whisper"
+        os.environ["PARLO_CASCADE_MODEL"] = "small"
+        try:
+            self.assertEqual(CascadeEngine().model_name, "small")
+        finally:
+            os.environ.pop("PARLO_CASCADE_STT", None)
+            os.environ.pop("PARLO_CASCADE_MODEL", None)
+
+    def test_parakeet_ignores_the_model_name(self):
+        import os
+
+        os.environ["PARLO_CASCADE_MODEL"] = "enormous"
+        try:
+            self.assertEqual(CascadeEngine().stt, "parakeet")
+        finally:
+            os.environ.pop("PARLO_CASCADE_MODEL", None)
+
     def test_segment_window_can_be_configured(self):
         import os
 
