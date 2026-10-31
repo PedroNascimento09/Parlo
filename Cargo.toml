@@ -8,8 +8,8 @@ edition = "2021"
 rust-version = "1.83"
 license = "MIT"
 authors = ["Parlo contributors"]
-repository = "https://github.com/Pedromrn0903/parlo"
-homepage = "https://github.com/Pedromrn0903/parlo"
+repository = "https://github.com/PedroNascimento09/parlo"
+homepage = "https://github.com/PedroNascimento09/parlo"
 
 [workspace.dependencies]
 parlo-core = { path = "crates/parlo-core" }
