@@ -15,6 +15,7 @@ const updateText = document.getElementById("update-text");
 const installButton = document.getElementById("update-install");
 const engineEl = document.getElementById("status-engine");
 const uptimeEl = document.getElementById("status-uptime");
+const micEl = document.getElementById("status-mic");
 const versionEl = document.getElementById("status-version");
 
 const TARGET_RATE = 16000;
@@ -97,6 +98,7 @@ async function openMicrophone() {
   media = await navigator.mediaDevices.getUserMedia({
     audio: { channelCount: 1, echoCancellation: true },
   });
+  micEl.textContent = "ready";
   return media;
 }
 
@@ -232,11 +234,13 @@ async function begin() {
   try {
     await ensureAudio();
   } catch (failure) {
+    micEl.textContent = "blocked";
     showError(describeMicrophoneError(failure));
     return;
   }
   chunks = [];
   recording = true;
+  micEl.textContent = "listening";
   talk.setAttribute("aria-pressed", "true");
   label.textContent = "Listening";
   sub.textContent = "Release to hear the translation";
@@ -249,6 +253,7 @@ async function finish() {
     return;
   }
   recording = false;
+  micEl.textContent = "ready";
   clearTimeout(maxTimer);
   talk.setAttribute("aria-pressed", "false");
   label.textContent = "Hold to speak";
@@ -446,7 +451,10 @@ talk.addEventListener("keyup", (event) => {
 
 installButton.addEventListener("click", () => installUpdate());
 
-ensureAudio().catch((failure) => showError(describeMicrophoneError(failure)));
+ensureAudio().catch((failure) => {
+  micEl.textContent = "blocked";
+  showError(describeMicrophoneError(failure));
+});
 refreshHealth();
 setInterval(refreshHealth, 5000);
 checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
