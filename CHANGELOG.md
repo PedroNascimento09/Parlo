@@ -27,6 +27,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `scripts/memory.py` measures peak memory of a real run: 1302 MB with Parakeet, including the 640 MB model.
 - `parlo listen` captures the microphone continuously, translates it through the cascade, and reports the time until the first translated audio.
 - `parlo serve` exposes an authenticated local HTTP API on `127.0.0.1` with `/health` and `/translate` for 16 kHz mono WAV audio.
+- `scripts/soak.py` loops audio through the engine and reports latency drift: two minutes and 86 segments showed no drift and no errors.
 - `parlo engines` lists available engines with licenses, hardware, and voice levels.
 - `parlo profile` recommends a hardware profile and voice level from the detected CPU.
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.

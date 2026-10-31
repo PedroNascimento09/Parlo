@@ -78,6 +78,14 @@ Peak resident memory for one Portuguese to English run with Parakeet, 4 threads:
 python engines/cascade/scripts/memory.py out/pt.wav --threads 4
 ```
 
+### Soak
+
+Two minutes of looped speech through the real cascade, 4 threads: **86 segments, 522 ms mean, 618 ms p95, zero errors**. The first ten segments averaged 536 ms and the last ten 491 ms, so there is no upward drift; if anything the run warms up. The thirty minute criterion needs the full run:
+
+```bash
+python engines/cascade/scripts/soak.py out/pt.wav --minutes 30 --threads 4
+```
+
 Not measured yet, and blank on purpose: VRAM (there is no NVIDIA GPU here), perceived latency through a live microphone, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
 ## What gets measured
