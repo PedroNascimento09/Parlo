@@ -362,7 +362,10 @@ fn record_command(args: &[String]) -> Result<(), String> {
         samples: recording.samples,
     };
     fs::write(&path, write_pcm16(&wav)).map_err(|error| format!("{}: {error}", path.display()))?;
-    println!("recorded {duration:.1} s at {rate} Hz to {}", path.display());
+    println!(
+        "recorded {duration:.1} s at {rate} Hz to {}",
+        path.display()
+    );
     Ok(())
 }
 
