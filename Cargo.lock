@@ -500,7 +500,7 @@ dependencies = [
 
 [[package]]
 name = "parlo-cli"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "base64",
  "cpal",
@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "parlo-core"
-version = "0.1.2"
+version = "0.1.3"
 
 [[package]]
 name = "pin-project-lite"

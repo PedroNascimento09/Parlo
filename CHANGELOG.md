@@ -48,6 +48,19 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Measured latency and quality benchmarks.
 - Linux virtual microphone automation.
 
+## [0.1.3] - 2026-10-31
+
+### Added
+
+- The interface shows the translated sentence as selectable text, returned by the local endpoint in a base64 header next to the audio.
+- The update banner installs the release on the spot: a token bearing request to the local server stages the new binary and lets the page explain that the connection closing is the update.
+
+### Changed
+
+- The screen is redesigned around one record card that holds the input level and pulses while listening, a result card with the sentence and the playback, and a three fact status group.
+- Updates follow tagged releases only. The `nightly` channel is removed, so nobody is asked to install a commit.
+- A thirty minute soak closed the audio half of the v0.2 criterion: 652 cycles, 1095 segments, 420.7 ms mean, p95 485 ms, zero errors and no drift.
+
 ## [0.1.2] - 2026-10-31
 
 ### Added

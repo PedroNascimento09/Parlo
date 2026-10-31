@@ -14,9 +14,9 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning and an installed desktop shell do not exist yet, the interface is served locally by `parlo app` and opens in your browser, and the cascade is chosen with `--engine cascade` on the command line or is the default in the app.
 
-Version numbers follow the milestones in [ROADMAP.md](ROADMAP.md): **v0.1.0** is the first tagged release and its notes are in [docs/releases/v0.1.0.md](docs/releases/v0.1.0.md).
+Version numbers follow the milestones in [ROADMAP.md](ROADMAP.md), and only tagged releases reach users: **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
 
 ---
 
@@ -46,7 +46,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
 | Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.11 on 4 threads with Parakeet v3 |
 | Hibiki-Zero premium engine | Optional, not wired |
-| Desktop app | Not started |
+| App interface | Working, opened by `parlo app` in the browser |
 
 ## Try it in 20 seconds
 
@@ -58,7 +58,7 @@ Requires Rust 1.83 or newer. No other dependency.
 cargo run --release -p parlo-cli -- app
 ```
 
-The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level shows the microphone, and the translated voice plays back on the same screen. Nothing is installed and the audio never leaves the machine; when a newer release exists, the screen offers it with its notes linked, and `parlo update` installs it over the running copy without an uninstall. Guide: [docs/APP.md](docs/APP.md).
+The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level confirms the microphone, the translated sentence appears with the translated voice. Nothing is installed and the audio never leaves the machine; when a tagged release is newer than the running one, a banner offers it with its notes linked and an **Install update** button that installs over the running copy, and `parlo update` does the same from a terminal. Guide: [docs/APP.md](docs/APP.md).
 
 Everything below is also available on the command line.
 

@@ -12,7 +12,7 @@ Prove the pipeline on modest hardware. Command line only, echo engine, no models
 
 Turn the prototype into something that survives a real call: a local engine service with a stable protocol, cold start measured, a reproducible benchmark, and an authenticated local API bound to `127.0.0.1`.
 
-**Exit criterion:** 30 minutes of continuous audio without failure or latency drift, and a benchmark a second person can reproduce.
+**Exit criterion:** 30 minutes of continuous audio without failure or latency drift, and a benchmark a second person can reproduce. The thirty minute soak passed on Windows with zero errors and no latency drift, while cold start and an independent reproduction remain open.
 
 ## v0.3 Engines
 

@@ -12,18 +12,20 @@ The command prints the token and the address, then opens the browser with the to
 
 ## What the screen does
 
-| Control | What happens |
+The page is a single column built around the one thing you do most:
+
+| Part of the screen | What happens |
 |---|---|
-| Main control | Hold it to speak, or click once to start and again to stop. The clip goes to the local server and comes back translated. |
-| Input level | Shows the microphone while you speak, so a muted or wrong device is visible before you record. |
-| Playback | The translated voice plays back on the same screen as soon as the engine returns it. |
-| Status | The engine in use and how long the app has been running. |
+| Top strip | The running version, and the update banner when a newer release exists, with the notes linked. |
+| Record card | The large control at the centre with the input level inside it. Hold it to speak, or click once to start and again to stop; it pulses while it listens, and the clip goes to the local server. |
+| Result card | The translated sentence, selectable so a name or a word can be copied, and the translated voice playing back under it. |
+| Status group | The engine in use and how long the app has been running. |
 
 ## Updates
 
-Stable releases are tags `vX.Y.Z`. Every push to `main` also becomes the `nightly` prerelease, so a change is downloadable within minutes of being committed.
+Releases are tags `vX.Y.Z`, and only a tagged release reaches a user: nothing is published per commit, so the version in the banner is a release and never a change that happened to land on `main`.
 
-The interface checks the release feed when it starts and shows a banner when a newer release exists, with its notes linked. The same banner carries an **Install update** button: it asks the local server, which downloads the build, stages it and replaces the binary a couple of seconds after the server stops, so the page loses its connection for a moment on purpose. Start `parlo app` again and the new version runs. Nothing is installed without that click.
+The interface checks the latest published release when it starts and shows a slim banner with its version and a link to the notes. The same banner carries an **Install update** button: it asks the local server, which downloads the build, stages it and replaces the binary a couple of seconds after the server stops, so the page loses its connection for a moment on purpose. Start `parlo app` again and the new version runs. Nothing is installed without that click.
 
 To install that update over the running copy, without uninstalling anything:
 
