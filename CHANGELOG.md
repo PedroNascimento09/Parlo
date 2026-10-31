@@ -6,7 +6,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
-- The cascade defaults to the `base` recogniser, which reaches 0.56 real time factor on 4 threads; `tiny` is available for weak hardware and `small` needs 8 or more cores.
+- The cascade uses Parakeet TDT 0.6B v3 through sherpa-onnx for recognition: 0.113 real time factor on 4 threads with a 2.5 second window, against 0.309 for Whisper `base`, with fewer name errors. `PARLO_CASCADE_STT=whisper` keeps the old recogniser, and `PARLO_CASCADE_MODEL` applies only to it.
+- The setup script downloads Parakeet by default, and caches Whisper only when asked with `--stt whisper`.
 - Models warm up at startup, moving the 12 to 21 second load time away from the first sentence.
 - A glossary file corrects names the recogniser mishears, starting with `Parlo`.
 
@@ -20,6 +21,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - CPU cascade engine: faster-whisper, Argos, and Piper translate Portuguese and English in both directions, offline, at about 2.6 seconds per 1.2 second segment on a 12 core CPU. The output voice follows the target language.
 - `parlo translate --engine cascade` streams audio through the cascade sidecar.
+- `parlo record` captures the microphone to a WAV for benchmarks, and `scripts/compare.py` runs two recognisers over the same recordings.
+- `scripts/stt_bench.py` measures a recogniser alone, with a fixed thread count and window.
 - `parlo engines` lists available engines with licenses, hardware, and voice levels.
 - `parlo profile` recommends a hardware profile and voice level from the detected CPU.
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.

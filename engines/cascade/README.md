@@ -4,8 +4,8 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 
 | Stage | Component | Licence |
 |---|---|---|
-| Voice detection | faster-whisper built-in VAD | MIT |
-| Speech recognition | faster-whisper (`base`, int8) | MIT |
+| Voice detection | Parlo pipeline gate (RMS with hangover) | MIT |
+| Speech recognition | Parakeet TDT 0.6B v3 int8 via sherpa-onnx | CC-BY-4.0 model, Apache-2.0 runtime |
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
 | Speech synthesis | Piper (`pt_BR-faber-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
 
@@ -25,7 +25,7 @@ python -m venv .venv
 
 On Linux and macOS replace `.venv/Scripts/python` with `.venv/bin/python`.
 
-The setup script downloads the Piper voice, installs the Argos Portuguese to English package, and caches the Whisper weights for the default model. Everything lands in `engines/cascade/models` and the user's model cache, both outside Git.
+The setup script downloads the Piper voices, the Parakeet v3 model, and the Argos Portuguese to English packages. Add `--stt whisper` to cache faster-whisper instead, or `--stt both`. Everything lands in `engines/cascade/models` and the user's model cache, both outside Git.
 
 ## Run
 
@@ -52,15 +52,14 @@ Audio arrives in 20 ms frames. The engine buffers them until it has at least 2.5
 | 2.5 s | 0.96, roughly keeps up |
 | 4.0 s | 1.15, one slow call |
 
-The recogniser matters more than the window. With 4 threads, which approximates an ordinary laptop:
+The recogniser matters more than the window. With 4 threads, which approximates an ordinary laptop, on 4.95 s of audio:
 
-| Model | RTF | Words lost |
+| Recogniser | RTF, 2.5 s window | RTF, whole utterance |
 |---|---|---|
-| tiny | 0.50 | many |
-| base (default) | 0.56 | few |
-| small | 0.98 | fewest |
+| parakeet v3 (default) | **0.113** | 0.092 |
+| whisper base | 0.309 | 0.153 |
 
-Set `PARLO_CASCADE_MODEL=tiny` on very weak hardware, `small` only with 8 or more cores. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition is the whole bill.
+Parakeet is the default because it is both faster and more accurate. `PARLO_CASCADE_STT=whisper` switches back, and only then does `PARLO_CASCADE_MODEL` (`tiny`, `base`, `small`) matter. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition was the whole bill and no longer is.
 
 This is the "fast consecutive" mode from the plan, not simultaneous speech.
 

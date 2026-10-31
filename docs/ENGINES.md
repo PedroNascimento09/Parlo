@@ -31,7 +31,7 @@ Rules an adapter must follow:
 | `hibiki` | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | `cloud` | Voice | Any | Vendor terms | Opt-in, off by default |
 
-The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today in both directions: faster-whisper `small` int8, Argos, and a Piper neutral voice in the target language. Measured at 2.6 to 2.7 seconds per 1.2 second segment on a 12 core CPU with no GPU.
+The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today in both directions: Parakeet TDT 0.6B v3 int8 through sherpa-onnx, Argos, and a Piper neutral voice in the target language. The recogniser is CC-BY-4.0, the runtime Apache-2.0. Measured at 0.113 real time factor on 4 threads with a 2.5 second window; Whisper base remains available with `PARLO_CASCADE_STT=whisper` at 0.309.
 
 Two policies are enforced by tests:
 
@@ -95,7 +95,7 @@ All must be checked for license, quality, and speed in v0.2. This is an evaluati
 | Stage | Candidates | Note |
 |---|---|---|
 | Voice detection | Silero VAD, TEN VAD | Light, CPU friendly |
-| Speech recognition | whisper.cpp or faster-whisper, sherpa-onnx streaming, Parakeet ONNX | LocalAgreement streaming for stable text |
+| Speech recognition | Parakeet v3, chosen; whisper.cpp and sherpa-onnx streaming as alternatives | LocalAgreement streaming for stable text |
 | Translation | Opus-MT via CTranslate2, MADLAD-400, small quantised LLMs | Avoid non-commercial weights by default |
 | Speech synthesis | Kokoro, Piper, Chatterbox, OpenVoice, Pocket TTS | Cloning on CPU is the hard part |
 | Voice conversion | OpenVoice, kNN-VC | Fast TTS, then match the timbre |

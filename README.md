@@ -14,7 +14,7 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline, using MIT models for recognition and translation and Piper for the neutral voice. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured at **0.56 real time factor on 4 threads** with the base model, which is the honest number for an ordinary laptop. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
 
 ---
 
@@ -38,11 +38,11 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic` | Working |
+| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic`, `record` | Working |
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
-| Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.56 on 4 threads with the base model |
+| Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.11 on 4 threads with Parakeet v3 |
 | Hibiki-Zero premium engine | Optional, not wired |
 | Desktop app | Not started |
 
@@ -90,10 +90,10 @@ default engine: cascade (MIT)
 ```bash
 cargo run --release -p parlo-cli -- record --list
 cargo run --release -p parlo-cli -- record out/voice-01.wav --seconds 6
-python engines/cascade/scripts/compare.py out/voice --models base small --threads 4
+python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisper --threads 4
 ```
 
-Ten short recordings are enough to decide between `base` and `small` on your own microphone, which is the only honest way to measure this.
+Ten short recordings are enough to compare Parakeet and Whisper on your own microphone, which is the only honest way to measure this.
 
 Building the recorder on Linux needs the ALSA headers: `sudo apt install libasound2-dev pkg-config`. With no microphone attached, `record --list` prints nothing and `record` says so instead of writing a silent file.
 

@@ -4,19 +4,28 @@ Published numbers are the difference between a project people trust and a demo p
 
 ## Published results
 
-Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: faster-whisper `small` int8, Argos Portuguese to English, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
+Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: Parakeet TDT 0.6B v3 int8 via sherpa-onnx, Argos Portuguese to English, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
 
 ### Recogniser choice on modest hardware
 
-To approximate an ordinary laptop, the recogniser was limited to 4 threads on the same 12 core machine. 4.95 s of Portuguese audio, 2.5 s segment window.
+To approximate an ordinary laptop, the recogniser was limited to 4 threads on the same 12 core machine. 4.95 s of Portuguese audio, 2.5 s segment window, five runs each, mean reported.
+
+| Recogniser | Size | RTF | Transcript |
+|---|---|---|---|
+| **Parakeet v3** | 640 MB int8 | **0.113** | "Este é um teste do palo. Só a falar em... português para ver se a tradução funciona bem." |
+| Whisper base | 145 MB int8 | 0.309 | "Oh, este é um teste do palo. Só vou falar em... Poto guias para ver se a tradução funciona bem." |
+
+Whole utterance, without the 2.5 s window: Parakeet 0.092, Whisper base 0.153. Parakeet is both faster and more accurate here, and it does not invent the "Oh" that Whisper adds to a clipped first syllable.
+
+Earlier measurements on the superseded Whisper-only engine, kept for comparison:
 
 | Model | Threads | RTF | Segment | Transcript |
 |---|---|---|---|---|
 | tiny | 4 | **0.50** | 748 ms | "Oh, and full of Parlo's test..." |
-| base | 4 | **0.56** | 1092 ms | "Oh, this is a Parlo test..." |
+| base | 4 | 0.56 | 1092 ms | "Oh, this is a Parlo test..." |
 | small | 4 | 0.98 | 3042 ms | "Hello, this is Paul's test..." |
 
-Same engine, segment window sweep with small on 12 threads:
+Segment window sweep with Whisper small on 12 threads:
 
 | Window | Wall time for 4.95 s | RTF | Calls |
 |---|---|---|---|
@@ -26,11 +35,11 @@ Same engine, segment window sweep with small on 12 threads:
 
 Per stage on a 4.95 s block: recognition 3.39 s, translation under 0.05 s, synthesis 0.28 s. Recognition is the cost; translation is not the problem.
 
-**Decision taken:** `base` is the default. `tiny` reaches 0.50 but loses words; `small` needs 8 or more cores. Even `base` only reaches 0.56 on 4 threads, so the conversational headroom is thin, and the remainder belongs to v0.2 optimisations, not to more polishing of a prototype.
+**Decision taken:** Parakeet v3 is the default. It reaches 0.113 on 4 threads, which is 4.4 times under the 0.5 comfort target and 2.7 times faster than Whisper base at the same window, and its transcript keeps more words. `PARLO_CASCADE_STT=whisper` keeps faster-whisper as a fallback for machines where the 640 MB model is too much. The recogniser is no longer the bottleneck; the remaining latency is the 2.5 second window plus synthesis, which is why the next measurement has to be a live microphone.
 
 Warm-up now loads every model at startup: 12 to 21 seconds before the first request, instead of the same wait on the first sentence.
 
-What this means, plainly: **the real time gate is only just met.** Below 0.5 is the target for comfort and nothing measured here is comfortably below it.
+What this means, plainly: **the real time gate is met with margin on the recogniser.** 0.113 leaves room for a second stream or a slower laptop. This says nothing yet about perceived latency, which also contains the window, capture, buffers and synthesis.
 
 ### Latency, corrected
 
@@ -42,12 +51,12 @@ parlo record out/voice-01.wav --seconds 6
 
 ### Measurement validity
 
-Everything above uses synthetic Piper speech, which the recogniser reads worse than a real voice. The comparison of `base` and `small` therefore proves a direction, not a final ranking, and it does not prove anything about a 4 core laptop: limiting threads on a 12 core desktop approximates core count, not clock speed, memory bandwidth, or thermal throttling.
+Everything above uses synthetic Piper speech. The comparison of Parakeet and Whisper therefore proves a direction, not a final ranking, and it does not prove anything about a 4 core laptop: limiting threads on a 12 core desktop approximates core count, not clock speed, memory bandwidth, or thermal throttling.
 
-The decisive test is ten recordings of a real voice, run through both models:
+The decisive test is ten recordings of a real voice, run through both recognisers:
 
 ```bash
-python engines/cascade/scripts/compare.py out/voice --models base small --threads 4
+python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisper --threads 4
 ```
 
 Not measured yet, and blank on purpose: perceived latency through a live microphone, RAM and VRAM, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
