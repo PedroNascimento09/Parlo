@@ -1,5 +1,6 @@
+use std::sync::mpsc::{self, RecvTimeoutError};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::FromSample;
@@ -18,22 +19,13 @@ pub fn devices() -> Result<Vec<String>, String> {
         .collect())
 }
 
-pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, String> {
-    let host = cpal::default_host();
-    let device = match device_index {
-        Some(index) => host
-            .input_devices()
-            .map_err(|error| error.to_string())?
-            .nth(index)
-            .ok_or_else(|| format!("input device {index} does not exist"))?,
-        None => host
-            .default_input_device()
-            .ok_or_else(|| "no input device available".to_string())?,
-    };
+pub fn input_format(device_index: Option<usize>) -> Result<AudioFormat, String> {
+    let (_, supported) = open(device_index)?;
+    AudioFormat::mono(supported.sample_rate().0).map_err(|error| error.to_string())
+}
 
-    let supported = device
-        .default_input_config()
-        .map_err(|error| format!("cannot read the input format: {error}"))?;
+pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, String> {
+    let (device, supported) = open(device_index)?;
     let config: cpal::StreamConfig = supported.config();
     let rate = config.sample_rate.0;
     let seconds = seconds.max(0.5);
@@ -69,6 +61,63 @@ pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, S
     })
 }
 
+pub fn chunks<F>(seconds: f32, device_index: Option<usize>, mut on_chunk: F) -> Result<(), String>
+where
+    F: FnMut(Vec<f32>) -> bool,
+{
+    let (device, supported) = open(device_index)?;
+    let config: cpal::StreamConfig = supported.config();
+    let (sender, receiver) = mpsc::channel();
+
+    let stream = match supported.sample_format() {
+        cpal::SampleFormat::F32 => build_block_stream::<f32>(&device, &config, sender)?,
+        cpal::SampleFormat::I16 => build_block_stream::<i16>(&device, &config, sender)?,
+        cpal::SampleFormat::U16 => build_block_stream::<u16>(&device, &config, sender)?,
+        cpal::SampleFormat::I32 => build_block_stream::<i32>(&device, &config, sender)?,
+        other => return Err(format!("unsupported sample format: {other}")),
+    };
+
+    stream
+        .play()
+        .map_err(|error| format!("cannot start capture: {error}"))?;
+    let deadline = Instant::now() + Duration::from_secs_f32(seconds.max(0.5));
+
+    while Instant::now() < deadline {
+        match receiver.recv_timeout(Duration::from_millis(100)) {
+            Ok(block) => {
+                if !on_chunk(block) {
+                    break;
+                }
+            }
+            Err(RecvTimeoutError::Timeout) => continue,
+            Err(RecvTimeoutError::Disconnected) => break,
+        }
+    }
+
+    drop(stream);
+    Ok(())
+}
+
+fn open(
+    device_index: Option<usize>,
+) -> Result<(cpal::Device, cpal::SupportedStreamConfig), String> {
+    let host = cpal::default_host();
+    let device = match device_index {
+        Some(index) => host
+            .input_devices()
+            .map_err(|error| error.to_string())?
+            .nth(index)
+            .ok_or_else(|| format!("input device {index} does not exist"))?,
+        None => host
+            .default_input_device()
+            .ok_or_else(|| "no input device available".to_string())?,
+    };
+    let supported = device
+        .default_input_config()
+        .map_err(|error| format!("cannot read the input format: {error}"))?;
+    Ok((device, supported))
+}
+
 fn build_stream<T>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
@@ -87,6 +136,36 @@ where
                     for frame in input.chunks(channels) {
                         let sum: f32 = frame.iter().map(|sample| f32::from_sample_(*sample)).sum();
                         samples.push(sum / frame.len() as f32);
+                    }
+                }
+            },
+            |error| eprintln!("audio input error: {error}"),
+            None,
+        )
+        .map_err(|error| format!("cannot open the input stream: {error}"))
+}
+
+fn build_block_stream<T>(
+    device: &cpal::Device,
+    config: &cpal::StreamConfig,
+    sender: mpsc::Sender<Vec<f32>>,
+) -> Result<cpal::Stream, String>
+where
+    T: cpal::SizedSample,
+    f32: cpal::FromSample<T>,
+{
+    let channels = config.channels as usize;
+    let block = (config.sample_rate.0 as usize / 50).max(1);
+    let mut buffer = Vec::with_capacity(block);
+    device
+        .build_input_stream(
+            config,
+            move |input: &[T], _: &cpal::InputCallbackInfo| {
+                for frame in input.chunks(channels) {
+                    let sum: f32 = frame.iter().map(|sample| f32::from_sample_(*sample)).sum();
+                    buffer.push(sum / frame.len() as f32);
+                    if buffer.len() >= block && sender.send(std::mem::take(&mut buffer)).is_err() {
+                        return;
                     }
                 }
             },

@@ -25,6 +25,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `parlo record` captures the microphone to a WAV for benchmarks, and `scripts/compare.py` runs two recognisers over the same recordings.
 - `scripts/stt_bench.py` measures a recogniser alone, with a fixed thread count and window.
 - `scripts/memory.py` measures peak memory of a real run: 1302 MB with Parakeet, including the 640 MB model.
+- `parlo listen` captures the microphone continuously, translates it through the cascade, and reports the time until the first translated audio.
 - `parlo engines` lists available engines with licenses, hardware, and voice levels.
 - `parlo profile` recommends a hardware profile and voice level from the detected CPU.
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.

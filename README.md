@@ -38,7 +38,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic`, `record` | Working |
+| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic`, `record`, `listen` | Working |
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
@@ -94,6 +94,14 @@ python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisp
 ```
 
 Ten short recordings are enough to compare Parakeet and Whisper on your own microphone, which is the only honest way to measure this.
+
+To translate live, without writing a file first:
+
+```bash
+cargo run --release -p parlo-cli -- listen out/live.wav --seconds 10
+```
+
+`listen` prints how long it ran, how many frames passed the voice gate, and **how many seconds after start the first translated audio was ready**. Playback is still the virtual microphone's job; this writes a file.
 
 Building the recorder on Linux needs the ALSA headers: `sudo apt install libasound2-dev pkg-config`. With no microphone attached, `record --list` prints nothing and `record` says so instead of writing a silent file.
 
