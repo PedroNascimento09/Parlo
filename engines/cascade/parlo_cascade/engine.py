@@ -7,10 +7,12 @@ import wave
 from dataclasses import dataclass
 from pathlib import Path
 
+from .models import models_dir
+
 SAMPLE_RATE = 16_000
 MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
-MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
+MODEL_DIR = models_dir()
 REQUIRED_MODULES = ("argostranslate", "piper", "numpy", "sherpa_onnx")
 DEFAULT_THREADS = 4
 STT_BACKENDS = ("parakeet", "whisper")

@@ -1,9 +1,14 @@
 import argparse
+import sys
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-MODELS = ROOT / "models"
+sys.path.insert(0, str(ROOT))
+
+from parlo_cascade.models import models_dir
+
+MODELS = models_dir()
 VOICES = {
     "pt_BR-faber-medium": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx",
     "en_US-lessac-medium": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx",
@@ -68,7 +73,7 @@ def warm_translation(source: str, target: str) -> None:
     print(f"cached    sentence model for {source}->{target}")
 
 
-def main() -> int:
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stt", choices=["parakeet", "whisper", "both"], default="parakeet")
     parser.add_argument(
@@ -76,7 +81,7 @@ def main() -> int:
         choices=["tiny", "base", "small", "medium", "large-v3"],
         default="base",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     install_voices()
     if args.stt in ("parakeet", "both"):

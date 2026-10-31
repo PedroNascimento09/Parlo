@@ -10,6 +10,7 @@ from .engine import (
     resample,
     rms,
 )
+from .models import data_root, models_dir
 
 __all__ = [
     "CascadeEngine",
@@ -22,5 +23,7 @@ __all__ = [
     "pcm16_to_float",
     "resample",
     "rms",
+    "data_root",
+    "models_dir",
 ]
 __version__ = "0.1.0"
