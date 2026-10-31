@@ -4,23 +4,23 @@ A virtual microphone is a device other apps can select while Parlo writes audio 
 
 ## Linux: PipeWire
 
-No driver required. Create a null sink once:
+No driver required. Parlo creates and removes the null sink for you:
+
+```bash
+parlo mic setup
+parlo mic status
+parlo mic remove
+```
+
+Under the hood these are ordinary PipeWire commands, if you prefer doing it by hand:
 
 ```bash
 pactl load-module module-null-sink sink_name=parlo sink_properties=device.description=Parlo
+pactl list short modules
+pactl unload-module <id>
 ```
 
-Then:
-
-```bash
-pw-link parlo:monitor_input_0 parlo:monitor_output_0
-```
-
-In Zoom, Meet, or Discord, select monitor `Parlo` as the microphone. To remove it:
-
-```bash
-pactl unload-module module-null-sink
-```
+In Zoom, Meet, or Discord, select the monitor of `Parlo` as the microphone. `parlo mic setup` is idempotent: running it twice reports the existing module instead of creating a second sink.
 
 This is the only platform where the virtual microphone can ship without signing anything, which is why Linux comes first.
 
