@@ -6,6 +6,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- Piper is GPL-3.0-or-later, not MIT. It stays a separate, user-installed program; the registry and documentation now say so.
+- The cascade segment window defaults to 2.5 seconds and is configurable with `PARLO_CASCADE_SEGMENT`; at 1.2 seconds the real time factor was 2.66.
+- Speech recognition runs without beam search and without a second voice activity filter, since the pipeline already gates silence.
+
 - The default engine is now the universal CPU cascade with permissive licenses; Hibiki-Zero becomes an optional premium engine because its weights are CC BY-NC-SA 4.0.
 
 ### Added
