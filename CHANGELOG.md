@@ -48,6 +48,16 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Measured latency and quality benchmarks.
 - Linux virtual microphone automation.
 
+## [0.1.2] - 2026-10-31
+
+### Added
+
+- `parlo update` reads the release feed, downloads the build for the platform, and replaces the running binary about two seconds after it exits, keeping the old one beside it as `parlo.previous`; `--check` reports the two versions and changes nothing.
+
+### Changed
+
+- Release titles are the version alone, `vX.Y.Z`, with no codename after it.
+
 ## [0.1.1] - 2026-10-31
 
 ### Added
