@@ -27,17 +27,17 @@ An initial model, written against the code as it is, not as it might be. It name
 - JSON bodies are escaped before they are written (`serve::json_string`), so a Windows path in an error message cannot break the response.
 - The page talks to two places only: the local server, and `https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest` for the update check. It loads no font, script or image from anywhere else.
 - There is no telemetry, no analytics and no HTTP client in the Rust core. Audio is not part of any request except the loopback one that translates it.
-- Updating keeps the previous binary as `parlo.previous` (`update::replace_running`), so a bad release is recoverable by renaming one file.
+- Model downloads are verified. `setup_models.py` asks the Hugging Face API for the sha256 it publishes for every file, streams the download into a `.part` file while hashing it, compares the size as well, and only renames it into place when both match. A mismatch deletes the part file and stops the install. When the metadata call itself fails, it warns once and falls back to the size check, so an offline-ish install still works.
 
 ## What is not in place yet
 
 - **No `Origin` or `Host` validation.** A page the user visits can still fire a request at the loopback server; the token is what stops it from succeeding, not the request's origin. DNS rebinding is possible in the same way, and neither is mitigated in code today.
-- **No checksum or signature on downloaded files.** Neither the release archives nor the model files are verified against a published digest before they are used. `softprops`-built releases carry no signatures, and `update::install` extracts and swaps whatever arrived.
+- **No checksum or signature on release archives.** The model files are checked against the digest the Hugging Face API publishes, but the release archive is not: `softprops`-built releases carry no signatures and `update::install` extracts and swaps whatever arrived, so a compromised release feed is still code execution on the next start.
+- **The model integrity check trusts the transport and the API.** The sha256 comes from the same host over HTTPS, so an attacker who can lie about the file can usually lie about the digest too. It catches a corrupted or truncated download, a mirror serving the wrong bytes, and a file replaced on disk; it does not catch a compromised Hugging Face account. A digest pinned in the repository, published with each release, would close that gap.
 - **Page and API share one origin.** The interface is served by the same server as the API, so there is no browser-enforced separation between them.
 - **No rate limiting.** The token comparison is cheap, but nothing slows down repeated attempts to guess one, and nothing limits repeated translation requests.
 - **The token lives in a URL.** It appears in the browser address bar, in history, and in anything that logs URLs. It is not rotated, and every start of `parlo app` produces a new one only because the process restarts.
 - **The sidecar trusts the Python on disk.** `SidecarEngine::spawn` runs `serve.py` with the interpreter it finds (`PARLO_PYTHON`, then `.venv`, then `python`), so a modified script or a shadowed interpreter runs with the user's rights.
-- **The model download runs a local script.** `models::install` starts `engines/cascade/scripts/setup_models.py`, and that script fetches files from an external host with no integrity check.
 - **`parlo.previous` is written beside the binary** without checking the directory's permissions, so on a shared or oddly permissioned install it could be readable or writable by someone else.
 
 ## What you can do
