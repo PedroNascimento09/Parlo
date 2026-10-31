@@ -1,12 +1,13 @@
 import importlib.util
 import io
+import os
 import time
 import wave
 from dataclasses import dataclass
 from pathlib import Path
 
 SAMPLE_RATE = 16_000
-MIN_SEGMENT_SECONDS = 1.2
+MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
 REQUIRED_MODULES = ("faster_whisper", "argostranslate", "piper", "numpy")
@@ -74,6 +75,7 @@ class CascadeEngine:
         self.source = source
         self.target = target
         self.target_languages = (target,)
+        self.min_segment = float(os.environ.get("PARLO_CASCADE_SEGMENT", MIN_SEGMENT_SECONDS))
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
         self._ready = available()
@@ -96,7 +98,7 @@ class CascadeEngine:
 
         self._buffer.extend(pcm16)
         buffered = pcm16_to_float(bytes(self._buffer))
-        if len(buffered) < int(MIN_SEGMENT_SECONDS * SAMPLE_RATE):
+        if len(buffered) < int(self.min_segment * SAMPLE_RATE):
             return Translation(b"", None, 0)
 
         self._buffer.clear()
@@ -121,7 +123,9 @@ class CascadeEngine:
         segments, _ = self._stt.transcribe(
             np.asarray(samples, dtype="float32"),
             language=self.source,
-            vad_filter=True,
+            vad_filter=False,
+            beam_size=1,
+            condition_on_previous_text=False,
         )
         return " ".join(segment.text.strip() for segment in segments).strip()
 

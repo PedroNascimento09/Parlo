@@ -42,6 +42,15 @@ class EngineTest(unittest.TestCase):
     def test_reports_availability_as_a_boolean(self):
         self.assertIsInstance(CascadeEngine().available, bool)
 
+    def test_segment_window_can_be_configured(self):
+        import os
+
+        os.environ["PARLO_CASCADE_SEGMENT"] = "3.5"
+        try:
+            self.assertEqual(CascadeEngine().min_segment, 3.5)
+        finally:
+            os.environ.pop("PARLO_CASCADE_SEGMENT", None)
+
 
 if __name__ == "__main__":
     unittest.main()
