@@ -47,7 +47,17 @@ analysis = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    excludes=["tkinter", "matplotlib", "pytest", "IPython"],
+    excludes=[
+        "tkinter",
+        "matplotlib",
+        "pytest",
+        "IPython",
+        "torchaudio",
+        "torchvision",
+        "av",
+        "pandas",
+        "matplotlib",
+    ],
     noarchive=False,
 )
 
@@ -56,9 +66,8 @@ pyz = PYZ(analysis.pure)
 exe = EXE(
     pyz,
     analysis.scripts,
-    analysis.binaries,
-    analysis.datas,
     [],
+    exclude_binaries=True,
     name="parlo-engine",
     debug=False,
     bootloader_ignore_signals=False,
@@ -66,4 +75,13 @@ exe = EXE(
     upx=False,
     noupx=True,
     console=True,
+)
+
+COLLECT(
+    exe,
+    analysis.binaries,
+    analysis.datas,
+    strip=False,
+    upx=False,
+    name="parlo-engine",
 )

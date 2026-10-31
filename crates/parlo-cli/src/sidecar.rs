@@ -79,8 +79,13 @@ pub fn bundled_engine() -> Option<PathBuf> {
     } else {
         "parlo-engine"
     };
-    let beside = std::env::current_exe().ok()?.parent()?.join(name);
-    beside.is_file().then_some(beside)
+    let directory = std::env::current_exe().ok()?.parent()?.to_path_buf();
+    let beside = directory.join(name);
+    if beside.is_file() {
+        return Some(beside);
+    }
+    let bundled = directory.join("parlo-engine").join(name);
+    bundled.is_file().then_some(bundled)
 }
 
 impl SidecarEngine {
