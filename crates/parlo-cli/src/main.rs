@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
+use parlo_core::gain::{normalize, peak as peak_amplitude};
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
@@ -381,13 +382,11 @@ fn record_command(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
 
-    let recording = record::capture(seconds, device)?;
+    let mut recording = record::capture(seconds, device)?;
     let rate = recording.format.sample_rate();
     let duration = recording.samples.len() as f32 / rate as f32;
-    let peak = recording
-        .samples
-        .iter()
-        .fold(0.0f32, |highest, sample| highest.max(sample.abs()));
+    let peak = peak_amplitude(&recording.samples);
+    let gain = normalize(&mut recording.samples);
     let wav = Wav {
         format: recording.format,
         samples: recording.samples,
@@ -403,8 +402,11 @@ fn record_command(args: &[String]) -> Result<(), String> {
         path.display()
     );
     println!("  peak             {decibels:.1} dBFS");
-    if peak < 0.03 {
-        println!("  warning          the microphone level is very low, check the input device, mute and gain");
+    if gain > 1.0 {
+        println!("  gain             {:+.1} dB", 20.0 * gain.log10());
+    }
+    if peak < 0.001 {
+        println!("  warning          the microphone captured almost nothing, check the input device, mute and gain");
     }
     Ok(())
 }

@@ -38,7 +38,7 @@ $prompts = @(
 
 Write-Host ""
 Write-Host "TESTE DE VOZ DO PARLO"
-Write-Host "Fala alto e claro, a um palmo do microfone."
+Write-Host "Fala em voz normal, a um palmo do microfone."
 Write-Host ""
 
 $chosen = $Device
@@ -56,7 +56,7 @@ if ($null -eq $chosen) {
             if ($level -gt $best) { $best = $level; $bestIndex = [int]$matches[1] }
         }
     }
-    if (($null -eq $bestIndex) -or ($best -lt -34)) {
+    if (($null -eq $bestIndex) -or ($best -lt -45)) {
         Write-Host ""
         Write-Host "NENHUM DISPOSITIVO OUVIU VOZ."
         Write-Host "Fala durante a sonda, e verifica Definicoes > Sistema > Som > Entrada."
@@ -77,7 +77,8 @@ for ($i = 1; $i -le $Clips; $i++) {
     $chunk = & $exe record (Join-Path $voice ("{0:D2}.wav" -f $i)) --seconds $Seconds --device $chosen 2>&1
     $chunk | ForEach-Object { Write-Host $_ }
     $lines += $chunk
-    if (($chunk | Out-String) -match "level is very low") {
+    $output = $chunk | Out-String
+    if ($output -match "captured almost nothing") {
         Write-Host ""
         Write-Host "O MICROFONE NAO ESTA A CAPTAR VOZ."
         Write-Host "Antes de repetir, verifica no Windows:"
@@ -88,6 +89,9 @@ for ($i = 1; $i -le $Clips; $i++) {
         Write-Host "Depois corre TESTAR-VOZ.cmd outra vez."
         $lines | Set-Content -Path $report -Encoding UTF8
         exit 1
+    }
+    if ($output -match "gain\s+(\+[0-9.]+) dB") {
+        Write-Host ("O microfone e baixo, a gravacao foi amplificada em {0} dB." -f $matches[1])
     }
 }
 

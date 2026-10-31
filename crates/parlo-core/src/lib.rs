@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod engine;
+pub mod gain;
 pub mod latency;
 pub mod pipeline;
 pub mod resample;

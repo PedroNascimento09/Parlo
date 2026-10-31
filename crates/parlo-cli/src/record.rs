@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::FromSample;
+use parlo_core::gain::peak;
 use parlo_core::AudioFormat;
 
 pub struct Recording {
@@ -23,15 +24,10 @@ pub fn probe(seconds: f32) -> Result<Vec<(usize, String, f32)>, String> {
     let names = devices()?;
     let mut results = Vec::new();
     for (index, name) in names.into_iter().enumerate() {
-        let peak = capture(seconds, Some(index))
-            .map(|recording| {
-                recording
-                    .samples
-                    .iter()
-                    .fold(0.0f32, |highest, sample| highest.max(sample.abs()))
-            })
+        let level = capture(seconds, Some(index))
+            .map(|recording| peak(&recording.samples))
             .unwrap_or(0.0);
-        results.push((index, name, peak));
+        results.push((index, name, level));
     }
     Ok(results)
 }
