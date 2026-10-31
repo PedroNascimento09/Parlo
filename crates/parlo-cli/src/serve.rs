@@ -6,6 +6,14 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Engine, Pipeline, PipelineConfig, Wav};
 
+use crate::update;
+
+#[derive(PartialEq, Eq)]
+enum Flow {
+    Serve,
+    Stop,
+}
+
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 20 * 1024 * 1024;
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -56,8 +64,10 @@ pub fn run(
         };
         let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        if let Err(error) = handle(&mut stream, &token, &mut pipeline, started) {
-            eprintln!("request failed: {error}");
+        match handle(&mut stream, &token, &mut pipeline, started) {
+            Ok(Flow::Serve) => {}
+            Ok(Flow::Stop) => break,
+            Err(error) => eprintln!("request failed: {error}"),
         }
     }
     Ok(())
@@ -68,7 +78,7 @@ fn handle(
     token: &str,
     pipeline: &mut Pipeline,
     started: Instant,
-) -> Result<(), String> {
+) -> Result<Flow, String> {
     let (head, body) = read_http(stream)?;
     let mut lines = head.lines();
     let request = lines.next().unwrap_or_default();
@@ -85,6 +95,74 @@ fn handle(
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
 
+    if method == "GET" && path == "/update" {
+        let latest = match update::latest() {
+            Ok(latest) => latest,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "502 Bad Gateway",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let available = update::is_newer(VERSION, &latest.version);
+        let body = format!(
+            "{{\"current\":\"{VERSION}\",\"latest\":\"{}\",\"available\":{available},\"notes\":\"{}\"}}",
+            json_string(&latest.version),
+            json_string(&latest.notes_url)
+        );
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/update" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let latest = match update::latest() {
+            Ok(latest) => latest,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "502 Bad Gateway",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        if !update::is_newer(VERSION, &latest.version) {
+            return respond_json(stream, "409 Conflict", "{\"error\":\"already up to date\"}")
+                .map(|()| Flow::Serve);
+        }
+        let binary = match update::install(&latest) {
+            Ok(binary) => binary,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        if let Err(error) = update::replace_running(&binary) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let body = format!(
+            "{{\"installed\":true,\"version\":\"{}\"}}",
+            json_string(&latest.version)
+        );
+        respond_json(stream, "200 OK", &body)?;
+        return Ok(Flow::Stop);
+    }
+
     if method == "GET" && path == "/" {
         let page = INDEX.replace("__PARLO_VERSION__", VERSION);
         return respond(
@@ -92,7 +170,8 @@ fn handle(
             "200 OK",
             "text/html; charset=utf-8",
             page.as_bytes(),
-        );
+        )
+        .map(|()| Flow::Serve);
     }
 
     if method == "GET" && path == "/app.css" {
@@ -101,7 +180,8 @@ fn handle(
             "200 OK",
             "text/css; charset=utf-8",
             STYLESHEET.as_bytes(),
-        );
+        )
+        .map(|()| Flow::Serve);
     }
 
     if method == "GET" && path == "/app.js" {
@@ -110,21 +190,24 @@ fn handle(
             "200 OK",
             "text/javascript; charset=utf-8",
             SCRIPT.as_bytes(),
-        );
+        )
+        .map(|()| Flow::Serve);
     }
 
     if path == "/health" {
         let uptime = started.elapsed().as_secs();
         let engine = pipeline.engine_id();
         let body = format!("{{\"status\":\"ok\",\"uptime_s\":{uptime},\"engine\":\"{engine}\"}}");
-        return respond_json(stream, "200 OK", &body);
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
     if method != "POST" || path != "/translate" {
-        return respond_json(stream, "404 Not Found", "{\"error\":\"not found\"}");
+        return respond_json(stream, "404 Not Found", "{\"error\":\"not found\"}")
+            .map(|()| Flow::Serve);
     }
     if !authorised(&headers, token) {
-        return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}");
+        return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+            .map(|()| Flow::Serve);
     }
 
     let wav = match read_pcm16(&body) {
@@ -135,6 +218,7 @@ fn handle(
                 "400 Bad Request",
                 &format!("{{\"error\":\"bad wav: {error}\"}}"),
             )
+            .map(|()| Flow::Serve);
         }
     };
     if wav.format.channels() != 1 || wav.format.sample_rate() != 16_000 {
@@ -142,7 +226,8 @@ fn handle(
             stream,
             "400 Bad Request",
             "{\"error\":\"input must be 16 kHz mono pcm16\"}",
-        );
+        )
+        .map(|()| Flow::Serve);
     }
 
     let mut samples = Vec::new();
@@ -152,8 +237,9 @@ fn handle(
                 return respond_json(
                     stream,
                     "500 Internal Server Error",
-                    &format!("{{\"error\":\"{error}\"}}"),
-                );
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
             }
             if let Some(frame) = output.frame {
                 samples.extend_from_slice(frame.samples());
@@ -165,7 +251,14 @@ fn handle(
         format: AudioFormat::mono(16_000).map_err(|error| error.to_string())?,
         samples,
     };
-    respond(stream, "200 OK", "audio/wav", &write_pcm16(&translated))
+    respond(stream, "200 OK", "audio/wav", &write_pcm16(&translated)).map(|()| Flow::Serve)
+}
+
+fn json_string(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace(['\n', '\r'], " ")
 }
 
 fn open_browser(address: &str) -> Result<(), String> {
@@ -304,6 +397,14 @@ mod tests {
     fn compares_without_short_circuiting_on_length() {
         assert!(!constant_time_eq("abc", "ab"));
         assert!(constant_time_eq("abc", "abc"));
+    }
+
+    #[test]
+    fn json_strings_survive_windows_paths_and_quotes() {
+        assert_eq!(
+            json_string("C:\\temp\\parlo.exe said \"no\""),
+            "C:\\\\temp\\\\parlo.exe said \\\"no\\\""
+        );
     }
 
     #[test]

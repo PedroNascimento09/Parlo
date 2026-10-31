@@ -23,7 +23,7 @@ The command prints the token and the address, then opens the browser with the to
 
 Stable releases are tags `vX.Y.Z`. Every push to `main` also becomes the `nightly` prerelease, so a change is downloadable within minutes of being committed.
 
-The interface checks the release feed when it starts and shows a banner when a newer release exists, with its notes linked. It never installs anything without a click.
+The interface checks the release feed when it starts and shows a banner when a newer release exists, with its notes linked. The same banner carries an **Install update** button: it asks the local server, which downloads the build, stages it and replaces the binary a couple of seconds after the server stops, so the page loses its connection for a moment on purpose. Start `parlo app` again and the new version runs. Nothing is installed without that click.
 
 To install that update over the running copy, without uninstalling anything:
 

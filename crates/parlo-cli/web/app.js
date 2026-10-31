@@ -10,6 +10,8 @@ const errorBox = document.getElementById("error");
 const updateBox = document.getElementById("update");
 const updateVersion = document.getElementById("update-version");
 const updateLink = document.getElementById("update-link");
+const updateText = document.getElementById("update-text");
+const installButton = document.getElementById("update-install");
 const engineEl = document.getElementById("status-engine");
 const uptimeEl = document.getElementById("status-uptime");
 const versionEl = document.getElementById("status-version");
@@ -28,6 +30,7 @@ let recording = false;
 let chunks = [];
 let maxTimer = null;
 let player = null;
+let localUpdate = { available: false, latest: "", notes: "" };
 
 versionEl.textContent = version || "unknown";
 
@@ -310,6 +313,18 @@ function isNewer(candidate, current) {
   return false;
 }
 
+function showUpdate(candidate, notes) {
+  updateVersion.textContent = candidate;
+  if (notes) {
+    updateLink.href = notes;
+  }
+  updateBox.hidden = false;
+}
+
+function allowInstall(allowed) {
+  installButton.hidden = !allowed;
+}
+
 async function checkForUpdate() {
   const response = await fetch("https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest", {
     headers: { Accept: "application/vnd.github+json" },
@@ -322,11 +337,59 @@ async function checkForUpdate() {
   if (!release || !release.tag_name || !isNewer(release.tag_name, version)) {
     return;
   }
-  updateVersion.textContent = release.tag_name;
-  if (release.html_url) {
-    updateLink.href = release.html_url;
+  if (!updateBox.hidden) {
+    return;
   }
+  showUpdate(release.tag_name.replace(/^v/i, ""), release.html_url);
+}
+
+async function checkLocalUpdate() {
+  try {
+    const response = await fetch("/update", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    localUpdate = await response.json();
+    if (!localUpdate.available) {
+      allowInstall(false);
+      return;
+    }
+    showUpdate(localUpdate.latest, localUpdate.notes);
+    allowInstall(true);
+  } catch (failure) {
+    allowInstall(false);
+  }
+}
+
+async function installUpdate() {
+  if (installButton.disabled) {
+    return;
+  }
+  installButton.disabled = true;
+  installButton.textContent = "Installing…";
+  clearError();
   updateBox.hidden = false;
+  try {
+    const response = await fetch("/update", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      updateText.textContent = detail.error || "The update could not be installed. Run parlo update in a terminal instead.";
+      installButton.disabled = false;
+      installButton.textContent = "Install update";
+      return;
+    }
+    const installed = detail.version || localUpdate.latest || "";
+    updateText.textContent = "Parlo " + installed + " is installed. Start parlo app again so the new version runs.";
+    updateLink.hidden = true;
+    installButton.textContent = "Installed";
+  } catch (failure) {
+    updateText.textContent = "The connection to Parlo closed, so the update may already be installed. Start parlo app again to check the version.";
+    updateLink.hidden = true;
+    installButton.textContent = "Start parlo app again";
+  }
 }
 
 talk.addEventListener("pointerdown", (event) => {
@@ -354,7 +417,9 @@ talk.addEventListener("keyup", (event) => {
   }
 });
 
+installButton.addEventListener("click", () => installUpdate());
+
 ensureAudio().catch((failure) => showError(describeMicrophoneError(failure)));
 refreshHealth();
 setInterval(refreshHealth, 5000);
-checkForUpdate().catch(() => {});
+checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));

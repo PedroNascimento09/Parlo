@@ -30,8 +30,11 @@
 
 <main>
   <section class="update" id="update" aria-live="polite" hidden>
-    <p>Parlo <strong id="update-version"></strong> is available. You can install it over this version.</p>
-    <a id="update-link" href="https://github.com/PedroNascimento09/Parlo/releases">See what changed</a>
+    <p id="update-text">Parlo <strong id="update-version"></strong> is available. You can install it over this version.</p>
+    <div class="update-actions">
+      <button id="update-install" class="install" type="button" hidden>Install update</button>
+      <a id="update-link" href="https://github.com/PedroNascimento09/Parlo/releases">See what changed</a>
+    </div>
   </section>
 
   <div class="panel">

@@ -113,6 +113,39 @@ h1 {
   font-weight: 600;
 }
 
+.update-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.install {
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 90ms ease, opacity 120ms ease;
+}
+
+.install:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.install:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.install:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 3px;
+}
+
 .panel {
   padding: 20px;
   border: 1px solid var(--line);
