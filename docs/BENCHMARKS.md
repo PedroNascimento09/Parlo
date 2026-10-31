@@ -102,6 +102,34 @@ The reference battery synthesises 24 Portuguese sentences with the Portuguese Pi
 
 The rate counts a digit against a written number as an error even when the recogniser heard it correctly, so the sentences with a number in them carry the worst rows; the number is a regression signal, not a quality grade. Adding noise did not raise the mean here, which is a sign the noise is mild against this recogniser rather than a claim that noise does not matter. A recorded set from several speakers is still needed before v1.0.
 
+### Two recognisers on the same battery
+
+The same battery, the same seed and the same 4 thread limit were run against both engines. Only the flag that chooses the recogniser changed, which is the point: a comparison is fair when the command around the variable is identical.
+
+```bash
+python engines/cascade/scripts/battery.py --stt parakeet --out out/battery-parakeet.json
+python engines/cascade/scripts/battery.py --stt whisper --model small --out out/battery-whisper.json
+```
+
+| Recogniser | Clean | 20 dB signal to noise | 10 dB signal to noise |
+|---|---|---|---|
+| **Parakeet TDT 0.6B v3 int8** | **0.215** | **0.199** | **0.197** |
+| Whisper small int8 | 0.217 | 0.242 | 0.309 |
+
+On clean speech the two are within a fifth of a percent of each other, which is noise rather than a ranking. The difference appears as the audio gets worse: Whisper small climbs with the noise and Parakeet does not, which matches the earlier finding that Whisper invents words at the start of a clipped syllable. Whisper base, measured on six sentences only before this run, sat around 0.329 clean, so the size of the model matters more than the family.
+
+Parakeet stays the default for two reasons: it holds its rate under noise, and it is about three times faster per the real time factor table above. Whisper stays selectable through `--stt whisper` for machines where the 640 MB model is too much.
+
+### Captions latency
+
+Captions skip the synthesiser, so the wait is the window plus recognition and translation. Warm Parakeet, 1.2 s window, three consecutive segments of the same 6.6 s Portuguese clip: **1266, 1024 and 958 ms of processing**, which puts a caption about **2.2 s** after the speech starts.
+
+The basic profile targets captions under two seconds, and this window does not reach it. The honest fix is a shorter window, bought with accuracy, not a larger claim: the measurement above is what a person will feel, and it is published as it is.
+
+```bash
+parlo captions --window 1.2 --seconds 20
+```
+
 ### Cold start
 
 The first start after a boot, Windows 11, with no model in memory: **18.1 s** from process start to the translated file being written, for one 6 s Portuguese clip from a laptop Realtek microphone.

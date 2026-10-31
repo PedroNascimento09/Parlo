@@ -40,12 +40,13 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic`, `record`, `listen` | Working |
+| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic`, `record`, `listen`, `captions` | Working |
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
 | Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.11 on 4 threads with Parakeet v3 |
 | File dubbing: `parlo dub video.mp4 --to en`, subtitles included | Working, needs ffmpeg |
+| Captions mode: `parlo captions`, translated text with no voice | Working, about 2.2 s behind while speaking |
 | Hibiki-Zero premium engine | Optional, not wired |
 | App interface | Working, opened by `parlo app` in the browser |
 

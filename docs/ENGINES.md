@@ -73,6 +73,21 @@ One honest exception: the default cascade uses Piper for speech synthesis, and `
 
 Hibiki-Zero's weights are **non-commercial**. It can be used at home and in research, not in paid work, and the app must say so before downloading it. The universal cascade exists so nobody is forced into that licence to get a working product.
 
+## Captions mode
+
+Captions are the same cascade with the last stage removed: the recogniser and the translation run, the synthesiser does not, and the text goes to the screen instead of a voice to the speaker. That is voice level 0 in the ladder below, and it is what an older four core laptop can afford.
+
+```bash
+parlo captions
+parlo captions --from en --to pt --window 1.0
+```
+
+The command listens to the microphone, prints one translated line per segment as `[  12.4s] text`, and ends with the number of captions and the time of the first one. It never plays or writes audio. Flags: `--seconds` for how long to listen, `--window` for the segment window in seconds, `--from` and `--to`, `--stt` and `--device`, all the same values as the other commands.
+
+Underneath, the engine runs with `PARLO_CASCADE_CAPTIONS=1`, which skips synthesis, and the segment window defaults to 1.2 s instead of the 2.5 s the voice path uses [in the code](../engines/cascade/parlo_cascade/engine.py). The shorter window is the trade captions make: less waiting, less context for the recogniser.
+
+Measured warm on the reference machine with Parakeet, a 1.2 s window costs 958 to 1266 ms of processing, so a caption lands about 2.2 s after the words begin. The basic profile in [BENCHMARKS.md](BENCHMARKS.md) targets captions in under 2 s, and this does not reach it yet; a shorter window closes the gap and costs words. Publishing the number as it is beats pretending the target is met.
+
 ## Voice fidelity ladder
 
 A voice is a level, not a promise:

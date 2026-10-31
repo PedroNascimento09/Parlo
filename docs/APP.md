@@ -12,7 +12,7 @@ cargo run --release -p parlo-cli -- app
 
 The command prints the token and the address, then opens the browser with the token already in the URL. Keep that terminal window open while you use the interface: closing it stops the app.
 
-Add `--from en --to pt` to translate the other way round; the cascade runs one direction per process, so the pair is fixed when the app starts. `parlo translate` and `parlo listen` take the same two flags.
+The language pair and the recogniser are chosen inside the page, and the same values can be set before it starts with `--from en --to pt --stt whisper`. They are written to the config file, so the next start keeps them. `parlo translate`, `parlo listen` and `parlo captions` take the same flags.
 
 ## What the screen does
 
@@ -23,9 +23,22 @@ The page is a single column built around the one thing you do most:
 | Top strip | The running version, and the update banner when a newer release exists, with the notes linked. |
 | Record card | The large control at the centre with the input level inside it. Hold it to speak, or click once to start and again to stop; it pulses while it listens, and the clip goes to the local server. |
 | Result card | The translated sentence, selectable so a name or a word can be copied, and the translated voice playing back under it. |
+| Settings | Language pair and recogniser, loaded from the server and applied with one button. Changing either reloads the models. |
 | Status group | The engine in use, how long the app has been running, and whether the microphone opened. |
 | Models panel | One row per model with its size on disk or `Missing`, and a **Download models** button when something is absent. It never blocks the record card. |
 | Dub panel | Drop a video or audio file on the page, or pick one, and the local server dubs it into the other language. The translated lines appear while it works and the new file downloads from the same panel. |
+
+## Languages and the recogniser
+
+The settings row offers the two languages whose models ship, Portuguese and English, in either direction, and the two recognisers: **Parakeet**, the default, which measured faster and more accurate on this project's test audio, and **Whisper**, smaller, for a machine that cannot spare the 640 MB. The list of languages is deliberately short: offering a pair without its Argos package and its voice would be a button that fails when pressed.
+
+Applying a change unloads the models and loads the new ones, which takes about twenty seconds on the reference machine, and the page says so while it happens rather than looking frozen. Everything else on the screen keeps working through the wait.
+
+The same choice from a terminal, without opening the page:
+
+```bash
+parlo config --from en --to pt --stt whisper
+```
 
 ## Dub a file
 
