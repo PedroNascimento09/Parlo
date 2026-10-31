@@ -51,7 +51,7 @@ fn print_help() {
     println!("  doctor                             check the local audio setup");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
-    println!("            [--engine echo|sidecar]  pick the engine, default echo");
+    println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!("  engines                            list engines, licenses and voice levels");
     println!("  profile                            detect hardware and recommend a mode");
@@ -286,22 +286,29 @@ fn parse_translate_args(args: &[String]) -> Result<(&String, &String, String), S
     }
     match paths.as_slice() {
         [input, output] => Ok((input, output, engine)),
-        _ => Err("usage: parlo translate <in.wav> <out.wav> [--engine echo|sidecar]".to_string()),
+        _ => Err(
+            "usage: parlo translate <in.wav> <out.wav> [--engine echo|sidecar|cascade]".to_string(),
+        ),
     }
 }
 
 fn build_engine(name: &str) -> Result<Box<dyn Engine>, String> {
     match name {
         "echo" => Ok(Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 1.0))),
-        "sidecar" => {
-            let dir = env::var("PARLO_HIBIKI_DIR")
-                .map(PathBuf::from)
-                .unwrap_or_else(|_| PathBuf::from("engines/hibiki"));
-            let engine = sidecar::SidecarEngine::spawn(&dir).map_err(|error| error.to_string())?;
-            Ok(Box::new(engine))
-        }
-        other => Err(format!("unknown engine: {other}, expected echo or sidecar")),
+        "sidecar" => spawn_sidecar("PARLO_HIBIKI_DIR", "engines/hibiki"),
+        "cascade" => spawn_sidecar("PARLO_CASCADE_DIR", "engines/cascade"),
+        other => Err(format!(
+            "unknown engine: {other}, expected echo, sidecar or cascade"
+        )),
     }
+}
+
+fn spawn_sidecar(variable: &str, fallback: &str) -> Result<Box<dyn Engine>, String> {
+    let dir = env::var(variable)
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from(fallback));
+    let engine = sidecar::SidecarEngine::spawn(&dir).map_err(|error| error.to_string())?;
+    Ok(Box::new(engine))
 }
 
 fn mic_command(args: &[String]) -> Result<(), String> {

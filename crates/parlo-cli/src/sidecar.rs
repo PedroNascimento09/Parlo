@@ -161,9 +161,15 @@ impl Engine for SidecarEngine {
             .map_err(|error| EngineError::Rejected(format!("invalid base64 audio: {error}")))?;
         let format = AudioFormat::mono(response.sample_rate.unwrap_or(self.sample_rate))
             .map_err(|error| EngineError::Rejected(error.to_string()))?;
+        let samples = decode_pcm16(&bytes);
+        let audio = if samples.is_empty() {
+            None
+        } else {
+            Some(Frame::new(format, samples))
+        };
 
         Ok(EngineOutput {
-            audio: Some(Frame::new(format, decode_pcm16(&bytes))),
+            audio,
             transcript: response.text,
         })
     }
