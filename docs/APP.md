@@ -4,6 +4,8 @@ Parlo's interface is served by the same `parlo` binary you already built. Nothin
 
 ## Start it
 
+Double-click `scripts/parlo-app.cmd` on Windows, or run `scripts/parlo-app.sh` on Linux and macOS: the first run builds the binary, then every run opens the interface for you. From a terminal the same thing is:
+
 ```bash
 cargo run --release -p parlo-cli -- app
 ```
