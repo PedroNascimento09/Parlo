@@ -1,62 +1,76 @@
 # Roadmap
 
-Every phase has an exit criterion. A phase is done when the criterion is met, not when the code is written.
+No dates. A phase ends when its exit criterion is met, not when the code is written. If a criterion fails, the phase does not happen.
 
-## v0.1: prototype (current)
+## v0.1 Spark (current)
 
-Streaming pipeline, latency budget, engine contract, CLI, sidecar protocol.
+Prove the pipeline on modest hardware. Command line only, echo engine, no models.
 
-**Exit criterion:** `cargo test` green on Linux, macOS, and Windows; `parlo doctor`, `demo`, and `translate` work without a model.
+**Exit criterion:** pipeline, CLI, engine registry, and microphone commands tested on Linux, macOS, and Windows; licences verified; a demo that makes people ask where to get it.
 
-## v0.2: real speech engine
+## v0.2 Foundation
 
-Wire Hibiki-Zero into the sidecar, stream frames to it, and stream translated audio back. Publish the first real latency and quality numbers.
+Turn the prototype into something that survives a real call: a local engine service with a stable protocol, cold start measured, a reproducible benchmark, and an authenticated local API bound to `127.0.0.1`.
 
-**Exit criterion:** Portuguese to English call between two Parlo instances completes with recognisable voice and median latency under 4 seconds on high profile hardware.
+**Exit criterion:** 30 minutes of continuous audio without failure or latency drift, and a benchmark a second person can reproduce.
 
-## v0.3: virtual microphone
+## v0.3 Engines
 
-Linux PipeWire null sink shipped and automated; macOS and Windows documented guided setup.
+The universal cascade arrives: streaming speech recognition, translation, and text to speech on CPU. Captions mode, hardware profiles, and a switchable engine selector.
 
-**Exit criterion:** a real Zoom or Meet call works end to end on Linux without manual audio configuration after install.
+**Exit criterion:** two engines run the same test suite; the medium profile works inside its documented latency; switching engines requires no core changes.
 
-## v0.4: desktop app
+## v0.4 Dub
 
-Tauri shell, tray icon, first run wizard, push to translate hotkey, captions overlay.
+First public preview that needs no driver and no NVIDIA card: `parlo dub video.mp4 --to en`, with subtitles, authored voice level, and a visible synthetic speech notice.
 
-**Exit criterion:** ten testers complete install and first call without help.
+**Exit criterion:** three people outside the project dub a five minute video without help.
 
-## v0.5: measurable quality
+## v0.5 Native
 
-Fixed test set, BLEU and COMET, voice similarity, resource usage published in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+Own virtual microphone: PipeWire on Linux, an audio plug-in on macOS, a signed driver on Windows. Tray app, installers built in CI.
 
-**Exit criterion:** numbers published with hardware and test set named, reproducible by a second person.
+**Exit criterion:** a clean machine installs and shows Parlo in Zoom, Meet, and Teams in under five minutes, on two operating systems.
 
-## v1.0: public release
+## v0.6 Alpha
 
-Signed installers for macOS, Windows, and Linux; automatic updates; interface in eight languages.
+First run wizard, model manager, captions overlay, global hotkey, per-app profiles. Closed alpha with 10 to 20 people across languages and hardware.
 
-**Exit criterion:** no open critical bugs, install success above 90 percent among beta testers, privacy claims verified by an outside reader.
+**Exit criterion:** 80 percent of testers install alone and complete a call.
 
-## v1.5: both directions
+## v0.8 Beta
 
-System audio capture, cascade engine for any pair, video dubbing mode, custom glossary.
+Three platforms at parity, eight interface languages, accessibility, automatic updates, published benchmarks.
 
-**Exit criterion:** English to Portuguese works, and you can watch a talk in another language with translated audio.
+**Exit criterion:** zero critical bugs in the last round, 90 percent install success.
 
-## v2.0: ecosystem
+## v0.9 Release candidate
 
-Mobile app, engine plugin system, local API, in-person meeting mode, local transcripts.
+Frozen model versions, checksums, SBOM, licence audit, final security review, launch checklist.
 
-**Exit criterion:** a third-party engine plugin ships without changes to the core.
+**Exit criterion:** checklist at 100 percent, five outsiders approve the demo.
+
+## v1.0 Launch
+
+Signed release on GitHub, Homebrew, winget, and Flathub. Launch day plan.
+
+**Exit criterion:** 90 percent install success and a visible, fast response to issues.
+
+## v1.1 to v2.x
+
+| Version | Focus |
+|---|---|
+| v1.1 Hardening | Top 10 issues, more calling apps, better echo handling |
+| v1.2 Listen | Hear others in your language, system audio capture without echo |
+| v1.3 Anything | 20+ input languages with published quality per language |
+| v1.5 Two-way | Two streams, in-person mode, local transcripts |
+| v2.0 Everywhere | Plugin system, mobile app, authenticated local API |
+| v2.x Languages | Community language programme with native speaker review |
 
 ## Deliberately out of scope
 
-- Accounts, login, and cloud sync.
+- Accounts, login, cloud sync.
 - Bots that join your calls.
-- Paid tiers inside the open source project.
-- Cloning a voice from a recording of someone else.
-
-## How to influence this
-
-Open an issue describing the problem you have, not the feature you want. Roadmap order follows real blockers reported by users.
+- Monetisation inside the open source project.
+- Cloning a voice from someone else's recording.
+- Requiring an NVIDIA GPU for any core feature.
