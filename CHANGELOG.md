@@ -6,6 +6,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- The cascade defaults to the `base` recogniser, which reaches 0.56 real time factor on 4 threads; `tiny` is available for weak hardware and `small` needs 8 or more cores.
+- Models warm up at startup, moving the 12 to 21 second load time away from the first sentence.
+- A glossary file corrects names the recogniser mishears, starting with `Parlo`.
+
 - Piper is GPL-3.0-or-later, not MIT. It stays a separate, user-installed program; the registry and documentation now say so.
 - The cascade segment window defaults to 2.5 seconds and is configurable with `PARLO_CASCADE_SEGMENT`; at 1.2 seconds the real time factor was 2.66.
 - Speech recognition runs without beam search and without a second voice activity filter, since the pipeline already gates silence.
