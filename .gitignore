@@ -7,6 +7,10 @@ __pycache__/
 .venv/
 venv/
 
+engines/*/models/
+*.onnx
+*.onnx.json
+
 *.wav
 *.log
 out/
