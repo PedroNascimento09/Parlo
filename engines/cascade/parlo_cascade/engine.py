@@ -10,6 +10,10 @@ MIN_SEGMENT_SECONDS = 1.2
 SILENCE_RMS = 0.01
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
 REQUIRED_MODULES = ("faster_whisper", "argostranslate", "piper", "numpy")
+VOICES = {
+    "pt": "pt_BR-faber-medium.onnx",
+    "en": "en_US-lessac-medium.onnx",
+}
 
 
 class EngineUnavailable(RuntimeError):
@@ -70,7 +74,7 @@ class CascadeEngine:
         self.source = source
         self.target = target
         self.target_languages = (target,)
-        self.voice_path = voice or MODEL_DIR / "pt_BR-faber-medium.onnx"
+        self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
         self._ready = available()
         self._stt = None
