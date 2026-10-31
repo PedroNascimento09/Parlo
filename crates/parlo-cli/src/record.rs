@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::FromSample;
 use parlo_core::AudioFormat;
 
 pub struct Recording {
@@ -84,10 +85,7 @@ where
             move |input: &[T], _: &cpal::InputCallbackInfo| {
                 if let Ok(mut samples) = buffer.lock() {
                     for frame in input.chunks(channels) {
-                        let sum: f32 = frame
-                            .iter()
-                            .map(|sample| f32::from_sample(*sample))
-                            .sum();
+                        let sum: f32 = frame.iter().map(|sample| f32::from_sample_(*sample)).sum();
                         samples.push(sum / frame.len() as f32);
                     }
                 }
