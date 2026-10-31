@@ -14,11 +14,9 @@ $python = Join-Path $root ".venv\Scripts\python.exe"
 $voice = Join-Path $root "out\voice"
 $report = Join-Path $root "out\voice\report.txt"
 
-if (-not (Test-Path $exe)) {
-    Write-Host "A compilar o Parlo, demora um minuto..."
-    cargo build --release -p parlo-cli
-    if ($LASTEXITCODE -ne 0) { throw "a compilacao falhou" }
-}
+Write-Host "A compilar o Parlo, demora um minuto na primeira vez..."
+cargo build --release -p parlo-cli
+if ($LASTEXITCODE -ne 0) { throw "a compilacao falhou" }
 
 New-Item -ItemType Directory -Force -Path $voice | Out-Null
 Get-ChildItem -Path $voice -Filter "*.wav" | Remove-Item -Force -ErrorAction SilentlyContinue
@@ -51,7 +49,7 @@ for ($i = 1; $i -le $Clips; $i++) {
     $chunk = & $exe record (Join-Path $voice ("{0:D2}.wav" -f $i)) --seconds $Seconds 2>&1
     $chunk | ForEach-Object { Write-Host $_ }
     $lines += $chunk
-    if (($chunk | Out-String) -match "nearly silent") {
+    if (($chunk | Out-String) -match "level is very low") {
         Write-Host ""
         Write-Host "O MICROFONE NAO ESTA A CAPTAR VOZ."
         Write-Host "Antes de repetir, verifica no Windows:"

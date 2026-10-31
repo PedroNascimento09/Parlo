@@ -384,10 +384,8 @@ fn record_command(args: &[String]) -> Result<(), String> {
         path.display()
     );
     println!("  peak             {decibels:.1} dBFS");
-    if peak < 0.01 {
-        println!(
-            "  warning          the microphone is nearly silent, check the input device and mute"
-        );
+    if peak < 0.08 {
+        println!("  warning          the microphone level is very low, check the input device, mute and gain");
     }
     Ok(())
 }
