@@ -37,13 +37,13 @@ Existing tools force a trade-off:
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate` | Working |
+| CLI: `doctor`, `demo`, `translate`, `mic` | Working |
 | WAV in / WAV out with honest sample-rate handling | Working |
 | Latency budget and target checks | Working |
 | Virtual microphone: `parlo mic setup`, `status`, `remove` on PipeWire | Working on Linux |
+| macOS and Windows virtual microphone | Documented setup only |
 | Engine sidecar protocol (JSON lines over stdio) | Working, tested |
 | Hibiki-Zero inference | Not wired yet |
-| Virtual microphone | Documented, not shipped |
 | Desktop app | Not started |
 
 The repository is built so the hard, boring parts are already correct: fixed frame sizes, bounded buffers, no hidden allocations per sample, no dependency drift, and a latency number you can inspect instead of a marketing claim.
