@@ -765,6 +765,15 @@ fn update_command(args: &[String]) -> Result<(), String> {
 }
 
 fn app_command(args: &[String]) -> Result<(), String> {
+    if args.is_empty() {
+        if let Some(window) = install::window_binary() {
+            Command::new(&window)
+                .spawn()
+                .map_err(|error| format!("cannot open {}: {error}", window.display()))?;
+            return Ok(());
+        }
+    }
+
     let stored = config::load();
     let mut port = stored.port;
     let mut engine = stored.engine.clone();

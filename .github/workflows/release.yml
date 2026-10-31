@@ -41,13 +41,15 @@ jobs:
 
       - name: Install audio headers
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
       - name: Build
-        run: cargo build --release --locked --target ${{ matrix.target }} -p parlo-cli
+        run: cargo build --release --locked --target ${{ matrix.target }} -p parlo-cli -p parlo-app
 
       - name: Install Python
         uses: actions/setup-python@v5
@@ -75,10 +77,11 @@ jobs:
         run: |
           mkdir -p release
           cp target/${{ matrix.target }}/release/parlo release/
+          cp target/${{ matrix.target }}/release/parlo-app release/
           cp -r engines/cascade/dist/parlo-engine release/
           cp assets/parlo.ico assets/parlo.png release/
           cp README.md release/
-          tar -czf ${{ matrix.archive }} -C release parlo parlo-engine parlo.png parlo.ico README.md
+          tar -czf ${{ matrix.archive }} -C release parlo parlo-app parlo-engine parlo.png parlo.ico README.md
 
       - name: Package windows
         if: runner.os == 'Windows'
@@ -86,10 +89,11 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force release | Out-Null
           Copy-Item target/${{ matrix.target }}/release/parlo.exe release/
+          Copy-Item target/${{ matrix.target }}/release/parlo-app.exe release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
           Copy-Item assets/parlo.ico, assets/parlo.png release/
           Copy-Item README.md release/
-          Compress-Archive -Path release/parlo.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md -DestinationPath ${{ matrix.archive }} -Force
+          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2

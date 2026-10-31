@@ -20,3 +20,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Tauri build artefacts
+crates/parlo-app/gen/

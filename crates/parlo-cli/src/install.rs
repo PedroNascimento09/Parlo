@@ -26,6 +26,16 @@ pub fn install_dir() -> PathBuf {
     }
 }
 
+pub fn window_binary() -> Option<PathBuf> {
+    let name = if cfg!(windows) {
+        "parlo-app.exe"
+    } else {
+        "parlo-app"
+    };
+    let beside = env::current_exe().ok()?.parent()?.join(name);
+    beside.is_file().then_some(beside)
+}
+
 fn marker_path() -> PathBuf {
     config::data_root().join(MARKER)
 }
@@ -70,7 +80,24 @@ pub fn install(dir: Option<PathBuf>, shortcut: bool) -> Result<Vec<String>, Stri
             .map_err(|error| format!("cannot copy {}: {error}", binary.display()))?;
     }
 
+    let mut app = None;
+    if let Some(source) = window_binary() {
+        let destination = target.join(
+            source
+                .file_name()
+                .ok_or_else(|| "the window has no name".to_string())?,
+        );
+        if destination != source {
+            fs::copy(&source, &destination)
+                .map_err(|error| format!("cannot copy {}: {error}", source.display()))?;
+        }
+        app = Some(destination);
+    }
+
     let mut lines = vec![format!("installed   {}", installed.display())];
+    if let Some(app) = &app {
+        lines.push(format!("window      {}", app.display()));
+    }
     if let Some(engine) = sidecar::bundled_engine() {
         let destination = match engine.parent().and_then(|parent| parent.file_name()) {
             Some(folder) if folder == "parlo-engine" => target.join("parlo-engine"),
@@ -111,8 +138,9 @@ pub fn install(dir: Option<PathBuf>, shortcut: bool) -> Result<Vec<String>, Stri
     fs::write(marker_path(), marker)
         .map_err(|error| format!("{}: {error}", marker_path().display()))?;
 
+    let launcher = app.as_ref().unwrap_or(&installed).clone();
     if shortcut {
-        match write_shortcut(&installed, &target) {
+        match write_shortcut(&launcher, &target) {
             Ok(Some(path)) => lines.push(format!("shortcut    {}", path.display())),
             Ok(None) => lines.push(
                 "shortcut    not created on this system, open the app with the installed binary"
@@ -121,7 +149,7 @@ pub fn install(dir: Option<PathBuf>, shortcut: bool) -> Result<Vec<String>, Stri
             Err(error) => lines.push(format!("shortcut    not created: {error}")),
         }
     }
-    lines.push(format!("open it     \"{}\" app", installed.display()));
+    lines.push(format!("open it     \"{}\"", launcher.display()));
     Ok(lines)
 }
 

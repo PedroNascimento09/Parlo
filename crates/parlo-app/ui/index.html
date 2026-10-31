@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parlo</title>
+    <style>
+      :root {
+        --paper: #faf6ef;
+        --ink: #1b1613;
+        --muted: #6b6257;
+        --accent: #d9481f;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #141110;
+          --ink: #f5efe6;
+          --muted: #a79c8e;
+          --accent: #f2693a;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: grid;
+        place-items: center;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main { text-align: center; max-width: 26rem; padding: 2rem; }
+      .mark {
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 1.6rem;
+        border-radius: 17px;
+        background: var(--accent);
+        animation: breathe 1.9s ease-in-out infinite;
+      }
+      h1 { font-size: 1.2rem; font-weight: 620; letter-spacing: -0.01em; margin: 0 0 0.5rem; }
+      p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+      @keyframes breathe {
+        0%, 100% { opacity: 0.35; transform: scale(0.94); }
+        50% { opacity: 1; transform: scale(1); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .mark { animation: none; opacity: 0.8; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark"></div>
+      <h1>Starting Parlo</h1>
+      <p id="hint">Loading the engine. This can take a minute the first time.</p>
+    </main>
+  </body>
+</html>

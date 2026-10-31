@@ -112,16 +112,29 @@ impl Session {
     }
 }
 
-pub fn run(
+pub struct Server {
+    pub address: String,
+    pub token: String,
+}
+
+impl Server {
+    pub fn app_url(&self) -> String {
+        format!("{}/?t={}", self.address, self.token)
+    }
+}
+
+pub fn start(
     port: u16,
     token: String,
     engine: String,
     stt: String,
     from: String,
     to: String,
-    open_app: bool,
-) -> Result<(), String> {
-    let mut session = Session::open(engine, stt, from, to)?;
+) -> Result<Server, String> {
+    if std::env::var("PARLO_APP_GUARD").is_ok() {
+        exit_with_parent();
+    }
+    let session = Session::open(engine, stt, from, to)?;
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|error| format!("cannot bind 127.0.0.1:{port}: {error}"))?;
 
@@ -134,14 +147,23 @@ pub fn run(
     );
     println!("  languages  {} to {}", session.from, session.to);
     println!("  input      16 kHz mono wav, POST /translate");
-    if open_app {
-        let address = format!("http://127.0.0.1:{port}/?t={token}");
-        println!("  app        {address}");
-        if let Err(error) = open_browser(&address) {
-            eprintln!("could not open the browser: {error}, open the app link above");
-        }
-    }
 
+    let address = format!("http://127.0.0.1:{port}");
+    let shared = token.clone();
+    std::thread::spawn(move || listen(listener, shared, port, session));
+    Ok(Server { address, token })
+}
+
+fn exit_with_parent() {
+    std::thread::spawn(|| {
+        let mut sink = [0u8; 64];
+        let mut stdin = std::io::stdin();
+        while matches!(stdin.read(&mut sink), Ok(read) if read > 0) {}
+        std::process::exit(0);
+    });
+}
+
+fn listen(listener: TcpListener, token: String, port: u16, mut session: Session) {
     let started = Instant::now();
     for stream in listener.incoming() {
         let mut stream = match stream {
@@ -159,7 +181,28 @@ pub fn run(
             Err(error) => eprintln!("request failed: {error}"),
         }
     }
-    Ok(())
+}
+
+pub fn run(
+    port: u16,
+    token: String,
+    engine: String,
+    stt: String,
+    from: String,
+    to: String,
+    open_app: bool,
+) -> Result<(), String> {
+    let server = start(port, token, engine, stt, from, to)?;
+    if open_app {
+        let address = server.app_url();
+        println!("  app        {address}");
+        if let Err(error) = open_browser(&address) {
+            eprintln!("could not open the browser: {error}, open the app link above");
+        }
+    }
+    loop {
+        std::thread::park();
+    }
 }
 
 struct DubFile {

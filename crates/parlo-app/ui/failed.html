@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parlo</title>
+    <style>
+      :root {
+        --paper: #faf6ef;
+        --surface: #ffffff;
+        --ink: #1b1613;
+        --muted: #6b6257;
+        --line: #e5dccd;
+        --accent: #d9481f;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #141110;
+          --surface: #1d1917;
+          --ink: #f5efe6;
+          --muted: #a79c8e;
+          --line: #302925;
+          --accent: #f2693a;
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: grid;
+        place-items: center;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 30rem;
+        padding: 2.4rem;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: var(--surface);
+      }
+      h1 { font-size: 1.15rem; font-weight: 620; margin: 0 0 0.7rem; letter-spacing: -0.01em; }
+      p { margin: 0 0 0.9rem; color: var(--muted); font-size: 0.93rem; }
+      ol { margin: 0; padding-left: 1.2rem; color: var(--muted); font-size: 0.93rem; }
+      li { margin-bottom: 0.4rem; }
+      code {
+        font-family: "Cascadia Mono", ui-monospace, monospace;
+        font-size: 0.86em;
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>The engine did not start</h1>
+      <p>Parlo opened but could not reach its translation engine, so it stopped.</p>
+      <ol>
+        <li>Close Parlo and open it again.</li>
+        <li>If the first run stopped while downloading models, open it again to resume.</li>
+        <li>Still nothing? The reason is written to <code>parlo-app.log</code> in your temporary folder.</li>
+      </ol>
+    </main>
+  </body>
+</html>
