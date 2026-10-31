@@ -113,6 +113,7 @@ class CascadeEngine:
             )
         threads = os.environ.get("PARLO_CASCADE_THREADS")
         self.threads = int(threads) if threads else DEFAULT_THREADS
+        self.captions = os.environ.get("PARLO_CASCADE_CAPTIONS") == "1"
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
@@ -168,7 +169,7 @@ class CascadeEngine:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
             )
-        if not self.voice_path.exists():
+        if not self.captions and not self.voice_path.exists():
             raise EngineUnavailable(
                 f"missing voice model {self.voice_path.name}; run engines/cascade/scripts/setup_models.py"
             )
@@ -187,6 +188,9 @@ class CascadeEngine:
         if not text:
             return Translation(b"", None, 0)
         translated = self._translate(text)
+        if self.captions:
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return Translation(pcm16=b"", text=translated, latency_ms=elapsed)
         audio = self._synthesize(translated)
         elapsed = int((time.perf_counter() - started) * 1000)
         return Translation(pcm16=audio, text=translated, latency_ms=elapsed)

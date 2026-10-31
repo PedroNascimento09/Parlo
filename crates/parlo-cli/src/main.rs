@@ -30,6 +30,7 @@ fn main() -> ExitCode {
         Some("mic") => mic_command(&args[1..]),
         Some("record") => record_command(&args[1..]),
         Some("listen") => listen_command(&args[1..]),
+        Some("captions") => captions_command(&args[1..]),
         Some("app") => app_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("update") => update_command(&args[1..]),
@@ -73,6 +74,7 @@ fn print_help() {
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
+    println!("  captions [--seconds N]             translate the microphone as text, no voice");
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!("  update [--check]                   install the latest release in place");
     println!("  engines                            list engines, licenses and voice levels");
@@ -798,6 +800,107 @@ fn listen_command(args: &[String]) -> Result<(), String> {
         println!("  engine error     {error}");
     }
     println!("  written          {}", path.display());
+    Ok(())
+}
+
+fn captions_command(args: &[String]) -> Result<(), String> {
+    let stored = config::load();
+    let mut seconds = 10.0f32;
+    let mut window = 1.2f32;
+    let mut engine_name = stored.engine.clone();
+    let mut device = stored.device;
+    let mut from = stored.from.clone();
+    let mut to = stored.to.clone();
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "--from" => {
+                index += 1;
+                from = args.get(index).cloned().ok_or("--from needs a value")?;
+            }
+            "--to" => {
+                index += 1;
+                to = args.get(index).cloned().ok_or("--to needs a value")?;
+            }
+            "--seconds" => {
+                index += 1;
+                seconds = args
+                    .get(index)
+                    .ok_or("--seconds needs a value")?
+                    .parse()
+                    .map_err(|_| "seconds must be a number".to_string())?;
+            }
+            "--window" => {
+                index += 1;
+                window = args
+                    .get(index)
+                    .ok_or("--window needs a value")?
+                    .parse()
+                    .map_err(|_| "window must be a number of seconds".to_string())?;
+            }
+            "--engine" => {
+                index += 1;
+                engine_name = args.get(index).cloned().ok_or("--engine needs a value")?;
+            }
+            "--device" => {
+                index += 1;
+                device = Some(
+                    args.get(index)
+                        .ok_or("--device needs a value")?
+                        .parse()
+                        .map_err(|_| "device must be a number".to_string())?,
+                );
+            }
+            other => return Err(format!("unknown option: {other}")),
+        }
+        index += 1;
+    }
+
+    if window < 0.5 {
+        return Err("--window must be at least half a second".to_string());
+    }
+    set_direction(&from, &to)?;
+    env::set_var("PARLO_CASCADE_CAPTIONS", "1");
+    env::set_var("PARLO_CASCADE_SEGMENT", format!("{window}"));
+
+    let (microphone, input) = record::open_input(device)?;
+    let output = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
+    let mut pipeline = Pipeline::new(
+        PipelineConfig::new(input, output),
+        build_engine(&engine_name)?,
+    )
+    .map_err(|error| error.to_string())?;
+
+    println!("captions {from} to {to}, no audio is spoken, control c stops");
+    let started = std::time::Instant::now();
+    let mut captions = 0usize;
+    let mut first_caption = None;
+    let mut first_error = None;
+
+    record::chunks(microphone, seconds, |block| {
+        for out in pipeline.push(&block) {
+            if let Some(text) = out.transcript {
+                captions += 1;
+                first_caption.get_or_insert_with(|| started.elapsed().as_secs_f32());
+                println!("[{:>6.1}s] {text}", started.elapsed().as_secs_f32());
+            }
+            if let Some(error) = out.error {
+                first_error.get_or_insert(error);
+            }
+        }
+        true
+    })?;
+
+    println!("listened {:.1} s", started.elapsed().as_secs_f32());
+    println!("  captions         {captions}");
+    match first_caption {
+        Some(at) => println!("  first caption    {at:.2} s after start"),
+        None => println!("  first caption    never, nothing passed the voice gate"),
+    }
+    if let Some(error) = first_error {
+        println!("  engine error     {error}");
+    }
     Ok(())
 }
 
