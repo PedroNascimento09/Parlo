@@ -34,6 +34,10 @@ No gain line means the signal already reached full scale and nothing needed boos
 
 Check the input device and its volume in Settings > System > Sound > Input, allow desktop apps in Settings > Privacy > Microphone, and compare the printed gain line rather than trusting the speaker volume, because the speaker hides a quiet capture.
 
+## The recording stops because the device went away
+
+Unplugging a headset or a USB interface ends the audio stream the system gave Parlo. The command then fails with `the input device stopped: ...` instead of writing a short or silent file, and the app reports the same sentence. Plug the device back in, run `parlo record --list` to see the index that came back, and start again; a device that returns often gets a new index, which is why `parlo config --device N` exists.
+
 ## The output file is silent
 
 The voice gate closed because the input was below the threshold. Check the level:

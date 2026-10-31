@@ -170,12 +170,17 @@ fn list_engines() -> Result<(), String> {
 
 fn print_profile() -> Result<(), String> {
     let cores = engines::detect_cores();
-    let profile = engines::profile_for_cores(cores);
+    let gpu = engines::detect_gpu_memory_mb();
+    let profile = engines::profile_for(cores, gpu);
     let fidelity = engines::fidelity_for(profile);
     let (min_ms, max_ms) = profile.target_ms();
 
     println!("hardware profile");
     println!("  cpu cores       {cores}");
+    match gpu {
+        Some(memory) => println!("  gpu memory      {memory} MB"),
+        None => println!("  gpu memory      none detected, this is a cpu hint"),
+    }
     println!("  profile         {}", profile.label());
     println!("  voice level     {fidelity}");
     if min_ms == 0 {
@@ -183,7 +188,9 @@ fn print_profile() -> Result<(), String> {
     } else {
         println!("  latency target  {min_ms} to {max_ms} ms");
     }
-    println!("  note            gpu and memory are not inspected yet, this is a cpu hint");
+    println!(
+        "  note            targets are design goals, the published table is what was measured"
+    );
     Ok(())
 }
 

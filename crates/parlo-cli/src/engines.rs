@@ -137,6 +137,7 @@ pub enum Profile {
     Basic,
     Medium,
     High,
+    Ultra,
 }
 
 impl Profile {
@@ -145,6 +146,7 @@ impl Profile {
             Self::Basic => "basic",
             Self::Medium => "medium",
             Self::High => "high",
+            Self::Ultra => "ultra",
         }
     }
 
@@ -153,16 +155,37 @@ impl Profile {
             Self::Basic => (0, 2_000),
             Self::Medium => (3_000, 5_000),
             Self::High => (2_500, 4_000),
+            Self::Ultra => (2_000, 3_000),
         }
     }
 }
 
 pub fn profile_for_cores(cores: usize) -> Profile {
     match cores {
-        0..=7 => Profile::Basic,
-        8..=15 => Profile::Medium,
-        _ => Profile::High,
+        0..=5 => Profile::Basic,
+        _ => Profile::Medium,
     }
+}
+
+pub fn profile_for(cores: usize, gpu_memory_mb: Option<u32>) -> Profile {
+    match gpu_memory_mb {
+        Some(memory) if memory >= 12 * 1024 => Profile::Ultra,
+        Some(memory) if memory >= 6 * 1024 => Profile::High,
+        _ => profile_for_cores(cores),
+    }
+}
+
+pub fn detect_gpu_memory_mb() -> Option<u32> {
+    let output = std::process::Command::new("nvidia-smi")
+        .args(["--query-gpu=memory.total", "--format=csv,noheader,nounits"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .find_map(|line| line.trim().parse::<u32>().ok())
 }
 
 pub fn fidelity_for(profile: Profile) -> Fidelity {
@@ -170,6 +193,7 @@ pub fn fidelity_for(profile: Profile) -> Fidelity {
         Profile::Basic => Fidelity::Captions,
         Profile::Medium => Fidelity::Neutral,
         Profile::High => Fidelity::Approximate,
+        Profile::Ultra => Fidelity::Cloned,
     }
 }
 
@@ -182,6 +206,15 @@ pub fn detect_cores() -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cores_without_a_gpu_stay_at_medium() {
+        assert_eq!(profile_for(12, None), Profile::Medium);
+        assert_eq!(profile_for(4, None), Profile::Basic);
+        assert_eq!(profile_for(12, Some(2_048)), Profile::Medium);
+        assert_eq!(profile_for(4, Some(8_192)), Profile::High);
+        assert_eq!(profile_for(4, Some(16_384)), Profile::Ultra);
+    }
 
     #[test]
     fn declares_a_cpu_default_without_restricted_models() {
@@ -207,9 +240,9 @@ mod tests {
     #[test]
     fn maps_cores_to_profiles() {
         assert_eq!(profile_for_cores(2), Profile::Basic);
-        assert_eq!(profile_for_cores(6), Profile::Basic);
-        assert_eq!(profile_for_cores(8), Profile::Medium);
-        assert_eq!(profile_for_cores(16), Profile::High);
+        assert_eq!(profile_for_cores(4), Profile::Basic);
+        assert_eq!(profile_for_cores(6), Profile::Medium);
+        assert_eq!(profile_for_cores(16), Profile::Medium);
     }
 
     #[test]

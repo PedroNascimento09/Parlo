@@ -47,11 +47,20 @@ pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, S
         rate as usize * seconds as usize,
     )));
 
+    let failure: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let stream = match supported.sample_format() {
-        cpal::SampleFormat::F32 => build_stream::<f32>(&device, &config, buffer.clone())?,
-        cpal::SampleFormat::I16 => build_stream::<i16>(&device, &config, buffer.clone())?,
-        cpal::SampleFormat::U16 => build_stream::<u16>(&device, &config, buffer.clone())?,
-        cpal::SampleFormat::I32 => build_stream::<i32>(&device, &config, buffer.clone())?,
+        cpal::SampleFormat::F32 => {
+            build_stream::<f32>(&device, &config, buffer.clone(), failure.clone())?
+        }
+        cpal::SampleFormat::I16 => {
+            build_stream::<i16>(&device, &config, buffer.clone(), failure.clone())?
+        }
+        cpal::SampleFormat::U16 => {
+            build_stream::<u16>(&device, &config, buffer.clone(), failure.clone())?
+        }
+        cpal::SampleFormat::I32 => {
+            build_stream::<i32>(&device, &config, buffer.clone(), failure.clone())?
+        }
         other => return Err(format!("unsupported sample format: {other}")),
     };
 
@@ -60,6 +69,10 @@ pub fn capture(seconds: f32, device_index: Option<usize>) -> Result<Recording, S
         .map_err(|error| format!("cannot start capture: {error}"))?;
     std::thread::sleep(Duration::from_secs_f32(seconds));
     drop(stream);
+
+    if let Some(message) = failure.lock().ok().and_then(|guard| guard.clone()) {
+        return Err(format!("the input device stopped: {message}"));
+    }
 
     let samples = buffer
         .lock()
@@ -84,12 +97,13 @@ where
         .map_err(|error| format!("cannot read the input format: {error}"))?;
     let config: cpal::StreamConfig = supported.config();
     let (sender, receiver) = mpsc::channel();
+    let (failure, failed) = mpsc::channel();
 
     let stream = match supported.sample_format() {
-        cpal::SampleFormat::F32 => build_block_stream::<f32>(&device, &config, sender)?,
-        cpal::SampleFormat::I16 => build_block_stream::<i16>(&device, &config, sender)?,
-        cpal::SampleFormat::U16 => build_block_stream::<u16>(&device, &config, sender)?,
-        cpal::SampleFormat::I32 => build_block_stream::<i32>(&device, &config, sender)?,
+        cpal::SampleFormat::F32 => build_block_stream::<f32>(&device, &config, sender, failure)?,
+        cpal::SampleFormat::I16 => build_block_stream::<i16>(&device, &config, sender, failure)?,
+        cpal::SampleFormat::U16 => build_block_stream::<u16>(&device, &config, sender, failure)?,
+        cpal::SampleFormat::I32 => build_block_stream::<i32>(&device, &config, sender, failure)?,
         other => return Err(format!("unsupported sample format: {other}")),
     };
 
@@ -99,6 +113,10 @@ where
     let deadline = Instant::now() + Duration::from_secs_f32(seconds.max(0.5));
 
     while Instant::now() < deadline {
+        if let Ok(message) = failed.try_recv() {
+            drop(stream);
+            return Err(format!("the input device stopped: {message}"));
+        }
         let remaining = deadline.saturating_duration_since(Instant::now());
         match receiver.recv_timeout(remaining.min(Duration::from_millis(100))) {
             Ok(block) => {
@@ -139,6 +157,7 @@ fn build_stream<T>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     buffer: Arc<Mutex<Vec<f32>>>,
+    failure: Arc<Mutex<Option<String>>>,
 ) -> Result<cpal::Stream, String>
 where
     T: cpal::SizedSample,
@@ -156,7 +175,12 @@ where
                     }
                 }
             },
-            |error| eprintln!("audio input error: {error}"),
+            move |error| {
+                eprintln!("audio input error: {error}");
+                if let Ok(mut slot) = failure.lock() {
+                    slot.get_or_insert_with(|| error.to_string());
+                }
+            },
             None,
         )
         .map_err(|error| format!("cannot open the input stream: {error}"))
@@ -166,6 +190,7 @@ fn build_block_stream<T>(
     device: &cpal::Device,
     config: &cpal::StreamConfig,
     sender: mpsc::Sender<Vec<f32>>,
+    failure: mpsc::Sender<String>,
 ) -> Result<cpal::Stream, String>
 where
     T: cpal::SizedSample,
@@ -186,7 +211,10 @@ where
                     }
                 }
             },
-            |error| eprintln!("audio input error: {error}"),
+            move |error| {
+                eprintln!("audio input error: {error}");
+                let _ = failure.send(error.to_string());
+            },
             None,
         )
         .map_err(|error| format!("cannot open the input stream: {error}"))
