@@ -12,6 +12,7 @@ mod dub;
 mod engines;
 mod mic;
 mod models;
+mod playback;
 mod record;
 mod serve;
 mod sidecar;
@@ -36,6 +37,7 @@ fn main() -> ExitCode {
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
         Some("engines") => list_engines(),
+        Some("speakers") => list_speakers(),
         Some("profile") => print_profile(),
         Some("--version" | "-V") => {
             println!("parlo {VERSION}");
@@ -74,6 +76,8 @@ fn print_help() {
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
+    println!("            [--play --speaker N]            play it to an output device");
+    println!("  speakers                           list output devices by number");
     println!("  captions [--seconds N]             translate the microphone as text, no voice");
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!("  update [--check]                   install the latest release in place");
@@ -171,6 +175,13 @@ fn list_engines() -> Result<(), String> {
         engines::default_engine().id,
         engines::default_engine().license.label()
     );
+    Ok(())
+}
+
+fn list_speakers() -> Result<(), String> {
+    for (index, name) in playback::devices()?.iter().enumerate() {
+        println!("{index}  {name}");
+    }
     Ok(())
 }
 
@@ -717,6 +728,8 @@ fn listen_command(args: &[String]) -> Result<(), String> {
     let stored = config::load();
     let mut path = PathBuf::from("out/translated-live.wav");
     let mut seconds = 10.0f32;
+    let mut play = false;
+    let mut speaker = None;
     let mut engine_name = stored.engine.clone();
     let mut stt = stored.stt.clone();
     let mut device = stored.device;
@@ -759,6 +772,17 @@ fn listen_command(args: &[String]) -> Result<(), String> {
                         .map_err(|_| "device must be a number".to_string())?,
                 );
             }
+            "--play" => play = true,
+            "--speaker" => {
+                index += 1;
+                speaker = Some(
+                    args.get(index)
+                        .ok_or("--speaker needs a value")?
+                        .parse()
+                        .map_err(|_| "speaker must be a number".to_string())?,
+                );
+                play = true;
+            }
             other if other.starts_with("--") => return Err(format!("unknown option: {other}")),
             other => path = PathBuf::from(other),
         }
@@ -775,6 +799,10 @@ fn listen_command(args: &[String]) -> Result<(), String> {
         build_engine(&engine_name)?,
     )
     .map_err(|error| error.to_string())?;
+    let mut speaker = match (play, speaker) {
+        (true, index) => Some(playback::Speaker::open(index)?),
+        (false, _) => None,
+    };
 
     let mut translated = Vec::new();
     let mut voiced = 0usize;
@@ -797,6 +825,9 @@ fn listen_command(args: &[String]) -> Result<(), String> {
             }
             if let Some(frame) = out.frame {
                 first_audio.get_or_insert_with(|| started.elapsed().as_secs_f32());
+                if let Some(speaker) = speaker.as_mut() {
+                    speaker.push(frame.samples());
+                }
                 translated.extend_from_slice(frame.samples());
             }
         }
@@ -822,6 +853,10 @@ fn listen_command(args: &[String]) -> Result<(), String> {
     match first_audio {
         Some(seconds) => println!("  first audio      {seconds:.2} s after start"),
         None => println!("  first audio      never, nothing passed the voice gate"),
+    }
+    if let Some(speaker) = speaker.as_ref() {
+        println!("  speaker          {} Hz", speaker.rate());
+        println!("  still queued     {:.2} s", speaker.buffered_seconds());
     }
     if let Some(error) = first_error {
         println!("  engine error     {error}");
