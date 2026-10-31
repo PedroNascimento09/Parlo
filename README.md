@@ -40,6 +40,7 @@ Existing tools force a trade-off:
 | CLI: `doctor`, `demo`, `translate` | Working |
 | WAV in / WAV out with honest sample-rate handling | Working |
 | Latency budget and target checks | Working |
+| Virtual microphone: `parlo mic setup`, `status`, `remove` on PipeWire | Working on Linux |
 | Engine sidecar protocol (JSON lines over stdio) | Working, tested |
 | Hibiki-Zero inference | Not wired yet |
 | Virtual microphone | Documented, not shipped |
