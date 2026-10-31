@@ -16,6 +16,7 @@ const installButton = document.getElementById("update-install");
 const engineEl = document.getElementById("status-engine");
 const uptimeEl = document.getElementById("status-uptime");
 const micEl = document.getElementById("status-mic");
+const latencyEl = document.getElementById("status-latency");
 const versionEl = document.getElementById("status-version");
 const modelsBox = document.getElementById("models");
 const modelsList = document.getElementById("models-list");
@@ -54,6 +55,7 @@ let player = null;
 let localUpdate = { available: false, latest: "", notes: "" };
 let modelsTimer = null;
 let modelsPolling = false;
+let modelsDownloading = false;
 let chosenFile = null;
 let dubbing = false;
 let dubTimer = null;
@@ -305,6 +307,7 @@ async function finish() {
   setProgress("Translating " + seconds.toFixed(1) + " s of speech.");
   try {
     const wav = encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE);
+    const startedAt = performance.now();
     const response = await fetch("/translate", {
       method: "POST",
       headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
@@ -318,7 +321,9 @@ async function finish() {
       throw new Error(detail.error || "The translator answered with status " + response.status + ".");
     }
     const audio = await response.blob();
+    const waited = (performance.now() - startedAt) / 1000;
     showTranslation(response.headers.get("X-Parlo-Transcript"));
+    latencyEl.textContent = waited.toFixed(1) + " s from speech to voice";
     setProgress("Playing the translation.");
     play(audio);
   } catch (failure) {
@@ -483,9 +488,18 @@ function describeModels(state) {
   modelsBox.hidden = false;
 
   if (state.ready) {
+    modelsDownloading = false;
     modelsNote.textContent = "Everything the translator needs is on this machine, so you can speak now.";
     modelsInstall.hidden = true;
     return true;
+  }
+
+  modelsDownloading = Boolean(state.downloading);
+  if (modelsDownloading) {
+    modelsNote.textContent =
+      "Downloading models, this can take a few minutes on a normal connection. You can leave this page open.";
+    modelsInstall.hidden = true;
+    return false;
   }
 
   modelsNote.textContent = "Some models are missing. They are a one time download and stay on this machine.";
@@ -529,6 +543,7 @@ async function downloadModels() {
     return;
   }
   modelsPolling = true;
+  modelsDownloading = false;
   modelsInstall.disabled = true;
   modelsInstall.textContent = "Downloading…";
   modelsNote.textContent = "Downloading the models. This takes a while on a slow connection; the page stays usable meanwhile.";
@@ -549,10 +564,17 @@ async function downloadModels() {
       return;
     }
     modelsTimer = setInterval(async () => {
+      const wasDownloading = modelsDownloading;
       const ready = await loadModels();
       if (ready) {
         stopPollingModels();
         modelsNote.textContent = "The models are installed. If the translator does not answer, reload this page.";
+        return;
+      }
+      if (wasDownloading && !modelsDownloading) {
+        stopPollingModels();
+        modelsNote.textContent =
+          "The download stopped before the models were complete. Check the connection, then press Download models again.";
       }
     }, 5000);
   } catch (failure) {
