@@ -24,7 +24,8 @@ VOICED_RMS = 0.008
 SLOT_GROWTH = 1.15
 SLOT_MAX_GROWTH_SECONDS = 3.0
 FASTEST_LENGTH_SCALE = 0.82
-BACKGROUND_GAIN = 0.18
+BACKGROUND_GAIN = 0.55
+DUCKING_FLOOR = 0.18
 VIDEO_SUFFIXES = {".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v"}
 
 
@@ -238,6 +239,19 @@ def build(engine: CascadeEngine, samples: np.ndarray, progress) -> tuple[np.ndar
     return np.clip(track, -1.0, 1.0), lines
 
 
+def ducking(length: int, lines: list[Line], fade_seconds: float = 0.15) -> np.ndarray:
+    envelope = np.ones(length, dtype=np.float32)
+    fade = max(int(fade_seconds * SAMPLE_RATE), 1)
+    for line in lines:
+        start = max(int(line.start * SAMPLE_RATE) - fade, 0)
+        end = min(int(line.end * SAMPLE_RATE) + fade, length)
+        if end > start:
+            envelope[start:end] = DUCKING_FLOOR
+    kernel = np.ones(fade * 2 + 1, dtype=np.float32) / (fade * 2 + 1)
+    smoothed = np.convolve(envelope, kernel, mode="same")
+    return np.clip(smoothed, DUCKING_FLOOR, 1.0).astype(np.float32)
+
+
 def timestamp(seconds: float) -> str:
     milliseconds = max(int(round(seconds * 1000)), 0)
     hours, rest = divmod(milliseconds, 3_600_000)
@@ -317,7 +331,8 @@ def main() -> int:
         if not lines:
             raise SystemExit("nothing was translated")
         if args.keep_background:
-            track = np.clip(track + samples * BACKGROUND_GAIN, -1.0, 1.0)
+            envelope = ducking(len(samples), lines)
+            track = np.clip(track + samples * BACKGROUND_GAIN * envelope, -1.0, 1.0)
         track_path = work / "dub.wav"
         write_wav(track_path, track)
         mux(ffmpeg, args.source, track_path, out, video)

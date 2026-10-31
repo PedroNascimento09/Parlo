@@ -154,5 +154,89 @@ class SplitLongTest(unittest.TestCase):
         self.assertEqual(pieces, [dub.Segment(0, len(samples))])
 
 
+@unittest.skipUnless(HAS_NUMPY, "numpy is required for the ducking envelope")
+class DuckingTest(unittest.TestCase):
+    def envelope(self, seconds, lines):
+        import numpy as np
+
+        length = int(seconds * dub.SAMPLE_RATE)
+        envelope = dub.ducking(length, lines)
+        self.assertEqual(len(envelope), length)
+        self.assertEqual(envelope.dtype, np.float32)
+        return envelope
+
+    def test_the_background_is_open_away_from_every_line(self):
+        lines = [dub.Line(1.0, 2.0, "a", "b")]
+        envelope = self.envelope(4.0, lines)
+        self.assertAlmostEqual(float(envelope[dub.SAMPLE_RATE * 3]), 1.0, places=3)
+
+    def test_the_background_is_held_under_a_line(self):
+        lines = [dub.Line(1.0, 2.0, "a", "b")]
+        envelope = self.envelope(4.0, lines)
+        middle = envelope[int(1.5 * dub.SAMPLE_RATE)]
+        self.assertAlmostEqual(float(middle), dub.DUCKING_FLOOR, places=3)
+
+    def test_the_passage_between_open_and_held_is_a_ramp(self):
+        lines = [dub.Line(1.0, 2.0, "a", "b")]
+        envelope = self.envelope(4.0, lines)
+        edge = float(envelope[int(0.95 * dub.SAMPLE_RATE)])
+        self.assertGreater(edge, dub.DUCKING_FLOOR)
+        self.assertLess(edge, 1.0)
+
+    def test_two_lines_are_both_held(self):
+        lines = [dub.Line(0.5, 1.0, "a", "b"), dub.Line(2.5, 3.0, "c", "d")]
+        envelope = self.envelope(4.0, lines)
+        for moment in (0.75, 2.75):
+            self.assertAlmostEqual(
+                float(envelope[int(moment * dub.SAMPLE_RATE)]), dub.DUCKING_FLOOR, places=3
+            )
+        self.assertAlmostEqual(float(envelope[int(1.75 * dub.SAMPLE_RATE)]), 1.0, places=3)
+
+    def test_overlapping_lines_stay_within_range(self):
+        lines = [dub.Line(1.0, 2.5, "a", "b"), dub.Line(1.5, 3.0, "c", "d")]
+        envelope = self.envelope(4.0, lines)
+        self.assertGreaterEqual(float(envelope.min()), dub.DUCKING_FLOOR)
+        self.assertLessEqual(float(envelope.max()), 1.0)
+        self.assertAlmostEqual(
+            float(envelope[int(2.0 * dub.SAMPLE_RATE)]), dub.DUCKING_FLOOR, places=3
+        )
+
+    def test_a_line_that_starts_at_zero_does_not_run_off_the_start(self):
+        import numpy as np
+
+        lines = [dub.Line(0.0, 1.0, "a", "b")]
+        envelope = self.envelope(3.0, lines)
+        self.assertTrue(np.all(np.isfinite(envelope)))
+        self.assertAlmostEqual(
+            float(envelope[int(0.5 * dub.SAMPLE_RATE)]), dub.DUCKING_FLOOR, places=3
+        )
+
+    def test_a_line_that_ends_on_the_last_sample_does_not_run_off_the_end(self):
+        import numpy as np
+
+        length = int(3.0 * dub.SAMPLE_RATE)
+        lines = [dub.Line(2.5, 3.0, "a", "b")]
+        envelope = dub.ducking(length, lines)
+        self.assertEqual(len(envelope), length)
+        self.assertTrue(np.all(np.isfinite(envelope)))
+
+    def test_the_envelope_stays_between_the_floor_and_the_open_level_in_the_middle(self):
+        lines = [dub.Line(1.0, 2.0, "a", "b")]
+        envelope = self.envelope(4.0, lines)
+        middle = envelope[dub.SAMPLE_RATE : dub.SAMPLE_RATE * 3]
+        self.assertGreaterEqual(float(middle.min()), dub.DUCKING_FLOOR)
+        self.assertLessEqual(float(middle.max()), 1.0)
+
+    def test_a_line_at_the_start_of_the_file_still_holds_the_full_floor(self):
+        lines = [dub.Line(0.0, 1.0, "a", "b")]
+        envelope = self.envelope(3.0, lines)
+        self.assertGreaterEqual(float(envelope[0]), dub.DUCKING_FLOOR)
+
+    def test_a_line_at_the_end_of_the_file_still_holds_the_full_floor(self):
+        lines = [dub.Line(2.0, 3.0, "a", "b")]
+        envelope = self.envelope(3.0, lines)
+        self.assertGreaterEqual(float(envelope[-1]), dub.DUCKING_FLOOR)
+
+
 if __name__ == "__main__":
     unittest.main()

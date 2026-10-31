@@ -24,7 +24,7 @@ On Windows use `.venv/Scripts/python`. The other direction is `--to pt --from en
 | `--from` | `pt` | Language spoken in the file |
 | `--out` | the input name with the target language appended | Where the dubbed file goes |
 | `--srt` | the output name with `.srt` | Where the subtitles go |
-| `--keep-background` | off | Mix the original audio at 0.18 under the dub |
+| `--keep-background` | off | Keep the original music and effects, ducked under each translated line |
 | `--json` | off | Write every line with its times, source text and translation |
 
 The input can be a video (`mp4`, `mkv`, `mov`, `webm`, `avi`, `m4v`) or an audio file. A file without a video stream produces audio only.
@@ -46,7 +46,8 @@ The recognition backend is the same one the live path uses: Parakeet by default,
 2. The audio is split into sentences on pauses of about 0.28 s, with a 15 s ceiling so a long monologue still fits one recognition call.
 3. Each segment is recognised, translated with Argos, and synthesised with the Piper voice of the target language.
 4. Every line is placed at the moment the original sentence started. If the translation does not fit its slot, it is synthesised again up to about 18 percent faster.
-5. ffmpeg copies the video stream unchanged, replaces the audio with the new track, and the translated lines are written as `.srt`.
+5. With `--keep-background` the original audio is mixed under the new track, following a ducking envelope built from the line times: 0.55 while nobody speaks, about 0.10 under a translated line, with a 0.15 s fade on each side.
+6. ffmpeg copies the video stream unchanged, replaces the audio with the new track, and the translated lines are written as `.srt`.
 
 ## Measured
 
@@ -58,6 +59,7 @@ Windows 11, Parakeet TDT 0.6B v3 on 4 threads, one 6.6 s Portuguese clip dubbed 
 | Output | MP4, H.264 copied, AAC 192 kbit/s |
 | Peak level of the new track | -0.5 dBFS |
 | Subtitle | one cue, 00:00:00,040 to 00:00:06,727 |
+| Ducking envelope | 1.0 far from a line, 0.18 inside it, 0.317 one fade edge away |
 
 No timing quality metric exists yet: the line starts where the sentence started, and nothing measures whether the dub stays in sync over a long file. No end-to-end duration on a long file has been measured either. The clip above is a synthetic voice, not a person, and one file is not a benchmark.
 
@@ -65,7 +67,7 @@ No timing quality metric exists yet: the line starts where the sentence started,
 
 - Timing is approximate. Each line starts at the right second, but it is a fresh recording of a different sentence length, so it drifts inside the sentence.
 - Fast speech overlaps the next line. If a translation is still longer than its slot after the speed-up, the two lines are audible at once.
-- `--keep-background` keeps music and effects, and the original speech with them at low level. No source separation is performed, so the original voice is faintly present under the dub.
+- `--keep-background` keeps music and effects, and the original speech with them: the original sits at 0.55 between lines and about 0.10 while the dub speaks, so the music comes back up between sentences but the original voice is audible there too. No source separation is performed.
 - Everything runs on the CPU. A long file takes minutes, and the terminal prints one line per segment while it works.
 - Machine translation quality, not human quality, and the voice is a neutral one, not the speaker's.
 - Portuguese and English only.
