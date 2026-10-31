@@ -39,6 +39,10 @@ Errors are always reported, never swallowed:
 
 Send `{"op": "hello"}` first to read the engine id, target languages, and whether the model is available.
 
+## License warning
+
+Hibiki-Zero weights are **CC BY-NC-SA 4.0**: non-commercial, share alike. They are downloaded by the user, never bundled, and never part of the default engine. Commercial use of this engine is not permitted by its license. See [../../docs/ENGINES.md](../../docs/ENGINES.md).
+
 ## Status
 
 Audio is passed through the protocol and validated, but the Hibiki weights are not wired to the inference loop yet. Until then the adapter answers `hello` and refuses translation with a clear error. See [../../docs/ENGINES.md](../../docs/ENGINES.md).
