@@ -4,3 +4,4 @@ argostranslate>=1.9
 piper-tts>=1.2
 numpy>=1.26
 truststore>=0.10
+psutil>=5.9
