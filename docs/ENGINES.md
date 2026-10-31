@@ -26,7 +26,7 @@ Rules an adapter must follow:
 
 | Id | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| `cascade` | Voice, captions | Any modern CPU, GPU optional | Permissive only | Default, working for Portuguese and English |
+| `cascade` | Voice, captions | Any modern CPU, GPU optional | MIT + GPL-3.0 TTS | Default, working for Portuguese and English |
 | `echo` | Development only | Any | MIT | Tests and demos |
 | `hibiki` | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | `cloud` | Voice | Any | Vendor terms | Opt-in, off by default |
@@ -35,8 +35,10 @@ The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs e
 
 Two policies are enforced by tests:
 
-- The default engine is permissively licensed and does not require a GPU.
+- The default engine requires no GPU and contains no non-commercial model.
 - A non-commercial or GPU-bound engine is never the default and is never bundled in the installer.
+
+One honest exception: the default cascade uses Piper for speech synthesis, and `piper-tts` is GPL-3.0-or-later. Parlo's code stays MIT, Piper runs as a separate user-installed program, and the licence is disclosed here and in `parlo engines`. A one-click installer cannot ship it without making the distribution GPL, so replacing Piper with a permissive synthesiser (Kokoro, Apache-2.0, to verify) is a v0.2 decision.
 
 Hibiki-Zero's weights are **non-commercial**. It can be used at home and in research, not in paid work, and the app must say so before downloading it. The universal cascade exists so nobody is forced into that licence to get a working product.
 

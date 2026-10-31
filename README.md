@@ -14,7 +14,7 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline, using permissively licensed models: faster-whisper for recognition, Argos for translation, Piper for the neutral voice. Measured on the reference machine: **2.6 to 2.7 seconds per 1.2 second segment**. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline, using MIT models for recognition and translation and Piper for the neutral voice. Piper is GPL-3.0-or-later: it is installed and run as a separate program, never bundled, and `parlo engines` says so. Measured on the reference machine: **2.6 to 2.7 seconds per 1.2 second segment**. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
 
 ---
 
@@ -73,7 +73,7 @@ hardware profile
 
 ```text
 engines
-  cascade  available MIT              any recent CPU           cpu ok   commercial use ok
+  cascade  available MIT + GPL-3.0    any recent CPU           cpu ok   GPL TTS, check terms
            Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice, 3 cloned voice
   echo     available MIT              any                      cpu ok   commercial use ok
            Echo for development | 1 neutral voice

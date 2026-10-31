@@ -40,6 +40,7 @@ impl fmt::Display for Fidelity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum License {
     Mit,
+    MitGpl3,
     CcByNcSa4,
     Proprietary,
 }
@@ -48,6 +49,7 @@ impl License {
     pub fn label(self) -> &'static str {
         match self {
             Self::Mit => "MIT",
+            Self::MitGpl3 => "MIT + GPL-3.0",
             Self::CcByNcSa4 => "CC BY-NC-SA 4.0",
             Self::Proprietary => "vendor terms",
         }
@@ -56,6 +58,7 @@ impl License {
     pub fn commercial_note(self) -> &'static str {
         match self {
             Self::Mit => "commercial use ok",
+            Self::MitGpl3 => "GPL TTS, check terms",
             Self::CcByNcSa4 => "non commercial",
             Self::Proprietary => "check vendor terms",
         }
@@ -84,7 +87,7 @@ pub const ENGINES: &[EngineInfo] = &[
             Fidelity::Approximate,
             Fidelity::Cloned,
         ],
-        license: License::Mit,
+        license: License::MitGpl3,
         hardware: "any recent CPU",
         requires_gpu: false,
         available: true,
@@ -181,10 +184,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn declares_a_permissive_cpu_default() {
+    fn declares_a_cpu_default_without_restricted_models() {
         let engine = default_engine();
-        assert_eq!(engine.license.commercial_note(), "commercial use ok");
         assert!(!engine.requires_gpu);
+        assert_ne!(engine.license, License::CcByNcSa4);
+        assert_ne!(engine.license, License::Proprietary);
     }
 
     #[test]
@@ -232,6 +236,7 @@ mod tests {
         assert_eq!(License::Mit.commercial_note(), "commercial use ok");
         assert_eq!(License::CcByNcSa4.commercial_note(), "non commercial");
         assert_eq!(License::Proprietary.commercial_note(), "check vendor terms");
+        assert_eq!(License::MitGpl3.commercial_note(), "GPL TTS, check terms");
     }
 
     #[test]
