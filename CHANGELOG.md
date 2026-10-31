@@ -48,6 +48,17 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Measured latency and quality benchmarks.
 - Linux virtual microphone automation.
 
+## [0.1.4] - 2026-10-31
+
+### Added
+
+- A models panel in the app lists the recogniser and both voices with their size on disk or `Missing`, and `Download models` starts the fetch from the page and refreshes itself until the translator is ready.
+- `GET /models` and `POST /models` expose the same state on the local API.
+
+### Changed
+
+- The first start after a boot is published as 18.1 s on Windows 11, from process start to a translated file, with the sidecar and every model included.
+
 ## [0.1.3] - 2026-10-31
 
 ### Added
