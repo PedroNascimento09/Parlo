@@ -30,6 +30,12 @@ const dubResult = document.getElementById("dub-result");
 const dubDownload = document.getElementById("dub-download");
 const dubCount = document.getElementById("dub-count");
 const dubLines = document.getElementById("dub-lines");
+const settingsFrom = document.getElementById("settings-from");
+const settingsTo = document.getElementById("settings-to");
+const settingsStt = document.getElementById("settings-stt");
+const settingsSwap = document.getElementById("settings-swap");
+const settingsApply = document.getElementById("settings-apply");
+const settingsNote = document.getElementById("settings-note");
 
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 30;
@@ -51,6 +57,8 @@ let modelsPolling = false;
 let chosenFile = null;
 let dubbing = false;
 let dubTimer = null;
+let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
+let settingsBusy = false;
 
 versionEl.textContent = version || "unknown";
 
@@ -555,6 +563,145 @@ async function downloadModels() {
 
 modelsInstall.addEventListener("click", () => downloadModels());
 
+const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
+
+function describePair(from, to) {
+  return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
+}
+
+function settingsChanged() {
+  return (
+    settingsFrom.value !== savedSettings.from ||
+    settingsTo.value !== savedSettings.to ||
+    settingsStt.value !== savedSettings.stt
+  );
+}
+
+function refreshApply() {
+  settingsApply.disabled = settingsBusy || !settingsChanged();
+}
+
+function reflectSettings(values) {
+  settingsFrom.value = values.from || "pt";
+  settingsTo.value = values.to || "en";
+  settingsStt.value = values.stt || "parakeet";
+  savedSettings = {
+    from: settingsFrom.value,
+    to: settingsTo.value,
+    stt: settingsStt.value,
+  };
+  settingsNote.textContent = describePair(savedSettings.from, savedSettings.to);
+  refreshApply();
+}
+
+async function loadSettings() {
+  try {
+    const response = await fetch("/settings", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    reflectSettings(await response.json());
+  } catch (failure) {
+    settingsNote.textContent = describePair(savedSettings.from, savedSettings.to);
+  }
+}
+
+function keepPairValid(changed) {
+  if (settingsFrom.value !== settingsTo.value) {
+    return;
+  }
+  const other = settingsFrom.value === "pt" ? "en" : "pt";
+  if (changed === "from") {
+    settingsTo.value = other;
+  } else {
+    settingsFrom.value = other;
+  }
+}
+
+function lockSettings(locked) {
+  settingsBusy = locked;
+  settingsFrom.disabled = locked;
+  settingsTo.disabled = locked;
+  settingsStt.disabled = locked;
+  settingsSwap.disabled = locked;
+  settingsApply.disabled = locked;
+}
+
+async function saveSettings() {
+  if (settingsBusy || !settingsChanged()) {
+    return;
+  }
+  if (recording) {
+    showError("Release the record button before changing the languages.");
+    return;
+  }
+  if (dubbing) {
+    showError("Wait for the file to finish dubbing before changing the languages.");
+    return;
+  }
+
+  clearError();
+  const previous = { from: savedSettings.from, to: savedSettings.to, stt: savedSettings.stt };
+  lockSettings(true);
+  settingsApply.textContent = "Loading models…";
+  settingsNote.textContent = "Parlo is loading the models again. This takes about twenty seconds.";
+
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({
+        from: settingsFrom.value,
+        to: settingsTo.value,
+        stt: settingsStt.value,
+      }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+    }
+    if (!response.ok) {
+      throw new Error(detail.error || "Parlo could not change the languages.");
+    }
+    reflectSettings(detail);
+    settingsNote.textContent = describePair(savedSettings.from, savedSettings.to) + ", ready.";
+  } catch (failure) {
+    reflectSettings(previous);
+    showError(failure.message || "Parlo could not change the languages. Try again.");
+  } finally {
+    lockSettings(false);
+    settingsApply.textContent = "Apply";
+    refreshApply();
+  }
+}
+
+settingsFrom.addEventListener("change", () => {
+  keepPairValid("from");
+  refreshApply();
+});
+
+settingsTo.addEventListener("change", () => {
+  keepPairValid("to");
+  refreshApply();
+});
+
+settingsStt.addEventListener("change", () => refreshApply());
+
+settingsSwap.addEventListener("click", () => {
+  if (settingsBusy) {
+    return;
+  }
+  const from = settingsFrom.value;
+  settingsFrom.value = settingsTo.value;
+  settingsTo.value = from;
+  refreshApply();
+});
+
+settingsApply.addEventListener("click", () => saveSettings());
+
 function formatClock(seconds) {
   const whole = Math.max(0, Math.floor(seconds || 0));
   return Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0");
@@ -765,3 +912,4 @@ refreshHealth();
 setInterval(refreshHealth, 5000);
 checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
 loadModels();
+loadSettings();

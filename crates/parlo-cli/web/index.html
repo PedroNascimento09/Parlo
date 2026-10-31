@@ -53,6 +53,38 @@
     </div>
   </dl>
 
+  <section class="settings" id="settings" aria-labelledby="settings-title">
+    <div class="settings-head">
+      <h2 id="settings-title">Languages and recogniser</h2>
+      <p class="settings-note" id="settings-note" aria-live="polite"></p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="settings-from">
+        <span class="field-label">I speak</span>
+        <select id="settings-from" class="field-input">
+          <option value="pt">Portuguese</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button id="settings-swap" class="swap" type="button">Swap</button>
+      <label class="field" for="settings-to">
+        <span class="field-label">They hear</span>
+        <select id="settings-to" class="field-input">
+          <option value="pt">Portuguese</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <label class="field field-wide" for="settings-stt">
+        <span class="field-label">Recogniser</span>
+        <select id="settings-stt" class="field-input">
+          <option value="parakeet">Parakeet, more accurate</option>
+          <option value="whisper">Whisper, smaller download</option>
+        </select>
+      </label>
+      <button id="settings-apply" class="install settings-apply" type="button" disabled>Apply</button>
+    </div>
+  </section>
+
   <section class="models" id="models" aria-labelledby="models-title" hidden>
     <div class="models-head">
       <h2 id="models-title">Models</h2>
