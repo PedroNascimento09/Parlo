@@ -4,7 +4,7 @@ title: "Parlo"
 abstract: "Real-time voice translation that keeps your voice and runs locally."
 authors:
   - name: "Parlo contributors"
-repository-code: "https://github.com/Pedromrn0903/parlo"
+repository-code: "https://github.com/PedroNascimento09/parlo"
 license: MIT
 type: software
 keywords:
