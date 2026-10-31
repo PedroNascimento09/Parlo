@@ -42,14 +42,40 @@ jobs:
       - name: Build
         run: cargo build --release --locked --target ${{ matrix.target }} -p parlo-cli
 
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: engines/cascade/requirements.txt
+
+      - name: Install engine requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller -r engines/cascade/requirements.txt
+
+      - name: Build the engine
+        working-directory: engines/cascade
+        run: pyinstaller --noconfirm --clean parlo-engine.spec
+
       - name: Package unix
         if: runner.os != 'Windows'
-        run: tar -czf ${{ matrix.archive }} -C target/${{ matrix.target }}/release parlo
+        run: |
+          mkdir -p release
+          cp target/${{ matrix.target }}/release/parlo release/
+          cp engines/cascade/dist/parlo-engine release/
+          cp README.md release/
+          tar -czf ${{ matrix.archive }} -C release parlo parlo-engine README.md
 
       - name: Package windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Compress-Archive -Path target/${{ matrix.target }}/release/parlo.exe -DestinationPath ${{ matrix.archive }}
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item target/${{ matrix.target }}/release/parlo.exe release/
+          Copy-Item engines/cascade/dist/parlo-engine.exe release/
+          Copy-Item README.md release/
+          Compress-Archive -Path release/parlo.exe, release/parlo-engine.exe, release/README.md -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
