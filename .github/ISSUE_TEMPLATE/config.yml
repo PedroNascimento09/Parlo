@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Pedromrn0903/parlo/security/advisories/new
+    about: Report privately. Do not open a public issue.
+  - name: Setup help
+    url: https://github.com/Pedromrn0903/parlo/blob/main/docs/TROUBLESHOOTING.md
+    about: Most install and audio problems are answered here.
+  - name: Contributing guide
+    url: https://github.com/Pedromrn0903/parlo/blob/main/CONTRIBUTING.md
+    about: How to run the checks and what makes a good pull request.

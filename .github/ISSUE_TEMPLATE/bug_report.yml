@@ -1,0 +1,51 @@
+name: Bug report
+description: Something does not work as documented
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Run `parlo doctor` first: it answers most setup questions.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected, and what you got instead.
+      placeholder: |
+        $ parlo translate in.wav out.wav
+        error: input must be mono pcm16 audio
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of parlo doctor
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Parlo version
+      description: Output of `parlo --version`.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, recordings made by you and consented to, or a link to a reproduction.
+    validations:
+      required: false

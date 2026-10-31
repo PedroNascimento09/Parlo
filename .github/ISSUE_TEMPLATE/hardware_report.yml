@@ -1,0 +1,55 @@
+name: Hardware report
+description: Share latency and resource numbers for your machine
+labels: ["benchmark"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hardware reports make the published benchmarks real. Numbers without hardware are rumours,
+        so please fill every field you can.
+  - type: input
+    id: machine
+    attributes:
+      label: Machine
+      placeholder: MacBook Pro M3 Pro, 18 GB
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU and memory
+      placeholder: Apple M3 Pro 18 core, or RTX 4070 12 GB
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and version
+      placeholder: macOS 15.4
+    validations:
+      required: true
+  - type: input
+    id: engine
+    attributes:
+      label: Engine and model version
+      placeholder: hibiki-zero q4, downloaded 2026-10-30
+    validations:
+      required: true
+  - type: textarea
+    id: numbers
+    attributes:
+      label: Measurements
+      description: Median latency, 95th percentile, peak memory, CPU, and battery drain if you measured it.
+      placeholder: |
+        median latency: 2100 ms over 20 runs
+        peak RSS: 3.1 GB
+        CPU during call: 38 percent
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything that degraded or surprised you.
+    validations:
+      required: false

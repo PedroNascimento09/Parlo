@@ -1,0 +1,44 @@
+name: Feature request
+description: Describe the problem, not the implementation
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Parlo is early and the roadmap is public. Check `ROADMAP.md` before proposing a large feature.
+        The strongest requests describe a real situation that does not work today.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do, and where does Parlo get in the way?
+      placeholder: I take client calls in Portuguese but my clients only speak English, and I need to keep my own voice.
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What you do today
+      description: The workaround, the tool you use, or what you tried in Parlo.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What a good outcome looks like
+      description: Describe the result, not the UI or the code.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Audio pipeline
+        - Engines and models
+        - Virtual microphone
+        - Desktop app
+        - Documentation
+        - Other
+    validations:
+      required: true
