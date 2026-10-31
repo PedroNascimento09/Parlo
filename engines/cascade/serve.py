@@ -12,9 +12,11 @@ from parlo_hibiki.protocol import handle_line
 
 
 def main() -> int:
+    voice = os.environ.get("PARLO_CASCADE_VOICE")
     engine = CascadeEngine(
         source=os.environ.get("PARLO_CASCADE_SOURCE", "pt"),
         target=os.environ.get("PARLO_CASCADE_TARGET", "en"),
+        voice=Path(voice) if voice else None,
     )
     for line in sys.stdin:
         if not line.strip():
