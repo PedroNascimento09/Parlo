@@ -4,43 +4,47 @@ Parlo will be honest about this even when it costs adoption.
 
 ## Today
 
-No speech model is wired up yet, so no language pair works end to end. The only engine that runs is `echo`, which returns the audio it receives.
+No speech model is integrated, so no pair works end to end. The only engine that runs is `echo`, which returns the audio it receives.
 
-## v1.0: into English
+## v0.3: Portuguese and English, both directions
 
-Hibiki-Zero translates speech into **English only**. That is a property of the model, not a configuration mistake.
+The default engine is the universal cascade, not a single end-to-end model, so direction is a policy choice rather than a model limit.
 
-| Source | Target | State |
-|---|---|---|
-| Portuguese | English | Planned |
-| Spanish | English | Planned |
-| French | English | Planned |
-| German | English | Planned |
-| Italian | English | Planned |
-| English | English | Not a use case |
+| Source | Target | Engine | State |
+|---|---|---|---|
+| Portuguese | English | Cascade | Planned for v0.3 |
+| English | Portuguese | Cascade | Planned for v0.3 |
 
-If you need English into Portuguese, or Portuguese into Spanish, that is not v1.0. It is the cascade engine in v1.5, listed below.
+Cascades cost roughly one to two seconds of extra latency and a voice that is close but not identical. They also run on any modern CPU, which is the whole point.
 
-## v1.5: any direction, lower fidelity
+## Premium add-on: into English only
 
-A cascade (speech recognition, then machine translation, then speech synthesis with voice cloning) removes the direction limit at the cost of latency and voice similarity.
+Hibiki-Zero translates speech **into English only**, needs an NVIDIA GPU with 8 to 12 GB of VRAM, and its weights are CC BY-NC-SA 4.0 (non-commercial).
 
 | Source | Target | State |
 |---|---|---|
-| English | Portuguese, Spanish, French, German, Italian | Planned |
-| Any supported pair | Any supported pair | Planned |
+| Portuguese, Spanish, French, German, Italian | English | Optional, after v0.3 |
 
-Expect roughly one to two extra seconds of latency and a voice that is close but not identical. The two-way mode, where you hear the other side in your language, also belongs to this release.
+It is the highest voice fidelity available today and the wrong default: it excludes most machines and most professional use. The app therefore offers it as a download with a visible license warning, and never as the only way to use Parlo.
+
+## v1.3 and later: more languages
+
+| Milestone | Scope |
+|---|---|
+| v1.3 Anything | 20+ input languages, 10+ output voices, model chosen per language |
+| v1.5 Two-way | Both directions live, in-person mode |
+| v2.x Languages | Community language programme with native speaker review |
+
+A language is supported when a test proves it, never because a model card mentions it. Each new language needs a native speaker review and a published benchmark before it is called supported.
 
 ## Interface languages
 
-The app interface is a few hundred strings. The v1.0 release plan covers English, Portuguese, Spanish, French, German, Hindi, Japanese, and Chinese. This does not change the audio languages: the interface can be in Japanese while the engine still translates into English.
+The app interface is a few hundred strings. v0.8 covers English, Portuguese, Spanish, French, German, Hindi, Japanese, and Chinese. Interface language and audio language are independent.
 
-## Adding a language
+## Add a language
 
-1. Check that the engine supports the direction, not just the language.
+1. Confirm the engine supports the direction, not just the language.
 2. Add the pair to the engine's `target_languages` and to this table.
-3. Measure quality on a fixed sample set and publish the result in [BENCHMARKS.md](BENCHMARKS.md).
-4. Only then call it supported.
-
-The rule: a language is supported when a test proves it, never because a model card mentions it.
+3. Measure quality on a fixed sample set and publish it in [BENCHMARKS.md](BENCHMARKS.md).
+4. Have a native speaker review it.
+5. Only then call it supported.
