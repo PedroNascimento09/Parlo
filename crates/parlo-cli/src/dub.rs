@@ -117,10 +117,11 @@ fn stamp() -> u128 {
 }
 
 pub fn safe_name(value: &str) -> String {
-    let stem = Path::new(value)
-        .file_name()
-        .map(|name| name.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "file".to_string());
+    let stem = value
+        .trim_end_matches(['/', '\\'])
+        .rsplit(['/', '\\'])
+        .next()
+        .unwrap_or_default();
     let cleaned: String = stem
         .chars()
         .map(|character| {
