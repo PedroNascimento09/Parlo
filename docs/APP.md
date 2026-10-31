@@ -32,11 +32,20 @@ The page is a single column built around the one thing you do most:
 |---|---|
 | Top strip | The running version, and the update banner when a newer release exists, with the notes linked. |
 | Record card | The large control at the centre with the input level inside it. Hold it to speak, or click once to start and again to stop; it pulses while it listens, and the clip goes to the local server. |
+| Live toggle | Keeps listening instead of recording one clip, translating a window at a time and speaking each one in order. Details below. |
 | Result card | The translated sentence, selectable so a name or a word can be copied, and the translated voice playing back under it. |
 | Settings | Language pair and recogniser, loaded from the server and applied with one button. Changing either reloads the models. |
 | Status group | The engine in use, how long the app has been running, and whether the microphone opened. |
 | Models panel | One row per model with its size on disk or `Missing`, and a **Download models** button when something is absent. It never blocks the record card, the first run of a released archive starts here, and while the download runs the panel says it is working instead of looking stuck. |
 | Dub panel | Drop a video or audio file on the page, or pick one, and the local server dubs it into the other language. The translated lines appear while it works and the new file downloads from the same panel. |
+
+## Live mode
+
+The `Live` toggle beside the record control turns the page into an interpreter that never stops listening. It cuts the microphone audio into windows of about 2.5 seconds, sends one window at a time to the local server, and plays each translated window in order, without ever overlapping the previous one. The translated sentences stack up in the page, so one that scrolled past can still be read, and toggling it off stops the microphone and the playback.
+
+Every window costs its own 2.5 seconds plus the processing time published in [BENCHMARKS.md](BENCHMARKS.md), so the wait per sentence is about three seconds. Live mode cannot remove that window: it is how the recogniser knows a sentence ended. It refuses to start while a file is dubbing, and it needs the models installed, because there is nothing to translate with until they are there.
+
+Live mode is not the way into a call. A page in a browser cannot present itself as a microphone, so until the virtual microphone ships the practical route on Windows and macOS is a virtual cable with `parlo listen --play --speaker N`, described in the README.
 
 ## Languages and the recogniser
 
@@ -86,4 +95,5 @@ The page talks to two places only: the local server on `127.0.0.1`, and the GitH
 - Windows is the only platform validated end to end so far; Linux and macOS are covered by unit tests alone.
 - Portuguese and English only.
 - Machine translation quality, not human quality.
-- The first translation arrives a few seconds after you start speaking.
+- The first translation arrives a few seconds after you start speaking, and live mode keeps that wait for every window.
+- Live translation exists in the page, but a call app still sees the system microphone: routing the translated voice into Zoom, Meet or Teams needs the virtual cable today.
