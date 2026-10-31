@@ -38,7 +38,8 @@ def run(engine: CascadeEngine, pcm: bytes) -> tuple[float, list[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("folder")
-    parser.add_argument("--models", nargs="+", default=["base", "small"])
+    parser.add_argument("--recognisers", nargs="+", default=["parakeet", "whisper"])
+    parser.add_argument("--models", nargs="+", default=["base"])
     parser.add_argument("--threads", type=int, default=0)
     parser.add_argument("--segment", type=float, default=2.5)
     parser.add_argument("--source", default="pt")
@@ -54,31 +55,36 @@ def main() -> int:
         os.environ["PARLO_CASCADE_THREADS"] = str(args.threads)
 
     report = {}
-    for model in args.models:
-        os.environ["PARLO_CASCADE_MODEL"] = model
-        engine = CascadeEngine(source=args.source, target=args.target)
-        engine.warmup()
-        rows = []
-        for path in files:
-            pcm, duration = load(path)
-            wall, texts = run(engine, pcm)
-            rows.append(
-                {
-                    "file": path.name,
-                    "audio_seconds": round(duration, 2),
-                    "wall_seconds": round(wall, 2),
-                    "rtf": round(wall / duration, 2),
-                    "text": " ".join(texts),
-                }
-            )
-        mean_rtf = round(sum(row["rtf"] for row in rows) / len(rows), 2)
-        report[model] = {"mean_rtf": mean_rtf, "files": rows}
-        print(f"\n{model} | mean RTF {mean_rtf}")
-        for row in rows:
-            print(
-                f"  {row['file']:<24} {row['audio_seconds']:>5.2f} s  "
-                f"RTF {row['rtf']:>4.2f}  {row['text'][:90]}"
-            )
+    for recogniser in args.recognisers:
+        models = args.models if recogniser == "whisper" else [""]
+        for model in models:
+            os.environ["PARLO_CASCADE_STT"] = recogniser
+            if model:
+                os.environ["PARLO_CASCADE_MODEL"] = model
+            label = f"{recogniser} {model}".strip()
+            engine = CascadeEngine(source=args.source, target=args.target)
+            engine.warmup()
+            rows = []
+            for path in files:
+                pcm, duration = load(path)
+                wall, texts = run(engine, pcm)
+                rows.append(
+                    {
+                        "file": path.name,
+                        "audio_seconds": round(duration, 2),
+                        "wall_seconds": round(wall, 2),
+                        "rtf": round(wall / duration, 2),
+                        "text": " ".join(texts),
+                    }
+                )
+            mean_rtf = round(sum(row["rtf"] for row in rows) / len(rows), 2)
+            report[label] = {"mean_rtf": mean_rtf, "files": rows}
+            print(f"\n{label} | mean RTF {mean_rtf}")
+            for row in rows:
+                print(
+                    f"  {row['file']:<24} {row['audio_seconds']:>5.2f} s  "
+                    f"RTF {row['rtf']:>4.2f}  {row['text'][:90]}"
+                )
 
     print("\n" + json.dumps(report))
     return 0
