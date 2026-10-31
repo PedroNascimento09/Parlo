@@ -1,6 +1,9 @@
-use std::io::{Read, Write};
+use std::fs;
+use std::io::{BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -8,6 +11,7 @@ use base64::Engine as _;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Engine, Pipeline, PipelineConfig, Wav};
 
+use crate::dub;
 use crate::models;
 use crate::update;
 
@@ -19,6 +23,9 @@ enum Flow {
 
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 20 * 1024 * 1024;
+const MAX_DUB_BODY: usize = 512 * 1024 * 1024;
+const KEPT_DUBS: usize = 8;
+const DUB_TIMEOUT: Duration = Duration::from_secs(3_600);
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const INDEX: &str = include_str!("../web/index.html");
 const STYLESHEET: &str = include_str!("../web/app.css");
@@ -76,6 +83,44 @@ pub fn run(
     Ok(())
 }
 
+struct DubFile {
+    id: String,
+    upload: PathBuf,
+    dubbed: PathBuf,
+    name: String,
+}
+
+fn dub_files() -> &'static Mutex<Vec<DubFile>> {
+    static FILES: OnceLock<Mutex<Vec<DubFile>>> = OnceLock::new();
+    FILES.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+fn remember(id: String, upload: PathBuf, dubbed: PathBuf, name: String) {
+    let mut files = match dub_files().lock() {
+        Ok(files) => files,
+        Err(_) => return,
+    };
+    files.push(DubFile {
+        id,
+        upload,
+        dubbed,
+        name,
+    });
+    while files.len() > KEPT_DUBS {
+        let oldest = files.remove(0);
+        fs::remove_file(&oldest.upload).ok();
+        fs::remove_file(&oldest.dubbed).ok();
+    }
+}
+
+fn recall(id: &str) -> Option<(PathBuf, String)> {
+    let files = dub_files().lock().ok()?;
+    files
+        .iter()
+        .find(|file| file.id == id)
+        .map(|file| (file.dubbed.clone(), file.name.clone()))
+}
+
 fn handle(
     stream: &mut TcpStream,
     token: &str,
@@ -117,9 +162,132 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path.starts_with("/dub/") {
+        let id = path.trim_start_matches("/dub/");
+        let Some((file, name)) = recall(id) else {
+            return respond_json(stream, "404 Not Found", "{\"error\":\"not found\"}")
+                .map(|()| Flow::Serve);
+        };
+        return respond_file(stream, &file, &name).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/models" {
         let body = models::as_json(&models::status());
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/dub" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if body.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"the file is empty\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+
+        let stored = crate::config::load();
+        let from = header(&headers, "x-parlo-from")
+            .unwrap_or_else(|| stored.from.clone())
+            .to_ascii_lowercase();
+        let to = header(&headers, "x-parlo-to")
+            .unwrap_or_else(|| stored.to.clone())
+            .to_ascii_lowercase();
+        if let Err(error) = crate::config::check_pair(&from, &to) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+
+        let requested = header(&headers, "x-parlo-filename")
+            .map(|value| percent_decode(&value))
+            .unwrap_or_else(|| "upload.mp4".to_string());
+        let name = dub::safe_name(&requested);
+        let id = new_token();
+        let directory = std::env::temp_dir().join("parlo-dub");
+        if let Err(error) = fs::create_dir_all(&directory) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!(
+                    "{{\"error\":\"cannot create {}: {}\"}}",
+                    json_string(&directory.display().to_string()),
+                    json_string(&error.to_string())
+                ),
+            )
+            .map(|()| Flow::Serve);
+        }
+
+        let upload = directory.join(format!("{id}-{name}"));
+        if let Err(error) = fs::write(&upload, &body) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!(
+                    "{{\"error\":\"cannot store the upload: {}\"}}",
+                    json_string(&error.to_string())
+                ),
+            )
+            .map(|()| Flow::Serve);
+        }
+
+        let out_name = dubbed_name(&name, &to);
+        let dubbed = directory.join(format!("{id}-{out_name}"));
+        let subtitles = dubbed.with_extension("srt");
+        let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
+        println!("dubbing {name} from {from} to {to}");
+        let result = dub::run(&dub::Request {
+            source: &upload,
+            from: &from,
+            to: &to,
+            out: Some(dubbed.clone()),
+            srt: Some(subtitles),
+            keep_background: header(&headers, "x-parlo-background").is_some(),
+        });
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+
+        return match result {
+            Ok(result) => {
+                let output = PathBuf::from(&result.out);
+                remember(id.clone(), upload, output, out_name.clone());
+                let lines: Vec<String> = result
+                    .lines
+                    .iter()
+                    .map(|line| {
+                        format!(
+                            "{{\"start\":{:.2},\"end\":{:.2},\"source\":\"{}\",\"translated\":\"{}\"}}",
+                            line.start,
+                            line.end,
+                            json_string(&line.source),
+                            json_string(&line.translated)
+                        )
+                    })
+                    .collect();
+                let body = format!(
+                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"seconds\":{:.2},\"lines\":[{}]}}",
+                    json_string(&out_name),
+                    result.seconds,
+                    lines.join(",")
+                );
+                respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
+            }
+            Err(error) => {
+                fs::remove_file(&upload).ok();
+                respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
     }
 
     if method == "POST" && path == "/models" {
@@ -312,6 +480,89 @@ fn handle(
     respond_audio(stream, &write_pcm16(&translated), &transcript).map(|()| Flow::Serve)
 }
 
+fn header(headers: &[(String, String)], name: &str) -> Option<String> {
+    headers
+        .iter()
+        .find(|(key, _)| key == name)
+        .map(|(_, value)| value.clone())
+}
+
+fn dubbed_name(name: &str, to: &str) -> String {
+    let path = Path::new(name);
+    let stem = path
+        .file_stem()
+        .map(|stem| stem.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "dubbed".to_string());
+    let extension = path
+        .extension()
+        .map(|extension| extension.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_else(|| "wav".to_string());
+    format!("{stem}.{to}.{extension}")
+}
+
+fn percent_decode(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut decoded = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'%' if index + 2 < bytes.len() => {
+                let pair = std::str::from_utf8(&bytes[index + 1..index + 3]).unwrap_or_default();
+                match u8::from_str_radix(pair, 16) {
+                    Ok(byte) => {
+                        decoded.push(byte);
+                        index += 3;
+                    }
+                    Err(_) => {
+                        decoded.push(bytes[index]);
+                        index += 1;
+                    }
+                }
+            }
+            b'+' => {
+                decoded.push(b' ');
+                index += 1;
+            }
+            byte => {
+                decoded.push(byte);
+                index += 1;
+            }
+        }
+    }
+    String::from_utf8_lossy(&decoded).into_owned()
+}
+fn respond_file(stream: &mut TcpStream, path: &Path, name: &str) -> Result<(), String> {
+    let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let length = file.metadata().map_err(|error| error.to_string())?.len();
+    let head = format!(
+        "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {length}\r\nContent-Disposition: attachment; filename=\"{name}\"\r\nConnection: close\r\n\r\n",
+        content_type(name)
+    );
+    stream
+        .write_all(head.as_bytes())
+        .map_err(|error| error.to_string())?;
+    std::io::copy(&mut BufReader::new(file), stream).map_err(|error| error.to_string())?;
+    stream.flush().map_err(|error| error.to_string())
+}
+
+fn content_type(name: &str) -> &'static str {
+    match Path::new(name)
+        .extension()
+        .map(|extension| extension.to_string_lossy().to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("mp4" | "m4v") => "video/mp4",
+        Some("mkv") => "video/x-matroska",
+        Some("webm") => "video/webm",
+        Some("mov") => "video/quicktime",
+        Some("wav") => "audio/wav",
+        Some("mp3") => "audio/mpeg",
+        Some("m4a") => "audio/mp4",
+        Some("srt") => "text/plain; charset=utf-8",
+        _ => "application/octet-stream",
+    }
+}
+
 fn transcript_header(transcript: &str) -> String {
     if transcript.is_empty() {
         String::new()
@@ -409,7 +660,7 @@ fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>), String> {
         .find(|(name, _)| name.trim().eq_ignore_ascii_case("content-length"))
         .and_then(|(_, value)| value.trim().parse::<usize>().ok())
         .unwrap_or(0);
-    if length > MAX_BODY {
+    if length > body_limit(&head) {
         return Err("body too large".to_string());
     }
 
@@ -423,6 +674,15 @@ fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>), String> {
     }
     body.truncate(length);
     Ok((head, body))
+}
+
+fn body_limit(head: &str) -> usize {
+    let path = head.split_whitespace().nth(1).unwrap_or_default();
+    if path.starts_with("/dub") {
+        MAX_DUB_BODY
+    } else {
+        MAX_BODY
+    }
 }
 
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
@@ -548,6 +808,35 @@ mod tests {
         assert!(page.contains(&format!("content=\"{VERSION}\"")));
         assert!(!page.contains("__PARLO_VERSION__"));
         assert!(page.contains("/app.css") && page.contains("/app.js"));
+    }
+
+    #[test]
+    fn dub_uploads_get_their_own_size_limit() {
+        assert_eq!(body_limit("POST /dub HTTP/1.1"), MAX_DUB_BODY);
+        assert_eq!(body_limit("POST /translate HTTP/1.1"), MAX_BODY);
+        assert_eq!(body_limit(""), MAX_BODY);
+    }
+
+    #[test]
+    fn reads_the_filename_header_encoded() {
+        assert_eq!(percent_decode("my%20clip.mp4"), "my clip.mp4");
+        assert_eq!(percent_decode("a+b.mov"), "a b.mov");
+        assert_eq!(percent_decode("plain.mp4"), "plain.mp4");
+        assert_eq!(percent_decode("broken%zz.mp4"), "broken%zz.mp4");
+    }
+
+    #[test]
+    fn dubbed_names_keep_stem_and_suffix() {
+        assert_eq!(dubbed_name("video.mp4", "en"), "video.en.mp4");
+        assert_eq!(dubbed_name("talk.mkv", "pt"), "talk.pt.mkv");
+        assert_eq!(dubbed_name("recording", "en"), "recording.en.wav");
+    }
+
+    #[test]
+    fn content_types_follow_the_suffix() {
+        assert_eq!(content_type("a.en.mp4"), "video/mp4");
+        assert_eq!(content_type("a.en.srt"), "text/plain; charset=utf-8");
+        assert_eq!(content_type("a.en.weird"), "application/octet-stream");
     }
 
     #[test]
