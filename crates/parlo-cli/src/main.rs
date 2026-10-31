@@ -5,6 +5,8 @@ use std::process::ExitCode;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
+mod mic;
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ENGINE_LATENCY_MS: u32 = 1_500;
 
@@ -14,6 +16,7 @@ fn main() -> ExitCode {
         Some("doctor") => doctor(),
         Some("demo") => demo(args.get(1).map(String::as_str)),
         Some("translate") => translate(&args[1..]),
+        Some("mic") => mic_command(&args[1..]),
         Some("--version" | "-V") => {
             println!("parlo {VERSION}");
             Ok(())
@@ -43,6 +46,7 @@ fn print_help() {
     println!("  doctor                             check the local audio setup");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
+    println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!();
     println!("audio never leaves this machine.");
 }
@@ -190,6 +194,58 @@ fn translate(args: &[String]) -> Result<(), String> {
         result.samples.len() as f32 / output.sample_rate() as f32
     );
     println!("  voiced frames   {voiced}");
+    Ok(())
+}
+
+fn mic_command(args: &[String]) -> Result<(), String> {
+    match args.first().map(String::as_str) {
+        Some("setup") => mic_setup(),
+        Some("status") => mic_status(),
+        Some("remove") => mic_remove(),
+        _ => Err("usage: parlo mic <setup|status|remove>".to_string()),
+    }
+}
+
+fn require_linux() -> Result<(), String> {
+    if cfg!(target_os = "linux") {
+        Ok(())
+    } else {
+        Err(format!(
+            "virtual microphone automation is linux only for now, see docs/VIRTUAL_MIC.md for {}",
+            env::consts::OS
+        ))
+    }
+}
+
+fn mic_setup() -> Result<(), String> {
+    require_linux()?;
+    let listing = mic::list_command().run()?;
+    if let Some(id) = mic::find_module(&listing) {
+        println!("Parlo microphone already loaded as module {id}");
+        return Ok(());
+    }
+    let module = mic::setup_command().run()?;
+    println!("Parlo microphone ready (module {})", module.trim());
+    println!("select the Parlo monitor as the microphone in your calling app");
+    Ok(())
+}
+
+fn mic_status() -> Result<(), String> {
+    require_linux()?;
+    let listing = mic::list_command().run()?;
+    match mic::find_module(&listing) {
+        Some(id) => println!("Parlo microphone active (module {id})"),
+        None => println!("Parlo microphone not loaded, run: parlo mic setup"),
+    }
+    Ok(())
+}
+
+fn mic_remove() -> Result<(), String> {
+    require_linux()?;
+    let listing = mic::list_command().run()?;
+    let id = mic::find_module(&listing).ok_or("Parlo microphone is not loaded")?;
+    mic::remove_command(id).run()?;
+    println!("removed the Parlo microphone (module {id})");
     Ok(())
 }
 
