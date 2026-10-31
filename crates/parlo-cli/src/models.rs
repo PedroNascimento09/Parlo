@@ -21,11 +21,21 @@ pub struct Model {
     pub bytes: u64,
 }
 
-fn engine_root() -> PathBuf {
-    let directory = env::var("PARLO_CASCADE_DIR")
+pub fn cascade_dir() -> PathBuf {
+    env::var("PARLO_CASCADE_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("engines/cascade"));
-    directory.join("models")
+        .unwrap_or_else(|_| PathBuf::from("engines/cascade"))
+}
+
+pub fn models_root() -> PathBuf {
+    if let Ok(configured) = env::var("PARLO_MODELS_DIR") {
+        return PathBuf::from(configured);
+    }
+    let checkout = cascade_dir().join("models");
+    if checkout.is_dir() {
+        return checkout;
+    }
+    crate::config::data_root().join("models")
 }
 
 fn size(directory: &Path, files: &[&str]) -> (bool, u64) {
@@ -41,7 +51,7 @@ fn size(directory: &Path, files: &[&str]) -> (bool, u64) {
 }
 
 pub fn status() -> Vec<Model> {
-    let root = engine_root();
+    let root = models_root();
     let (parakeet_installed, parakeet_bytes) = size(&root.join("parakeet"), PARAKEET);
     let mut models = vec![Model {
         name: "Parakeet 0.6B v3".to_string(),
@@ -79,23 +89,32 @@ fn python() -> PathBuf {
 }
 
 pub fn install() -> Result<(), String> {
-    let script = engine_root()
-        .join("..")
-        .join("scripts")
-        .join("setup_models.py");
-    Command::new(python())
-        .arg(&script)
-        .args(["--stt", "parakeet"])
+    let mut command = match crate::sidecar::bundled_engine() {
+        Some(engine) => {
+            let mut command = Command::new(&engine);
+            command.arg("--download-models");
+            command
+        }
+        None => {
+            let script = cascade_dir().join("scripts").join("setup_models.py");
+            if !script.is_file() {
+                return Err(format!(
+                    "cannot find {}; download the models from a source checkout",
+                    script.display()
+                ));
+            }
+            let mut command = Command::new(python());
+            command.arg(&script).args(["--stt", "parakeet"]);
+            command
+        }
+    };
+    command
+        .env("PARLO_MODELS_DIR", models_root())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
         .map(|_| ())
-        .map_err(|error| {
-            format!(
-                "cannot start the model download with {}: {error}",
-                python().display()
-            )
-        })
+        .map_err(|error| format!("cannot start the model download: {error}"))
 }
 
 pub fn as_json(models: &[Model]) -> String {

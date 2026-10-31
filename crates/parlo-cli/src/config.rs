@@ -28,23 +28,37 @@ impl Default for Config {
     }
 }
 
-pub fn path() -> PathBuf {
-    if let Ok(configured) = env::var("PARLO_CONFIG") {
+pub fn data_root() -> PathBuf {
+    if let Ok(configured) = env::var("PARLO_DATA_DIR") {
         return PathBuf::from(configured);
     }
     if cfg!(target_os = "windows") {
         if let Ok(appdata) = env::var("APPDATA") {
-            return PathBuf::from(appdata).join("parlo").join("config.json");
+            return PathBuf::from(appdata).join("parlo");
         }
     }
-    if let Ok(xdg) = env::var("XDG_CONFIG_HOME") {
-        return PathBuf::from(xdg).join("parlo").join("config.json");
+    if cfg!(target_os = "macos") {
+        let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        return PathBuf::from(home)
+            .join("Library")
+            .join("Application Support")
+            .join("parlo");
+    }
+    if let Ok(xdg) = env::var("XDG_DATA_HOME") {
+        return PathBuf::from(xdg).join("parlo");
     }
     let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
     PathBuf::from(home)
-        .join(".config")
+        .join(".local")
+        .join("share")
         .join("parlo")
-        .join("config.json")
+}
+
+pub fn path() -> PathBuf {
+    if let Ok(configured) = env::var("PARLO_CONFIG") {
+        return PathBuf::from(configured);
+    }
+    data_root().join("config.json")
 }
 
 pub fn load() -> Config {

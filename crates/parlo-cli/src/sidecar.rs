@@ -67,22 +67,53 @@ fn find_venv_python(script_dir: &Path) -> Option<PathBuf> {
         .find(|candidate| candidate.is_file())
 }
 
+pub fn bundled_engine() -> Option<PathBuf> {
+    if let Ok(configured) = std::env::var("PARLO_ENGINE") {
+        let path = PathBuf::from(configured);
+        if path.is_file() {
+            return Some(path);
+        }
+    }
+    let name = if cfg!(windows) {
+        "parlo-engine.exe"
+    } else {
+        "parlo-engine"
+    };
+    let beside = std::env::current_exe().ok()?.parent()?.join(name);
+    beside.is_file().then_some(beside)
+}
+
 impl SidecarEngine {
     pub fn spawn(script_dir: &Path) -> Result<Self, EngineError> {
-        let python = python_for(script_dir);
-        let mut child = Command::new(&python)
-            .arg("serve.py")
-            .current_dir(script_dir)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|error| {
-                EngineError::Unavailable(format!(
-                    "cannot start {python} in {}: {error}",
-                    script_dir.display()
-                ))
-            })?;
+        let models = crate::models::models_root();
+        let mut child = match bundled_engine() {
+            Some(engine) => Command::new(&engine)
+                .env("PARLO_MODELS_DIR", &models)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::inherit())
+                .spawn()
+                .map_err(|error| {
+                    EngineError::Unavailable(format!("cannot start {}: {error}", engine.display()))
+                })?,
+            None => {
+                let python = python_for(script_dir);
+                Command::new(&python)
+                    .arg("serve.py")
+                    .env("PARLO_MODELS_DIR", &models)
+                    .current_dir(script_dir)
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::inherit())
+                    .spawn()
+                    .map_err(|error| {
+                        EngineError::Unavailable(format!(
+                            "cannot start {python} in {}: {error}",
+                            script_dir.display()
+                        ))
+                    })?
+            }
+        };
 
         let stdin = child
             .stdin
