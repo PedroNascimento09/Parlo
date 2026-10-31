@@ -4,11 +4,15 @@ Published numbers are the difference between a project people trust and a demo p
 
 ## Published results
 
-No speech model is integrated yet, so there are no translation quality numbers to publish. The table stays empty until there is a real engine, rather than being filled with estimates.
+First measured run of the CPU cascade, on the reference machine: a 12 core desktop CPU with no GPU, Windows 11, Python 3.12.
 
 | Hardware | Engine | Latency | Voice similarity | Quality | Version |
 |---|---|---|---|---|---|
-| pending | pending | pending | pending | pending | 0.1.0 |
+| 12 core CPU, no GPU | cascade: whisper small int8, Argos pt-en, Piper medium | 2.6 to 2.7 s per 1.2 s segment; 11.5 s for 5 s of audio, warm | not measured | not measured, BLEU and COMET pending | 0.1.0 |
+
+Cold start adds roughly 10 seconds for the first segment because the models load lazily. Voice similarity and translation quality are deliberately blank: nobody has measured them yet, and a guess would be worse than a gap.
+
+The test audio was synthetic speech from Piper, which is harder for recognition than a real microphone. Real recordings will be added with the v0.2 test corpus.
 
 ## What gets measured
 
