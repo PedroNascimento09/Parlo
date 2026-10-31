@@ -1,5 +1,5 @@
 use std::io::{BufRead, BufReader, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -45,9 +45,31 @@ pub struct SidecarEngine {
     seq: u64,
 }
 
+fn python_for(script_dir: &Path) -> String {
+    if let Ok(explicit) = std::env::var("PARLO_PYTHON") {
+        return explicit;
+    }
+    find_venv_python(script_dir)
+        .map(|path| path.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "python".to_string())
+}
+
+fn find_venv_python(script_dir: &Path) -> Option<PathBuf> {
+    let executable = if cfg!(windows) {
+        "Scripts/python.exe"
+    } else {
+        "bin/python"
+    };
+    script_dir
+        .ancestors()
+        .take(3)
+        .map(|base| base.join(".venv").join(executable))
+        .find(|candidate| candidate.is_file())
+}
+
 impl SidecarEngine {
     pub fn spawn(script_dir: &Path) -> Result<Self, EngineError> {
-        let python = std::env::var("PARLO_PYTHON").unwrap_or_else(|_| "python".to_string());
+        let python = python_for(script_dir);
         let mut child = Command::new(&python)
             .arg("serve.py")
             .current_dir(script_dir)
@@ -201,6 +223,26 @@ pub fn decode_pcm16(bytes: &[u8]) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn finds_a_project_venv() {
+        let root = std::env::temp_dir().join(format!("parlo-venv-{}", std::process::id()));
+        let engine_dir = root.join("engines").join("cascade");
+        std::fs::create_dir_all(&engine_dir).unwrap();
+        let python = find_venv_python(&engine_dir);
+        assert_eq!(python, None);
+
+        let executable = if cfg!(windows) {
+            "Scripts/python.exe"
+        } else {
+            "bin/python"
+        };
+        let expected = root.join(".venv").join(executable);
+        std::fs::create_dir_all(expected.parent().unwrap()).unwrap();
+        std::fs::write(&expected, b"").unwrap();
+        assert_eq!(find_venv_python(&engine_dir), Some(expected.clone()));
+        std::fs::remove_dir_all(&root).ok();
+    }
 
     #[test]
     fn pcm_roundtrip_preserves_levels() {
