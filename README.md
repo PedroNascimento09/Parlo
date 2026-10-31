@@ -3,50 +3,48 @@
 </p>
 
 <p align="center">
-  <b>Real-time voice translation that keeps your voice and never leaves your machine.</b>
+  <b>Speak your language. Be heard in theirs. Private, offline, on the PC you already have.</b>
 </p>
 
 <p align="center">
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square"></a>
   <img alt="Rust" src="https://img.shields.io/badge/rust-1.83%2B-b7410e?style=flat-square&logo=rust">
-  <img alt="Dependencies" src="https://img.shields.io/badge/runtime%20dependencies-none-4c566a?style=flat-square">
+  <img alt="Runtime dependencies" src="https://img.shields.io/badge/core%20dependencies-none-4c566a?style=flat-square">
   <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-4c566a?style=flat-square">
-  <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20prototype-f0b429?style=flat-square"></a>
+  <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 prototype.** The audio pipeline, latency budget, engine boundary, and CLI are working and tested. Speech-to-speech model inference is not wired up yet: `parlo` currently runs an echo engine so the latency and pipeline behaviour can be measured honestly. Nothing here claims to translate audio today.
+> **Status: v0.1 Spark prototype.** The audio pipeline, latency budget, engine boundary, virtual microphone commands, and CLI are working and tested. **Speech models are not integrated yet**, so `parlo` runs an echo engine and does not translate anything today. The repository is structured so the universal cascade can land without touching the core.
 
 ---
 
-## Why
+## Why another translator
 
-You speak your language. The other person hears it in theirs, in your voice. No cloud, no account, no API key, no audio leaving the laptop.
+Native translation already exists inside Google Meet, Teams, and Zoom. Parlo is for everything else, and for people who will not send their voice to a cloud:
 
-Existing tools force a trade-off:
+| | Native translation | Parlo |
+|---|---|---|
+| Where it works | Only inside its own app | Any app that lets you pick a microphone |
+| Does the audio leave your PC | Yes | **No, in local mode** |
+| Cost | Bundled in paid plans | **Free** |
+| Does the other side need an account | Usually yes | **No** |
+| Hardware | Their servers | Your PC, with an honest profile |
+| Languages | Many | Few at first, grown by the community |
 
-| | Cloud tools | Local tools today | Parlo |
-|---|---|---|---|
-| Audio leaves your machine | Yes | Sometimes | **No** |
-| Account or API key needed | Yes | Often | **No** |
-| Your own voice preserved | No | Rarely | **Target** |
-| Works with any app | No | Sometimes | **Yes, via virtual mic** |
-| Open source | No | Yes | **Yes, MIT** |
+Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the reference machine, not an afterthought.
 
 ## What exists today
 
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate`, `mic` | Working |
-| WAV in / WAV out with honest sample-rate handling | Working |
-| Latency budget and target checks | Working |
-| Virtual microphone: `parlo mic setup`, `status`, `remove` on PipeWire | Working on Linux |
-| macOS and Windows virtual microphone | Documented setup only |
-| Engine sidecar protocol (JSON lines over stdio) | Working, wired to the CLI via `--engine sidecar` |
-| Hibiki-Zero inference | Not wired yet |
+| CLI: `doctor`, `demo`, `translate`, `engines`, `profile`, `mic` | Working |
+| Engine registry with licenses, voice levels, and hardware profiles | Working |
+| Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
+| Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
+| Universal cascade (speech to text, translation, text to speech) | Not implemented |
+| Hibiki-Zero premium engine | Optional, not wired |
 | Desktop app | Not started |
-
-The repository is built so the hard, boring parts are already correct: fixed frame sizes, bounded buffers, no hidden allocations per sample, no dependency drift, and a latency number you can inspect instead of a marketing claim.
 
 ## Try it in 20 seconds
 
@@ -54,39 +52,58 @@ Requires Rust 1.83 or newer. No other dependency.
 
 ```bash
 cargo run --release -p parlo-cli -- doctor
+cargo run --release -p parlo-cli -- profile
+cargo run --release -p parlo-cli -- engines
 cargo run --release -p parlo-cli -- demo out/demo.wav
 cargo run --release -p parlo-cli -- translate out/demo.wav out/translated.wav
 ```
 
-`doctor` prints the real capture format, the engine format, and the latency budget against the 3 second target:
+`profile` turns your machine into an honest recommendation instead of a promise:
 
 ```text
-parlo 0.1.0 doctor
-
-platform          windows x86_64
-capture format    48000 Hz mono, 20 ms frames
-engine format     16000 Hz mono
-engine            echo (no model installed)
-
-latency budget
-  capture            20 ms
-  engine           1500 ms
-  output              5 ms
-  total            1525 ms (target 3000 ms)
-
-status            within target
-privacy           local only, no network calls, no telemetry
+hardware profile
+  cpu cores       16
+  profile         high
+  voice level     2 approximate voice
+  latency target  2500 to 4000 ms
+  note            gpu and memory are not inspected yet, this is a cpu hint
 ```
 
-`demo` synthesises 2.5 seconds of speech-like audio, pushes it through the pipeline in 10 ms chunks, and reports how many frames were voiced and how long the translated stream is. No microphone or model required.
+`engines` is the licence table the product is built on:
 
-To drive the real Python sidecar instead of the echo engine:
-
-```bash
-cargo run --release -p parlo-cli -- translate out/demo.wav out/sidecar.wav --engine sidecar
+```text
+engines
+  cascade  planned   MIT              any recent CPU           commercial use ok
+           Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice
+  echo     available MIT              any                      commercial use ok
+           Echo for development | 1 neutral voice
+  hibiki   planned   CC BY-NC-SA 4.0  NVIDIA 8 to 12 GB VRAM   non commercial
+           Hibiki-Zero premium | 4 end to end transfer
 ```
 
-Without model weights installed this stops with the sidecar's own error message (`torch is not installed`), which is the honest result, not a crash.
+## Engine strategy
+
+One product, several engines, one quality ladder. The default must stay usable for anyone, forever:
+
+| Engine | Mode | Hardware | License | Role |
+|---|---|---|---|---|
+| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | Permissive only | **Default** |
+| B. Captions | Text overlay | Any CPU | Permissive only | Weak hardware |
+| C. Hibiki-Zero | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
+| D. Cloud with your key | Voice | Any | Vendor terms | Opt-in, off by default |
+
+**Hibiki-Zero is non-commercial.** Its weights are CC BY-NC-SA 4.0, which is why it is a downloadable option with a visible licence warning, never the default engine and never inside the installer. The default path uses only permissively licensed components and `parlo engines` prints that policy.
+
+## Hardware profiles
+
+Design targets, measured before publishing, never promised in advance:
+
+| Profile | Reference hardware | Mode | Latency target |
+|---|---|---|---|
+| Ultra | NVIDIA 12 GB or recent Apple Silicon | Cascade level 3, or Hibiki | 2 to 3 s |
+| High | Any GPU with 6 GB or Apple Silicon | Cascade level 2 to 3 | 2.5 to 4 s |
+| Medium | 8+ core CPU, no useful GPU | Cascade level 1 to 2 | 3 to 5 s |
+| Basic | Older 4 core CPU | Captions, or light neutral voice | Captions under 2 s |
 
 ## How it works
 
@@ -107,42 +124,28 @@ The engine is a trait, not a hard-coded model:
 ```rust
 pub trait Engine: Send {
     fn id(&self) -> &str;
-    fn target_languages(&self) -> &[&str];
+    fn target_languages(&self) -> Vec<String>;
     fn latency_ms(&self) -> u32;
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError>;
 }
 ```
 
-Anything that can consume 16 kHz mono frames and return frames plus optional text can drive Parlo: Hibiki-Zero locally, a cascade of STT + translation + TTS, or a bring-your-own-key cloud engine that is off by default.
-
-Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the frame budget and [docs/ENGINES.md](docs/ENGINES.md) for the adapter contract.
-
-## Languages
-
-Speech-to-speech models are the constraint, not the app.
-
-| Direction | Engine | State |
-|---|---|---|
-| Portuguese, Spanish, French, German, Italian → English | Hibiki-Zero | Planned for v1.0 |
-| Any → any | Cascade (STT + MT + TTS) | Planned for v1.5 |
-| English → Portuguese | Cascade | Planned for v1.5 |
-
-The honest limitation: Hibiki-Zero translates **into English only**. Portraying this as a universal translator would be a lie, so [docs/LANGUAGES.md](docs/LANGUAGES.md) says exactly what works when.
+Adapters talk to the app over a newline-delimited JSON protocol, so a model crash cannot take Parlo down and an engine can ship without a new release. See [docs/ENGINES.md](docs/ENGINES.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Privacy
 
-- No network calls in local mode. No telemetry, no crash reporting, no accounts.
-- The core crate has zero dependencies, so `cargo tree` is short enough to audit in seconds.
+- No network calls in local mode. No telemetry, no accounts, no crash reporting.
+- The core crate has zero dependencies; `cargo tree -p parlo-core` is one line.
 - Audio is never written to disk unless you pass an output path.
-- The app tells you when system audio capture is active, and never records silently.
+- The app says so when system audio capture is active, and never records silently.
 
-Full details, including how to verify these claims yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
+How to verify all of it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 ## Repository layout
 
 ```text
 crates/parlo-core       audio format, resampler, ring buffer, voice gate, pipeline, wav
-crates/parlo-cli        the parlo binary
+crates/parlo-cli        the parlo binary, engine registry, sidecar client, mic commands
 engines/hibiki          reference sidecar adapter and protocol tests
 docs                    architecture, engines, languages, privacy, troubleshooting
 ```
@@ -161,18 +164,18 @@ CI runs the same commands on Linux, macOS, and Windows.
 
 ## Roadmap
 
-Short version: v0.1 prototype (now), Hibiki inference plus real latency measurements, signed installers, virtual microphone, then two-way translation.
+v0.1 Spark is this prototype. Next is v0.2 Foundation (stable engine service and reproducible benchmark), then v0.3 Engines (cascade and captions switchable, medium profile measured), then v0.4 Dub, the first public preview that needs no driver and no NVIDIA card.
 
-Full detail and exit criteria: [ROADMAP.md](ROADMAP.md).
+Exit criteria for every step: [ROADMAP.md](ROADMAP.md).
 
 ## Contributing
 
-Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), and look for `good first issue` labels: adding a hardware report, translating the README, or testing a new calling app are all genuinely useful.
+Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); hardware reports and translated READMEs are genuinely useful right now. Look for `good first issue`.
 
 ## Credits
 
-The speech-to-speech approach stands on [Hibiki-Zero](https://github.com/kyutai-labs/hibiki) by Kyutai. Parlo is an independent product and is not affiliated with Kyutai.
+The speech-to-speech approach builds on [Hibiki-Zero](https://github.com/kyutai-labs/hibiki) by Kyutai, used as an optional premium engine under its own licence. Parlo is independent and not affiliated with Kyutai.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT for the code. Model weights keep their own licenses, listed by `parlo engines`. See [LICENSE](LICENSE).
