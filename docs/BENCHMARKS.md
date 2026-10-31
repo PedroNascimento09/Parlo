@@ -6,21 +6,33 @@ Published numbers are the difference between a project people trust and a demo p
 
 Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: faster-whisper `small` int8, Argos Portuguese to English, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
 
-Real time factor (processing time divided by audio duration), one warm run each:
+### Recogniser choice on modest hardware
 
-| Segment window | Wall time for 4.95 s | RTF | Calls |
+To approximate an ordinary laptop, the recogniser was limited to 4 threads on the same 12 core machine. 4.95 s of Portuguese audio, 2.5 s segment window.
+
+| Model | Threads | RTF | Segment | Transcript |
+|---|---|---|---|---|
+| tiny | 4 | **0.50** | 748 ms | "Oh, and full of Parlo's test..." |
+| base | 4 | **0.56** | 1092 ms | "Oh, this is a Parlo test..." |
+| small | 4 | 0.98 | 3042 ms | "Hello, this is Paul's test..." |
+
+Same engine, segment window sweep with small on 12 threads:
+
+| Window | Wall time for 4.95 s | RTF | Calls |
 |---|---|---|---|
 | 1.2 s | 13.14 s | 2.66 | 4 |
 | 2.5 s | 4.76 s | 0.96 | 1 |
 | 4.0 s | 5.66 s | 1.15 | 1 |
 
-Per stage on a 4.95 s block: recognition 3.39 s (RTF 0.69), translation under 0.05 s, synthesis 0.28 s (RTF 0.06). Recognition is the cost; translation is not the problem.
+Per stage on a 4.95 s block: recognition 3.39 s, translation under 0.05 s, synthesis 0.28 s. Recognition is the cost; translation is not the problem.
 
-What this means, plainly: **the real time gate is not met.** At 1.2 s segments the backlog grows 2.7 times faster than real time. At 2.5 s it roughly keeps up, which is not the same as comfortable. A conversational target needs an RTF below 0.5, and getting there means a smaller recogniser, more threads, or both. That work belongs to v0.2, not to a prototype that should have been cheap.
+**Decision taken:** `base` is the default. `tiny` reaches 0.50 but loses words; `small` needs 8 or more cores. Even `base` only reaches 0.56 on 4 threads, so the conversational headroom is thin, and the remainder belongs to v0.2 optimisations, not to more polishing of a prototype.
 
-Cold start adds roughly 10 seconds before the first segment because the models load lazily.
+Warm-up now loads every model at startup: 12 to 21 seconds before the first request, instead of the same wait on the first sentence.
 
-Not measured yet, and blank on purpose: perceived latency through a live microphone, RAM and VRAM, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, so a glossary is already needed.
+What this means, plainly: **the real time gate is only just met.** Below 0.5 is the target for comfort and nothing measured here is comfortably below it.
+
+Not measured yet, and blank on purpose: perceived latency through a live microphone, RAM and VRAM, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
 ## What gets measured
 

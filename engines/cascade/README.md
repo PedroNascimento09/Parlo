@@ -50,7 +50,23 @@ Audio arrives in 20 ms frames. The engine buffers them until it has at least 2.5
 | 2.5 s | 0.96, roughly keeps up |
 | 4.0 s | 1.15, one slow call |
 
-Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition is the whole bill. This is the "fast consecutive" mode from the plan, not simultaneous speech.
+The recogniser matters more than the window. With 4 threads, which approximates an ordinary laptop:
+
+| Model | RTF | Words lost |
+|---|---|---|
+| tiny | 0.50 | many |
+| base (default) | 0.56 | few |
+| small | 0.98 | fewest |
+
+Set `PARLO_CASCADE_MODEL=tiny` on very weak hardware, `small` only with 8 or more cores. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition is the whole bill.
+
+This is the "fast consecutive" mode from the plan, not simultaneous speech.
+
+## Warm-up and glossary
+
+Models load at startup, so the first sentence is not the one that waits: startup takes 12 to 21 seconds and prints progress on stderr. `PARLO_CASCADE_WARMUP=0` disables it.
+
+`glossary.txt` maps names the recogniser gets wrong, one `wrong=right` per line, applied to the transcript before translation. The default already fixes `Palo` and `Paul's` into `Parlo`.
 
 ## Limits
 
