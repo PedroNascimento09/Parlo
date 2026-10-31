@@ -11,7 +11,11 @@ SAMPLE_RATE = 16_000
 MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
-REQUIRED_MODULES = ("faster_whisper", "argostranslate", "piper", "numpy")
+REQUIRED_MODULES = ("argostranslate", "piper", "numpy", "sherpa_onnx")
+DEFAULT_THREADS = 4
+STT_BACKENDS = ("parakeet", "whisper")
+PARAKEET_DIR = MODEL_DIR / "parakeet"
+PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
 VOICES = {
     "pt": "pt_BR-faber-medium.onnx",
     "en": "en_US-lessac-medium.onnx",
@@ -99,8 +103,11 @@ class CascadeEngine:
         self.target_languages = (target,)
         self.min_segment = float(os.environ.get("PARLO_CASCADE_SEGMENT", MIN_SEGMENT_SECONDS))
         self.model_name = os.environ.get("PARLO_CASCADE_MODEL", "base")
+        self.stt = os.environ.get("PARLO_CASCADE_STT", "parakeet").lower()
+        if self.stt not in STT_BACKENDS:
+            raise ValueError(f"unknown recogniser {self.stt}, expected {STT_BACKENDS}")
         threads = os.environ.get("PARLO_CASCADE_THREADS")
-        self.threads = int(threads) if threads else None
+        self.threads = int(threads) if threads else DEFAULT_THREADS
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
@@ -120,15 +127,34 @@ class CascadeEngine:
         self._synthesize("warmup")
 
     def _load_stt(self):
-        from faster_whisper import WhisperModel
+        if self._stt is not None:
+            return self._stt
+        if self.stt == "parakeet":
+            import sherpa_onnx
 
-        if self._stt is None:
-            options = {"cpu_threads": self.threads} if self.threads else {}
+            missing = [
+                name for name in PARAKEET_FILES if not (PARAKEET_DIR / name).is_file()
+            ]
+            if missing:
+                raise EngineUnavailable(
+                    f"missing parakeet files {missing}; run engines/cascade/scripts/setup_models.py"
+                )
+            self._stt = sherpa_onnx.OfflineRecognizer.from_transducer(
+                encoder=str(PARAKEET_DIR / "encoder.int8.onnx"),
+                decoder=str(PARAKEET_DIR / "decoder.int8.onnx"),
+                joiner=str(PARAKEET_DIR / "joiner.int8.onnx"),
+                tokens=str(PARAKEET_DIR / "tokens.txt"),
+                num_threads=self.threads,
+                model_type="nemo_transducer",
+            )
+        else:
+            from faster_whisper import WhisperModel
+
             self._stt = WhisperModel(
                 self.model_name,
                 device="cpu",
                 compute_type="int8",
-                **options,
+                cpu_threads=self.threads,
             )
         return self._stt
 
@@ -164,14 +190,20 @@ class CascadeEngine:
         import numpy as np
 
         model = self._load_stt()
-        segments, _ = model.transcribe(
-            np.asarray(samples, dtype="float32"),
-            language=self.source,
-            vad_filter=False,
-            beam_size=1,
-            condition_on_previous_text=False,
-        )
-        text = " ".join(segment.text.strip() for segment in segments).strip()
+        if self.stt == "parakeet":
+            stream = model.create_stream()
+            stream.accept_waveform(SAMPLE_RATE, np.asarray(samples, dtype="float32"))
+            model.decode_stream(stream)
+            text = stream.result.text.strip()
+        else:
+            segments, _ = model.transcribe(
+                np.asarray(samples, dtype="float32"),
+                language=self.source,
+                vad_filter=False,
+                beam_size=1,
+                condition_on_previous_text=False,
+            )
+            text = " ".join(segment.text.strip() for segment in segments).strip()
         return apply_glossary(text, self.glossary)
 
     def _translate(self, text: str) -> str:

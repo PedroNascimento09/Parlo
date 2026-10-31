@@ -9,6 +9,8 @@ VOICES = {
     "en_US-lessac-medium": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx",
 }
 DIRECTIONS = (("pt", "en"), ("en", "pt"))
+PARAKEET_BASE = "https://huggingface.co/csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8/resolve/main"
+PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
 
 
 def download(url: str, target: Path) -> None:
@@ -24,6 +26,11 @@ def install_voices() -> None:
     for name, url in VOICES.items():
         download(url, MODELS / f"{name}.onnx")
         download(url + ".json", MODELS / f"{name}.onnx.json")
+
+
+def install_parakeet() -> None:
+    for name in PARAKEET_FILES:
+        download(f"{PARAKEET_BASE}/{name}", MODELS / "parakeet" / name)
 
 
 def install_argos(source: str, target: str) -> None:
@@ -63,13 +70,17 @@ def warm_translation(source: str, target: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--whisper", default="small")
+    parser.add_argument("--stt", choices=["parakeet", "whisper", "both"], default="parakeet")
+    parser.add_argument("--whisper", default="base")
     args = parser.parse_args()
 
     install_voices()
+    if args.stt in ("parakeet", "both"):
+        install_parakeet()
+    if args.stt in ("whisper", "both"):
+        warm_whisper(args.whisper)
     for source, target in DIRECTIONS:
         install_argos(source, target)
-    warm_whisper(args.whisper)
     for source, target in DIRECTIONS:
         warm_translation(source, target)
     print("models ready")

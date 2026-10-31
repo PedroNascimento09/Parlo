@@ -77,6 +77,28 @@ class EngineTest(unittest.TestCase):
     def test_reports_availability_as_a_boolean(self):
         self.assertIsInstance(CascadeEngine().available, bool)
 
+    def test_parakeet_is_the_default_recogniser(self):
+        self.assertEqual(CascadeEngine().stt, "parakeet")
+
+    def test_recogniser_can_be_switched_to_whisper(self):
+        import os
+
+        os.environ["PARLO_CASCADE_STT"] = "whisper"
+        try:
+            self.assertEqual(CascadeEngine().stt, "whisper")
+        finally:
+            os.environ.pop("PARLO_CASCADE_STT", None)
+
+    def test_unknown_recogniser_is_rejected(self):
+        import os
+
+        os.environ["PARLO_CASCADE_STT"] = "nope"
+        try:
+            with self.assertRaises(ValueError):
+                CascadeEngine()
+        finally:
+            os.environ.pop("PARLO_CASCADE_STT", None)
+
     def test_segment_window_can_be_configured(self):
         import os
 
