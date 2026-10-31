@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parlo-cascade"
+version = "0.1.0"
+description = "Universal CPU cascade engine for Parlo"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "faster-whisper>=1.0",
+    "argostranslate>=1.9",
+    "piper-tts>=1.2",
+    "numpy>=1.26",
+]
+
+[tool.setuptools]
+packages = ["parlo_cascade"]
