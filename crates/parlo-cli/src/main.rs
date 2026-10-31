@@ -7,6 +7,7 @@ use parlo_core::gain::{normalize, peak as peak_amplitude};
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
+mod config;
 mod engines;
 mod mic;
 mod models;
@@ -30,6 +31,7 @@ fn main() -> ExitCode {
         Some("app") => app_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("update") => update_command(&args[1..]),
+        Some("config") => config_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("profile") => print_profile(),
         Some("--version" | "-V") => {
@@ -70,6 +72,8 @@ fn print_help() {
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!("  update [--check]                   install the latest release in place");
     println!("  engines                            list engines, licenses and voice levels");
+    println!("  config [--engine NAME] [--from X]  show or write the defaults in the config file");
+    println!("         [--to X] [--port N] [--device N]");
     println!("  profile                            detect hardware and recommend a mode");
     println!();
     println!("audio never leaves this machine.");
@@ -327,6 +331,57 @@ fn parse_translate_args(args: &[String]) -> Result<(&String, &String, String), S
     }
 }
 
+fn config_command(args: &[String]) -> Result<(), String> {
+    let mut config = config::load();
+    let mut written = false;
+    let mut index = 0;
+    while index < args.len() {
+        let option = args[index].as_str();
+        index += 1;
+        let value = args
+            .get(index)
+            .cloned()
+            .ok_or(format!("{option} needs a value"))?;
+        match option {
+            "--engine" => config.engine = value,
+            "--from" => config.from = value,
+            "--to" => config.to = value,
+            "--port" => {
+                config.port = value
+                    .parse()
+                    .map_err(|_| "port must be a number".to_string())?
+            }
+            "--device" => {
+                config.device = Some(
+                    value
+                        .parse()
+                        .map_err(|_| "device must be a number".to_string())?,
+                )
+            }
+            other => return Err(format!("unknown option: {other}")),
+        }
+        written = true;
+        index += 1;
+    }
+
+    if written {
+        set_direction(&config.from, &config.to)?;
+        let path = config::save(&config)?;
+        println!("written {}", path.display());
+    } else {
+        println!("file       {}", config::path().display());
+    }
+    println!("  engine   {}", config.engine);
+    println!("  from     {}", config.from);
+    println!("  to       {}", config.to);
+    println!("  port     {}", config.port);
+    match config.device {
+        Some(device) => println!("  device   {device}"),
+        None => println!("  device   the system default"),
+    }
+    Ok(())
+}
+
 fn set_direction(from: &str, to: &str) -> Result<(), String> {
     for (value, label) in [(from, "--from"), (to, "--to")] {
         if value.len() != 2
@@ -452,11 +507,12 @@ fn record_command(args: &[String]) -> Result<(), String> {
 }
 
 fn serve_command(args: &[String]) -> Result<(), String> {
-    let mut port = 8787u16;
+    let stored = config::load();
+    let mut port = stored.port;
     let mut token = None;
-    let mut engine = "cascade".to_string();
-    let mut from = "pt".to_string();
-    let mut to = "en".to_string();
+    let mut engine = stored.engine.clone();
+    let mut from = stored.from.clone();
+    let mut to = stored.to.clone();
     let mut index = 0;
 
     while index < args.len() {
@@ -533,10 +589,11 @@ fn update_command(args: &[String]) -> Result<(), String> {
 }
 
 fn app_command(args: &[String]) -> Result<(), String> {
-    let mut port = 8787u16;
-    let mut engine = "cascade".to_string();
-    let mut from = "pt".to_string();
-    let mut to = "en".to_string();
+    let stored = config::load();
+    let mut port = stored.port;
+    let mut engine = stored.engine.clone();
+    let mut from = stored.from.clone();
+    let mut to = stored.to.clone();
     let mut index = 0;
 
     while index < args.len() {
@@ -571,12 +628,13 @@ fn app_command(args: &[String]) -> Result<(), String> {
 }
 
 fn listen_command(args: &[String]) -> Result<(), String> {
+    let stored = config::load();
     let mut path = PathBuf::from("out/translated-live.wav");
     let mut seconds = 10.0f32;
-    let mut engine_name = "cascade".to_string();
-    let mut device = None;
-    let mut from = "pt".to_string();
-    let mut to = "en".to_string();
+    let mut engine_name = stored.engine.clone();
+    let mut device = stored.device;
+    let mut from = stored.from.clone();
+    let mut to = stored.to.clone();
     let mut index = 0;
 
     while index < args.len() {

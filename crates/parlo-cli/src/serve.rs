@@ -67,7 +67,7 @@ pub fn run(
         };
         let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        match handle(&mut stream, &token, &mut pipeline, started) {
+        match handle(&mut stream, &token, port, &mut pipeline, started) {
             Ok(Flow::Serve) => {}
             Ok(Flow::Stop) => break,
             Err(error) => eprintln!("request failed: {error}"),
@@ -79,6 +79,7 @@ pub fn run(
 fn handle(
     stream: &mut TcpStream,
     token: &str,
+    port: u16,
     pipeline: &mut Pipeline,
     started: Instant,
 ) -> Result<Flow, String> {
@@ -97,6 +98,24 @@ fn handle(
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
+
+    if !host_is_local(&headers) {
+        return respond_json(
+            stream,
+            "400 Bad Request",
+            "{\"error\":\"host must be the local address\"}",
+        )
+        .map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && !origin_allowed(&headers, port) {
+        return respond_json(
+            stream,
+            "403 Forbidden",
+            "{\"error\":\"origin is not the local app\"}",
+        )
+        .map(|()| Flow::Serve);
+    }
 
     if method == "GET" && path == "/models" {
         let body = models::as_json(&models::status());
@@ -317,6 +336,31 @@ fn respond_audio(stream: &mut TcpStream, body: &[u8], transcript: &str) -> Resul
         .map_err(|error| error.to_string())
 }
 
+fn host_is_local(headers: &[(String, String)]) -> bool {
+    let Some((_, value)) = headers.iter().find(|(name, _)| name == "host") else {
+        return false;
+    };
+    let host = value
+        .rsplit_once(':')
+        .map(|(host, _)| host)
+        .unwrap_or(value)
+        .trim_matches(['[', ']']);
+    host.eq_ignore_ascii_case("127.0.0.1")
+        || host.eq_ignore_ascii_case("localhost")
+        || host == "::1"
+}
+
+fn origin_allowed(headers: &[(String, String)], port: u16) -> bool {
+    let origins = [
+        format!("http://127.0.0.1:{port}"),
+        format!("http://localhost:{port}"),
+    ];
+    match headers.iter().find(|(name, _)| name == "origin") {
+        None => true,
+        Some((_, value)) => origins.iter().any(|origin| origin == value),
+    }
+}
+
 fn json_string(value: &str) -> String {
     value
         .replace('\\', "\\\\")
@@ -460,6 +504,26 @@ mod tests {
     fn compares_without_short_circuiting_on_length() {
         assert!(!constant_time_eq("abc", "ab"));
         assert!(constant_time_eq("abc", "abc"));
+    }
+
+    #[test]
+    fn only_the_local_host_is_accepted() {
+        let local = vec![("host".to_string(), "127.0.0.1:8787".to_string())];
+        assert!(host_is_local(&local));
+        let named = vec![("host".to_string(), "localhost:8787".to_string())];
+        assert!(host_is_local(&named));
+        let rebinding = vec![("host".to_string(), "attacker.example:8787".to_string())];
+        assert!(!host_is_local(&rebinding));
+        assert!(!host_is_local(&[]));
+    }
+
+    #[test]
+    fn cross_origin_posts_are_refused() {
+        assert!(origin_allowed(&[], 8787));
+        let same = vec![("origin".to_string(), "http://127.0.0.1:8787".to_string())];
+        assert!(origin_allowed(&same, 8787));
+        let other = vec![("origin".to_string(), "https://evil.example".to_string())];
+        assert!(!origin_allowed(&other, 8787));
     }
 
     #[test]
