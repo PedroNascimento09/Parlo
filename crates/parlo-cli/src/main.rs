@@ -113,6 +113,11 @@ fn doctor() -> Result<(), String> {
 
 fn list_engines() -> Result<(), String> {
     println!("engines");
+    let licence_width = engines::ENGINES
+        .iter()
+        .map(|engine| engine.license.label().len())
+        .max()
+        .unwrap_or(0);
     for engine in engines::ENGINES {
         let state = if engine.available {
             "available"
@@ -121,13 +126,14 @@ fn list_engines() -> Result<(), String> {
         };
         let needs = if engine.requires_gpu { "gpu" } else { "cpu ok" };
         println!(
-            "  {:<8} {:<9} {:<16} {:<24} {:<8} {}",
+            "  {:<8} {:<9} {:<width$} {:<24} {:<8} {}",
             engine.id,
             state,
             engine.license.label(),
             engine.hardware,
             needs,
-            engine.license.commercial_note()
+            engine.license.commercial_note(),
+            width = licence_width
         );
         let levels: Vec<String> = engine
             .fidelity
