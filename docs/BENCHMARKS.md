@@ -70,7 +70,15 @@ The decisive test is ten recordings of a real voice, run through both recogniser
 python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisper --threads 4
 ```
 
-Not measured yet, and blank on purpose: perceived latency through a live microphone, RAM and VRAM, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
+### Memory
+
+Peak resident memory for one Portuguese to English run with Parakeet, 4 threads: **1302 MB across three processes** (the CLI, the sidecar, and its worker), including the 640 MB int8 recogniser. The recogniser is now the largest single allocation, which matters for the 8 GB machines this is meant to run on.
+
+```bash
+python engines/cascade/scripts/memory.py out/pt.wav --threads 4
+```
+
+Not measured yet, and blank on purpose: VRAM (there is no NVIDIA GPU here), perceived latency through a live microphone, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
 ## What gets measured
 

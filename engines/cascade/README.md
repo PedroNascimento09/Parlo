@@ -68,7 +68,7 @@ The recogniser matters more than the window. With 4 threads, which approximates 
 | parakeet v3 (default) | **0.113** | 0.092 |
 | whisper base | 0.309 | 0.153 |
 
-Parakeet is the default because it is both faster and more accurate. `PARLO_CASCADE_STT=whisper` switches back, and only then does `PARLO_CASCADE_MODEL` (`tiny`, `base`, `small`) matter. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition was the whole bill and no longer is.
+Peak resident memory for a run is about 1.3 GB, of which 640 MB is the recogniser. Parakeet is the default because it is both faster and more accurate. `PARLO_CASCADE_STT=whisper` switches back, and only then does `PARLO_CASCADE_MODEL` (`tiny`, `base`, `small`) matter. Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition was the whole bill and no longer is.
 
 This is the "fast consecutive" mode from the plan, not simultaneous speech.
 
