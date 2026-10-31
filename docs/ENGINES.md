@@ -26,12 +26,12 @@ Rules an adapter must follow:
 
 | Id | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| `cascade` | Voice, captions | Any modern CPU, GPU optional | Permissive only | Default, working for Portuguese to English |
+| `cascade` | Voice, captions | Any modern CPU, GPU optional | Permissive only | Default, working for Portuguese and English |
 | `echo` | Development only | Any | MIT | Tests and demos |
 | `hibiki` | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | `cloud` | Voice | Any | Vendor terms | Opt-in, off by default |
 
-The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today: faster-whisper `small` int8, Argos Portuguese to English, Piper neutral voice. Measured at 2.6 to 2.7 seconds per 1.2 second segment on a 12 core CPU with no GPU.
+The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today in both directions: faster-whisper `small` int8, Argos, and a Piper neutral voice in the target language. Measured at 2.6 to 2.7 seconds per 1.2 second segment on a 12 core CPU with no GPU.
 
 Two policies are enforced by tests:
 

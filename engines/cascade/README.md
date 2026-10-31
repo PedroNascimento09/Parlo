@@ -42,7 +42,7 @@ This is the "fast consecutive" mode from the plan: usable, honest, and about 3 t
 
 ## Limits
 
-- One direction per process: Portuguese to English by default.
+- One direction per process, set by `PARLO_CASCADE_SOURCE` and `PARLO_CASCADE_TARGET`: Portuguese to English by default, English to Portuguese when reversed.
 - The first request after start is slow because the models load lazily; warm-up lands in v0.2.
 - The translated voice is neutral, not yours. Levels 2 to 4 are separate work.
 

@@ -14,7 +14,7 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The CPU cascade translates Portuguese speech into English speech end to end, offline, using permissively licensed models: faster-whisper for recognition, Argos for translation, Piper for the neutral voice. Measured on the reference machine: **2.6 to 2.7 seconds per 1.2 second segment**. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline, using permissively licensed models: faster-whisper for recognition, Argos for translation, Piper for the neutral voice. Measured on the reference machine: **2.6 to 2.7 seconds per 1.2 second segment**. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
 
 ---
 
@@ -42,7 +42,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
-| Universal cascade: Portuguese to English, offline, on CPU | Working, about 2.6 s per segment |
+| Universal cascade: Portuguese and English, both directions, offline, on CPU | Working, about 2.6 s per segment |
 | Hibiki-Zero premium engine | Optional, not wired |
 | Desktop app | Not started |
 
