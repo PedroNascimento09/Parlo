@@ -8,6 +8,7 @@ use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, Pipel
 
 mod engines;
 mod mic;
+mod record;
 mod sidecar;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -20,6 +21,7 @@ fn main() -> ExitCode {
         Some("demo") => demo(args.get(1).map(String::as_str)),
         Some("translate") => translate(&args[1..]),
         Some("mic") => mic_command(&args[1..]),
+        Some("record") => record_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("profile") => print_profile(),
         Some("--version" | "-V") => {
@@ -53,6 +55,7 @@ fn print_help() {
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
+    println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  engines                            list engines, licenses and voice levels");
     println!("  profile                            detect hardware and recommend a mode");
     println!();
@@ -309,6 +312,58 @@ fn spawn_sidecar(variable: &str, fallback: &str) -> Result<Box<dyn Engine>, Stri
         .unwrap_or_else(|_| PathBuf::from(fallback));
     let engine = sidecar::SidecarEngine::spawn(&dir).map_err(|error| error.to_string())?;
     Ok(Box::new(engine))
+}
+
+fn record_command(args: &[String]) -> Result<(), String> {
+    let mut path = PathBuf::from("out/recording.wav");
+    let mut seconds = 5.0f32;
+    let mut device = None;
+    let mut list = false;
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "--list" => list = true,
+            "--seconds" => {
+                index += 1;
+                seconds = args
+                    .get(index)
+                    .ok_or("--seconds needs a value")?
+                    .parse()
+                    .map_err(|_| "seconds must be a number".to_string())?;
+            }
+            "--device" => {
+                index += 1;
+                device = Some(
+                    args.get(index)
+                        .ok_or("--device needs a value")?
+                        .parse()
+                        .map_err(|_| "device must be a number".to_string())?,
+                );
+            }
+            other if other.starts_with("--") => return Err(format!("unknown option: {other}")),
+            other => path = PathBuf::from(other),
+        }
+        index += 1;
+    }
+
+    if list {
+        for (index, name) in record::devices()?.iter().enumerate() {
+            println!("{index}  {name}");
+        }
+        return Ok(());
+    }
+
+    let recording = record::capture(seconds, device)?;
+    let rate = recording.format.sample_rate();
+    let duration = recording.samples.len() as f32 / rate as f32;
+    let wav = Wav {
+        format: recording.format,
+        samples: recording.samples,
+    };
+    fs::write(&path, write_pcm16(&wav)).map_err(|error| format!("{}: {error}", path.display()))?;
+    println!("recorded {duration:.1} s at {rate} Hz to {}", path.display());
+    Ok(())
 }
 
 fn mic_command(args: &[String]) -> Result<(), String> {
