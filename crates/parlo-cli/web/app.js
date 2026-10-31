@@ -21,6 +21,15 @@ const modelsBox = document.getElementById("models");
 const modelsList = document.getElementById("models-list");
 const modelsNote = document.getElementById("models-note");
 const modelsInstall = document.getElementById("models-install");
+const dropZone = document.getElementById("drop");
+const fileInput = document.getElementById("file");
+const dubStart = document.getElementById("dub-start");
+const dubFile = document.getElementById("dub-file");
+const dubStatus = document.getElementById("dub-status");
+const dubResult = document.getElementById("dub-result");
+const dubDownload = document.getElementById("dub-download");
+const dubCount = document.getElementById("dub-count");
+const dubLines = document.getElementById("dub-lines");
 
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 30;
@@ -39,6 +48,9 @@ let player = null;
 let localUpdate = { available: false, latest: "", notes: "" };
 let modelsTimer = null;
 let modelsPolling = false;
+let chosenFile = null;
+let dubbing = false;
+let dubTimer = null;
 
 versionEl.textContent = version || "unknown";
 
@@ -542,6 +554,181 @@ async function downloadModels() {
 }
 
 modelsInstall.addEventListener("click", () => downloadModels());
+
+function formatClock(seconds) {
+  const whole = Math.max(0, Math.floor(seconds || 0));
+  return Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0");
+}
+
+function describeBytes(bytes) {
+  const megabytes = (bytes || 0) / (1024 * 1024);
+  if (megabytes < 0.1) {
+    return "less than 0.1 MB";
+  }
+  if (megabytes < 1024) {
+    return megabytes.toFixed(megabytes < 10 ? 1 : 0) + " MB";
+  }
+  return (megabytes / 1024).toFixed(1) + " GB";
+}
+
+function setDubStatus(message) {
+  dubStatus.textContent = message || "";
+  dubStatus.hidden = !message;
+}
+
+function chooseFile(file) {
+  if (!file || dubbing) {
+    return;
+  }
+  chosenFile = file;
+  dubFile.textContent = file.name + " · " + describeBytes(file.size);
+  dubStart.disabled = false;
+  dubResult.hidden = true;
+  clearError();
+  setDubStatus("");
+}
+
+function describeDubError(detail) {
+  if (/ffmpeg/i.test(detail || "")) {
+    return "This machine is missing ffmpeg, the tool Parlo uses to read video. Install ffmpeg, then try again.";
+  }
+  if (/no speech/i.test(detail || "")) {
+    return "No speech was found in that file, so there was nothing to dub.";
+  }
+  return detail || "The file could not be dubbed. Check that the models are installed and try again.";
+}
+
+function showDub(result) {
+  dubDownload.href = "/dub/" + encodeURIComponent(result.id);
+  dubDownload.textContent = "Download " + (result.name || "the dubbed file");
+  const lines = result.lines || [];
+  dubCount.textContent =
+    lines.length +
+    (lines.length === 1 ? " line" : " lines") +
+    " · " +
+    formatClock(result.seconds) +
+    " of audio";
+  dubLines.replaceChildren();
+  for (const line of lines) {
+    const item = document.createElement("li");
+    item.className = "dub-line";
+
+    const time = document.createElement("span");
+    time.className = "dub-time";
+    time.textContent = formatClock(line.start);
+
+    const body = document.createElement("div");
+    const translated = document.createElement("p");
+    translated.className = "dub-translated";
+    translated.textContent = line.translated || "";
+    const source = document.createElement("p");
+    source.className = "dub-source";
+    source.textContent = line.source || "";
+    body.append(translated, source);
+
+    item.append(time, body);
+    dubLines.append(item);
+  }
+  dubResult.hidden = false;
+}
+
+async function startDub() {
+  if (dubbing || !chosenFile) {
+    return;
+  }
+  if (recording) {
+    showError("Let go of the record button before dubbing a file.");
+    return;
+  }
+  clearError();
+  clearTranslation();
+  stopPlayback();
+  dubbing = true;
+  dubStart.disabled = true;
+  dubStart.textContent = "Dubbing…";
+  dubResult.hidden = true;
+
+  const started = Date.now();
+  const tick = () =>
+    setDubStatus(
+      "Dubbing locally, " +
+        formatClock((Date.now() - started) / 1000) +
+        " elapsed. This can take a few minutes.",
+    );
+  tick();
+  dubTimer = setInterval(tick, 1000);
+
+  try {
+    const response = await fetch("/dub", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Parlo-Filename": encodeURIComponent(chosenFile.name),
+        Authorization: "Bearer " + token,
+      },
+      body: chosenFile,
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+    }
+    if (!response.ok) {
+      throw new Error(describeDubError(detail.error));
+    }
+    showDub(detail);
+    setDubStatus("Dubbed in " + formatClock((Date.now() - started) / 1000) + ". Download it above, or keep using Parlo.");
+  } catch (failure) {
+    setDubStatus("");
+    showError(failure.message || "The file could not be dubbed. Check that the models are installed and try again.");
+  } finally {
+    clearInterval(dubTimer);
+    dubTimer = null;
+    dubbing = false;
+    dubStart.disabled = !chosenFile;
+    dubStart.textContent = "Dub this file";
+  }
+}
+
+dropZone.addEventListener("click", () => fileInput.click());
+
+dropZone.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    fileInput.click();
+  }
+});
+
+fileInput.addEventListener("change", () => {
+  chooseFile(fileInput.files && fileInput.files[0]);
+  fileInput.value = "";
+});
+
+dubStart.addEventListener("click", () => startDub());
+
+document.addEventListener("dragover", (event) => {
+  if (!event.dataTransfer) {
+    return;
+  }
+  event.preventDefault();
+  dropZone.classList.add("over");
+});
+
+document.addEventListener("dragleave", (event) => {
+  if (event.relatedTarget) {
+    return;
+  }
+  dropZone.classList.remove("over");
+});
+
+document.addEventListener("drop", (event) => {
+  event.preventDefault();
+  dropZone.classList.remove("over");
+  const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+  chooseFile(file);
+  if (file) {
+    startDub();
+  }
+});
 
 talk.addEventListener("pointerdown", (event) => {
   event.preventDefault();

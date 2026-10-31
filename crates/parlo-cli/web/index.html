@@ -61,6 +61,28 @@
     <ul class="models-list" id="models-list"></ul>
     <button id="models-install" class="install models-install" type="button" hidden>Download models</button>
   </section>
+
+  <section class="dub" id="dub" aria-labelledby="dub-title">
+    <div class="dub-head">
+      <h2 id="dub-title">Dub a file</h2>
+      <p class="dub-note">Parlo replaces the speech in a video with the other language and writes subtitles beside it.</p>
+    </div>
+    <div class="drop" id="drop" role="button" tabindex="0" aria-describedby="drop-hint">
+      <p class="drop-title">Drop a video or audio file here</p>
+      <p class="drop-hint" id="drop-hint">Or press Enter to choose one. The file is read on this machine and never uploaded.</p>
+    </div>
+    <input id="file" type="file" accept="video/*,audio/*" hidden>
+    <div class="dub-actions">
+      <button id="dub-start" class="install" type="button" disabled>Dub this file</button>
+      <span class="dub-file" id="dub-file" aria-live="polite"></span>
+    </div>
+    <p class="progress dub-status" id="dub-status" aria-live="polite" hidden></p>
+    <div class="dub-result" id="dub-result" hidden>
+      <a id="dub-download" class="dub-download" href="#" download>Download the dubbed file</a>
+      <p class="dub-count" id="dub-count"></p>
+      <ol class="dub-lines" id="dub-lines" aria-label="Translated lines"></ol>
+    </div>
+  </section>
 </main>
 
 <footer>
