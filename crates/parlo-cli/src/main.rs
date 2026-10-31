@@ -1,11 +1,13 @@
 use std::env;
 use std::fs;
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 use parlo_core::wav::{read_pcm16, write_pcm16};
-use parlo_core::{AudioFormat, EchoEngine, LatencyBudget, Pipeline, PipelineConfig, Wav};
+use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
 mod mic;
+mod sidecar;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ENGINE_LATENCY_MS: u32 = 1_500;
@@ -46,6 +48,7 @@ fn print_help() {
     println!("  doctor                             check the local audio setup");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
+    println!("            [--engine echo|sidecar]  pick the engine, default echo");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!();
     println!("audio never leaves this machine.");
@@ -68,7 +71,7 @@ fn doctor() -> Result<(), String> {
         input.sample_rate()
     );
     println!("engine format     {} Hz mono", output.sample_rate());
-    println!("engine            echo (no model installed)");
+    println!("engines           echo, sidecar (needs python and engines/hibiki)");
     println!();
     println!("latency budget");
     println!("  capture         {:>5} ms", budget.capture_ms);
@@ -145,10 +148,7 @@ fn demo(path: Option<&str>) -> Result<(), String> {
 }
 
 fn translate(args: &[String]) -> Result<(), String> {
-    let (input_path, output_path) = match args {
-        [input, output] => (input, output),
-        _ => return Err("usage: parlo translate <in.wav> <out.wav>".to_string()),
-    };
+    let (input_path, output_path, engine_name) = parse_translate_args(args)?;
 
     let bytes = fs::read(input_path).map_err(|e| format!("{input_path}: {e}"))?;
     let wav = read_pcm16(&bytes).map_err(|e| format!("{input_path}: {e}"))?;
@@ -159,7 +159,7 @@ fn translate(args: &[String]) -> Result<(), String> {
     let output = AudioFormat::mono(16_000).map_err(|e| e.to_string())?;
     let mut pipeline = Pipeline::new(
         PipelineConfig::new(wav.format, output),
-        Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 1.0)),
+        build_engine(&engine_name)?,
     )
     .map_err(|e| e.to_string())?;
 
@@ -167,6 +167,9 @@ fn translate(args: &[String]) -> Result<(), String> {
     let mut voiced = 0;
     for chunk in wav.samples.chunks(480) {
         for out in pipeline.push(chunk) {
+            if let Some(error) = out.error {
+                return Err(format!("engine failed: {error}"));
+            }
             if out.voice {
                 voiced += 1;
             }
@@ -194,7 +197,44 @@ fn translate(args: &[String]) -> Result<(), String> {
         result.samples.len() as f32 / output.sample_rate() as f32
     );
     println!("  voiced frames   {voiced}");
+    println!("  engine          {}", pipeline.engine_id());
     Ok(())
+}
+
+fn parse_translate_args(args: &[String]) -> Result<(&String, &String, String), String> {
+    let mut engine = "echo".to_string();
+    let mut paths: Vec<&String> = Vec::new();
+    let mut index = 0;
+    while index < args.len() {
+        let arg = &args[index];
+        if arg == "--engine" {
+            index += 1;
+            engine = args.get(index).cloned().ok_or("--engine needs a value")?;
+        } else if arg.starts_with("--") {
+            return Err(format!("unknown option: {arg}"));
+        } else {
+            paths.push(arg);
+        }
+        index += 1;
+    }
+    match paths.as_slice() {
+        [input, output] => Ok((input, output, engine)),
+        _ => Err("usage: parlo translate <in.wav> <out.wav> [--engine echo|sidecar]".to_string()),
+    }
+}
+
+fn build_engine(name: &str) -> Result<Box<dyn Engine>, String> {
+    match name {
+        "echo" => Ok(Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 1.0))),
+        "sidecar" => {
+            let dir = env::var("PARLO_HIBIKI_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(|_| PathBuf::from("engines/hibiki"));
+            let engine = sidecar::SidecarEngine::spawn(&dir).map_err(|error| error.to_string())?;
+            Ok(Box::new(engine))
+        }
+        other => Err(format!("unknown engine: {other}, expected echo or sidecar")),
+    }
 }
 
 fn mic_command(args: &[String]) -> Result<(), String> {
