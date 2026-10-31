@@ -85,6 +85,19 @@ engines
 default engine: cascade (MIT)
 ```
 
+### Run the real translator
+
+The CPU cascade is installed with two commands and runs offline afterwards:
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -r engines/cascade/requirements.txt
+.venv/bin/python engines/cascade/scripts/setup_models.py
+PARLO_PYTHON=.venv/bin/python cargo run --release -p parlo-cli -- translate in.wav out.wav --engine cascade
+```
+
+On Windows use `.venv/Scripts/python`. Installation details and limits: [engines/cascade/README.md](engines/cascade/README.md).
+
 ## Engine strategy
 
 One product, several engines, one quality ladder. The default must stay usable for anyone, forever:
