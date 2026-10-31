@@ -7,7 +7,11 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 | Voice detection | faster-whisper built-in VAD | MIT |
 | Speech recognition | faster-whisper (`small`, int8) | MIT |
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
-| Speech synthesis | Piper (`pt_BR-faber-medium`) | MIT |
+| Speech synthesis | Piper (`pt_BR-faber-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
+
+Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code stays MIT, and Piper is treated as a separate program: the user installs it, runs it as a sidecar, and the licence is shown in the README and by `parlo engines`. It is never bundled in an installer.
+
+If Parlo later ships a one-click installer, the synthesiser has to change or the whole product becomes GPL. Kokoro (Apache-2.0) is the first candidate to evaluate; that decision belongs to v0.2, not to a prototype.
 
 No model here is non-commercial, which is why this is the default and Hibiki-Zero is not.
 
@@ -36,9 +40,17 @@ PARLO_PYTHON=.venv/Scripts/python.exe parlo translate in.wav out.wav --engine ca
 
 ## How it behaves
 
-Audio arrives in 20 ms frames. The engine buffers them until it has at least 1.2 seconds of speech, then transcribes, translates, synthesises, and returns the translated audio in one response. Frames that only fill the buffer return empty audio, which the pipeline treats as "nothing to play yet".
+Audio arrives in 20 ms frames. The engine buffers them until it has at least 2.5 seconds of speech, then transcribes, translates, synthesises, and returns the translated audio in one response. Frames that only fill the buffer return empty audio, which the pipeline treats as "nothing to play yet".
 
-This is the "fast consecutive" mode from the plan: usable, honest, and about 3 to 5 seconds behind on a medium CPU. Simultaneous speech with wait-k policies arrives in v0.3.
+`PARLO_CASCADE_SEGMENT` changes that window. It is the single most important setting for keeping up with a conversation, because the recogniser pays a fixed cost per call:
+
+| Window | Real time factor on a 12 core CPU |
+|---|---|
+| 1.2 s | 2.66, backlog grows |
+| 2.5 s | 0.96, roughly keeps up |
+| 4.0 s | 1.15, one slow call |
+
+Translation costs under 0.05 s and synthesis 0.28 s on a five second block; recognition is the whole bill. This is the "fast consecutive" mode from the plan, not simultaneous speech.
 
 ## Limits
 
