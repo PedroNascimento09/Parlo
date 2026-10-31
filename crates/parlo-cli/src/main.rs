@@ -1,7 +1,7 @@
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use std::process::ExitCode;
+use std::process::{Command, ExitCode};
 
 use parlo_core::gain::{normalize, peak as peak_amplitude};
 use parlo_core::wav::{read_pcm16, write_pcm16};
@@ -126,6 +126,11 @@ fn doctor() -> Result<(), String> {
         println!("status            above the usable ceiling");
     }
     println!("privacy           local only, no network calls, no telemetry");
+    println!("engine binary     {}", engine_binary());
+    println!("models            {}", models_summary());
+    println!("config            {}", config_summary());
+    println!("data              {}", config::data_root().display());
+    println!("ffmpeg            {}", ffmpeg_version());
 
     let cores = engines::detect_cores();
     let profile = engines::profile_for_cores(cores);
@@ -136,6 +141,46 @@ fn doctor() -> Result<(), String> {
         engines::fidelity_for(profile)
     );
     Ok(())
+}
+
+fn engine_binary() -> String {
+    match sidecar::bundled_engine() {
+        Some(path) => path.display().to_string(),
+        None => "none, this build uses python from a source checkout".to_string(),
+    }
+}
+
+fn models_summary() -> String {
+    let models = models::status();
+    let installed = models.iter().filter(|model| model.installed).count();
+    format!(
+        "{} ({} of {} installed)",
+        models::models_root().display(),
+        installed,
+        models.len()
+    )
+}
+
+fn config_summary() -> String {
+    let path = config::path();
+    if path.is_file() {
+        path.display().to_string()
+    } else {
+        format!("{} (not written yet, defaults in use)", path.display())
+    }
+}
+
+fn ffmpeg_version() -> String {
+    let output = Command::new("ffmpeg").arg("-version").output();
+    match output {
+        Ok(output) if output.status.success() => String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .next()
+            .unwrap_or("found, version unknown")
+            .trim()
+            .to_string(),
+        _ => "not found, dubbing needs it".to_string(),
+    }
 }
 
 fn list_engines() -> Result<(), String> {

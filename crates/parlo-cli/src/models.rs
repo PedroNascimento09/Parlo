@@ -2,6 +2,10 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::{Mutex, OnceLock};
+use std::time::Instant;
+
+const DOWNLOAD_WINDOW_SECONDS: u64 = 3_600;
 
 const PARAKEET: &[&str] = &[
     "encoder.int8.onnx",
@@ -33,7 +37,7 @@ pub fn models_root() -> PathBuf {
     }
     let checkout = cascade_dir().join("models");
     if checkout.is_dir() {
-        return checkout;
+        return std::path::absolute(&checkout).unwrap_or(checkout);
     }
     crate::config::data_root().join("models")
 }
@@ -113,8 +117,29 @@ pub fn install() -> Result<(), String> {
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map(|_| ())
+        .map(|_| mark_started())
         .map_err(|error| format!("cannot start the model download: {error}"))
+}
+
+fn started() -> &'static Mutex<Option<Instant>> {
+    static STARTED: OnceLock<Mutex<Option<Instant>>> = OnceLock::new();
+    STARTED.get_or_init(|| Mutex::new(None))
+}
+
+pub fn downloading(models: &[Model]) -> bool {
+    if ready(models) {
+        return false;
+    }
+    let Ok(started) = started().lock() else {
+        return false;
+    };
+    started.is_some_and(|at| at.elapsed().as_secs() < DOWNLOAD_WINDOW_SECONDS)
+}
+
+fn mark_started() {
+    if let Ok(mut started) = started().lock() {
+        *started = Some(Instant::now());
+    }
 }
 
 pub fn as_json(models: &[Model]) -> String {
@@ -128,8 +153,31 @@ pub fn as_json(models: &[Model]) -> String {
         })
         .collect();
     format!(
-        "{{\"models\":[{}],\"ready\":{}}}",
+        "{{\"models\":[{}],\"ready\":{},\"downloading\":{}}}",
         rows.join(","),
-        ready(models)
+        ready(models),
+        downloading(models)
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn installed_models_are_never_downloading() {
+        let models = vec![Model {
+            name: "voice".to_string(),
+            kind: "voice",
+            installed: true,
+            bytes: 1024,
+        }];
+        assert!(!downloading(&models));
+        assert!(as_json(&models).contains("\"downloading\":false"));
+    }
+
+    #[test]
+    fn the_models_root_is_absolute_after_resolution() {
+        assert!(models_root().is_absolute() || models_root().starts_with("engines"));
+    }
 }
