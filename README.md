@@ -95,6 +95,8 @@ python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisp
 
 Ten short recordings are enough to compare Parakeet and Whisper on your own microphone, which is the only honest way to measure this.
 
+On Windows, double-click `TESTAR-VOZ.cmd` in the repository root: it records ten clips with prompts, compares Parakeet and Whisper on them, runs the live test, and writes `out/voice/report.txt`.
+
 To translate live, without writing a file first:
 
 ```bash
