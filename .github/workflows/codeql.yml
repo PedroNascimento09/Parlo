@@ -23,6 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install audio headers
+        if: matrix.language == 'rust'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
