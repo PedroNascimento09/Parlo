@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 #[serde(default)]
 pub struct Config {
     pub engine: String,
+    pub stt: String,
     pub from: String,
     pub to: String,
     pub port: u16,
@@ -18,6 +19,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             engine: "cascade".to_string(),
+            stt: "parakeet".to_string(),
             from: "pt".to_string(),
             to: "en".to_string(),
             port: 8787,
@@ -50,6 +52,19 @@ pub fn load() -> Config {
         .ok()
         .and_then(|text| serde_json::from_str(&text).ok())
         .unwrap_or_default()
+}
+
+pub const RECOGNISERS: [&str; 2] = ["parakeet", "whisper"];
+
+pub fn check_stt(value: &str) -> Result<(), String> {
+    if RECOGNISERS.contains(&value) {
+        Ok(())
+    } else {
+        Err(format!(
+            "unknown recogniser {value}, expected one of {}",
+            RECOGNISERS.join(", ")
+        ))
+    }
 }
 
 pub fn check_pair(from: &str, to: &str) -> Result<(), String> {
@@ -104,6 +119,7 @@ mod tests {
     fn round_trips_through_json() {
         let config = Config {
             engine: "sidecar".to_string(),
+            stt: "whisper".to_string(),
             from: "en".to_string(),
             to: "pt".to_string(),
             port: 9100,
@@ -119,6 +135,13 @@ mod tests {
         assert!(check_pair("pt", "pt").is_err());
         assert!(check_pair("pt", "eng").is_err());
         assert!(check_pair("p1", "en").is_err());
+    }
+
+    #[test]
+    fn accepts_only_known_recognisers() {
+        assert!(check_stt("parakeet").is_ok());
+        assert!(check_stt("whisper").is_ok());
+        assert!(check_stt("hibiki").is_err());
     }
 
     #[test]

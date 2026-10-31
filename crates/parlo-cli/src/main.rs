@@ -423,6 +423,10 @@ fn config_command(args: &[String]) -> Result<(), String> {
             .ok_or(format!("{option} needs a value"))?;
         match option {
             "--engine" => config.engine = value,
+            "--stt" => {
+                config::check_stt(&value)?;
+                config.stt = value
+            }
             "--from" => config.from = value,
             "--to" => config.to = value,
             "--port" => {
@@ -451,6 +455,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
         println!("file       {}", config::path().display());
     }
     println!("  engine   {}", config.engine);
+    println!("  stt      {}", config.stt);
     println!("  from     {}", config.from);
     println!("  to       {}", config.to);
     println!("  port     {}", config.port);
@@ -468,7 +473,7 @@ fn set_direction(from: &str, to: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn build_engine(name: &str) -> Result<Box<dyn Engine>, String> {
+pub(crate) fn build_engine(name: &str) -> Result<Box<dyn Engine>, String> {
     match name {
         "echo" => Ok(Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 1.0))),
         "sidecar" => spawn_sidecar("PARLO_HIBIKI_DIR", "engines/hibiki"),
@@ -577,6 +582,7 @@ fn serve_command(args: &[String]) -> Result<(), String> {
     let mut port = stored.port;
     let mut token = None;
     let mut engine = stored.engine.clone();
+    let mut stt = stored.stt.clone();
     let mut from = stored.from.clone();
     let mut to = stored.to.clone();
     let mut index = 0;
@@ -607,16 +613,24 @@ fn serve_command(args: &[String]) -> Result<(), String> {
                 index += 1;
                 engine = args.get(index).cloned().ok_or("--engine needs a value")?;
             }
+            "--stt" => {
+                index += 1;
+                stt = args.get(index).cloned().ok_or("--stt needs a value")?;
+            }
             other => return Err(format!("unknown option: {other}")),
         }
         index += 1;
     }
 
     set_direction(&from, &to)?;
+    config::check_stt(&stt)?;
     serve::run(
         port,
         token.unwrap_or_else(serve::new_token),
-        build_engine(&engine)?,
+        engine,
+        stt,
+        from,
+        to,
         false,
     )
 }
@@ -658,6 +672,7 @@ fn app_command(args: &[String]) -> Result<(), String> {
     let stored = config::load();
     let mut port = stored.port;
     let mut engine = stored.engine.clone();
+    let mut stt = stored.stt.clone();
     let mut from = stored.from.clone();
     let mut to = stored.to.clone();
     let mut index = 0;
@@ -684,13 +699,18 @@ fn app_command(args: &[String]) -> Result<(), String> {
                 index += 1;
                 engine = args.get(index).cloned().ok_or("--engine needs a value")?;
             }
+            "--stt" => {
+                index += 1;
+                stt = args.get(index).cloned().ok_or("--stt needs a value")?;
+            }
             other => return Err(format!("unknown option: {other}")),
         }
         index += 1;
     }
 
     set_direction(&from, &to)?;
-    serve::run(port, serve::new_token(), build_engine(&engine)?, true)
+    config::check_stt(&stt)?;
+    serve::run(port, serve::new_token(), engine, stt, from, to, true)
 }
 
 fn listen_command(args: &[String]) -> Result<(), String> {
@@ -698,6 +718,7 @@ fn listen_command(args: &[String]) -> Result<(), String> {
     let mut path = PathBuf::from("out/translated-live.wav");
     let mut seconds = 10.0f32;
     let mut engine_name = stored.engine.clone();
+    let mut stt = stored.stt.clone();
     let mut device = stored.device;
     let mut from = stored.from.clone();
     let mut to = stored.to.clone();
@@ -725,6 +746,10 @@ fn listen_command(args: &[String]) -> Result<(), String> {
                 index += 1;
                 engine_name = args.get(index).cloned().ok_or("--engine needs a value")?;
             }
+            "--stt" => {
+                index += 1;
+                stt = args.get(index).cloned().ok_or("--stt needs a value")?;
+            }
             "--device" => {
                 index += 1;
                 device = Some(
@@ -741,6 +766,8 @@ fn listen_command(args: &[String]) -> Result<(), String> {
     }
 
     set_direction(&from, &to)?;
+    config::check_stt(&stt)?;
+    env::set_var("PARLO_CASCADE_STT", &stt);
     let (microphone, input) = record::open_input(device)?;
     let output = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
     let mut pipeline = Pipeline::new(
@@ -808,6 +835,7 @@ fn captions_command(args: &[String]) -> Result<(), String> {
     let mut seconds = 10.0f32;
     let mut window = 1.2f32;
     let mut engine_name = stored.engine.clone();
+    let mut stt = stored.stt.clone();
     let mut device = stored.device;
     let mut from = stored.from.clone();
     let mut to = stored.to.clone();
@@ -843,6 +871,10 @@ fn captions_command(args: &[String]) -> Result<(), String> {
                 index += 1;
                 engine_name = args.get(index).cloned().ok_or("--engine needs a value")?;
             }
+            "--stt" => {
+                index += 1;
+                stt = args.get(index).cloned().ok_or("--stt needs a value")?;
+            }
             "--device" => {
                 index += 1;
                 device = Some(
@@ -861,6 +893,8 @@ fn captions_command(args: &[String]) -> Result<(), String> {
         return Err("--window must be at least half a second".to_string());
     }
     set_direction(&from, &to)?;
+    config::check_stt(&stt)?;
+    env::set_var("PARLO_CASCADE_STT", &stt);
     env::set_var("PARLO_CASCADE_CAPTIONS", "1");
     env::set_var("PARLO_CASCADE_SEGMENT", format!("{window}"));
 

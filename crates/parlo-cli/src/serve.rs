@@ -9,7 +9,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 use parlo_core::wav::{read_pcm16, write_pcm16};
-use parlo_core::{AudioFormat, Engine, Pipeline, PipelineConfig, Wav};
+use parlo_core::{AudioFormat, Pipeline, PipelineConfig, Wav};
 
 use crate::dub;
 use crate::models;
@@ -39,21 +39,100 @@ pub fn new_token() -> String {
     format!("{nanos:016x}{:08x}", std::process::id())
 }
 
+#[derive(serde::Deserialize)]
+struct Settings {
+    #[serde(default)]
+    engine: Option<String>,
+    #[serde(default)]
+    stt: Option<String>,
+    #[serde(default)]
+    from: Option<String>,
+    #[serde(default)]
+    to: Option<String>,
+}
+
+pub struct Session {
+    pipeline: Pipeline,
+    engine: String,
+    stt: String,
+    from: String,
+    to: String,
+}
+
+fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
+    crate::config::check_pair(from, to)?;
+    crate::config::check_stt(stt)?;
+    std::env::set_var("PARLO_CASCADE_SOURCE", from);
+    std::env::set_var("PARLO_CASCADE_TARGET", to);
+    std::env::set_var("PARLO_CASCADE_STT", stt);
+    let format = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
+    Pipeline::new(
+        PipelineConfig::new(format, format),
+        crate::build_engine(engine)?,
+    )
+    .map_err(|error| error.to_string())
+}
+
+impl Session {
+    fn open(engine: String, stt: String, from: String, to: String) -> Result<Self, String> {
+        let pipeline = build(&from, &to, &engine, &stt)?;
+        Ok(Self {
+            pipeline,
+            engine,
+            stt,
+            from,
+            to,
+        })
+    }
+
+    fn switch(
+        &mut self,
+        engine: String,
+        stt: String,
+        from: String,
+        to: String,
+    ) -> Result<(), String> {
+        let pipeline = build(&from, &to, &engine, &stt)?;
+        self.pipeline = pipeline;
+        self.engine = engine;
+        self.stt = stt;
+        self.from = from;
+        self.to = to;
+        Ok(())
+    }
+
+    fn as_json(&self) -> String {
+        format!(
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
+            json_string(&self.engine),
+            json_string(&self.stt),
+            json_string(&self.from),
+            json_string(&self.to)
+        )
+    }
+}
+
 pub fn run(
     port: u16,
     token: String,
-    engine: Box<dyn Engine>,
+    engine: String,
+    stt: String,
+    from: String,
+    to: String,
     open_app: bool,
 ) -> Result<(), String> {
-    let format = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
-    let mut pipeline = Pipeline::new(PipelineConfig::new(format, format), engine)
-        .map_err(|error| error.to_string())?;
+    let mut session = Session::open(engine, stt, from, to)?;
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|error| format!("cannot bind 127.0.0.1:{port}: {error}"))?;
 
     println!("listening on http://127.0.0.1:{port}");
     println!("  token      {token}");
-    println!("  engine     {}", pipeline.engine_id());
+    println!(
+        "  engine     {} on {}",
+        session.pipeline.engine_id(),
+        session.stt
+    );
+    println!("  languages  {} to {}", session.from, session.to);
     println!("  input      16 kHz mono wav, POST /translate");
     if open_app {
         let address = format!("http://127.0.0.1:{port}/?t={token}");
@@ -74,7 +153,7 @@ pub fn run(
         };
         let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        match handle(&mut stream, &token, port, &mut pipeline, started) {
+        match handle(&mut stream, &token, port, &mut session, started) {
             Ok(Flow::Serve) => {}
             Ok(Flow::Stop) => break,
             Err(error) => eprintln!("request failed: {error}"),
@@ -125,7 +204,7 @@ fn handle(
     stream: &mut TcpStream,
     token: &str,
     port: u16,
-    pipeline: &mut Pipeline,
+    session: &mut Session,
     started: Instant,
 ) -> Result<Flow, String> {
     let (head, body) = read_http(stream)?;
@@ -160,6 +239,68 @@ fn handle(
             "{\"error\":\"origin is not the local app\"}",
         )
         .map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/settings" {
+        return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/settings" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let requested: Settings = match serde_json::from_slice(&body) {
+            Ok(settings) => settings,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let engine = requested.engine.unwrap_or_else(|| session.engine.clone());
+        let stt = requested.stt.unwrap_or_else(|| session.stt.clone());
+        let from = requested
+            .from
+            .unwrap_or_else(|| session.from.clone())
+            .to_ascii_lowercase();
+        let to = requested
+            .to
+            .unwrap_or_else(|| session.to.clone())
+            .to_ascii_lowercase();
+
+        println!("switching to {engine} on {stt}, {from} to {to}, loading models");
+        let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
+        let outcome = session.switch(engine, stt, from, to);
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        if let Err(error) = outcome {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+
+        let mut stored = crate::config::load();
+        stored.engine = session.engine.clone();
+        stored.stt = session.stt.clone();
+        stored.from = session.from.clone();
+        stored.to = session.to.clone();
+        if let Err(error) = crate::config::save(&stored) {
+            eprintln!("could not save the settings: {error}");
+        }
+        println!(
+            "  ready       {} on {}, {} to {}",
+            session.pipeline.engine_id(),
+            session.stt,
+            session.from,
+            session.to
+        );
+        return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
     }
 
     if method == "GET" && path.starts_with("/dub/") {
@@ -415,8 +556,13 @@ fn handle(
 
     if path == "/health" {
         let uptime = started.elapsed().as_secs();
-        let engine = pipeline.engine_id();
-        let body = format!("{{\"status\":\"ok\",\"uptime_s\":{uptime},\"engine\":\"{engine}\"}}");
+        let engine = session.pipeline.engine_id();
+        let body = format!(
+            "{{\"status\":\"ok\",\"uptime_s\":{uptime},\"engine\":\"{engine}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\"}}",
+            json_string(&session.stt),
+            json_string(&session.from),
+            json_string(&session.to)
+        );
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
@@ -452,7 +598,7 @@ fn handle(
     let mut samples = Vec::new();
     let mut transcript = String::new();
     for chunk in wav.samples.chunks(320) {
-        for output in pipeline.push(chunk) {
+        for output in session.pipeline.push(chunk) {
             if let Some(text) = output.transcript {
                 if !transcript.is_empty() {
                     transcript.push(' ');
