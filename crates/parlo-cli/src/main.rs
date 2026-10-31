@@ -12,6 +12,7 @@ mod mic;
 mod record;
 mod serve;
 mod sidecar;
+mod update;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ENGINE_LATENCY_MS: u32 = 1_500;
@@ -27,6 +28,7 @@ fn main() -> ExitCode {
         Some("listen") => listen_command(&args[1..]),
         Some("app") => app_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
+        Some("update") => update_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("profile") => print_profile(),
         Some("--version" | "-V") => {
@@ -64,6 +66,7 @@ fn print_help() {
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
+    println!("  update [--check]                   install the latest release in place");
     println!("  engines                            list engines, licenses and voice levels");
     println!("  profile                            detect hardware and recommend a mode");
     println!();
@@ -448,6 +451,39 @@ fn serve_command(args: &[String]) -> Result<(), String> {
         build_engine(&engine)?,
         false,
     )
+}
+
+fn update_command(args: &[String]) -> Result<(), String> {
+    let mut check = false;
+    for argument in args {
+        match argument.as_str() {
+            "--check" => check = true,
+            other => return Err(format!("unknown option: {other}")),
+        }
+    }
+
+    let latest = update::latest()?;
+    if !update::is_newer(VERSION, &latest.version) {
+        println!(
+            "parlo {VERSION} is up to date, the latest release is {}",
+            latest.version
+        );
+        return Ok(());
+    }
+
+    println!("parlo {VERSION} can update to {}", latest.version);
+    if !latest.notes_url.is_empty() {
+        println!("  notes      {}", latest.notes_url);
+    }
+    if check {
+        return Ok(());
+    }
+
+    let binary = update::install(&latest)?;
+    println!("  staged     {}", binary.display());
+    update::replace_running(&binary)?;
+    println!("  replacing this binary two seconds after it exits");
+    Ok(())
 }
 
 fn app_command(args: &[String]) -> Result<(), String> {

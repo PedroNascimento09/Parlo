@@ -58,7 +58,7 @@ Requires Rust 1.83 or newer. No other dependency.
 cargo run --release -p parlo-cli -- app
 ```
 
-The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level shows the microphone, and the translated voice plays back on the same screen. Nothing is installed and the audio never leaves the machine; when a newer release exists, the screen offers it with its notes linked. Guide: [docs/APP.md](docs/APP.md).
+The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level shows the microphone, and the translated voice plays back on the same screen. Nothing is installed and the audio never leaves the machine; when a newer release exists, the screen offers it with its notes linked, and `parlo update` installs it over the running copy without an uninstall. Guide: [docs/APP.md](docs/APP.md).
 
 Everything below is also available on the command line.
 

@@ -23,7 +23,16 @@ The command prints the token and the address, then opens the browser with the to
 
 Stable releases are tags `vX.Y.Z`. Every push to `main` also becomes the `nightly` prerelease, so a change is downloadable within minutes of being committed.
 
-The interface checks the release feed when it starts and shows a banner when a newer release exists, with its notes linked. It never installs anything without a click. Installing that update from inside the app, without uninstalling the old version first, is the next step and does not work yet.
+The interface checks the release feed when it starts and shows a banner when a newer release exists, with its notes linked. It never installs anything without a click.
+
+To install that update over the running copy, without uninstalling anything:
+
+```bash
+parlo update --check
+parlo update
+```
+
+The check prints the version it found; the update downloads the build for your system, stages it, and replaces the binary about two seconds after the old process exits. It keeps a copy of the previous binary next to it as `parlo.previous`, so a bad release can be put back by renaming the file.
 
 ## Privacy
 
