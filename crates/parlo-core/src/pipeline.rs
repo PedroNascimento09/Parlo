@@ -3,6 +3,7 @@ use std::fmt;
 
 use crate::audio::{AudioFormat, Frame};
 use crate::engine::Engine;
+use crate::gain::AutoGain;
 use crate::latency::LatencyBudget;
 use crate::resample::Resampler;
 use crate::vad::VoiceGate;
@@ -22,7 +23,7 @@ impl PipelineConfig {
             input,
             output,
             frame_ms: 20,
-            gate_threshold_db: -45.0,
+            gate_threshold_db: -55.0,
             hangover_frames: 15,
         }
     }
@@ -63,6 +64,7 @@ pub struct Pipeline {
     config: PipelineConfig,
     resampler: Resampler,
     gate: VoiceGate,
+    gain: AutoGain,
     engine: Box<dyn Engine>,
     budget: LatencyBudget,
     pending: Vec<f32>,
@@ -85,6 +87,7 @@ impl Pipeline {
         Ok(Self {
             resampler: Resampler::new(config.input.sample_rate(), config.output.sample_rate()),
             gate: VoiceGate::new(config.gate_threshold_db, config.hangover_frames),
+            gain: AutoGain::new(),
             frame_samples: config.input.frame_samples(config.frame_ms),
             engine,
             budget,
@@ -105,18 +108,22 @@ impl Pipeline {
         self.engine.id()
     }
 
+    pub fn input_gain(&self) -> f32 {
+        self.gain.gain()
+    }
+
     pub fn push(&mut self, samples: &[f32]) -> Vec<PipelineOutput> {
         self.pending.extend_from_slice(samples);
         let mut outputs = Vec::new();
         while self.pending.len() >= self.frame_samples {
             let frame: Vec<f32> = self.pending.drain(..self.frame_samples).collect();
-            outputs.push(self.process_frame(&frame));
+            outputs.push(self.process_frame(frame));
         }
         outputs
     }
 
-    fn process_frame(&mut self, samples: &[f32]) -> PipelineOutput {
-        let voice = self.gate.process(samples);
+    fn process_frame(&mut self, mut samples: Vec<f32>) -> PipelineOutput {
+        let voice = self.gate.process(&samples);
         if !voice {
             return PipelineOutput {
                 voice,
@@ -127,8 +134,9 @@ impl Pipeline {
             };
         }
 
+        self.gain.process(&mut samples);
         let mut resampled = Vec::with_capacity(self.frame_samples + 2);
-        self.resampler.process(samples, &mut resampled);
+        self.resampler.process(&samples, &mut resampled);
         let frame = Frame::new(self.config.output, resampled);
 
         match self.engine.process(&frame) {
@@ -173,6 +181,13 @@ mod tests {
         assert!(outputs.iter().all(|o| o.voice));
         assert_eq!(outputs[0].frame.as_ref().unwrap().samples().len(), 320);
         assert_eq!(outputs[0].latency_ms, 1_525);
+    }
+
+    #[test]
+    fn opens_the_gate_for_a_quiet_microphone() {
+        let mut pipeline = pipeline();
+        let outputs = pipeline.push(&vec![0.004; 4_800]);
+        assert!(outputs.iter().all(|output| output.voice));
     }
 
     #[test]

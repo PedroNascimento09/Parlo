@@ -18,6 +18,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - The default engine is now the universal CPU cascade with permissive licenses; Hibiki-Zero becomes an optional premium engine because its weights are CC BY-NC-SA 4.0.
 
+- The recorder peak normalises every clip towards -1 dBFS with a +24 dB ceiling instead of writing the raw signal, after a laptop Realtek microphone measured between -24.7 and -32.2 dBFS peak.
+- The voice gate default moved from -45 to -55 dBFS RMS, because that microphone's speech sits between -39.7 and -46.2 dBFS in 100 millisecond windows against a room noise floor of -63.9 to -67.0 dBFS.
+- Live listening and the local API apply automatic gain inside the pipeline after the voice gate, up to +24 dB, so a quiet microphone still reaches the cascade engine.
+
 ### Added
 
 - CPU cascade engine: faster-whisper, Argos, and Piper translate Portuguese and English in both directions, offline, at about 2.6 seconds per 1.2 second segment on a 12 core CPU. The output voice follows the target language.
@@ -33,6 +37,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.
 - `parlo translate --engine sidecar` drives the Python sidecar over the JSON protocol instead of the echo engine.
 - Engines report their target languages as owned strings, so adapters are no longer limited to static language lists.
+
+### Fixed
+
+- The live test produced no translated audio at all from 20 seconds of speech on a quiet microphone, because so few frames cleared the gate that the cascade never completed a 2.5 second segment.
 
 ### Planned
 

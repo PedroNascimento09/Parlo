@@ -106,7 +106,7 @@ curl -s -H "Authorization: Bearer secret" --data-binary @out/16k.wav \
 
 It accepts 16 kHz mono PCM16 WAV and returns the same format, so a desktop app can talk to it without linking the models.
 
-On Windows, double-click `TESTAR-VOZ.cmd` in the repository root: it records ten clips with prompts, compares Parakeet and Whisper on them, runs the live test, and writes `out/voice/report.txt`.
+On Windows, double-click `TESTAR-VOZ.cmd` in the repository root: it records ten clips with prompts, prints the measured level and the gain applied to each one, compares Parakeet and Whisper on them, runs the live test, and writes `out/voice/report.txt`.
 
 To translate live, without writing a file first:
 
@@ -114,9 +114,9 @@ To translate live, without writing a file first:
 cargo run --release -p parlo-cli -- listen out/live.wav --seconds 10
 ```
 
-`listen` prints how long it ran, how many frames passed the voice gate, and **how many seconds after start the first translated audio was ready**. Playback is still the virtual microphone's job; this writes a file.
+`listen` prints how long it ran, how many frames passed the voice gate, and **how many seconds after start the first translated audio was ready**. Playback is still the virtual microphone's job; this writes a file. The pipeline applies the same automatic gain after the voice gate, up to +24 dB, so a quiet microphone still reaches the engine. The gate opens at -55 dBFS, below the -39.7 to -46.2 dBFS that measured laptop speech occupies in 100 ms windows and above a room floor of -63.9 to -67.0 dBFS.
 
-`record` prints the peak level in dBFS and boosts a quiet microphone by up to 24 dB towards full scale, which is why a laptop microphone sounds as loud here as it does in a chat app. It still warns when the microphone captured almost nothing, which is almost always a muted input, the wrong device, or a Windows privacy setting rather than a code problem.
+`record` prints the peak level in dBFS and the gain it applied: each file is peak-normalised towards -1 dBFS, boosted by at most +24 dB and never attenuated. That is the same idea as the automatic gain control in a chat app, and the reason a laptop microphone sounds loud in Discord and quiet here: the operating system hands over the raw signal, so the recorder is where the difference is made up. It still warns when the microphone captured almost nothing, which is almost always a muted input, the wrong device, or a Windows privacy setting rather than a code problem.
 
 Building the recorder on Linux needs the ALSA headers: `sudo apt install libasound2-dev pkg-config`. With no microphone attached, `record --list` prints nothing and `record` says so instead of writing a silent file.
 

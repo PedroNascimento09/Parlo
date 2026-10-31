@@ -493,6 +493,7 @@ fn listen_command(args: &[String]) -> Result<(), String> {
 
     let mut translated = Vec::new();
     let mut voiced = 0usize;
+    let mut transcripts = 0usize;
     let mut first_audio = None;
     let mut first_error = None;
     let started = std::time::Instant::now();
@@ -501,6 +502,10 @@ fn listen_command(args: &[String]) -> Result<(), String> {
         for out in pipeline.push(&block) {
             if out.voice {
                 voiced += 1;
+            }
+            if let Some(text) = out.transcript {
+                transcripts += 1;
+                println!("  translation      {text}");
             }
             if let Some(error) = out.error {
                 first_error.get_or_insert(error);
@@ -523,6 +528,11 @@ fn listen_command(args: &[String]) -> Result<(), String> {
 
     println!("listened {wall:.1} s at {} Hz", input.sample_rate());
     println!("  voiced frames    {voiced}");
+    let gain = pipeline.input_gain();
+    if gain > 1.01 {
+        println!("  input gain       {:+.1} dB", 20.0 * gain.log10());
+    }
+    println!("  translations     {transcripts}");
     println!("  translated audio {audio:.2} s");
     match first_audio {
         Some(seconds) => println!("  first audio      {seconds:.2} s after start"),

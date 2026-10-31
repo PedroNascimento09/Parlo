@@ -24,6 +24,16 @@ ffmpeg -i input.wav -ac 1 -ar 48000 -c:a pcm_s16le mono.wav
 
 The file is IEEE float instead of PCM16. Convert it with the command above.
 
+## The microphone sounds loud in Discord but the recording is quiet
+
+Chat apps apply automatic gain control, so the same microphone sounds loud there and quiet in a raw file. `parlo record` captures what the operating system delivers and then normalises towards -1 dBFS with a +24 dB ceiling, printing the peak and the gain it applied, for example `gain +24.0 dB`. `parlo listen` applies automatic gain inside the pipeline, after the voice gate, so the engine receives a usable level whatever the device delivers.
+
+A laptop Realtek microphone measured raw speech between -24.7 and -32.2 dBFS peak, with speech in 100 ms windows between -39.7 and -46.2 dBFS, against a room noise floor between -63.9 and -67.0 dBFS. The voice gate opens at -55 dBFS, which sits above that noise floor and below normal speech.
+
+No gain line means the signal already reached full scale and nothing needed boosting. If the gate never opens, the input is muted, `record --list` shows a different device than the one you speak into, or Windows is denying desktop apps access to the microphone.
+
+Check the input device and its volume in Settings > System > Sound > Input, allow desktop apps in Settings > Privacy > Microphone, and compare the printed gain line rather than trusting the speaker volume, because the speaker hides a quiet capture.
+
 ## The output file is silent
 
 The voice gate closed because the input was below the threshold. Check the level:
@@ -32,7 +42,7 @@ The voice gate closed because the input was below the threshold. Check the level
 ffmpeg -i input.wav -af volumedetect -f null -
 ```
 
-If the mean volume is below about -45 dB, raise the recording level or lower `gate_threshold_db` in `PipelineConfig`.
+If the mean volume is below about -55 dB, raise the recording level or lower `gate_threshold_db` in `PipelineConfig`.
 
 ## `demo` reports fewer voiced frames than expected
 

@@ -68,6 +68,7 @@ if ($null -eq $chosen) {
     $chosen = $bestIndex
 }
 
+$rows = @()
 for ($i = 1; $i -le $Clips; $i++) {
     $prompt = $prompts[($i - 1) % $prompts.Count]
     Write-Host ""
@@ -90,11 +91,30 @@ for ($i = 1; $i -le $Clips; $i++) {
         $lines | Set-Content -Path $report -Encoding UTF8
         exit 1
     }
+    $gainText = ""
     if ($output -match "gain\s+(\+[0-9.]+) dB") {
+        $gainText = $matches[1] + " dB"
         Write-Host ("O microfone e baixo, a gravacao foi amplificada em {0} dB." -f $matches[1])
+    }
+    if ($output -match "peak\s+(-?[0-9.]+) dBFS") {
+        $rows += [pscustomobject]@{ Index = $i; Peak = $matches[1]; Value = [double]$matches[1]; Gain = $gainText }
     }
 }
 
+Write-Host ""
+Write-Host "NIVEIS DOS CLIPES"
+foreach ($row in $rows) {
+    Write-Host ("  {0:D2}  {1,6} dBFS  {2}" -f $row.Index, $row.Peak, $row.Gain)
+}
+if ($rows.Count -gt 0) {
+    $quietest = $rows | Sort-Object Value | Select-Object -First 1
+    $loudest = $rows | Sort-Object Value | Select-Object -Last 1
+    Write-Host ("  mais baixo: clipe {0:D2} com {1} dBFS, mais alto: clipe {2:D2} com {3} dBFS" -f $quietest.Index, $quietest.Peak, $loudest.Index, $loudest.Peak)
+    $boosted = @($rows | Where-Object { $_.Gain })
+    if ($boosted.Count -eq $rows.Count) {
+        Write-Host "  O microfone e baixo: os clipes foram amplificados, por isso soam tao alto como no Discord."
+    }
+}
 Write-Host ""
 Write-Host ("A comparar Parakeet e Whisper nos teus {0} clipes, uns 40 segundos..." -f $Clips)
 $lines += ""
@@ -114,6 +134,19 @@ if (-not $SkipLive) {
     $live = & $exe listen (Join-Path $root "out\live.wav") --seconds 20 2>&1
     $live | ForEach-Object { Write-Host $_ }
     $lines += $live
+    $voiced = 0
+    $translated = 0.0
+    foreach ($line in $live) {
+        if ($line -match "voiced frames\s+(\d+)") { $voiced = [int]$matches[1] }
+        if ($line -match "translated audio\s+([0-9.]+) s") { $translated = [double]$matches[1] }
+    }
+    Write-Host ""
+    Write-Host ("RESUMO AO VIVO: {0} frames de voz, {1} s de audio traduzido." -f $voiced, $translated)
+    $lines += ("RESUMO AO VIVO: {0} frames de voz, {1} s de audio traduzido." -f $voiced, $translated)
+    if ($translated -le 0.0) {
+        Write-Host "NADA CHEGOU AO MOTOR: o teste ao vivo nao mediu atraso nenhum."
+        $lines += "NADA CHEGOU AO MOTOR: o teste ao vivo nao mediu atraso nenhum."
+    }
 }
 
 $lines | Set-Content -Path $report -Encoding UTF8
