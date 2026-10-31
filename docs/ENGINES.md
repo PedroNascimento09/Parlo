@@ -7,7 +7,7 @@ An engine turns audio in one language into audio in another. Parlo does not care
 ```rust
 pub trait Engine: Send {
     fn id(&self) -> &str;
-    fn target_languages(&self) -> &[&str];
+    fn target_languages(&self) -> Vec<String>;
     fn latency_ms(&self) -> u32;
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError>;
 }
@@ -36,6 +36,21 @@ Rules an adapter must follow:
 ```
 
 Base64 costs about 33 percent overhead. That is acceptable for a reference adapter and will move to a binary frame header before v1.0, when audio throughput matters.
+
+## Using the sidecar from the CLI
+
+```bash
+parlo translate in.wav out.wav --engine sidecar
+```
+
+The CLI starts `serve.py` in `engines/hibiki`, performs the `hello` handshake, and sends every frame through the protocol. Two environment variables control it:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `PARLO_PYTHON` | `python` | Interpreter used to start the sidecar |
+| `PARLO_HIBIKI_DIR` | `engines/hibiki` | Directory containing `serve.py` |
+
+If the model is missing, the sidecar answers with an error and the CLI prints the model's own reason instead of hanging or inventing audio. That is the intended behaviour before weights are wired up.
 
 ## Adding an engine
 
