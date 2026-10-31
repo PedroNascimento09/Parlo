@@ -8,6 +8,7 @@ use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
 mod config;
+mod dub;
 mod engines;
 mod mic;
 mod models;
@@ -25,6 +26,7 @@ fn main() -> ExitCode {
         Some("doctor") => doctor(),
         Some("demo") => demo(args.get(1).map(String::as_str)),
         Some("translate") => translate(&args[1..]),
+        Some("dub") => dub_command(&args[1..]),
         Some("mic") => mic_command(&args[1..]),
         Some("record") => record_command(&args[1..]),
         Some("listen") => listen_command(&args[1..]),
@@ -66,6 +68,8 @@ fn print_help() {
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
     println!("            [--from pt --to en]             language pair for the cascade");
+    println!("  dub <video|audio>                  dub a file into another language, offline");
+    println!("            [--from pt --to en] [--out PATH] [--srt PATH] [--keep-background]");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
@@ -338,6 +342,72 @@ fn parse_translate_args(args: &[String]) -> Result<(&String, &String, String), S
     }
 }
 
+fn dub_command(args: &[String]) -> Result<(), String> {
+    let stored = config::load();
+    let mut from = stored.from.clone();
+    let mut to = stored.to.clone();
+    let mut out = None;
+    let mut srt = None;
+    let mut keep_background = false;
+    let mut source = None;
+    let mut index = 0;
+
+    while index < args.len() {
+        let argument = args[index].as_str();
+        index += 1;
+        match argument {
+            "--from" => from = args.get(index).cloned().ok_or("--from needs a value")?,
+            "--to" => to = args.get(index).cloned().ok_or("--to needs a value")?,
+            "--out" => {
+                out = Some(PathBuf::from(
+                    args.get(index).cloned().ok_or("--out needs a value")?,
+                ))
+            }
+            "--srt" => {
+                srt = Some(PathBuf::from(
+                    args.get(index).cloned().ok_or("--srt needs a value")?,
+                ))
+            }
+            "--keep-background" => {
+                keep_background = true;
+                continue;
+            }
+            other if other.starts_with("--") => return Err(format!("unknown option: {other}")),
+            other => {
+                if source.is_some() {
+                    return Err("dub takes one file".to_string());
+                }
+                source = Some(PathBuf::from(other));
+                continue;
+            }
+        }
+        index += 1;
+    }
+
+    let source = source.ok_or(
+        "usage: parlo dub <video|audio> [--from pt] [--to en] [--out PATH] [--srt PATH] \
+         [--keep-background]",
+    )?;
+    let (from, to) = (from.to_ascii_lowercase(), to.to_ascii_lowercase());
+    set_direction(&from, &to)?;
+
+    let result = dub::run(&dub::Request {
+        source: &source,
+        from: &from,
+        to: &to,
+        out,
+        srt,
+        keep_background,
+    })?;
+
+    println!();
+    println!("dubbed {} into {}", source.display(), to);
+    println!("  output      {}", result.out);
+    println!("  subtitles   {}", result.srt);
+    println!("  lines       {}", result.lines.len());
+    Ok(())
+}
+
 fn config_command(args: &[String]) -> Result<(), String> {
     let mut config = config::load();
     let mut written = false;
@@ -390,20 +460,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
 }
 
 fn set_direction(from: &str, to: &str) -> Result<(), String> {
-    for (value, label) in [(from, "--from"), (to, "--to")] {
-        if value.len() != 2
-            || !value
-                .chars()
-                .all(|character| character.is_ascii_alphabetic())
-        {
-            return Err(format!(
-                "{label} needs a two letter language code, got {value}"
-            ));
-        }
-    }
-    if from.eq_ignore_ascii_case(to) {
-        return Err("the source and target language must differ".to_string());
-    }
+    config::check_pair(from, to)?;
     env::set_var("PARLO_CASCADE_SOURCE", from.to_ascii_lowercase());
     env::set_var("PARLO_CASCADE_TARGET", to.to_ascii_lowercase());
     Ok(())

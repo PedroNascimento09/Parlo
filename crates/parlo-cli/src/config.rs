@@ -52,6 +52,24 @@ pub fn load() -> Config {
         .unwrap_or_default()
 }
 
+pub fn check_pair(from: &str, to: &str) -> Result<(), String> {
+    for (value, label) in [(from, "--from"), (to, "--to")] {
+        if value.len() != 2
+            || !value
+                .chars()
+                .all(|character| character.is_ascii_alphabetic())
+        {
+            return Err(format!(
+                "{label} needs a two letter language code, got {value}"
+            ));
+        }
+    }
+    if from.eq_ignore_ascii_case(to) {
+        return Err("the source and target language must differ".to_string());
+    }
+    Ok(())
+}
+
 pub fn save(config: &Config) -> Result<PathBuf, String> {
     let path = path();
     if let Some(parent) = path.parent() {
@@ -93,6 +111,14 @@ mod tests {
         };
         let text = serde_json::to_string(&config).unwrap();
         assert_eq!(serde_json::from_str::<Config>(&text).unwrap(), config);
+    }
+
+    #[test]
+    fn accepts_only_two_letter_pairs_that_differ() {
+        assert!(check_pair("pt", "en").is_ok());
+        assert!(check_pair("pt", "pt").is_err());
+        assert!(check_pair("pt", "eng").is_err());
+        assert!(check_pair("p1", "en").is_err());
     }
 
     #[test]

@@ -45,7 +45,7 @@ pub struct SidecarEngine {
     seq: u64,
 }
 
-fn python_for(script_dir: &Path) -> String {
+pub fn python_for(script_dir: &Path) -> String {
     if let Ok(explicit) = std::env::var("PARLO_PYTHON") {
         return explicit;
     }
