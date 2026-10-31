@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/parlo-core"]
+members = ["crates/parlo-core", "crates/parlo-cli"]
 
 [workspace.package]
 version = "0.1.0"

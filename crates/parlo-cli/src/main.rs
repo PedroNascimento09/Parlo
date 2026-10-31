@@ -1,0 +1,213 @@
+use std::env;
+use std::fs;
+use std::process::ExitCode;
+
+use parlo_core::wav::{read_pcm16, write_pcm16};
+use parlo_core::{AudioFormat, EchoEngine, LatencyBudget, Pipeline, PipelineConfig, Wav};
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const ENGINE_LATENCY_MS: u32 = 1_500;
+
+fn main() -> ExitCode {
+    let args: Vec<String> = env::args().skip(1).collect();
+    let outcome = match args.first().map(String::as_str) {
+        Some("doctor") => doctor(),
+        Some("demo") => demo(args.get(1).map(String::as_str)),
+        Some("translate") => translate(&args[1..]),
+        Some("--version" | "-V") => {
+            println!("parlo {VERSION}");
+            Ok(())
+        }
+        Some("--help" | "-h") | None => {
+            print_help();
+            Ok(())
+        }
+        Some(other) => Err(format!("unknown command: {other}")),
+    };
+
+    match outcome {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(message) => {
+            eprintln!("error: {message}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn print_help() {
+    println!("parlo {VERSION} - speak your language, be heard in theirs");
+    println!();
+    println!("usage: parlo <command>");
+    println!();
+    println!("commands:");
+    println!("  doctor                             check the local audio setup");
+    println!("  demo [out.wav]                     run the pipeline on synthetic speech");
+    println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
+    println!();
+    println!("audio never leaves this machine.");
+}
+
+fn doctor() -> Result<(), String> {
+    let input = AudioFormat::mono(48_000).map_err(|e| e.to_string())?;
+    let output = AudioFormat::mono(16_000).map_err(|e| e.to_string())?;
+    let budget = LatencyBudget::new(20, ENGINE_LATENCY_MS, 5);
+
+    println!("parlo {VERSION} doctor");
+    println!();
+    println!(
+        "platform          {} {}",
+        env::consts::OS,
+        env::consts::ARCH
+    );
+    println!(
+        "capture format    {} Hz mono, 20 ms frames",
+        input.sample_rate()
+    );
+    println!("engine format     {} Hz mono", output.sample_rate());
+    println!("engine            echo (no model installed)");
+    println!();
+    println!("latency budget");
+    println!("  capture         {:>5} ms", budget.capture_ms);
+    println!("  engine          {:>5} ms", budget.engine_ms);
+    println!("  output          {:>5} ms", budget.output_ms);
+    println!(
+        "  total           {:>5} ms (target {} ms)",
+        budget.total_ms(),
+        LatencyBudget::TARGET_MS
+    );
+    println!();
+    if budget.is_within_target() {
+        println!("status            within target");
+    } else if budget.is_within_ceiling() {
+        println!("status            above target, within ceiling");
+    } else {
+        println!("status            above the usable ceiling");
+    }
+    println!("privacy           local only, no network calls, no telemetry");
+    Ok(())
+}
+
+fn demo(path: Option<&str>) -> Result<(), String> {
+    let input = AudioFormat::mono(48_000).map_err(|e| e.to_string())?;
+    let output = AudioFormat::mono(16_000).map_err(|e| e.to_string())?;
+    let mut pipeline = Pipeline::new(
+        PipelineConfig::new(input, output),
+        Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 0.8)),
+    )
+    .map_err(|e| e.to_string())?;
+
+    let speech = synthetic_speech(input.sample_rate(), 2_500);
+    let mut translated = Vec::new();
+    let mut frames = 0;
+    let mut voiced = 0;
+
+    for chunk in speech.chunks(480) {
+        for out in pipeline.push(chunk) {
+            frames += 1;
+            if out.voice {
+                voiced += 1;
+            }
+            if let Some(frame) = out.frame {
+                translated.extend_from_slice(frame.samples());
+            }
+        }
+    }
+
+    println!("demo");
+    println!(
+        "  input           {:.2} s synthetic speech",
+        speech.len() as f32 / 48_000.0
+    );
+    println!("  frames          {frames} processed, {voiced} voiced");
+    println!(
+        "  translated      {:.2} s at {} Hz",
+        translated.len() as f32 / 16_000.0,
+        output.sample_rate()
+    );
+    println!(
+        "  latency         {} ms (declared by engine)",
+        pipeline.budget().total_ms()
+    );
+
+    if let Some(path) = path {
+        let wav = Wav {
+            format: output,
+            samples: translated,
+        };
+        fs::write(path, write_pcm16(&wav)).map_err(|e| format!("{path}: {e}"))?;
+        println!("  written         {path}");
+    }
+    Ok(())
+}
+
+fn translate(args: &[String]) -> Result<(), String> {
+    let (input_path, output_path) = match args {
+        [input, output] => (input, output),
+        _ => return Err("usage: parlo translate <in.wav> <out.wav>".to_string()),
+    };
+
+    let bytes = fs::read(input_path).map_err(|e| format!("{input_path}: {e}"))?;
+    let wav = read_pcm16(&bytes).map_err(|e| format!("{input_path}: {e}"))?;
+    if wav.format.channels() != 1 {
+        return Err("input must be mono pcm16 audio".to_string());
+    }
+
+    let output = AudioFormat::mono(16_000).map_err(|e| e.to_string())?;
+    let mut pipeline = Pipeline::new(
+        PipelineConfig::new(wav.format, output),
+        Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 1.0)),
+    )
+    .map_err(|e| e.to_string())?;
+
+    let mut translated = Vec::new();
+    let mut voiced = 0;
+    for chunk in wav.samples.chunks(480) {
+        for out in pipeline.push(chunk) {
+            if out.voice {
+                voiced += 1;
+            }
+            if let Some(frame) = out.frame {
+                translated.extend_from_slice(frame.samples());
+            }
+        }
+    }
+
+    let result = Wav {
+        format: output,
+        samples: translated,
+    };
+    fs::write(output_path, write_pcm16(&result)).map_err(|e| format!("{output_path}: {e}"))?;
+
+    println!("translated {input_path} -> {output_path}");
+    println!(
+        "  source          {} Hz, {:.2} s",
+        wav.format.sample_rate(),
+        wav.samples.len() as f32 / wav.format.sample_rate() as f32
+    );
+    println!(
+        "  output          {} Hz, {:.2} s",
+        output.sample_rate(),
+        result.samples.len() as f32 / output.sample_rate() as f32
+    );
+    println!("  voiced frames   {voiced}");
+    Ok(())
+}
+
+fn synthetic_speech(sample_rate: u32, duration_ms: u32) -> Vec<f32> {
+    let total = (sample_rate as u64 * duration_ms as u64 / 1000) as usize;
+    let bursts = [(0.0, 600.0), (800.0, 700.0), (1_700.0, 600.0)];
+    let mut samples = vec![0.0; total];
+
+    for (start_ms, length_ms) in bursts {
+        let start = (sample_rate as f64 * start_ms / 1000.0) as usize;
+        let length = (sample_rate as f64 * length_ms / 1000.0) as usize;
+        for offset in 0..length.min(total.saturating_sub(start)) {
+            let t = offset as f32 / sample_rate as f32;
+            let envelope = (std::f32::consts::PI * offset as f32 / length as f32).sin();
+            let voice = (2.0 * std::f32::consts::PI * 140.0 * t).sin()
+                + 0.5 * (2.0 * std::f32::consts::PI * 280.0 * t).sin();
+            samples[start + offset] = 0.25 * envelope * voice;
+        }
+    }
+    samples
+}
