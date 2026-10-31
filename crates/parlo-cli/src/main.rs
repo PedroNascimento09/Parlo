@@ -6,6 +6,7 @@ use std::process::ExitCode;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
+mod engines;
 mod mic;
 mod sidecar;
 
@@ -19,6 +20,8 @@ fn main() -> ExitCode {
         Some("demo") => demo(args.get(1).map(String::as_str)),
         Some("translate") => translate(&args[1..]),
         Some("mic") => mic_command(&args[1..]),
+        Some("engines") => list_engines(),
+        Some("profile") => print_profile(),
         Some("--version" | "-V") => {
             println!("parlo {VERSION}");
             Ok(())
@@ -50,6 +53,8 @@ fn print_help() {
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar]  pick the engine, default echo");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
+    println!("  engines                            list engines, licenses and voice levels");
+    println!("  profile                            detect hardware and recommend a mode");
     println!();
     println!("audio never leaves this machine.");
 }
@@ -91,6 +96,73 @@ fn doctor() -> Result<(), String> {
         println!("status            above the usable ceiling");
     }
     println!("privacy           local only, no network calls, no telemetry");
+
+    let cores = engines::detect_cores();
+    let profile = engines::profile_for_cores(cores);
+    println!(
+        "profile           {} ({} cores), voice level {}",
+        profile.label(),
+        cores,
+        engines::fidelity_for(profile)
+    );
+    Ok(())
+}
+
+fn list_engines() -> Result<(), String> {
+    println!("engines");
+    for engine in engines::ENGINES {
+        let state = if engine.available {
+            "available"
+        } else {
+            "planned"
+        };
+        let commercial = if engine.license.permits_commercial() {
+            "commercial use ok"
+        } else {
+            "non commercial"
+        };
+        let needs = if engine.requires_gpu { "gpu" } else { "cpu ok" };
+        println!(
+            "  {:<8} {:<9} {:<16} {:<24} {:<8} {}",
+            engine.id,
+            state,
+            engine.license.label(),
+            engine.hardware,
+            needs,
+            commercial
+        );
+        let levels: Vec<String> = engine
+            .fidelity
+            .iter()
+            .map(|level| level.to_string())
+            .collect();
+        println!("           {} | {}", engine.name, levels.join(", "));
+    }
+    println!();
+    println!(
+        "default engine: {} ({})",
+        engines::default_engine().id,
+        engines::default_engine().license.label()
+    );
+    Ok(())
+}
+
+fn print_profile() -> Result<(), String> {
+    let cores = engines::detect_cores();
+    let profile = engines::profile_for_cores(cores);
+    let fidelity = engines::fidelity_for(profile);
+    let (min_ms, max_ms) = profile.target_ms();
+
+    println!("hardware profile");
+    println!("  cpu cores       {cores}");
+    println!("  profile         {}", profile.label());
+    println!("  voice level     {fidelity}");
+    if min_ms == 0 {
+        println!("  latency target  under {max_ms} ms (captions)");
+    } else {
+        println!("  latency target  {min_ms} to {max_ms} ms");
+    }
+    println!("  note            gpu and memory are not inspected yet, this is a cpu hint");
     Ok(())
 }
 
