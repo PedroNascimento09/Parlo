@@ -12,6 +12,8 @@ parlo app
 
 On Windows that is `parlo.exe app`. The archive also contains a folder named `parlo-engine`, the self-contained translation engine with its libraries, about 900 MB once unpacked; it must stay next to `parlo`, because the program looks for it beside itself, and no Python is involved. Models are not in the archive: the Models panel downloads them on first use into `%APPDATA%\parlo\models` on Windows, `~/Library/Application Support/parlo/models` on macOS, or `$XDG_DATA_HOME/parlo/models` elsewhere, and `PARLO_MODELS_DIR` moves them. That first download is roughly 800 MB, so the first launch needs a network connection once, and everything works offline afterwards. The config file sits beside that folder.
 
+To keep the release somewhere permanent, `parlo install` copies the program and the engine folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, and writes one menu entry that opens the app. `--dir` installs somewhere else and `--no-shortcut` skips the entry. `parlo uninstall` removes both and keeps your models, because redownloading 800 MB on a whim is not a kindness; `--purge` removes them as well.
+
 From a source checkout, double-click `scripts/parlo-app.cmd` on Windows, or run `scripts/parlo-app.sh` on Linux and macOS: the first run builds the binary, then every run opens the interface for you. From a terminal the same thing is:
 
 ```bash

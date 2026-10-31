@@ -64,8 +64,9 @@ jobs:
           mkdir -p release
           cp target/${{ matrix.target }}/release/parlo release/
           cp -r engines/cascade/dist/parlo-engine release/
+          cp assets/parlo.ico assets/parlo.png release/
           cp README.md release/
-          tar -czf ${{ matrix.archive }} -C release parlo parlo-engine README.md
+          tar -czf ${{ matrix.archive }} -C release parlo parlo-engine parlo.png parlo.ico README.md
 
       - name: Package windows
         if: runner.os == 'Windows'
@@ -74,8 +75,9 @@ jobs:
           New-Item -ItemType Directory -Force release | Out-Null
           Copy-Item target/${{ matrix.target }}/release/parlo.exe release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
+          Copy-Item assets/parlo.ico, assets/parlo.png release/
           Copy-Item README.md release/
-          Compress-Archive -Path release/parlo.exe, release/parlo-engine, release/README.md -DestinationPath ${{ matrix.archive }} -Force
+          Compress-Archive -Path release/parlo.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2

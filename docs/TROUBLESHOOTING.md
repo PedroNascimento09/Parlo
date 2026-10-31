@@ -50,6 +50,22 @@ parlo-engine/parlo-engine.exe --download-models
 
 Delete the old archive folder, unpack the new one, and keep `parlo`, `parlo-engine` and `README.md` together.
 
+## `parlo install` copied a binary without an engine
+
+`install` copies the binary that is running, so from a source checkout it installs `target/release/parlo`, which has no `parlo-engine` folder beside it and says so: `engine none beside this binary, install from a release archive to get one`. The installed copy then falls back to `python serve.py` in the checkout, which only works while that checkout exists.
+
+Install from an unpacked release archive instead, where the folder is next to the binary, or copy `parlo-engine` into the installed directory by hand and run the installed `parlo` again.
+
+## Uninstalling kept a folder with every model
+
+That is on purpose. `parlo uninstall` removes the program and its menu entry and leaves the data directory, models included, because downloading 800 MB again after changing your mind is worse than a folder you can delete yourself. Nothing else reads it once the program is gone.
+
+To remove the models and the config in the same step:
+
+```bash
+parlo uninstall --purge
+```
+
 ## The data directory is not writable
 
 Without a writable data directory there is nowhere to put the config file or the models, and the download fails at once. Check the folder named in the table above, or choose another one:

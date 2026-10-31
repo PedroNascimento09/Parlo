@@ -68,6 +68,14 @@ Models, settings and the downloaded pieces live in `%APPDATA%\parlo` on Windows,
 
 Archives published before v0.3.0 contain only `parlo` and need the source checkout below.
 
+To keep it instead of running it from the downloads folder, install it for your user and get a menu entry:
+
+```bash
+parlo install
+```
+
+That copies `parlo` and the `parlo-engine` folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, adds a Start Menu entry on Windows or an application menu entry on Linux, and prints the command to open it. macOS gets no menu entry yet; open `~/Applications/Parlo/parlo app` from a terminal or add it to the Dock once. `parlo uninstall` removes the program and the menu entry and leaves your models alone; add `--purge` to remove those too.
+
 ### From a source checkout
 
 Requires Rust 1.83 or newer. No other dependency.

@@ -55,8 +55,8 @@ fn shortcut_path() -> Option<PathBuf> {
 
 pub fn install(dir: Option<PathBuf>, shortcut: bool) -> Result<Vec<String>, String> {
     let target = dir.unwrap_or_else(install_dir);
-    let target = std::path::absolute(&target)
-        .map_err(|error| format!("{}: {error}", target.display()))?;
+    let target =
+        std::path::absolute(&target).map_err(|error| format!("{}: {error}", target.display()))?;
     let binary = env::current_exe().map_err(|error| error.to_string())?;
     let name = binary
         .file_name()
@@ -89,6 +89,15 @@ pub fn install(dir: Option<PathBuf>, shortcut: bool) -> Result<Vec<String>, Stri
             "engine      none beside this binary, install from a release archive to get one"
                 .to_string(),
         );
+    }
+
+    if let Some(source_dir) = binary.parent() {
+        for icon in ["parlo.ico", "parlo.png"] {
+            let source = source_dir.join(icon);
+            if source.is_file() && !target.join(icon).is_file() {
+                fs::copy(&source, target.join(icon)).ok();
+            }
+        }
     }
 
     let marker = format!(
@@ -195,6 +204,20 @@ fn copy_tree(source: &Path, target: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn icon_for(dir: &Path, binary: &Path) -> PathBuf {
+    let name = if cfg!(target_os = "windows") {
+        "parlo.ico"
+    } else {
+        "parlo.png"
+    };
+    let candidate = dir.join(name);
+    if candidate.is_file() {
+        candidate
+    } else {
+        binary.to_path_buf()
+    }
+}
+
 fn write_shortcut(binary: &Path, dir: &Path) -> Result<Option<PathBuf>, String> {
     let Some(path) = shortcut_path() else {
         return Ok(None);
@@ -202,6 +225,7 @@ fn write_shortcut(binary: &Path, dir: &Path) -> Result<Option<PathBuf>, String> 
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| format!("{}: {error}", parent.display()))?;
     }
+    let icon = icon_for(dir, binary);
     if cfg!(target_os = "windows") {
         let script = format!(
             "$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{}');\
@@ -210,7 +234,7 @@ fn write_shortcut(binary: &Path, dir: &Path) -> Result<Option<PathBuf>, String> 
             path.display(),
             binary.display(),
             dir.display(),
-            binary.display()
+            icon.display()
         );
         let status = Command::new("powershell")
             .args(["-NoProfile", "-NonInteractive", "-Command", &script])
@@ -224,9 +248,11 @@ fn write_shortcut(binary: &Path, dir: &Path) -> Result<Option<PathBuf>, String> 
     let entry = format!(
         "[Desktop Entry]\nType=Application\nName={SHORTCUT_NAME}\n\
          Comment=Speak your language, be heard in theirs\n\
-         Exec=\"{}\" app\nPath={}\nTerminal=false\nCategories=AudioVideo;Utility;\n",
+         Exec=\"{}\" app\nPath={}\nIcon={}\nTerminal=false\n\
+         Categories=AudioVideo;Utility;\n",
         binary.display(),
-        dir.display()
+        dir.display(),
+        icon.display()
     );
     fs::write(&path, entry).map_err(|error| format!("{}: {error}", path.display()))?;
     Ok(Some(path))
