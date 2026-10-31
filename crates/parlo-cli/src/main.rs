@@ -25,6 +25,7 @@ fn main() -> ExitCode {
         Some("mic") => mic_command(&args[1..]),
         Some("record") => record_command(&args[1..]),
         Some("listen") => listen_command(&args[1..]),
+        Some("app") => app_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("profile") => print_profile(),
@@ -56,6 +57,7 @@ fn print_help() {
     println!("commands:");
     println!("  doctor                             check the local audio setup");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
+    println!("  app [--port N] [--engine NAME]     open the microphone translator in a browser");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
     println!("  mic setup|status|remove            manage the virtual microphone (linux)");
@@ -444,7 +446,35 @@ fn serve_command(args: &[String]) -> Result<(), String> {
         port,
         token.unwrap_or_else(serve::new_token),
         build_engine(&engine)?,
+        false,
     )
+}
+
+fn app_command(args: &[String]) -> Result<(), String> {
+    let mut port = 8787u16;
+    let mut engine = "cascade".to_string();
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "--port" => {
+                index += 1;
+                port = args
+                    .get(index)
+                    .ok_or("--port needs a value")?
+                    .parse()
+                    .map_err(|_| "port must be a number".to_string())?;
+            }
+            "--engine" => {
+                index += 1;
+                engine = args.get(index).cloned().ok_or("--engine needs a value")?;
+            }
+            other => return Err(format!("unknown option: {other}")),
+        }
+        index += 1;
+    }
+
+    serve::run(port, serve::new_token(), build_engine(&engine)?, true)
 }
 
 fn listen_command(args: &[String]) -> Result<(), String> {

@@ -20,19 +20,25 @@ The universal cascade arrives: streaming speech recognition, translation, and te
 
 **Exit criterion:** two engines run the same test suite; the medium profile works inside its documented latency; switching engines requires no core changes.
 
-## v0.4 Dub
+## v0.4 App
+
+`parlo app` serves the interface locally and opens it in the browser, so nothing is installed and no driver is needed. The person records a sentence, hears the translation, sees the engine and the microphone state, and the app offers updates from inside itself without an uninstall. Voice is Portuguese to English and back.
+
+**Exit criterion:** three people who have never used a terminal translate a sentence alone, and an update from the previous release is accepted in the app without reinstalling.
+
+## v0.5 Dub
 
 First public preview that needs no driver and no NVIDIA card: `parlo dub video.mp4 --to en`, with subtitles, authored voice level, and a visible synthetic speech notice.
 
 **Exit criterion:** three people outside the project dub a five minute video without help.
 
-## v0.5 Native
+## v0.6 Native
 
 Own virtual microphone: PipeWire on Linux, an audio plug-in on macOS, a signed driver on Windows. Tray app, installers built in CI.
 
 **Exit criterion:** a clean machine installs and shows Parlo in Zoom, Meet, and Teams in under five minutes, on two operating systems.
 
-## v0.6 Alpha
+## v0.7 Alpha
 
 First run wizard, model manager, captions overlay, global hotkey, per-app profiles. Closed alpha with 10 to 20 people across languages and hardware.
 
@@ -40,7 +46,7 @@ First run wizard, model manager, captions overlay, global hotkey, per-app profil
 
 ## v0.8 Beta
 
-Three platforms at parity, eight interface languages, accessibility, automatic updates, published benchmarks.
+Three platforms at parity, eight interface languages, accessibility, update channels with rollback, published benchmarks.
 
 **Exit criterion:** zero critical bugs in the last round, 90 percent install success.
 

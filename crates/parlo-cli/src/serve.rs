@@ -1,5 +1,6 @@
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::process::Command;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use parlo_core::wav::{read_pcm16, write_pcm16};
@@ -7,6 +8,10 @@ use parlo_core::{AudioFormat, Engine, Pipeline, PipelineConfig, Wav};
 
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 20 * 1024 * 1024;
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const INDEX: &str = include_str!("../web/index.html");
+const STYLESHEET: &str = include_str!("../web/app.css");
+const SCRIPT: &str = include_str!("../web/app.js");
 
 pub fn new_token() -> String {
     let nanos = SystemTime::now()
@@ -16,7 +21,12 @@ pub fn new_token() -> String {
     format!("{nanos:016x}{:08x}", std::process::id())
 }
 
-pub fn run(port: u16, token: String, engine: Box<dyn Engine>) -> Result<(), String> {
+pub fn run(
+    port: u16,
+    token: String,
+    engine: Box<dyn Engine>,
+    open_app: bool,
+) -> Result<(), String> {
     let format = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
     let mut pipeline = Pipeline::new(PipelineConfig::new(format, format), engine)
         .map_err(|error| error.to_string())?;
@@ -27,6 +37,13 @@ pub fn run(port: u16, token: String, engine: Box<dyn Engine>) -> Result<(), Stri
     println!("  token      {token}");
     println!("  engine     {}", pipeline.engine_id());
     println!("  input      16 kHz mono wav, POST /translate");
+    if open_app {
+        let address = format!("http://127.0.0.1:{port}/?t={token}");
+        println!("  app        {address}");
+        if let Err(error) = open_browser(&address) {
+            eprintln!("could not open the browser: {error}, open the app link above");
+        }
+    }
 
     let started = Instant::now();
     for stream in listener.incoming() {
@@ -57,11 +74,44 @@ fn handle(
     let request = lines.next().unwrap_or_default();
     let mut parts = request.split_whitespace();
     let method = parts.next().unwrap_or_default();
-    let path = parts.next().unwrap_or_default();
+    let path = parts
+        .next()
+        .unwrap_or_default()
+        .split('?')
+        .next()
+        .unwrap_or_default();
     let headers: Vec<(String, String)> = lines
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
+
+    if method == "GET" && path == "/" {
+        let page = INDEX.replace("__PARLO_VERSION__", VERSION);
+        return respond(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            page.as_bytes(),
+        );
+    }
+
+    if method == "GET" && path == "/app.css" {
+        return respond(
+            stream,
+            "200 OK",
+            "text/css; charset=utf-8",
+            STYLESHEET.as_bytes(),
+        );
+    }
+
+    if method == "GET" && path == "/app.js" {
+        return respond(
+            stream,
+            "200 OK",
+            "text/javascript; charset=utf-8",
+            SCRIPT.as_bytes(),
+        );
+    }
 
     if path == "/health" {
         let uptime = started.elapsed().as_secs();
@@ -116,6 +166,23 @@ fn handle(
         samples,
     };
     respond(stream, "200 OK", "audio/wav", &write_pcm16(&translated))
+}
+
+fn open_browser(address: &str) -> Result<(), String> {
+    let mut command = if cfg!(target_os = "windows") {
+        let mut command = Command::new("cmd");
+        command.args(["/c", "start", ""]);
+        command
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+    } else {
+        Command::new("xdg-open")
+    };
+    command
+        .arg(address)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
 }
 
 fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>), String> {
@@ -237,6 +304,14 @@ mod tests {
     fn compares_without_short_circuiting_on_length() {
         assert!(!constant_time_eq("abc", "ab"));
         assert!(constant_time_eq("abc", "abc"));
+    }
+
+    #[test]
+    fn the_app_page_carries_the_running_version() {
+        let page = INDEX.replace("__PARLO_VERSION__", VERSION);
+        assert!(page.contains(&format!("content=\"{VERSION}\"")));
+        assert!(!page.contains("__PARLO_VERSION__"));
+        assert!(page.contains("/app.css") && page.contains("/app.js"));
     }
 
     #[test]

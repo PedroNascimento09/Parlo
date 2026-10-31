@@ -52,6 +52,16 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 
 Requires Rust 1.83 or newer. No other dependency.
 
+### The app
+
+```bash
+cargo run --release -p parlo-cli -- app
+```
+
+The command serves Parlo's interface from the binary itself and opens it in your browser: hold or click the main control to speak, the input level shows the microphone, and the translated voice plays back on the same screen. Nothing is installed and the audio never leaves the machine; when a newer release exists, the screen offers it with its notes linked. Guide: [docs/APP.md](docs/APP.md).
+
+Everything below is also available on the command line.
+
 ```bash
 cargo run --release -p parlo-cli -- doctor
 cargo run --release -p parlo-cli -- profile

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="parlo-version" content="__PARLO_VERSION__">
+<title>Parlo</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header class="top">
+  <p class="wordmark">Parlo</p>
+  <h1>Speak, and hear it in the other language.</h1>
+  <p class="lede">Hold the button, say a sentence, let go. The translation plays back in a few seconds.</p>
+  <dl class="status">
+    <div>
+      <dt>Engine</dt>
+      <dd id="status-engine">starting</dd>
+    </div>
+    <div>
+      <dt>Running for</dt>
+      <dd id="status-uptime">just now</dd>
+    </div>
+    <div>
+      <dt>Version</dt>
+      <dd id="status-version">unknown</dd>
+    </div>
+  </dl>
+</header>
+
+<main>
+  <section class="update" id="update" aria-live="polite" hidden>
+    <p>Parlo <strong id="update-version"></strong> is available. You can install it over this version.</p>
+    <a id="update-link" href="https://github.com/PedroNascimento09/Parlo/releases">See what changed</a>
+  </section>
+
+  <div class="panel">
+    <div class="meter" role="img" aria-label="Microphone level">
+      <div class="meter-fill" id="meter-fill"></div>
+    </div>
+    <p class="hint" id="meter-hint">The bar moves when the microphone hears you.</p>
+
+    <button id="talk" class="talk" type="button" aria-pressed="false">
+      <span class="talk-label">Hold to speak</span>
+      <span class="talk-sub">Release to hear the translation</span>
+    </button>
+
+    <p class="progress" id="progress" aria-live="polite" hidden></p>
+    <p class="error" id="error" role="alert" hidden></p>
+  </div>
+</main>
+
+<footer>
+  <p>Audio is translated on this machine and never uploaded. No telemetry, no account.</p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

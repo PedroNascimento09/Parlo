@@ -1,0 +1,360 @@
+const token = new URLSearchParams(location.search).get("t") || "";
+const version = document.querySelector('meta[name="parlo-version"]').content;
+
+const talk = document.getElementById("talk");
+const label = talk.querySelector(".talk-label");
+const sub = talk.querySelector(".talk-sub");
+const meterFill = document.getElementById("meter-fill");
+const progress = document.getElementById("progress");
+const errorBox = document.getElementById("error");
+const updateBox = document.getElementById("update");
+const updateVersion = document.getElementById("update-version");
+const updateLink = document.getElementById("update-link");
+const engineEl = document.getElementById("status-engine");
+const uptimeEl = document.getElementById("status-uptime");
+const versionEl = document.getElementById("status-version");
+
+const TARGET_RATE = 16000;
+const MAX_SECONDS = 30;
+const MIN_SECONDS = 0.25;
+
+let media = null;
+let context = null;
+let analyser = null;
+let processor = null;
+let levels = null;
+let meterFrame = null;
+let recording = false;
+let chunks = [];
+let maxTimer = null;
+let player = null;
+
+versionEl.textContent = version || "unknown";
+
+function showError(message) {
+  errorBox.textContent = message;
+  errorBox.hidden = false;
+}
+
+function clearError() {
+  errorBox.textContent = "";
+  errorBox.hidden = true;
+}
+
+function setProgress(message) {
+  progress.textContent = message || "";
+  progress.hidden = !message;
+}
+
+function describeMicrophoneError(failure) {
+  if (failure && failure.name === "NotAllowedError") {
+    return "The browser blocked the microphone. Choose Allow for 127.0.0.1 in the address bar, then try again.";
+  }
+  if (failure && failure.name === "NotFoundError") {
+    return "No microphone was found. Connect one and reload this page.";
+  }
+  if (failure && failure.name === "NotReadableError") {
+    return "Another program is using the microphone. Close it and try again.";
+  }
+  return "The microphone could not be opened. Check the input device in your system settings.";
+}
+
+async function openMicrophone() {
+  if (media) {
+    return media;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    throw new Error("This browser cannot open a microphone.");
+  }
+  media = await navigator.mediaDevices.getUserMedia({
+    audio: { channelCount: 1, echoCancellation: true },
+  });
+  return media;
+}
+
+function drawMeter() {
+  meterFrame = requestAnimationFrame(drawMeter);
+  if (!analyser || !levels) {
+    return;
+  }
+  analyser.getFloatTimeDomainData(levels);
+  let sum = 0;
+  for (let index = 0; index < levels.length; index += 1) {
+    sum += levels[index] * levels[index];
+  }
+  const rms = Math.sqrt(sum / levels.length);
+  const decibels = 20 * Math.log10(rms + 1e-6);
+  const level = Math.min(1, Math.max(0, (decibels + 60) / 60));
+  meterFill.style.width = (level * 100).toFixed(1) + "%";
+}
+
+async function ensureAudio() {
+  const stream = await openMicrophone();
+  if (!context) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    context = new AudioContext();
+    const source = context.createMediaStreamSource(stream);
+    analyser = context.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+    processor = context.createScriptProcessor(4096, 1, 1);
+    processor.onaudioprocess = (event) => {
+      if (!recording) {
+        return;
+      }
+      chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+    };
+    const silence = context.createGain();
+    silence.gain.value = 0;
+    source.connect(processor);
+    processor.connect(silence);
+    silence.connect(context.destination);
+    levels = new Float32Array(analyser.fftSize);
+    drawMeter();
+  }
+  if (context.state === "suspended") {
+    await context.resume();
+  }
+  return context;
+}
+
+function downsample(input, fromRate, toRate) {
+  if (fromRate === toRate) {
+    return input;
+  }
+  const ratio = fromRate / toRate;
+  const length = Math.floor(input.length / ratio);
+  const output = new Float32Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const position = index * ratio;
+    const left = Math.floor(position);
+    const right = Math.min(left + 1, input.length - 1);
+    const weight = position - left;
+    output[index] = input[left] * (1 - weight) + input[right] * weight;
+  }
+  return output;
+}
+
+function encodeWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const ascii = (offset, text) => {
+    for (let index = 0; index < text.length; index += 1) {
+      view.setUint8(offset + index, text.charCodeAt(index));
+    }
+  };
+  ascii(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  ascii(8, "WAVE");
+  ascii(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  ascii(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  let offset = 44;
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[index]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += 2;
+  }
+  return new Blob([view], { type: "audio/wav" });
+}
+
+function stopPlayback() {
+  if (!player) {
+    return;
+  }
+  player.pause();
+  URL.revokeObjectURL(player.src);
+  player = null;
+}
+
+function play(blob) {
+  stopPlayback();
+  const url = URL.createObjectURL(blob);
+  player = new Audio(url);
+  player.addEventListener(
+    "ended",
+    () => {
+      URL.revokeObjectURL(url);
+      player = null;
+      setProgress("");
+    },
+    { once: true },
+  );
+  player.play().catch(() => {
+    setProgress("");
+    showError("The translation is ready but the browser blocked playback. Click the page, then try again.");
+  });
+}
+
+async function begin() {
+  if (recording) {
+    return;
+  }
+  clearError();
+  setProgress("");
+  stopPlayback();
+  try {
+    await ensureAudio();
+  } catch (failure) {
+    showError(describeMicrophoneError(failure));
+    return;
+  }
+  chunks = [];
+  recording = true;
+  talk.setAttribute("aria-pressed", "true");
+  label.textContent = "Listening";
+  sub.textContent = "Release to hear the translation";
+  clearTimeout(maxTimer);
+  maxTimer = setTimeout(() => finish(), MAX_SECONDS * 1000);
+}
+
+async function finish() {
+  if (!recording) {
+    return;
+  }
+  recording = false;
+  clearTimeout(maxTimer);
+  talk.setAttribute("aria-pressed", "false");
+  label.textContent = "Hold to speak";
+  sub.textContent = "Release to hear the translation";
+
+  const captured = chunks;
+  chunks = [];
+  const rate = context ? context.sampleRate : 48000;
+  const length = captured.reduce((total, chunk) => total + chunk.length, 0);
+  const seconds = length / rate;
+  if (seconds < MIN_SECONDS) {
+    showError("Hold the button while you speak, then release it.");
+    return;
+  }
+
+  const merged = new Float32Array(length);
+  let offset = 0;
+  for (const chunk of captured) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  setProgress("Translating " + seconds.toFixed(1) + " s of speech.");
+  try {
+    const wav = encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE);
+    const response = await fetch("/translate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: wav,
+    });
+    if (response.status === 401) {
+      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+    }
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "The translator answered with status " + response.status + ".");
+    }
+    const audio = await response.blob();
+    setProgress("Playing the translation.");
+    play(audio);
+  } catch (failure) {
+    setProgress("");
+    showError(failure.message || "The translation failed. Check that the engine is running and try again.");
+  }
+}
+
+function formatUptime(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds || 0));
+  if (seconds < 60) {
+    return seconds + " s";
+  }
+  if (seconds < 3600) {
+    return Math.floor(seconds / 60) + " min";
+  }
+  return Math.floor(seconds / 3600) + " h " + Math.floor((seconds % 3600) / 60) + " min";
+}
+
+async function refreshHealth() {
+  try {
+    const response = await fetch("/health", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const health = await response.json();
+    engineEl.textContent = health.engine || "unknown";
+    uptimeEl.textContent = formatUptime(health.uptime_s);
+  } catch (failure) {
+    engineEl.textContent = "offline";
+  }
+}
+
+function isNewer(candidate, current) {
+  const parse = (value) =>
+    String(value)
+      .replace(/^v/i, "")
+      .split(/[.+-]/)
+      .map((part) => parseInt(part, 10))
+      .filter((part) => !Number.isNaN(part));
+  const left = parse(candidate);
+  const right = parse(current);
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const a = left[index] || 0;
+    const b = right[index] || 0;
+    if (a !== b) {
+      return a > b;
+    }
+  }
+  return false;
+}
+
+async function checkForUpdate() {
+  const response = await fetch("https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest", {
+    headers: { Accept: "application/vnd.github+json" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    return;
+  }
+  const release = await response.json();
+  if (!release || !release.tag_name || !isNewer(release.tag_name, version)) {
+    return;
+  }
+  updateVersion.textContent = release.tag_name;
+  if (release.html_url) {
+    updateLink.href = release.html_url;
+  }
+  updateBox.hidden = false;
+}
+
+talk.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  talk.focus({ preventScroll: true });
+  begin();
+});
+
+window.addEventListener("pointerup", () => finish());
+window.addEventListener("pointercancel", () => finish());
+
+talk.addEventListener("contextmenu", (event) => event.preventDefault());
+
+talk.addEventListener("keydown", (event) => {
+  if ((event.key === " " || event.key === "Enter") && !event.repeat) {
+    event.preventDefault();
+    begin();
+  }
+});
+
+talk.addEventListener("keyup", (event) => {
+  if (event.key === " " || event.key === "Enter") {
+    event.preventDefault();
+    finish();
+  }
+});
+
+ensureAudio().catch((failure) => showError(describeMicrophoneError(failure)));
+refreshHealth();
+setInterval(refreshHealth, 5000);
+checkForUpdate().catch(() => {});
