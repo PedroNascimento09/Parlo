@@ -7,6 +7,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Added
 
 - `parlo mic setup`, `parlo mic status`, and `parlo mic remove` manage a PipeWire null sink on Linux.
+- `parlo translate --engine sidecar` drives the Python sidecar over the JSON protocol instead of the echo engine.
+- Engines report their target languages as owned strings, so adapters are no longer limited to static language lists.
 
 ### Planned
 
