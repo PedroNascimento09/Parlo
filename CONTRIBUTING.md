@@ -5,7 +5,7 @@ Thanks for helping. Parlo is early, so the most valuable contributions right now
 ## Setup
 
 ```bash
-git clone https://github.com/Pedromrn0903/parlo
+git clone https://github.com/PedroNascimento09/parlo
 cd parlo
 cargo build --workspace
 ```
