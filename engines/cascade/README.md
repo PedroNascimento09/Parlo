@@ -52,6 +52,15 @@ Audio arrives in 20 ms frames. The engine buffers them until it has at least 2.5
 | 2.5 s | 0.96, roughly keeps up |
 | 4.0 s | 1.15, one slow call |
 
+With Parakeet the window is a latency choice, not a speed one. Same 4.95 s clip, 4 threads:
+
+| Window | RTF | Cost |
+|---|---|---|
+| 1.0 s | 0.131 | loses words |
+| 1.5 s | 0.111 | loses content words |
+| 2.0 s | 0.108 | usable, drops a filler |
+| 2.5 s | 0.094 | default, keeps the whole sentence |
+
 The recogniser matters more than the window. With 4 threads, which approximates an ordinary laptop, on 4.95 s of audio:
 
 | Recogniser | RTF, 2.5 s window | RTF, whole utterance |

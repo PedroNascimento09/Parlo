@@ -17,6 +17,17 @@ To approximate an ordinary laptop, the recogniser was limited to 4 threads on th
 
 Whole utterance, without the 2.5 s window: Parakeet 0.092, Whisper base 0.153. Parakeet is both faster and more accurate here, and it does not invent the "Oh" that Whisper adds to a clipped first syllable.
 
+With a fast recogniser the window becomes a latency choice, not a speed one. Sweep with Parakeet on the same 4.95 s, 4 threads:
+
+| Window | RTF | Transcript |
+|---|---|---|
+| 1.0 s | 0.131 | "Uh. do Palo. a falar em português funciona bem." |
+| 1.5 s | 0.111 | "Este é um teste do pá. Só a falar em português..." — loses a content word |
+| 2.0 s | 0.108 | "Este é um teste do palo. a falar em português para ver se a tradução funciona bem." |
+| 2.5 s | 0.094 | "Este é um teste do palo. Só a falar em... português para ver se a tradução funciona bem." |
+
+**Decision taken:** the 2.5 s window stays. Cutting it to 1.5 s saves about 0.5 s of waiting and loses words, which is the wrong trade for a translator. The remaining latency is the window itself, so the fix is a sentence boundary (push to translate), not a smaller window.
+
 Earlier measurements on the superseded Whisper-only engine, kept for comparison:
 
 | Model | Threads | RTF | Segment | Transcript |
