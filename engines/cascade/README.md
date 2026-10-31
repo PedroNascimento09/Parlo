@@ -5,7 +5,7 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 | Stage | Component | Licence |
 |---|---|---|
 | Voice detection | faster-whisper built-in VAD | MIT |
-| Speech recognition | faster-whisper (`small`, int8) | MIT |
+| Speech recognition | faster-whisper (`base`, int8) | MIT |
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
 | Speech synthesis | Piper (`pt_BR-faber-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
 
@@ -25,17 +25,19 @@ python -m venv .venv
 
 On Linux and macOS replace `.venv/Scripts/python` with `.venv/bin/python`.
 
-The setup script downloads the Piper voice, installs the Argos Portuguese to English package, and caches the Whisper `small` weights. Everything lands in `engines/cascade/models` and the user's model cache, both outside Git.
+The setup script downloads the Piper voice, installs the Argos Portuguese to English package, and caches the Whisper weights for the default model. Everything lands in `engines/cascade/models` and the user's model cache, both outside Git.
 
 ## Run
 
 ```bash
-PARLO_PYTHON=.venv/Scripts/python.exe parlo translate in.wav out.wav --engine cascade
+parlo translate in.wav out.wav --engine cascade
 ```
+
+The CLI looks for `.venv` next to the engine, in `engines/`, or at the project root, and falls back to `python` on the path. `PARLO_PYTHON` overrides that search.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PARLO_PYTHON` | `python` | Interpreter with the cascade requirements installed |
+| `PARLO_PYTHON` | detected `.venv`, else `python` | Interpreter with the cascade requirements installed |
 | `PARLO_CASCADE_DIR` | `engines/cascade` | Directory containing `serve.py` |
 
 ## How it behaves
