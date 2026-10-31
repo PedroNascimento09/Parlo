@@ -14,7 +14,7 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1%20spark-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1 Spark prototype.** The audio pipeline, latency budget, engine boundary, virtual microphone commands, and CLI are working and tested. **Speech models are not integrated yet**, so `parlo` runs an echo engine and does not translate anything today. The repository is structured so the universal cascade can land without touching the core.
+> **Status: v0.1 Spark prototype.** The CPU cascade translates Portuguese speech into English speech end to end, offline, using permissively licensed models: faster-whisper for recognition, Argos for translation, Piper for the neutral voice. Measured on the reference machine: **2.6 to 2.7 seconds per 1.2 second segment**. Voice cloning, the desktop app, and automatic hardware selection do not exist yet, and the cascade is selected by hand with `--engine cascade`.
 
 ---
 
@@ -42,7 +42,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
-| Universal cascade (speech to text, translation, text to speech) | Not implemented |
+| Universal cascade: Portuguese to English, offline, on CPU | Working, about 2.6 s per segment |
 | Hibiki-Zero premium engine | Optional, not wired |
 | Desktop app | Not started |
 
@@ -73,7 +73,7 @@ hardware profile
 
 ```text
 engines
-  cascade  planned   MIT              any recent CPU           cpu ok   commercial use ok
+  cascade  available MIT              any recent CPU           cpu ok   commercial use ok
            Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice, 3 cloned voice
   echo     available MIT              any                      cpu ok   commercial use ok
            Echo for development | 1 neutral voice
