@@ -9,6 +9,7 @@ use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, Pipel
 
 mod engines;
 mod mic;
+mod models;
 mod record;
 mod serve;
 mod sidecar;

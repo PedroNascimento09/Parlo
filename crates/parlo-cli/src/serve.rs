@@ -8,6 +8,7 @@ use base64::Engine as _;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Engine, Pipeline, PipelineConfig, Wav};
 
+use crate::models;
 use crate::update;
 
 #[derive(PartialEq, Eq)]
@@ -96,6 +97,35 @@ fn handle(
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
+
+    if method == "GET" && path == "/models" {
+        let body = models::as_json(&models::status());
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/models" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if models::ready(&models::status()) {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"models are already installed\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if let Err(error) = models::install() {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
 
     if method == "GET" && path == "/update" {
         let latest = match update::latest() {

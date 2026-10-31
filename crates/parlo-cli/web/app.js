@@ -17,6 +17,10 @@ const engineEl = document.getElementById("status-engine");
 const uptimeEl = document.getElementById("status-uptime");
 const micEl = document.getElementById("status-mic");
 const versionEl = document.getElementById("status-version");
+const modelsBox = document.getElementById("models");
+const modelsList = document.getElementById("models-list");
+const modelsNote = document.getElementById("models-note");
+const modelsInstall = document.getElementById("models-install");
 
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 30;
@@ -33,6 +37,8 @@ let chunks = [];
 let maxTimer = null;
 let player = null;
 let localUpdate = { available: false, latest: "", notes: "" };
+let modelsTimer = null;
+let modelsPolling = false;
 
 versionEl.textContent = version || "unknown";
 
@@ -424,6 +430,119 @@ async function installUpdate() {
   }
 }
 
+function formatSize(bytes) {
+  const megabytes = Math.round((bytes || 0) / (1024 * 1024));
+  if (megabytes < 1) {
+    return "Missing";
+  }
+  return megabytes + " MB";
+}
+
+function describeModels(state) {
+  modelsList.replaceChildren();
+  for (const model of state.models || []) {
+    const row = document.createElement("li");
+    row.className = "models-row";
+
+    const name = document.createElement("span");
+    name.className = "models-name";
+    name.textContent = model.name || "Model";
+
+    const kind = document.createElement("span");
+    kind.className = "models-kind";
+    kind.textContent = model.kind || "";
+    name.append(kind);
+
+    const fact = document.createElement("span");
+    fact.className = "models-fact" + (model.installed ? " ready" : "");
+    fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";
+
+    row.append(name, fact);
+    modelsList.append(row);
+  }
+  modelsBox.hidden = false;
+
+  if (state.ready) {
+    modelsNote.textContent = "Everything the translator needs is on this machine, so you can speak now.";
+    modelsInstall.hidden = true;
+    return true;
+  }
+
+  modelsNote.textContent = "Some models are missing. They are a one time download and stay on this machine.";
+  modelsInstall.hidden = false;
+  modelsInstall.disabled = modelsPolling;
+  return false;
+}
+
+async function loadModels() {
+  try {
+    const response = await fetch("/models", { cache: "no-store" });
+    if (!response.ok) {
+      showModelsError("The model list could not be read. The translator still works if its models are already installed.");
+      return false;
+    }
+    const state = await response.json();
+    return describeModels(state);
+  } catch (failure) {
+    showModelsError("The model list could not be read. The translator still works if its models are already installed.");
+    return false;
+  }
+}
+
+function showModelsError(message) {
+  modelsBox.hidden = false;
+  modelsNote.textContent = message;
+  modelsList.replaceChildren();
+  modelsInstall.hidden = true;
+}
+
+function stopPollingModels() {
+  modelsPolling = false;
+  clearInterval(modelsTimer);
+  modelsTimer = null;
+  modelsInstall.disabled = false;
+  modelsInstall.textContent = "Download models";
+}
+
+async function downloadModels() {
+  if (modelsPolling) {
+    return;
+  }
+  modelsPolling = true;
+  modelsInstall.disabled = true;
+  modelsInstall.textContent = "Downloading…";
+  modelsNote.textContent = "Downloading the models. This takes a while on a slow connection; the page stays usable meanwhile.";
+  try {
+    const response = await fetch("/models", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 409) {
+      stopPollingModels();
+      await loadModels();
+      return;
+    }
+    if (!response.ok) {
+      stopPollingModels();
+      modelsNote.textContent = detail.error || "The download could not start. Try again, or run parlo app once more.";
+      return;
+    }
+    modelsTimer = setInterval(async () => {
+      const ready = await loadModels();
+      if (ready) {
+        stopPollingModels();
+        modelsNote.textContent = "The models are installed. If the translator does not answer, reload this page.";
+      }
+    }, 5000);
+  } catch (failure) {
+    stopPollingModels();
+    modelsNote.textContent = "The download could not start. Try again, or run parlo app once more.";
+  }
+}
+
+modelsInstall.addEventListener("click", () => downloadModels());
+
 talk.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   talk.focus({ preventScroll: true });
@@ -458,3 +577,4 @@ ensureAudio().catch((failure) => {
 refreshHealth();
 setInterval(refreshHealth, 5000);
 checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
+loadModels();

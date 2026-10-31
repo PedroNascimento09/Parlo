@@ -90,6 +90,16 @@ Reading: latency did not drift across half an hour. The last ten cycles were 58 
 python engines/cascade/scripts/soak.py out/voice/07.wav --minutes 30 --threads 4
 ```
 
+### Cold start
+
+The first start after a boot, Windows 11, with no model in memory: **18.1 s** from process start to the translated file being written, for one 6 s Portuguese clip from a laptop Realtek microphone.
+
+```bash
+time parlo translate out/voice/01.wav out/cold.wav --engine cascade
+```
+
+That figure contains spawning the Python sidecar, loading Parakeet TDT 0.6B v3 int8, Argos and Piper, and translating the clip. It is not a per segment number: in the warm steady state a segment costs 420.7 ms, as the soak above shows. The app keeps one warmed process for a whole conversation, so this describes the wait before the first sentence of a session, not how the translator feels once it is running.
+
 Not measured yet, and blank on purpose: VRAM (there is no NVIDIA GPU here), perceived latency through a live microphone, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
 ## What gets measured
