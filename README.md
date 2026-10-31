@@ -85,6 +85,16 @@ engines
 default engine: cascade (MIT)
 ```
 
+### Record your own voice and compare recognisers
+
+```bash
+cargo run --release -p parlo-cli -- record --list
+cargo run --release -p parlo-cli -- record out/voice-01.wav --seconds 6
+python engines/cascade/scripts/compare.py out/voice --models base small --threads 4
+```
+
+Ten short recordings are enough to decide between `base` and `small` on your own microphone, which is the only honest way to measure this.
+
 ### Run the real translator
 
 The CPU cascade is installed with two commands and runs offline afterwards:

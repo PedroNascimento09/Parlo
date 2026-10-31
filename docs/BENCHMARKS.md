@@ -32,6 +32,24 @@ Warm-up now loads every model at startup: 12 to 21 seconds before the first requ
 
 What this means, plainly: **the real time gate is only just met.** Below 0.5 is the target for comfort and nothing measured here is comfortably below it.
 
+### Latency, corrected
+
+An earlier version of this document estimated 3.6 seconds for the first translated word by adding the 2.5 second window to the processing time. **That is a floor, not an expectation.** It ignores microphone capture buffering, the operating system audio buffer, the time the synthesiser itself takes to speak, and whatever the calling app adds. The only way to know is a live capture, and the tool for it exists now:
+
+```bash
+parlo record out/voice-01.wav --seconds 6
+```
+
+### Measurement validity
+
+Everything above uses synthetic Piper speech, which the recogniser reads worse than a real voice. The comparison of `base` and `small` therefore proves a direction, not a final ranking, and it does not prove anything about a 4 core laptop: limiting threads on a 12 core desktop approximates core count, not clock speed, memory bandwidth, or thermal throttling.
+
+The decisive test is ten recordings of a real voice, run through both models:
+
+```bash
+python engines/cascade/scripts/compare.py out/voice --models base small --threads 4
+```
+
 Not measured yet, and blank on purpose: perceived latency through a live microphone, RAM and VRAM, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
 ## What gets measured
