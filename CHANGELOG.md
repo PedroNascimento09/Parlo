@@ -10,7 +10,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
-- CPU cascade engine: faster-whisper, Argos, and Piper translate Portuguese speech into English speech offline, at about 2.6 seconds per 1.2 second segment on a 12 core CPU.
+- CPU cascade engine: faster-whisper, Argos, and Piper translate Portuguese and English in both directions, offline, at about 2.6 seconds per 1.2 second segment on a 12 core CPU. The output voice follows the target language.
 - `parlo translate --engine cascade` streams audio through the cascade sidecar.
 - `parlo engines` lists available engines with licenses, hardware, and voice levels.
 - `parlo profile` recommends a hardware profile and voice level from the detected CPU.
