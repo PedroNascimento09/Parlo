@@ -24,5 +24,5 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Documentation for architecture, engines, languages, privacy, virtual microphones, benchmarks, and troubleshooting.
 - CI for Linux, macOS, and Windows, release builds on tags, CodeQL, and dependency updates.
 
-[Unreleased]: https://github.com/Pedromrn0903/parlo/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/Pedromrn0903/parlo/releases/tag/v0.1.0
+[Unreleased]: https://github.com/PedroNascimento09/parlo/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/PedroNascimento09/parlo/releases/tag/v0.1.0
