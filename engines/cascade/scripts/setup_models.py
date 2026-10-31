@@ -6,7 +6,9 @@ ROOT = Path(__file__).resolve().parent.parent
 MODELS = ROOT / "models"
 VOICES = {
     "pt_BR-faber-medium": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium/pt_BR-faber-medium.onnx",
+    "en_US-lessac-medium": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx",
 }
+DIRECTIONS = (("pt", "en"), ("en", "pt"))
 
 
 def download(url: str, target: Path) -> None:
@@ -18,10 +20,10 @@ def download(url: str, target: Path) -> None:
     urllib.request.urlretrieve(url, target)
 
 
-def install_voice(name: str) -> None:
-    url = VOICES[name]
-    download(url, MODELS / f"{name}.onnx")
-    download(url + ".json", MODELS / f"{name}.onnx.json")
+def install_voices() -> None:
+    for name, url in VOICES.items():
+        download(url, MODELS / f"{name}.onnx")
+        download(url + ".json", MODELS / f"{name}.onnx.json")
 
 
 def install_argos(source: str, target: str) -> None:
@@ -55,22 +57,21 @@ def warm_translation(source: str, target: str) -> None:
     truststore.inject_into_ssl()
     import argostranslate.translate
 
-    argostranslate.translate.translate("Ola, este e um teste.", source, target)
+    argostranslate.translate.translate("Hello, this is a test.", source, target)
     print(f"cached    sentence model for {source}->{target}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", default="pt")
-    parser.add_argument("--target", default="en")
     parser.add_argument("--whisper", default="small")
-    parser.add_argument("--voice", default="pt_BR-faber-medium", choices=sorted(VOICES))
     args = parser.parse_args()
 
-    install_voice(args.voice)
-    install_argos(args.source, args.target)
+    install_voices()
+    for source, target in DIRECTIONS:
+        install_argos(source, target)
     warm_whisper(args.whisper)
-    warm_translation(args.source, args.target)
+    for source, target in DIRECTIONS:
+        warm_translation(source, target)
     print("models ready")
     return 0
 
