@@ -48,6 +48,17 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Measured latency and quality benchmarks.
 - Linux virtual microphone automation.
 
+## [0.1.5] - 2026-10-31
+
+### Added
+
+- `--from` and `--to` on `app`, `serve`, `listen` and `translate`, validated and passed to the cascade sidecar; English to Portuguese was verified end to end, 6.33 s of input giving 4.21 s of output.
+- `scripts/parlo-app.cmd` and `scripts/parlo-app.sh` build once and open the interface, so the app starts without a terminal command.
+
+### Changed
+
+- The app documentation describes both launchers and the one-direction-per-process rule.
+
 ## [0.1.4] - 2026-10-31
 
 ### Added
