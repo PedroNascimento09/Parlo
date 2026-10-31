@@ -365,15 +365,30 @@ fn record_command(args: &[String]) -> Result<(), String> {
     let recording = record::capture(seconds, device)?;
     let rate = recording.format.sample_rate();
     let duration = recording.samples.len() as f32 / rate as f32;
+    let peak = recording
+        .samples
+        .iter()
+        .fold(0.0f32, |highest, sample| highest.max(sample.abs()));
     let wav = Wav {
         format: recording.format,
         samples: recording.samples,
     };
     fs::write(&path, write_pcm16(&wav)).map_err(|error| format!("{}: {error}", path.display()))?;
+    let decibels = if peak > 0.0 {
+        20.0 * peak.log10()
+    } else {
+        -120.0
+    };
     println!(
         "recorded {duration:.1} s at {rate} Hz to {}",
         path.display()
     );
+    println!("  peak             {decibels:.1} dBFS");
+    if peak < 0.01 {
+        println!(
+            "  warning          the microphone is nearly silent, check the input device and mute"
+        );
+    }
     Ok(())
 }
 

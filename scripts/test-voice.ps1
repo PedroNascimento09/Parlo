@@ -51,6 +51,18 @@ for ($i = 1; $i -le $Clips; $i++) {
     $chunk = & $exe record (Join-Path $voice ("{0:D2}.wav" -f $i)) --seconds $Seconds 2>&1
     $chunk | ForEach-Object { Write-Host $_ }
     $lines += $chunk
+    if (($chunk | Out-String) -match "nearly silent") {
+        Write-Host ""
+        Write-Host "O MICROFONE NAO ESTA A CAPTAR VOZ."
+        Write-Host "Antes de repetir, verifica no Windows:"
+        Write-Host "  1. Definicoes > Sistema > Som > Entrada: escolhe o microfone certo."
+        Write-Host "  2. O volume da entrada nao pode estar a zero, e o mute tem de estar desligado."
+        Write-Host "  3. Definicoes > Privacidade > Microfone: permite que as aplicacoes de ambiente de trabalho acedam."
+        Write-Host "  4. Fala a um palmo do microfone, sem o tapar com a mao."
+        Write-Host "Depois corre TESTAR-VOZ.cmd outra vez."
+        $lines | Set-Content -Path $report -Encoding UTF8
+        exit 1
+    }
 }
 
 Write-Host ""

@@ -105,6 +105,8 @@ cargo run --release -p parlo-cli -- listen out/live.wav --seconds 10
 
 `listen` prints how long it ran, how many frames passed the voice gate, and **how many seconds after start the first translated audio was ready**. Playback is still the virtual microphone's job; this writes a file.
 
+`record` prints the peak level in dBFS and warns when the microphone is nearly silent, which is almost always a muted input, the wrong device, or a Windows privacy setting rather than a code problem.
+
 Building the recorder on Linux needs the ALSA headers: `sudo apt install libasound2-dev pkg-config`. With no microphone attached, `record --list` prints nothing and `record` says so instead of writing a silent file.
 
 ### Run the real translator
