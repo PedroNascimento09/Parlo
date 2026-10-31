@@ -42,7 +42,7 @@ Existing tools force a trade-off:
 | Latency budget and target checks | Working |
 | Virtual microphone: `parlo mic setup`, `status`, `remove` on PipeWire | Working on Linux |
 | macOS and Windows virtual microphone | Documented setup only |
-| Engine sidecar protocol (JSON lines over stdio) | Working, tested |
+| Engine sidecar protocol (JSON lines over stdio) | Working, wired to the CLI via `--engine sidecar` |
 | Hibiki-Zero inference | Not wired yet |
 | Desktop app | Not started |
 
@@ -79,6 +79,14 @@ privacy           local only, no network calls, no telemetry
 ```
 
 `demo` synthesises 2.5 seconds of speech-like audio, pushes it through the pipeline in 10 ms chunks, and reports how many frames were voiced and how long the translated stream is. No microphone or model required.
+
+To drive the real Python sidecar instead of the echo engine:
+
+```bash
+cargo run --release -p parlo-cli -- translate out/demo.wav out/sidecar.wav --engine sidecar
+```
+
+Without model weights installed this stops with the sidecar's own error message (`torch is not installed`), which is the honest result, not a crash.
 
 ## How it works
 
