@@ -19,7 +19,8 @@ The page is a single column built around the one thing you do most:
 | Top strip | The running version, and the update banner when a newer release exists, with the notes linked. |
 | Record card | The large control at the centre with the input level inside it. Hold it to speak, or click once to start and again to stop; it pulses while it listens, and the clip goes to the local server. |
 | Result card | The translated sentence, selectable so a name or a word can be copied, and the translated voice playing back under it. |
-| Status group | The engine in use and how long the app has been running. |
+| Status group | The engine in use, how long the app has been running, and whether the microphone opened. |
+| Models panel | One row per model with its size on disk or `Missing`, and a **Download models** button when something is absent. It never blocks the record card. |
 
 ## Updates
 
