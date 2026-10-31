@@ -45,15 +45,19 @@ pub enum License {
 }
 
 impl License {
-    pub fn permits_commercial(self) -> bool {
-        matches!(self, Self::Mit)
-    }
-
     pub fn label(self) -> &'static str {
         match self {
             Self::Mit => "MIT",
             Self::CcByNcSa4 => "CC BY-NC-SA 4.0",
             Self::Proprietary => "vendor terms",
+        }
+    }
+
+    pub fn commercial_note(self) -> &'static str {
+        match self {
+            Self::Mit => "commercial use ok",
+            Self::CcByNcSa4 => "non commercial",
+            Self::Proprietary => "check vendor terms",
         }
     }
 }
@@ -179,14 +183,14 @@ mod tests {
     #[test]
     fn declares_a_permissive_cpu_default() {
         let engine = default_engine();
-        assert!(engine.license.permits_commercial());
+        assert_eq!(engine.license.commercial_note(), "commercial use ok");
         assert!(!engine.requires_gpu);
     }
 
     #[test]
     fn keeps_non_commercial_engines_optional() {
         let hibiki = ENGINES.iter().find(|engine| engine.id == "hibiki").unwrap();
-        assert!(!hibiki.license.permits_commercial());
+        assert_eq!(hibiki.license.commercial_note(), "non commercial");
         assert!(!hibiki.default);
         assert!(hibiki.requires_gpu);
     }
@@ -221,6 +225,13 @@ mod tests {
         let medium = Profile::Medium.target_ms().1;
         let high = Profile::High.target_ms().1;
         assert!(high < medium);
+    }
+
+    #[test]
+    fn labels_vendor_licenses_separately() {
+        assert_eq!(License::Mit.commercial_note(), "commercial use ok");
+        assert_eq!(License::CcByNcSa4.commercial_note(), "non commercial");
+        assert_eq!(License::Proprietary.commercial_note(), "check vendor terms");
     }
 
     #[test]

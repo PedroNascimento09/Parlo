@@ -116,11 +116,6 @@ fn list_engines() -> Result<(), String> {
         } else {
             "planned"
         };
-        let commercial = if engine.license.permits_commercial() {
-            "commercial use ok"
-        } else {
-            "non commercial"
-        };
         let needs = if engine.requires_gpu { "gpu" } else { "cpu ok" };
         println!(
             "  {:<8} {:<9} {:<16} {:<24} {:<8} {}",
@@ -129,7 +124,7 @@ fn list_engines() -> Result<(), String> {
             engine.license.label(),
             engine.hardware,
             needs,
-            commercial
+            engine.license.commercial_note()
         );
         let levels: Vec<String> = engine
             .fidelity
