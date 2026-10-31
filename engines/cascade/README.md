@@ -112,6 +112,17 @@ The number covers recognition only: translation quality and the generated voice 
 
 Synthetic speech is a fair stand-in for a regression test, not for a user: it shares one voice, one accent and no room, no microphone and no human hesitation. A recorded set from several speakers and microphones is still required before v1.0, and this battery does not replace it.
 
+## Dubbing
+
+`scripts/dub.py` uses the same recogniser, translator and voice on a whole file instead of a live stream: ffmpeg decodes to 16 kHz mono, the audio is split on pauses with a 15 s ceiling, every segment is recognised, translated and spoken, and each line is placed at the time its sentence started. A line longer than its slot is spoken again up to about 18 percent faster, and overlaps the next one if that is not enough.
+
+```bash
+python engines/cascade/scripts/dub.py video.mp4 --to en
+python engines/cascade/scripts/dub.py talk.wav --from en --to pt --keep-background
+```
+
+It writes the media file plus an `.srt`, and `--json` adds the times and both texts per line. `ffmpeg` and `ffprobe` must be on `PATH`; nothing else is new. Details, measured output and limits: [../../docs/DUB.md](../../docs/DUB.md).
+
 ## Tests
 
 ```bash

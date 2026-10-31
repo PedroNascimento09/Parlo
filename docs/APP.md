@@ -25,6 +25,13 @@ The page is a single column built around the one thing you do most:
 | Result card | The translated sentence, selectable so a name or a word can be copied, and the translated voice playing back under it. |
 | Status group | The engine in use, how long the app has been running, and whether the microphone opened. |
 | Models panel | One row per model with its size on disk or `Missing`, and a **Download models** button when something is absent. It never blocks the record card. |
+| Dub panel | Drop a video or audio file on the page, or pick one, and the local server dubs it into the other language. The translated lines appear while it works and the new file downloads from the same panel. |
+
+## Dub a file
+
+The dub panel is for recordings, not for a call: drop a video or an audio file on the page, choose the target language, and press the dubbing control. The request goes to the local server on `127.0.0.1`, which runs the same offline pipeline as `parlo dub`, so the file never leaves the machine. It takes minutes on a long file, the panel keeps counting while it works, and the finished media and its `.srt` download from the page when it ends.
+
+`ffmpeg` and `ffprobe` must be on `PATH`, and the models must be installed; the panel says so instead of failing halfway. What file mode can and cannot do, with measured numbers: [DUB.md](DUB.md).
 
 ## Updates
 

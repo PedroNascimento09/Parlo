@@ -45,6 +45,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |
 | Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.11 on 4 threads with Parakeet v3 |
+| File dubbing: `parlo dub video.mp4 --to en`, subtitles included | Working, needs ffmpeg |
 | Hibiki-Zero premium engine | Optional, not wired |
 | App interface | Working, opened by `parlo app` in the browser |
 
@@ -152,6 +153,16 @@ The numbers below are the whole cascade, translation and synthesis included, on 
 | **Parakeet TDT 0.6B v3 int8** (default) | 640 MB | **0.45** |
 | Whisper base int8 | 145 MB | 1.27 |
 
+### Dub a video or a recording
+
+With the cascade installed and `ffmpeg` on `PATH`, one command translates a file and writes a new one:
+
+```bash
+parlo dub video.mp4 --to en
+```
+
+It writes `video.en.mp4` with a new voice track and `video.en.srt` with the translated lines, keeping the video untouched. File mode takes minutes rather than seconds and needs no microphone, driver or NVIDIA card. `--keep-background` leaves music and effects under the dub, and the input can be audio instead of video. Timing, limits and the measured output: [docs/DUB.md](docs/DUB.md).
+
 ## Engine strategy
 
 One product, several engines, one quality ladder. The default must stay usable for anyone, forever:
@@ -216,7 +227,7 @@ How to verify all of it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 
 ```text
 crates/parlo-core       audio format, resampler, ring buffer, voice gate, pipeline, wav
-crates/parlo-cli        the parlo binary, engine registry, sidecar client, mic commands
+crates/parlo-cli        the parlo binary, engine registry, sidecar client, mic and dub commands
 engines/hibiki          reference sidecar adapter and protocol tests
 docs                    architecture, engines, languages, privacy, troubleshooting
 ```
