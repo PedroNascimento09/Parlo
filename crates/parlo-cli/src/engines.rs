@@ -87,7 +87,7 @@ pub const ENGINES: &[EngineInfo] = &[
         license: License::Mit,
         hardware: "any recent CPU",
         requires_gpu: false,
-        available: false,
+        available: true,
         default: true,
     },
     EngineInfo {
