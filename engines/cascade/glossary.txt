@@ -1,0 +1,5 @@
+# wrong=right, applied to the transcript and to the translation
+Palo=Parlo
+Parolo=Parlo
+Paul's=Parlo's
+Pauls=Parlos

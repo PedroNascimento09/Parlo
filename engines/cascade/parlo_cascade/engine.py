@@ -1,6 +1,7 @@
 import importlib.util
 import io
 import os
+import re
 import time
 import wave
 from dataclasses import dataclass
@@ -15,6 +16,7 @@ VOICES = {
     "pt": "pt_BR-faber-medium.onnx",
     "en": "en_US-lessac-medium.onnx",
 }
+GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"
 
 
 class EngineUnavailable(RuntimeError):
@@ -56,6 +58,26 @@ def rms(samples) -> float:
     return float(np.sqrt(np.mean(values * values)))
 
 
+def load_glossary(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    pairs = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        clean = line.strip()
+        if not clean or clean.startswith("#") or "=" not in clean:
+            continue
+        wrong, _, right = clean.partition("=")
+        if wrong.strip() and right.strip():
+            pairs[wrong.strip()] = right.strip()
+    return pairs
+
+
+def apply_glossary(text: str, glossary: dict[str, str]) -> str:
+    for wrong, right in glossary.items():
+        text = re.sub(rf"\b{re.escape(wrong)}\b", right, text, flags=re.IGNORECASE)
+    return text
+
+
 def resample(samples, from_rate: int, to_rate: int):
     import numpy as np
 
@@ -76,6 +98,10 @@ class CascadeEngine:
         self.target = target
         self.target_languages = (target,)
         self.min_segment = float(os.environ.get("PARLO_CASCADE_SEGMENT", MIN_SEGMENT_SECONDS))
+        self.model_name = os.environ.get("PARLO_CASCADE_MODEL", "base")
+        threads = os.environ.get("PARLO_CASCADE_THREADS")
+        self.threads = int(threads) if threads else None
+        self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
         self._ready = available()
@@ -85,6 +111,26 @@ class CascadeEngine:
     @property
     def available(self) -> bool:
         return self._ready
+
+    def warmup(self) -> None:
+        if not self._ready or not self.voice_path.exists():
+            return
+        self._load_stt()
+        self._translate("warmup")
+        self._synthesize("warmup")
+
+    def _load_stt(self):
+        from faster_whisper import WhisperModel
+
+        if self._stt is None:
+            options = {"cpu_threads": self.threads} if self.threads else {}
+            self._stt = WhisperModel(
+                self.model_name,
+                device="cpu",
+                compute_type="int8",
+                **options,
+            )
+        return self._stt
 
     def translate(self, pcm16: bytes) -> Translation:
         if not self._ready:
@@ -116,18 +162,17 @@ class CascadeEngine:
 
     def _transcribe(self, samples) -> str:
         import numpy as np
-        from faster_whisper import WhisperModel
 
-        if self._stt is None:
-            self._stt = WhisperModel("small", device="cpu", compute_type="int8")
-        segments, _ = self._stt.transcribe(
+        model = self._load_stt()
+        segments, _ = model.transcribe(
             np.asarray(samples, dtype="float32"),
             language=self.source,
             vad_filter=False,
             beam_size=1,
             condition_on_previous_text=False,
         )
-        return " ".join(segment.text.strip() for segment in segments).strip()
+        text = " ".join(segment.text.strip() for segment in segments).strip()
+        return apply_glossary(text, self.glossary)
 
     def _translate(self, text: str) -> str:
         import argostranslate.translate
