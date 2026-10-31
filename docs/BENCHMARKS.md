@@ -90,6 +90,18 @@ Reading: latency did not drift across half an hour. The last ten cycles were 58 
 python engines/cascade/scripts/soak.py out/voice/07.wav --minutes 30 --threads 4
 ```
 
+### Recognition battery
+
+The reference battery synthesises 24 Portuguese sentences with the Portuguese Piper voice, adds seeded white noise, and scores recognition only, so a regression shows up as a number without anyone recording anything. Windows 11, 4 threads, Parakeet TDT 0.6B v3 int8, seed 7.
+
+| Condition | Sentences | Mean word error rate |
+|---|---|---|
+| Clean | 24 | 0.215 |
+| 20 dB signal to noise | 24 | 0.199 |
+| 10 dB signal to noise | 24 | 0.197 |
+
+The rate counts a digit against a written number as an error even when the recogniser heard it correctly, so the sentences with a number in them carry the worst rows; the number is a regression signal, not a quality grade. Adding noise did not raise the mean here, which is a sign the noise is mild against this recogniser rather than a claim that noise does not matter. A recorded set from several speakers is still needed before v1.0.
+
 ### Cold start
 
 The first start after a boot, Windows 11, with no model in memory: **18.1 s** from process start to the translated file being written, for one 6 s Portuguese clip from a laptop Realtek microphone.
