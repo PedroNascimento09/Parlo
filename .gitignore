@@ -23,3 +23,7 @@ Thumbs.db
 
 # Tauri build artefacts
 crates/parlo-app/gen/
+
+# Internal master plan, its sources and its built artefacts
+Parlo_Plano_Mestre_*
+docs/plan/
