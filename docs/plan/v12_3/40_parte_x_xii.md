@@ -1,6 +1,6 @@
-# PARTE X · QUALIDADE, ROADMAP E FASES
+# PARTE XI · QUALIDADE, ROADMAP E FASES
 
-## 55. Lições de Handy, VoiceStudio e Wispr Flow
+## 67. Lições de Handy, VoiceStudio e Wispr Flow
 
 | Projeto | O que faz bem | O que o Parlo aprende | O que não copia |
 |---|---|---|---|
@@ -10,7 +10,7 @@
 
 Nenhuma destas comparações afirma superioridade. O Parlo pode ser melhor na combinação de voz própria, execução local e governação de licenças; e pode ser pior em maturidade, suporte de plataformas e polimento durante muito tempo.
 
-## 56. Roadmap incremental
+## 68. Roadmap incremental
 
 Cada release é instalável, útil por si só e medida. Os números de versão são sequenciais a partir da última tag publicada e não correspondem a marcos internos.
 
@@ -26,7 +26,7 @@ Cada release é instalável, útil por si só e medida. Os números de versão s
 
 Regra: as releases só avançam quando os gates fecham. Não há calendário neste documento, e uma release pode demorar o tempo que o gate exigir.
 
-## 57. Fases de execução e critérios de conclusão
+## 69. Fases de execução e critérios de conclusão
 
 | Fase | Trabalho | Critério de conclusão |
 |---|---|---|
@@ -43,13 +43,13 @@ Regra: as releases só avançam quando os gates fecham. Não há calendário nes
 
 As fases 1 a 3 têm precedência. A clonagem antes da voz neutra é ordem de produto, não preferência: sem perfil de voz e sem tradução fiável, a clonagem amplifica um erro em vez de criar valor.
 
-## 58. Definição de concluída e regras de corte
+## 70. Definição de concluída e regras de corte
 
 Uma release está concluída quando: instala em máquina limpa e atualiza sobre a anterior; o rollback funciona; o benchmark do corpus está atualizado com hardware e versões; a matriz de licenças foi revista para tudo o que a release inclui; a auditoria de rede mostra zero ligações externas; o changelog declara limitações conhecidas; a acessibilidade mínima foi verificada nos fluxos principais; cada funcionalidade está classificada como experimental, preview, beta ou estável; e pelo menos cinco utilizadores externos a experimentaram.
 
 Regras de corte: se o gate falha, a release não sai e a anterior continua a ser a estável; se um modelo não passa, a release sai sem ele com a alternativa já aprovada; trabalho fora do objetivo entra apenas se não atrasar o gate; e o roadmap é revisto com dados medidos, não com expectativas.
 
-## 59. Barra competitiva
+## 71. Barra competitiva
 
 | Dimensão | Handy | VoiceStudio | Objetivo do Parlo |
 |---|---|---|---|
@@ -61,9 +61,9 @@ Regras de corte: se o gate falha, a release não sai e a anterior continua a ser
 | Privacidade | Local | Local com downloads | Local por omissão e auditoria de rede |
 | Extensibilidade | Moderada | Alta | Alta, com contratos versionados |
 
-# PARTE XI · OPEN SOURCE, DISTRIBUIÇÃO E GOVERNANÇA
+# PARTE XII · OPEN SOURCE, DISTRIBUIÇÃO E GOVERNANÇA
 
-## 60. Repositório e ficheiros obrigatórios
+## 72. Repositório e ficheiros obrigatórios
 
 | Ficheiro | Estado | Função |
 |---|---|---|
@@ -87,7 +87,7 @@ Regras de corte: se o gate falha, a release não sai e a anterior continua a ser
 
 O README declara o estado real, diz o que não funciona e liga para `LICENSES.md`. Nenhum badge afirma conformidade, suporte ou desempenho que não exista.
 
-## 61. Licença do código, DCO e contribuições
+## 73. Licença do código, DCO e contribuições
 
 O código original está sob Apache-2.0 desde que a titularidade do histórico foi confirmada. As releases até v0.1.7 mantêm o texto MIT com que foram publicadas, preservado em `licenses/`. Não há relicenciamento retroativo.
 
@@ -100,7 +100,7 @@ O código original está sob Apache-2.0 desde que a titularidade do histórico f
 | Contribuições empresariais | Aceites nas mesmas condições |
 | Alteração futura de licença | Só com acordo dos titulares e registo público |
 
-## 62. Releases, artefactos e avisos
+## 74. Releases, artefactos e avisos
 
 Cada arquivo de release inclui `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, SBOM CycloneDX, o índice de licenças, hashes dos artefactos e a lista de componentes com versões. Não inclui pesos de modelos, vozes, runtimes GPL nem amostras de áudio.
 
@@ -112,19 +112,19 @@ Cada arquivo de release inclui `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, SB
 | Verificação de atualização na aplicação | Lê a última release estável e mostra as notas antes de instalar |
 | Release antiga com problema | Não é reescrita nem apagada; é corrigida por documentação e, quando aplicável, pela disponibilização do código correspondente |
 
-## 63. Transparência na aplicação
+## 75. Transparência na aplicação
 
 Uma área chamada «Licenças e código aberto» apresenta, por componente: nome, versão, licença, ligação para a licença original, atribuição exigida e se é obrigatório, opcional ou externo. Antes de instalar um componente com licença própria, aparece uma explicação curta do que essa licença implica, em linguagem simples. A área inclui também os modelos instalados, com a licença de cada um, e o que foi apagado quando o utilizador remove um modelo.
 
 Regra de equilíbrio: a informação está a dois cliques e nunca interrompe o fluxo normal. Avisos jurídicos longos ficam na documentação; a aplicação diz o essencial numa frase.
 
-## 64. Governação
+## 76. Governação
 
-Decisões de arquitetura e de licenciamento são registadas com data, contexto e consequências. Alterações que afetem licenças, privacidade ou direitos de voz exigem revisão explícita e não entram por rotina. O projeto mantém um registo de decisões abertas na secção 68 e um registo de alterações por versão do plano.
+Decisões de arquitetura e de licenciamento são registadas com data, contexto e consequências. Alterações que afetem licenças, privacidade ou direitos de voz exigem revisão explícita e não entram por rotina. O projeto mantém um registo de decisões abertas na secção 80 e um registo de alterações por versão do plano.
 
-# PARTE XII · DECISÕES E RISCOS
+# PARTE XIII · DECISÕES E RISCOS
 
-## 65. Decisões fechadas
+## 77. Decisões fechadas
 
 | # | Decisão | Consequência |
 |---|---|---|
@@ -140,8 +140,11 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 | 10 | Nenhuma capacidade anunciada antes de medida | README e notas de release limitados ao real |
 | 11 | A orquestração é determinística, sem modelo de aprendizado a escolher modelos | Regras, manifestos e resultados medidos explicam cada escolha |
 | 12 | Nenhum benchmark pesado corre na máquina do utilizador | Nível A no arranque, nível B na primeira utilização, nível C em CI |
+| 13 | A aplicação não incorpora pesos nem cresce com o catálogo | Instalador limitado pelo código; biblioteca separada |
+| 14 | Catálogo e modelos atualizam-se sem reinstalar a aplicação | Esquema de catálogo versionado e compatibilidade calculada |
+| 15 | Nada é instalado, substituído ou apagado sem decisão do utilizador | Recomendação com razão; remoção sempre explícita |
 
-## 66. Decisões que o Parlo toma automaticamente
+## 78. Decisões que o Parlo toma automaticamente
 
 - Qual o motor de reconhecimento, tradução e voz para a tarefa, idioma, variante e hardware.
 - Quando degradar para voz neutra ou para texto, e como o dizer.
@@ -153,19 +156,19 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 - Quando invalidar um resultado de cache e repetir a validação técnica.
 - Quando promover um modelo de compatível a recomendado, depois de validação no dispositivo.
 
-## 67. Decisões pendentes de teste interno
+## 79. Decisões pendentes de teste interno
 
 | # | Pendente | Como fecha |
 |---|---|---|
 | 1 | Checkpoint EN→PT que traduza bem | Conjunto de 100 frases, licença confirmada, limiar de fidelidade |
 | 2 | Clonador para PT-PT em CPU | Identidade, inteligibilidade e latência medidas |
 | 3 | Melhor clonador em GPU | Comparação cega com o mesmo perfil e corpus |
-| 4 | Motor de reconhecimento por perfil de hardware | Benchmark nos perfis da secção 47 |
+| 4 | Motor de reconhecimento por perfil de hardware | Benchmark nos perfis da secção 59 |
 | 5 | Diarização utilizável em reuniões | Taxa de erro de segmentação em gravações reais |
 | 6 | Viabilidade de marcador de conteúdo sintético | Prova técnica por formato de exportação |
 | 7 | Custo de memória de clonagem em 16 GB | Medição de RSS e VRAM por motor |
 
-## 68. Questões que exigem decisão humana ou validação jurídica
+## 80. Questões que exigem decisão humana ou validação jurídica
 
 | # | Questão | Quem decide |
 |---|---|---|
@@ -176,7 +179,7 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 | 5 | Dever de informar participantes de reuniões gravadas em cada jurisdição | Utilizador e parecer |
 | 6 | Texto final da política de voz e do uso aceitável | Autor do projeto |
 
-## 69. Riscos por severidade
+## 81. Riscos por severidade
 
 | Nível | Risco | Mitigação |
 |---|---|---|
@@ -190,11 +193,15 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 | Médio | Benchmark a competir com o trabalho do utilizador | Nível B limitado a segundos e interrompido sob pressão de memória |
 | Médio | Cache a reutilizar resultados de outro ambiente | Chave com modelo, hash, runtime, quantização, hardware e versão do benchmark |
 | Baixo | Manifesto desatualizado a esconder uma limitação | Versão de manifesto no catálogo e validação no CI |
+| Alto | Aplicação a crescer com o catálogo | Pesos fora do instalador; regra de dimensionamento na secção 44 |
+| Médio | Modelo atualizado a quebrar o que funcionava | Instalação ao lado, validação antes da troca e rollback |
+| Médio | Dependências partilhadas apagadas com um modelo | Remoção protege referências de outros modelos |
+| Médio | Importação externa a executar código | Nenhum código do pacote corre; importados fora do automático |
 | Médio | Desempenho em hardware modesto | Perfis medidos e degradação explícita |
 | Médio | Deriva entre README, catálogo e notas de release | Gate de coerência antes de publicar |
 | Baixo | Duplicação de documentação de licenças | Índice gerado a partir de uma fonte única |
 
-## 70. Checklist final antes da primeira release
+## 82. Checklist final antes da primeira release
 
 - Tradução PT↔EN com par aprovado e licença fechada; nenhuma dependência AGPL no núcleo.
 - Voice Profile com consentimento, pré-visualização e eliminação verificada.
@@ -211,3 +218,7 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 - Notas de release que digam o que não funciona.
 - Orquestrador a passar os critérios de aceitação da secção 42, com testes sem modelos reais e um modelo real validado no dispositivo.
 - Manifesto de cada modelo candidato com evidência declarada, validada e limitações conhecidas.
+- Instalador sem pesos; biblioteca a crescer sem alterar o tamanho da instalação.
+- Catálogo atualizável sem reinstalar a aplicação, com descoberta que não descarrega.
+- Instalar, substituir e remover modelos individualmente, sem tocar em perfis de voz nem em preferências.
+- Remoção de um modelo a proteger dependências partilhadas e a oferecer alternativa quando está em uso.

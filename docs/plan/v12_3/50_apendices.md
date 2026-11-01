@@ -88,7 +88,8 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 
 | Área | v12.2 | v12.3 |
 |---|---|---|
-| Estrutura | Doze partes com secções 1 a 58, algumas fora de ordem e um subtítulo de interface dentro da secção errada | Doze partes, secções 1 a 70 em ordem, sem duplicações; a voz e a orquestração ganham partes próprias |
+| Estrutura | Doze partes com secções 1 a 58, algumas fora de ordem e um subtítulo de interface dentro da secção errada | Treze partes, secções 1 a 82 em ordem, sem duplicações; a voz, a orquestração e a biblioteca ganham partes próprias |
+| Biblioteca | Modelos descritos apenas como entradas de catálogo, sem ciclo de vida próprio | Parte VII: duas camadas, contratos, catálogo evolutivo, compatibilidade, instalar e remover, armazenamento, curadoria, novidades, importação, distribuição segura, ciclos independentes e dois modos |
 | Orquestração | Model Hub e Auto Select em cinco secções, sem ciclo de avaliação nem monitorização | Parte VI com PIMO: manifesto e níveis de evidência, filtragem, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback, ciclo de vida, cache, testes, critérios de aceitação e fases |
 | Voz | Clonagem descrita dentro da estratégia de TTS | Parte II completa: política, perfil, consentimento, compatibilidade, identidade, papéis da voz neutra |
 | Modelos de clonagem | CustomVoice apresentado como clonagem; Kokoro apresentado como fallback PT-PT | Base 0.6B e 1.7B são clonagem; CustomVoice usa vozes predefinidas; VoiceDesign desenha voz; Kokoro deixa de ser fallback PT-PT |
@@ -121,6 +122,10 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 14. A avaliação é progressiva em três níveis, e o nível C nunca corre na máquina do utilizador.
 15. A troca de motor obedece a permanência mínima, histerese, circuit breaker e limite de tentativas.
 16. Nenhum resultado de benchmark é reutilizado fora do ambiente que o produziu.
+17. A aplicação e a biblioteca são camadas separadas, com ciclos de atualização distintos.
+18. O instalador não incorpora pesos e o seu tamanho não depende do catálogo.
+19. A compatibilidade entre aplicação, catálogo, runtime e modelo é calculada, não prometida.
+20. Importar um modelo externo nunca executa código do pacote e nunca o promove a validado.
 
 ### D.3 Questões por resolver
 
@@ -133,13 +138,14 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 
 ### D.4 Verificação de coerência desta edição
 
-- Numeração contínua de 1 a 70, sem títulos repetidos e com hierarquia de partes correta.
+- Numeração contínua de 1 a 82, sem títulos repetidos e com hierarquia de partes correta.
 - A Parte VI define o orquestrador sem duplicar o Model Hub, o Auto Select ou o gestor de perfis de voz.
-- A prioridade Voice Clone First aparece nas Partes I, II, IV, V, VI, X e XII.
+- A prioridade Voice Clone First aparece nas Partes I, II, IV, V, VI, XI e XIII.
 - Nenhuma funcionalidade planeada é descrita como implementada; o estado está na secção 1, na secção 20 e no Apêndice E.
 - Licenças, modelos e dependências usam as mesmas decisões nas Partes V, XI e XII.
-- O roadmap da secção 56 não contradiz as fases da secção 57 nem os gates da secção 32.
+- O roadmap da secção 68 não contradiz as fases da secção 69 nem os gates da secção 32.
 - Os critérios de aceitação da secção 42 cobrem as garantias das secções 29 a 40.
+- A Parte VII não duplica o Model Hub nem o PIMO: nomeia módulos com fronteiras e diz qual decide o quê.
 
 ## E. Mapa das versões
 
@@ -152,6 +158,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | v12.2 | Hierarquia corrigida e verificação documental de Qwen3-TTS Base |
 | v12.3 | Parte própria para a voz, matriz de modelos corrigida, tradução por resolver, privacidade e Artigo 50, roadmap por gates; Parte VI com o Parlo Intelligent Model Orchestrator |
 | v12.3 (revisão) | Integração do PIMO: manifesto e evidência, filtragem, perfil de dispositivo, três níveis de avaliação, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback com proteção de voz, ciclo de vida, cache, testes e fases |
+| v12.3 (revisão 2) | Biblioteca modular: separação aplicação e biblioteca, contratos entre módulos, catálogo evolutivo, compatibilidade entre versões, gestão por modelo, armazenamento, curadoria, avaliação de novidades, importação externa, distribuição assinada e ciclos de atualização independentes |
 
 Versões do produto e versões do plano são coisas diferentes. A versão do produto avança a partir da última tag publicada; a do plano avança quando este documento é revisto.
 

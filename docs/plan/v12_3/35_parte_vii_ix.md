@@ -1,6 +1,6 @@
-# PARTE VII · ARQUITETURA E PLATAFORMA
+# PARTE VIII · ARQUITETURA E PLATAFORMA
 
-## 44. Camadas, núcleo e isolamento
+## 56. Camadas, núcleo e isolamento
 
 | Camada | Responsabilidade | Tecnologia |
 |---|---|---|
@@ -12,13 +12,13 @@
 
 Regras de isolamento: um adaptador que falha não derruba a sessão; o núcleo aplica tempo limite e substitui o motor; nenhum adaptador escreve diretamente em dados do utilizador; e cada adaptador declara a sua licença no manifesto, para que a fronteira de distribuição seja auditável.
 
-## 45. Protocolo entre núcleo e motores
+## 57. Protocolo entre núcleo e motores
 
 O transporte é JSON por linha sobre pipes do processo, com identificador de pedido, operação, versão de protocolo e resposta ou erro estruturado. Operações atuais: saúde, aquecimento, tradução por bloco, streaming de texto e dobragem.
 
 Contrato: campos obrigatórios validados dos dois lados; versão de protocolo negociada no arranque; erro sempre com código e mensagem legível; nenhum adaptador pode enviar áudio para a rede; e o núcleo recusa um adaptador que declare uma licença incompatível com o perfil de distribuição ativo. Uma alteração incompatível do protocolo exige versão nova e adaptadores atualizados, com teste de contrato no CI.
 
-## 46. Pipeline de áudio, latência e adaptação
+## 58. Pipeline de áudio, latência e adaptação
 
 Caminho do áudio: captura do dispositivo, verificação de formato, deteção de atividade, reconhecimento incremental, estabilização de texto, tradução por unidades semânticas, síntese ou legendas, e saída para o dispositivo, para o campo ativo ou para ficheiro.
 
@@ -31,7 +31,7 @@ Caminho do áudio: captura do dispositivo, verificação de formato, deteção d
 
 Os valores atuais medidos são: 849 ms até ao primeiro parcial e 3,36 s até ao texto final em PT-PT. O orçamento de síntese ainda não tem medição porque nenhum clonador está integrado. O controlador adaptativo reduz o tamanho das unidades, muda o modo de processamento ou desativa a voz quando o atraso acumula, e diz ao utilizador o que mudou.
 
-## 47. Hardware, backends e perfis
+## 59. Hardware, backends e perfis
 
 | Perfil | Hardware típico | O que se espera | O que não se promete |
 |---|---|---|---|
@@ -42,7 +42,7 @@ Os valores atuais medidos são: 849 ms até ao primeiro parcial e 3,36 s até ao
 
 A seleção não usa regras simplistas. Cada perfil é uma combinação medida de memória livre, instruções do processador, backend disponível e resultado do benchmark. Um computador com 8 GB mas com GPU utilizável não é tratado como o perfil mínimo.
 
-## 48. Extensibilidade: CLI, API, SDK e plugins
+## 60. Extensibilidade: CLI, API, SDK e plugins
 
 | Superfície | Estado | Contrato |
 |---|---|---|
@@ -54,9 +54,9 @@ A seleção não usa regras simplistas. Cada perfil é uma combinação medida d
 
 Regra: uma capacidade só chega à API depois de existir na aplicação. A aplicação nunca depende de uma interface que o utilizador não vê, e nenhuma superfície de automação recebe acesso a perfis de voz sem autorização explícita.
 
-# PARTE VIII · PRIVACIDADE, SEGURANÇA E LEGISLAÇÃO
+# PARTE IX · PRIVACIDADE, SEGURANÇA E LEGISLAÇÃO
 
-## 49. Privacidade local-first
+## 61. Privacidade local-first
 
 | Dado | Onde vive | Por defeito |
 |---|---|---|
@@ -73,13 +73,13 @@ Regra: uma capacidade só chega à API depois de existir na aplicação. A aplic
 
 A única chamada externa permitida é a verificação da última release estável, e não transporta áudio, conteúdo, identificadores de utilizador nem telemetria. Nenhum áudio sai da máquina em modo local. Nenhum dado é recolhido para treino.
 
-## 50. Dados pessoais e biométricos
+## 62. Dados pessoais e biométricos
 
 Um embedding de voz não é automaticamente dado biométrico de categoria especial em todos os contextos: depende da finalidade e do tratamento. Uma representação usada para identificar uma pessoa é tratada como dado biométrico; uma representação usada para gerar áudio na voz dessa pessoa é, no mínimo, dado pessoal e exige controlo reforçado. Esta distinção é técnica e não substitui avaliação jurídica.
 
 Medidas que o Parlo adota independentemente da qualificação: base legal assente em consentimento para o perfil de voz; finalidade declarada e limitada; minimização (não guardar áudio se bastar a representação derivada, quando o motor o permitir); prazo de conservação definido pelo utilizador; eliminação completa; portabilidade por exportação; e nenhuma partilha com terceiros.
 
-## 51. Regulamento Europeu da IA e Artigo 50
+## 63. Regulamento Europeu da IA e Artigo 50
 
 O Parlo é um projeto open-source, gratuito e local. Isso reduz exposição, mas não elimina automaticamente obrigações: a isenção para sistemas de código aberto não cobre todos os casos, e as obrigações de transparência do Artigo 50 aplicam-se a partir de 2 de agosto de 2026. As datas e a interpretação devem ser confirmadas com aconselhamento jurídico antes de qualquer declaração pública de conformidade.
 
@@ -92,7 +92,7 @@ O Parlo é um projeto open-source, gratuito e local. Isso reduz exposição, mas
 
 Regras de produto: a saída sintetizada é sempre identificada na interface e nos ficheiros exportados; o utilizador recebe um aviso claro de que a divulgação de conteúdo que imita uma pessoa pode ser exigida por lei; e nenhuma funcionalidade de voz é apresentada como indistinguível de uma gravação real. Não se afirma que toda a tradução de voz é um deepfake: a classificação depende do contexto e da forma como o conteúdo é apresentado.
 
-## 52. Segurança e cadeia de fornecimento
+## 64. Segurança e cadeia de fornecimento
 
 - Downloads apenas por HTTPS de origem declarada no manifesto, com hash verificado antes do uso.
 - Nenhum modelo executado a partir de um caminho arbitrário sem verificação de integridade.
@@ -102,13 +102,13 @@ Regras de produto: a saída sintetizada é sempre identificada na interface e no
 - Nenhuma credencial no repositório; verificação de segredos no CI.
 - Relato de vulnerabilidades com prazo de resposta declarado em `SECURITY.md`.
 
-## 53. Reuniões: consentimento e contexto
+## 65. Reuniões: consentimento e contexto
 
 Gravar uma reunião exige aviso e, em muitos contextos, consentimento dos participantes. O Parlo não decide isso pelo utilizador: mostra um aviso claro antes da primeira gravação, exige confirmação por sessão, oferece o modo «sem guardar áudio» e permite apagar uma sessão inteira com os seus artefactos. Nenhuma reunião é enviada para fora da máquina, nem resumida por um serviço externo.
 
-# PARTE IX · REUNIÕES
+# PARTE X · REUNIÕES
 
-## 54. Parlo Meeting: Lite, Live e Chat
+## 66. Parlo Meeting: Lite, Live e Chat
 
 Três entregas distintas, com dependências próprias. Durante uma reunião, o Parlo deve ser quase invisível quando funciona e imediatamente claro quando precisa de atenção.
 

@@ -139,7 +139,7 @@ Regras visuais: um só acento de cor por ecrã; estados com texto além de cor; 
 - Idioma da interface independente do idioma falado e do idioma de escrita.
 - Diagnóstico de microfone que não exige enviar gravações para lado nenhum.
 
-Acessibilidade é requisito de lançamento, não trabalho posterior: uma release que quebre a navegação por teclado nos fluxos principais não passa o gate da secção 58.
+Acessibilidade é requisito de lançamento, não trabalho posterior: uma release que quebre a navegação por teclado nos fluxos principais não passa o gate da secção 70.
 
 ## 14. Fluxos completos e recuperação
 

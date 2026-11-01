@@ -90,7 +90,7 @@ A conformidade deixa de depender de memória. O que existe hoje: um gate que lê
 | Hashes de binários de release | Registo por artefacto | Implementado |
 | Builds reprodutíveis | Sem dependência do ambiente de quem compila | Parcial: falta fixar toolchain e imagem |
 
-> O gate prova coerência de metadados, não conformidade jurídica. Uma dependência nova com licença aprovada na allowlist pode ainda criar obrigações que exigem leitura humana; por isso a allowlist é revista por componente e as exceções ficam registadas na secção 68, não escondidas num ficheiro de configuração.
+> O gate prova coerência de metadados, não conformidade jurídica. Uma dependência nova com licença aprovada na allowlist pode ainda criar obrigações que exigem leitura humana; por isso a allowlist é revista por componente e as exceções ficam registadas na secção 80, não escondidas num ficheiro de configuração.
 
 # PARTE VI · ORQUESTRAÇÃO INTELIGENTE, MODEL HUB E AUTO SELECT
 
@@ -108,7 +108,7 @@ O **Parlo Intelligent Model Orchestrator** é o componente que decide, em cada m
 | Voice Profile Manager | Guarda perfis, representações por motor e consentimento | Não escolhe motor de clonagem |
 | Benchmark Store | Guarda resultados com chave de validade | Não interpreta resultados |
 
-### 27.1 Interfaces
+### 27.1. Interfaces
 
 | Interface | Entrada | Saída |
 |---|---|---|
@@ -119,7 +119,7 @@ O **Parlo Intelligent Model Orchestrator** é o componente que decide, em cada m
 | `recover(failure)` | Falha tipificada | Próximo candidato ou degradação declarada |
 | `explain(plan)` | Plano | Frase legível para a interface e registo técnico |
 
-### 27.2 Regras de fronteira
+### 27.2. Regras de fronteira
 
 - O PIMO não escreve no catálogo nem instala nada; pede ao Model Hub e espera confirmação de hash.
 - O Model Hub não conhece preferências de qualidade; só estados de artefacto.
@@ -130,7 +130,7 @@ O **Parlo Intelligent Model Orchestrator** é o componente que decide, em cada m
 
 Cada entrada do catálogo declara, no mínimo: identificador e versão; tarefa; projeto de origem; URL oficial; hash SHA-256; licença do código, dos pesos e de dados ou vozes; idiomas e variantes efetivamente validadas; funcionalidades; arquitetura; runtime; sistemas operativos; CPU, GPU e aceleradores; RAM e VRAM mínimas e recomendadas; armazenamento; formatos e quantizações; compatibilidade com outros componentes; resultados de benchmark; limitações conhecidas; estado de manutenção; proveniência e versão do manifesto.
 
-### 28.1 Níveis de evidência
+### 28.1. Níveis de evidência
 
 | Nível | Significado | Pode ser default? |
 |---|---|---|
@@ -142,7 +142,7 @@ Cada entrada do catálogo declara, no mínimo: identificador e versão; tarefa; 
 
 Uma capacidade anunciada nunca é apresentada como validada pelo Parlo. O manifesto guarda os dois campos em separado — o que a origem declara e o que o projeto mediu — e a interface mostra sempre o segundo.
 
-### 28.2 Manifesto incompleto
+### 28.2. Manifesto incompleto
 
 Campo obrigatório em falta impede a entrada no modo automático, mas não esconde o modelo: a entrada aparece como não confirmada, com o campo em falta nomeado. O catálogo atual cobre licença, origem, hash e estado de verificação; faltam cobertura de hardware, latência medida, regra de recomendação e versão de manifesto.
 
@@ -179,7 +179,7 @@ O Hardware Profiler mede o dispositivo localmente e distingue capacidade instala
 | Velocidade de armazenamento | Tempo de carregamento em modelos grandes |
 | Carga atual | Decisão de arranque sem competir com o sistema |
 
-### 30.1 O que nunca é assumido
+### 30.1. O que nunca é assumido
 
 - Que duas máquinas com a mesma RAM têm o mesmo desempenho.
 - Que uma GPU instalada está utilizável pelo backend disponível.
@@ -196,11 +196,11 @@ O perfil é obtido sem enviar informação do dispositivo para fora e sem testes
 | B · validação técnica | Primeira utilização de um candidato naquele dispositivo | Integridade, carregamento, memória, latência, validade | Segundos |
 | C · qualidade aprofundada | Desenvolvimento, CI e atualização de modelo | Qualidade, estabilidade, robustez, reprodutibilidade | Minutos a horas |
 
-### 31.1 Nível B
+### 31.1. Nível B
 
 Verifica hash e carregamento, compatibilidade de runtime, memória consumida, tempo de inicialização, latência da primeira e das inferências seguintes, validade do resultado e libertação de recursos no descarregamento. Usa amostras pequenas e representativas. Interrompe quando houver risco de esgotamento de memória, instabilidade ou consumo anómalo. Um teste técnico bem-sucedido não é uma validação de qualidade, e o resultado guarda essa distinção.
 
-### 31.2 Nível C
+### 31.2. Nível C
 
 Avalia qualidade, precisão, naturalidade, inteligibilidade, latência, estabilidade, consumo e reprodutibilidade, com o corpus e as condições registados. Corre no repositório, com os scripts de avaliação existentes — `battery.py`, `stt_bench.py`, `compare.py`, `soak.py` e `stream_bench.py` —, e não na máquina do utilizador. Resultados aprofundados são reutilizados quando modelo, runtime, configuração, ambiente e versão do benchmark coincidem.
 

@@ -49,7 +49,7 @@ Estes números não são promessas de produto. São o ponto de partida dos gates
 | Plataforma inicial | Windows primeiro; macOS e Linux por marcos próprios |
 | Privacidade | Áudio, perfis, transcrições e traduções ficam no dispositivo; nenhuma telemetria obrigatória |
 
-> Regra de leitura do estado: enquanto a secção 67 tiver itens abertos, o Parlo não anuncia a capacidade correspondente. Uma capacidade em avaliação não aparece no README, nas notas de release nem na interface como se existisse.
+> Regra de leitura do estado: enquanto a secção 79 tiver itens abertos, o Parlo não anuncia a capacidade correspondente. Uma capacidade em avaliação não aparece no README, nas notas de release nem na interface como se existisse.
 
 ## 2. Visão, público e família de produtos
 

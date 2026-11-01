@@ -11,7 +11,7 @@ Esta versão 12.3 substitui a v12.2 como fonte principal de verdade do Parlo. Ma
 
 O documento separa três coisas que a versão anterior misturava em alguns pontos: o que está implementado e medido, o que está planeado com critérios de conclusão, e o que está em avaliação sem resultado. Uma capacidade descrita neste plano não é uma capacidade existente; o estado de cada uma está na secção 1, na matriz da secção 20 e no mapa de versões do Apêndice E.
 
-A numeração é contínua de 1 a 70, agrupada em doze partes, sem títulos duplicados e sem capítulos órfãos. A Parte VI é a especificação do orquestrador de modelos. Cada parte pode ser lida isoladamente, mas as decisões das Partes XI e XII prevalecem sobre descrições genéricas das partes anteriores.
+A numeração é contínua de 1 a 82, agrupada em treze partes, sem títulos duplicados e sem capítulos órfãos. A Parte VI é a especificação do orquestrador de modelos e a Parte VII a da biblioteca modular, que mantém a aplicação leve enquanto o catálogo cresce. Cada parte pode ser lida isoladamente, mas as decisões das Partes XII e XIII prevalecem sobre descrições genéricas das partes anteriores.
 
 ## Regra de evidência
 
@@ -34,6 +34,7 @@ A numeração é contínua de 1 a 70, agrupada em doze partes, sem títulos dupl
 - O capítulo das licenças deixa de sugerir que a separação por processos resolve sozinha a questão GPL, e mantém Argos fora do núcleo enquanto a cadeia AGPL não estiver fechada.
 - Roadmap e fases passam a ser definidos por dependências e critérios de conclusão, sem datas nem estimativas.
 - A orquestração de modelos ganha especificação própria na Parte VI: PIMO, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição de pipeline, monitorização com histerese, recuperação, ciclo de vida e protetor da identidade vocal.
+- A biblioteca passa a ser uma camada independente na Parte VII: catálogo que evolui sem reinstalar a aplicação, compatibilidade entre versões, instalação e remoção por modelo, armazenamento com recursos partilhados, importação externa, distribuição assinada e ciclos de atualização separados.
 
 ## Índice
 
@@ -92,44 +93,58 @@ PARTE VI · ORQUESTRAÇÃO INTELIGENTE, MODEL HUB E AUTO SELECT
 42. Critérios de aceitação do PIMO
 43. Fases de implementação do PIMO
 
-PARTE VII · ARQUITETURA E PLATAFORMA
-44. Camadas, núcleo e isolamento
-45. Protocolo entre núcleo e motores
-46. Pipeline de áudio, latência e adaptação
-47. Hardware, backends e perfis
-48. Extensibilidade: CLI, API, SDK e plugins
+PARTE VII · BIBLIOTECA MODULAR DE MODELOS
+44. Duas camadas: aplicação e biblioteca
+45. Contratos entre aplicação, biblioteca e runtimes
+46. Catálogo evolutivo e descoberta de novidades
+47. Compatibilidade entre versões
+48. Instalar, remover e substituir
+49. Otimização de armazenamento e recursos partilhados
+50. Biblioteca curada e personalizada
+51. Avaliação de novidades pelo PIMO
+52. Importação de modelos externos
+53. Distribuição segura e atualizações atómicas
+54. Ciclos de atualização independentes
+55. Dois modos de utilizador
 
-PARTE VIII · PRIVACIDADE, SEGURANÇA E LEGISLAÇÃO
-49. Privacidade local-first
-50. Dados pessoais e biométricos
-51. Regulamento Europeu da IA e Artigo 50
-52. Segurança e cadeia de fornecimento
-53. Reuniões: consentimento e contexto
+PARTE VIII · ARQUITETURA E PLATAFORMA
+56. Camadas, núcleo e isolamento
+57. Protocolo entre núcleo e motores
+58. Pipeline de áudio, latência e adaptação
+59. Hardware, backends e perfis
+60. Extensibilidade: CLI, API, SDK e plugins
 
-PARTE IX · REUNIÕES
-54. Parlo Meeting: Lite, Live e Chat
+PARTE IX · PRIVACIDADE, SEGURANÇA E LEGISLAÇÃO
+61. Privacidade local-first
+62. Dados pessoais e biométricos
+63. Regulamento Europeu da IA e Artigo 50
+64. Segurança e cadeia de fornecimento
+65. Reuniões: consentimento e contexto
 
-PARTE X · QUALIDADE, ROADMAP E FASES
-55. Lições de Handy, VoiceStudio e Wispr Flow
-56. Roadmap incremental
-57. Fases de execução e critérios de conclusão
-58. Definição de concluída e regras de corte
-59. Barra competitiva
+PARTE X · REUNIÕES
+66. Parlo Meeting: Lite, Live e Chat
 
-PARTE XI · OPEN SOURCE, DISTRIBUIÇÃO E GOVERNANÇA
-60. Repositório e ficheiros obrigatórios
-61. Licença do código, DCO e contribuições
-62. Releases, artefactos e avisos
-63. Transparência na aplicação
-64. Governação
+PARTE XI · QUALIDADE, ROADMAP E FASES
+67. Lições de Handy, VoiceStudio e Wispr Flow
+68. Roadmap incremental
+69. Fases de execução e critérios de conclusão
+70. Definição de concluída e regras de corte
+71. Barra competitiva
 
-PARTE XII · DECISÕES E RISCOS
-65. Decisões fechadas
-66. Decisões que o Parlo toma automaticamente
-67. Decisões pendentes de teste interno
-68. Questões que exigem decisão humana ou validação jurídica
-69. Riscos por severidade
-70. Checklist final antes da primeira release
+PARTE XII · OPEN SOURCE, DISTRIBUIÇÃO E GOVERNANÇA
+72. Repositório e ficheiros obrigatórios
+73. Licença do código, DCO e contribuições
+74. Releases, artefactos e avisos
+75. Transparência na aplicação
+76. Governação
+
+PARTE XIII · DECISÕES E RISCOS
+77. Decisões fechadas
+78. Decisões que o Parlo toma automaticamente
+79. Decisões pendentes de teste interno
+80. Questões que exigem decisão humana ou validação jurídica
+81. Riscos por severidade
+82. Checklist final antes da primeira release
 
 APÊNDICES
 A. Factos por componente
