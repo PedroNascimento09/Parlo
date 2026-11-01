@@ -1,3 +1,4 @@
+import math
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -11,7 +12,6 @@ RULE = (219, 210, 196)
 DOT = (236, 229, 217)
 ACCENT = (194, 69, 42)
 TEAL = (23, 69, 63)
-NIGHT = (22, 19, 16)
 CREAM = (247, 243, 235)
 
 FONTS = Path("C:/Windows/Fonts")
@@ -21,16 +21,10 @@ MICRO = "bahnschrift.ttf"
 MONO = "consola.ttf"
 
 ASSETS = Path("assets")
+SPOKEN_A = "Book a table for Friday,"
+SPOKEN_B = "I mean, for Monday."
 WRITTEN = "Book a table for Monday."
-SPOKEN = "Book a table for Friday, I mean, for Monday."
-STEPS = (
-    ("AUDIO", "PAVE", "microphone in"),
-    ("TRANSCRIBE", "PSTE", "speech becomes text"),
-    ("CLEAN UP", "PIE", "the sentence you meant"),
-    ("WRITE", "YOUR APP", "typed where you were"),
-)
-LIVE_TEXT = "Book a table for Friday, I mean, for Monday."
-LIVE_WORDS = LIVE_TEXT.split()
+SECOND = "Send it to the team before Friday."
 MEETING_ROWS = (
     ("SPEAKER 1", "12:14:02", "Let's start with the budget."),
     ("SPEAKER 2", "12:14:07", "The numbers are on the second page."),
@@ -39,11 +33,21 @@ MEETING_ROWS = (
     ("SPEAKER 1", "12:14:26", "Agreed. Send me the revised sheet."),
     ("SPEAKER 2", "12:14:31", "Before Friday, with the two scenarios."),
 )
-WAVE = (10, 18, 30, 16, 38, 52, 34, 24, 44, 20, 14, 28, 40, 22, 32, 12, 26, 46, 30, 18, 36, 24, 16, 34)
+WAVE = (8, 16, 26, 14, 34, 46, 30, 20, 40, 18, 12, 24, 36, 20, 28, 10, 22, 42, 26, 16, 32, 22, 14, 30)
 
 
 def font(name: str, size: int):
     return ImageFont.truetype(str(FONTS / name), size)
+
+
+def mix(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(int(a[index] + (b[index] - a[index]) * t) for index in range(3))
+
+
+def ease(t):
+    t = max(0.0, min(1.0, t))
+    return 1 - (1 - t) ** 3
 
 
 def paper(width: int, height: int, step=24):
@@ -127,22 +131,23 @@ def caret(draw, xy, height, fill=ACCENT):
     draw.rectangle((xy[0], xy[1], xy[0] + 2, xy[1] + height), fill=fill)
 
 
-def wave(draw, xy, width, height, progress=1.0, fill=ACCENT, bars=24):
-    step = width / bars
-    for index in range(bars):
-        level = WAVE[index % len(WAVE)] / 52 * height
-        x = xy[0] + index * step
-        lit = index / bars <= progress
-        draw.rounded_rectangle(
-            (x, xy[1] + (height - level) / 2, x + 3, xy[1] + (height + level) / 2),
-            radius=2,
-            fill=fill if lit else RULE,
-        )
+def rail(draw, y, width, progress, label):
+    draw.line((48, y, width - 48, y), fill=RULE, width=2)
+    draw.line((48, y, 48 + (width - 96) * max(0.0, min(1.0, progress)), y), fill=ACCENT, width=2)
+    micro(draw, (48, y + 14), label, FAINT, 10, 1.8)
+
+
+def steps(draw, x, y, active):
+    for index, label in enumerate(("SPEAK", "CORRECT", "WRITE")):
+        colour = ACCENT if index == active else FAINT
+        micro(draw, (x, y), "0" + str(index + 1), colour, 10, 1.8)
+        micro(draw, (x + 22, y), label, colour, 10, 1.8)
+        x += 22 + len(label) * 8.4 + 26
 
 
 def island(draw, box, sentence, state="INSERTED", sub="Typed into the field you were in.", elapsed="1.9 s"):
     radius = (box[3] - box[1]) / 2
-    draw.rounded_rectangle(box, radius=radius, fill=NIGHT)
+    draw.rounded_rectangle(box, radius=radius, fill=INK)
     draw.ellipse((box[0] + 44, (box[1] + box[3]) / 2 - 9, box[0] + 62, (box[1] + box[3]) / 2 + 9), fill=ACCENT)
     micro(draw, (box[0] + 96, box[1] + 40), state, FAINT, 12)
     text(draw, (box[0] + 96, box[1] + 64), sentence, 29, CREAM)
@@ -177,7 +182,7 @@ def banner():
     draw.line((896, 462, 1504, 462), fill=RULE, width=1)
     draw.line((96, 508, 1504, 508), fill=RULE, width=1)
     for index, (label, caption) in enumerate(
-        (("DICTATE", "anywhere you type"), ("LIVE", "translated as you speak"), ("MEETINGS", "every line, one speaker"), ("TRANSLATE", "files, calls, pages"))
+        (("DICTATE", "anywhere you type"), ("LIVE", "text as you speak"), ("MEETINGS", "every line, one speaker"), ("TRANSLATE", "files, calls, pages"))
     ):
         x = 96 + index * 232
         micro(draw, (x, 538), label, INK, 11, 2.2)
@@ -223,120 +228,179 @@ def dictate():
     image.convert("RGB").save(ASSETS / "dictate.png")
 
 
-def live_frame(progress, pulse, width=1200, height=470):
+def save_gif(name, frames, durations, colors=16, downsample=1):
+    kept = frames[::downsample]
+    spans = [sum(durations[index : index + downsample]) for index in range(0, len(durations), downsample)]
+    palette = [frame.convert("RGB").quantize(colors=colors, method=Image.MEDIANCUT) for frame in kept]
+    palette[0].save(
+        ASSETS / name,
+        save_all=True,
+        append_images=palette[1:],
+        duration=spans,
+        loop=0,
+        optimize=True,
+        disposal=2,
+    )
+
+
+def flow_frame(spoken_words, fade, corrected, typed, active, progress, blink):
+    width, height = 1200, 460
     image = paper(width, height)
     draw = ImageDraw.Draw(image)
-    micro(draw, (56, 34), "PARLO LIVE", ACCENT, 12, 2.4)
-    text(draw, (54, 56), "Watch the sentence arrive while you speak.", 32, INK, SERIF)
-    chip(draw, (56, 108), "LIVE", TEAL)
-    chip(draw, (130, 108), "STREAMING", ACCENT if pulse else (188, 178, 164))
-    draw.ellipse((1150, 114, 1162, 126), fill=ACCENT if pulse else RULE)
+    micro(draw, (48, 30), "PARLO DICTATE", ACCENT, 11, 2.2)
+    steps(draw, 700, 30, active)
 
-    left = (56, 158, 584, 380)
-    right = (616, 158, 1144, 380)
-    for box, label in ((left, "AS YOU SPEAK"), (right, "WHAT PARLO KEEPS")):
-        card(draw, box)
-        micro(draw, (box[0] + 30, box[1] + 22), label, FAINT, 11, 2.2)
-        draw.line((box[0] + 1, box[1] + 54, box[2] - 1, box[1] + 54), fill=RULE, width=1)
+    words_a = SPOKEN_A.split(" ")
+    words_b = SPOKEN_B.split(" ")
+    shown_a = " ".join(words_a[: min(spoken_words, len(words_a))])
+    shown_b = " ".join(words_b[: max(0, spoken_words - len(words_a))])
+    if shown_a:
+        text(draw, (48, 96), shown_a, 26, mix(MUTED, PAPER, fade), SERIF)
+    if shown_b:
+        text(draw, (48, 138), shown_b, 26, mix(MUTED, PAPER, fade), SERIF)
 
-    spoken = round(len(LIVE_WORDS) * progress)
-    partial = " ".join(LIVE_WORDS[:spoken])
-    for index, line in enumerate(wrap(draw, partial, BODY, 18, 452)[:3]):
-        text(draw, (left[0] + 30, 212 + index * 30), line, 18, INK)
-    if spoken < len(LIVE_WORDS):
-        lines = wrap(draw, partial, BODY, 18, 452)[:3]
-        width_last = draw.textlength(lines[-1], font=font(BODY, 18)) if lines else 0
-        caret(draw, (left[0] + 32 + width_last, 212 + (len(lines) - 1) * 30), 24)
-        micro(draw, (left[0] + 30, 330), "WORDS APPEAR BEFORE THE SENTENCE CLOSES", FAINT, 10, 1.8)
+    if corrected > 0:
+        offset = (1 - ease(corrected)) * 16
+        text(draw, (48, 194 + offset), WRITTEN, 33, mix(PAPER, ACCENT, ease(corrected)), SERIF)
+
+    box = (48, 262, 1152, 376)
+    card(draw, box)
+    micro(draw, (78, 282), "YOUR FIELD", FAINT, 10, 1.8)
+    if typed:
+        text(draw, (78, 306), typed, 24, INK)
+        cursor_x = 78 + draw.textlength(typed, font=font(BODY, 24)) + 4
+        draw.rectangle((48, 262, 52, 262 + 114 * ease(len(typed) / len(WRITTEN))), fill=ACCENT)
     else:
-        micro(draw, (left[0] + 30, 330), "SENTENCE CLOSED", FAINT, 10, 1.8)
+        cursor_x = 78
+        for bar in range(3):
+            draw.rounded_rectangle((78, 314 + bar * 18, 78 + 320 - bar * 60, 320 + bar * 18), radius=3, fill=(238, 231, 219))
+    if blink:
+        caret(draw, (cursor_x, 304), 28)
 
-    if progress >= 1:
-        for index, line in enumerate(wrap(draw, WRITTEN, BODY, 20, 452)[:3]):
-            text(draw, (right[0] + 30, 212 + index * 32), line, 20, TEAL)
-        micro(draw, (right[0] + 30, 330), "CLEANED, PUNCTUATED, KEPT", FAINT, 10, 1.8)
-    else:
-        micro(draw, (right[0] + 30, 214), "STILL LISTENING", FAINT, 11, 2.0)
+    rail(draw, 418, width, progress, "RULES FIRST, A MODEL ONLY IF YOU ALLOWED ONE · NOTHING LEAVES THE MACHINE")
+    return image.convert("RGB")
 
-    micro(draw, (56, 418), "849 MS TO THE FIRST PARTIAL · 3.3 S TO THE FINAL TEXT", FAINT, 10, 1.8)
-    return image
+
+def flow():
+    frames, durations = [], []
+    plan = []
+    for word in range(1, 10):
+        plan.append((word, 0.0, 0.0, "", 0, 0.06 * word))
+    for step in range(1, 7):
+        plan.append((9, step / 6, 0.0, "", 1, 0.55 + 0.03 * step))
+    for step in range(1, 6):
+        plan.append((9, 1.0, step / 5, "", 1, 0.74 + 0.02 * step))
+    for step in range(1, 11):
+        plan.append((9, 1.0, 1.0, WRITTEN[: round(len(WRITTEN) * step / 10)], 2, 0.85 + 0.012 * step))
+    for step in range(0, 10):
+        plan.append((9, 1.0, 1.0, WRITTEN, 2, 1.0))
+    total = len(plan)
+    for index, (words, fade, corrected, typed, active, progress) in enumerate(plan):
+        frames.append(flow_frame(words, fade, corrected, typed, active, min(1.0, progress), index % 2 == 0))
+        durations.append(200 if index < total - 10 else 280)
+    save_gif("flow.gif", frames, durations)
+
+
+def live_frame(kept, current_words, closed, phase, progress, blink):
+    width, height = 1200, 430
+    image = paper(width, height)
+    draw = ImageDraw.Draw(image)
+    micro(draw, (48, 30), "PARLO LIVE", ACCENT, 11, 2.2)
+    micro(draw, (1040, 30), "KEPT " + str(len(kept)), MUTED, 10, 1.8)
+    draw.ellipse((1120, 32, 1132, 44), fill=ACCENT if blink else RULE)
+
+    for index, line in enumerate(kept[-2:]):
+        text(draw, (48, 80 + index * 26), line, 16, FAINT)
+
+    current = " ".join(current_words)
+    caret_x = 48
+    if current:
+        lines = wrap(draw, current, BODY, 32, 1080)
+        for index, line in enumerate(lines):
+            text(draw, (48, 146 + index * 40), line, 32, INK)
+        caret_x = 48 + draw.textlength(lines[-1], font=font(BODY, 32)) + 4
+    if blink and not closed:
+        caret(draw, (caret_x, 142), 36)
+
+    baseline = 304
+    for index in range(48):
+        level = WAVE[index % len(WAVE)] * (0.4 + 0.6 * abs(math.sin(phase + index * 0.35)))
+        x = 48 + index * 22.5
+        lit = index / 48 <= progress
+        draw.rounded_rectangle((x, baseline - level, x + 6, baseline + level), radius=3, fill=ACCENT if lit else RULE)
+    micro(draw, (48, 362), "WORDS APPEAR BEFORE THE SENTENCE CLOSES · 849 MS TO THE FIRST PARTIAL", FAINT, 10, 1.8)
+    rail(draw, 400, width, progress, "CLEANED AND PUNCTUATED WHEN THE SENTENCE CLOSES")
+    return image.convert("RGB")
 
 
 def live():
     frames, durations = [], []
-    steps = 12
-    for step in range(1, steps + 1):
-        for tick in range(2):
-            frames.append(live_frame(step / steps, tick % 2 == 0))
-            durations.append(260)
+    first = SECOND.split(" ")
+    plan = []
+    for word in range(1, len(Written := WRITTEN.split(" ")) + 1):
+        plan.append(([], Written[:word], False, 0.10 * word))
+        plan.append(([], Written[:word], False, 0.10 * word))
+    plan.append(([], WRITTEN.split(" "), True, 1.0))
+    plan.append(([WRITTEN], [], False, 0.0))
+    for word in range(1, len(first) + 1):
+        plan.append(([WRITTEN], first[:word], False, 0.12 * word))
+        plan.append(([WRITTEN], first[:word], False, 0.12 * word))
+    plan.append(([WRITTEN], first, True, 1.0))
+    plan.append(([WRITTEN, SECOND], [], False, 0.0))
     for tick in range(8):
-        frames.append(live_frame(1.0, tick % 2 == 0))
-        durations.append(300)
-    frames[0].save(
-        ASSETS / "live.gif",
-        save_all=True,
-        append_images=frames[1:],
-        duration=durations,
-        loop=0,
-        optimize=True,
-    )
+        plan.append(([WRITTEN, SECOND], [], False, 0.0))
+    total = len(plan)
+    for index, (kept, words, closed, progress) in enumerate(plan):
+        frames.append(live_frame(kept, words, closed, index * 0.5, min(1.0, progress), index % 2 == 0))
+        durations.append(220 if index < total - 8 else 280)
+    save_gif("live.gif", frames, durations)
 
 
-def meetings_frame(rows, playhead, pulse, width=1200, height=600):
+def meetings_frame(rows, frame_in_row, progress, pulse):
+    width, height = 1200, 500
     image = paper(width, height)
     draw = ImageDraw.Draw(image)
-    micro(draw, (56, 34), "PARLO MEETINGS", ACCENT, 12, 2.4)
-    text(draw, (54, 56), "Every line, with a speaker and a time.", 32, INK, SERIF)
-    chip(draw, (56, 104), "THURSDAY REVIEW · 42 MIN", TEAL)
-    chip(draw, (330, 104), "2 SPEAKERS", (188, 178, 164), INK)
-    draw.ellipse((1150, 110, 1162, 122), fill=ACCENT if pulse else RULE)
+    micro(draw, (48, 30), "PARLO MEETINGS", ACCENT, 11, 2.2)
+    chip(draw, (760, 22), "THURSDAY REVIEW · 42 MIN", TEAL)
+    draw.ellipse((1110, 32, 1122, 44), fill=ACCENT if pulse else RULE)
+    micro(draw, (48, 62), "ONE LINE PER SPEAKER, AS IT IS SAID", FAINT, 10, 1.8)
 
-    box = (56, 152, 1144, 536)
+    box = (48, 96, 1152, 412)
     card(draw, box)
-    micro(draw, (box[0] + 30, box[1] + 22), "TRANSCRIPT", FAINT, 11, 2.2)
-    micro(draw, (box[2] - 250, box[1] + 22), "SAVED IN YOUR FOLDER", FAINT, 10, 2.0)
-    draw.line((box[0] + 1, box[1] + 54, box[2] - 1, box[1] + 54), fill=RULE, width=1)
+    draw.line((box[0] + 1, box[1] + 46, box[2] - 1, box[1] + 46), fill=RULE, width=1)
+    micro(draw, (box[0] + 26, box[1] + 18), "TRANSCRIPT", FAINT, 10, 2.0)
+    micro(draw, (box[2] - 230, box[1] + 18), "SAVED IN YOUR FOLDER", FAINT, 9, 1.8)
 
-    rows_written = min(rows, len(MEETING_ROWS))
-    for index, (speaker, moment, line) in enumerate(MEETING_ROWS):
-        y = 226 + index * 44
-        if index >= rows_written:
-            text(draw, (box[0] + 30, y), moment, 14, (206, 197, 184), MONO)
-            draw.rounded_rectangle((box[0] + 126, y - 2, box[0] + 236, y + 22), radius=12, fill=(233, 225, 214))
-            micro(draw, (box[0] + 138, y + 4), speaker, (253, 251, 246), 9, 2.0)
-            text(draw, (box[0] + 256, y), line, 17, (186, 176, 162))
-            continue
-        if index == rows_written - 1:
-            draw.rounded_rectangle((box[0] + 12, y - 9, box[2] - 12, y + 31), radius=8, fill=(246, 238, 231))
-        text(draw, (box[0] + 30, y), moment, 14, FAINT, MONO)
-        colour = ACCENT if speaker == "SPEAKER 1" else TEAL
-        draw.rounded_rectangle((box[0] + 126, y - 2, box[0] + 236, y + 22), radius=12, fill=colour)
-        micro(draw, (box[0] + 138, y + 4), speaker, CREAM, 9, 2.0)
-        text(draw, (box[0] + 256, y), line, 17, INK)
+    for index in range(len(MEETING_ROWS)):
+        speaker, moment, line = MEETING_ROWS[index]
+        y = 158 + index * 40
+        entered = index < rows
+        entering = index == rows - 1
+        shift = (1 - ease(frame_in_row / 3)) * 26 if entering else 0
+        fade = ease(frame_in_row / 3) if entering else (1.0 if entered else 0.0)
+        tint = 0.55 if entering else (0.0 if not entered else 0.0)
+        if entered and entering:
+            draw.rounded_rectangle((box[0] + 8, y - 10, box[2] - 8, y + 32), radius=8, fill=mix(CARD, (247, 236, 228), tint))
+        band = mix(PAPER, ACCENT if speaker == "SPEAKER 1" else TEAL, max(fade, 0.12))
+        draw.rectangle((box[0], y - 2 + shift, box[0] + 4, y + 30 + shift), fill=band)
+        text(draw, (box[0] + 26, y + shift), moment, 13, mix(PAPER, FAINT, max(fade, 0.14)), MONO)
+        micro(draw, (box[0] + 116, y + 2 + shift), speaker, mix(PAPER, INK, max(fade, 0.14)), 9, 2.0)
+        text(draw, (box[0] + 216, y + shift), line, 17, mix(PAPER, INK, max(fade, 0.14)))
 
-    draw.line((box[0] + 30, 492, box[2] - 30, 492), fill=RULE, width=2)
-    draw.line((box[0] + 30, 492, box[0] + 30 + min(playhead, 1028), 492), fill=ACCENT, width=2)
-    micro(draw, (56, 566), "ONE LINE PER SPEAKER, AS IT IS SAID · NOTHING UPLOADED", FAINT, 10, 1.8)
-    return image
+    rail(draw, 446, width, progress, "CAPTURED FROM THE ROOM · NOTHING UPLOADED")
+    return image.convert("RGB")
 
 
 def meetings():
     frames, durations = [], []
     for index in range(len(MEETING_ROWS)):
-        for tick in range(5):
-            frames.append(meetings_frame(index + 1, 40 + index * 165 + tick * 30, tick % 2 == 0))
-            durations.append(240)
+        for tick in range(4):
+            frames.append(meetings_frame(index + 1, tick, (index * 4 + tick) / 30, tick % 2 == 0))
+            durations.append(220)
     for tick in range(8):
-        frames.append(meetings_frame(len(MEETING_ROWS), 1028, tick % 2 == 0))
+        frames.append(meetings_frame(len(MEETING_ROWS), 3, 1.0, tick % 2 == 0))
         durations.append(300)
-    frames[0].save(
-        ASSETS / "meetings.gif",
-        save_all=True,
-        append_images=frames[1:],
-        duration=durations,
-        loop=0,
-        optimize=True,
-    )
+    save_gif("meetings.gif", frames, durations)
 
 
 def translate():
@@ -366,13 +430,19 @@ def translate():
     draw.rounded_rectangle((112, 452, 628, 462), radius=5, fill=RULE)
     draw.rounded_rectangle((112, 452, 112 + 350, 462), radius=5, fill=ACCENT)
     micro(draw, (112, 486), "68% · 12 MIN LEFT", ACCENT, 11, 2.0)
-    wave(draw, (112, 530), 516, 44, 0.68, TEAL)
+
+    peak = 44
+    for index in range(26):
+        level = WAVE[index % len(WAVE)] / 46 * peak
+        x = 112 + index * 20
+        lit = index / 26 <= 0.68
+        draw.rounded_rectangle((x, 560 - level, x + 6, 560 + level), radius=3, fill=TEAL if lit else RULE)
     micro(draw, (112, 604), "DUBBED AUDIO PLAYS HERE WHEN IT ENDS", FAINT, 10, 1.8)
 
     micro(draw, (732, 272), "SUBTITLES", FAINT, 11, 2.2)
     preview = (
         ("00:00:04,120", "The meeting starts at nine."),
-        ("00:00:09,480", "Then we go on to Porto."),
+        ("00:00:09,480", "Then we go on to the second office."),
         ("00:00:14,900", "Bring the signed contract."),
         ("00:00:21,260", "We need two more chairs."),
         ("00:00:26,010", "I'll tell you the price on Friday."),
@@ -384,72 +454,6 @@ def translate():
     micro(draw, (732, 604), "SAME TIMING AS THE SOURCE · NEVER UPLOADED", FAINT, 10, 1.8)
 
     image.convert("RGB").save(ASSETS / "translate.png")
-
-
-def layout(draw, active):
-    for index, (label, engine, caption) in enumerate(STEPS):
-        x = 60 + index * 286
-        lit = index == active
-        draw.rounded_rectangle((x, 74, x + 246, 206), radius=10, fill=CARD if lit else PAPER, outline=ACCENT if lit else RULE, width=1)
-        micro(draw, (x + 22, 96), label, ACCENT if lit else INK, 14)
-        micro(draw, (x + 22, 124), engine, MUTED, 10, 2.0)
-        text(draw, (x + 22, 152), caption, 16, MUTED)
-        if index < len(STEPS) - 1:
-            draw.line((x + 256, 140, x + 276, 140), fill=RULE, width=1)
-            draw.line((x + 270, 135, x + 277, 140), fill=RULE, width=1)
-            draw.line((x + 270, 145, x + 277, 140), fill=RULE, width=1)
-
-
-def flow():
-    width, height = 1200, 380
-    frames, durations = [], []
-    plan = ((0, 6), (1, 6), (2, 14), (3, 12))
-    counter = 0
-    for phase, ticks in plan:
-        for tick in range(ticks):
-            counter += 1
-            image = paper(width, height)
-            draw = ImageDraw.Draw(image)
-            draw.rectangle((0, 0, width, 4), fill=ACCENT)
-            layout(draw, phase)
-            filled = int(1140 * counter / 38)
-            draw.line((60, 232, 1140, 232), fill=RULE, width=2)
-            if filled > 4:
-                draw.line((60, 232, 60 + filled, 232), fill=ACCENT, width=2)
-            if phase == 0:
-                text(draw, (60, 262), "Listening. Audio never leaves this machine.", 23, INK)
-            elif phase == 1:
-                text(draw, (60, 262), "Recognising the words on the device.", 23, INK)
-            elif phase == 2:
-                text(draw, (60, 258), "«" + SPOKEN + "»", 22, MUTED)
-                if tick >= 6:
-                    text(draw, (60, 298), "→ " + WRITTEN, 25, ACCENT)
-                else:
-                    micro(draw, (60, 302), "FIXING THE SELF-CORRECTION", FAINT, 11, 1.8)
-            else:
-                visible = max(1, round(len(WRITTEN) * (tick + 1) / ticks))
-                text(draw, (60, 262), WRITTEN[:visible] + ("▌" if tick < ticks - 1 else ""), 25, INK)
-                micro(draw, (60, 306), "TYPED INTO THE WINDOW YOU WERE IN", FAINT, 11, 1.8)
-            frames.append(image.convert("RGB"))
-            durations.append(150 if phase < 2 else 160)
-    for tick in range(10):
-        image = paper(width, height)
-        draw = ImageDraw.Draw(image)
-        draw.rectangle((0, 0, width, 4), fill=ACCENT)
-        layout(draw, 3)
-        draw.line((60, 232, 1140, 232), fill=ACCENT, width=2)
-        text(draw, (60, 262), WRITTEN + ("▌" if tick % 2 == 0 else ""), 25, INK)
-        micro(draw, (60, 306), "RULES IN MICROSECONDS · NO MODEL, NO NETWORK, NOTHING UPLOADED", FAINT, 11, 1.8)
-        frames.append(image.convert("RGB"))
-        durations.append(260)
-    frames[0].save(
-        ASSETS / "flow.gif",
-        save_all=True,
-        append_images=frames[1:],
-        duration=durations,
-        loop=0,
-        optimize=True,
-    )
 
 
 def social():
