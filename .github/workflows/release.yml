@@ -140,7 +140,7 @@ jobs:
           New-Item -ItemType Directory -Force release | Out-Null
           Copy-Item target/${{ matrix.target }}/release/parlo.exe release/
           Copy-Item target/${{ matrix.target }}/release/parlo-app.exe release/
-          $loader = Get-ChildItem -Path target -Recurse -Filter WebView2Loader.dll -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match '\x64\' } | Select-Object -First 1
+          $loader = Get-ChildItem -Path target -Recurse -Filter WebView2Loader.dll -ErrorAction SilentlyContinue | Where-Object { $_.FullName -like '*x64*' } | Select-Object -First 1
           if (-not $loader) { throw "WebView2Loader.dll was not produced by the build" }
           Copy-Item $loader.FullName release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
