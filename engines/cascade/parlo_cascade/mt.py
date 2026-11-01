@@ -56,12 +56,11 @@ def pack_roots():
     override = os.environ.get("PARLO_MT_PACKS_DIR")
     if override:
         return [Path(override)]
-    root = []
+    root = [packs.packs_dir()]
     appdata = os.environ.get("APPDATA")
     if appdata:
         root.append(Path(appdata) / "argos-translate" / "packages")
     root.append(Path.home() / ".local" / "share" / "argos-translate" / "packages")
-    root.append(packs.packs_dir())
     return root
 
 
