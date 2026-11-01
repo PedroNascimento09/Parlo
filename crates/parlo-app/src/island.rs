@@ -1,4 +1,5 @@
 use parlo_core::settings;
+#[cfg(windows)]
 use parlo_core::shortcut::{Shortcut, NO_REPEAT};
 use tauri::{AppHandle, Manager};
 
