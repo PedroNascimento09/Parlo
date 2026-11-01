@@ -10,6 +10,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- Dictating in another language now shows both sides on the island: the inserted line is the translation, and the hint keeps the sentence that was actually heard, so a mistranslation is visible instead of silent.
 - The Hub now shows the **model library** the build actually ships with: every component with its identifier, version, function, licence and whether that licence was checked, served by `GET /catalog` from the catalogue embedded in the binary. It is read only, and the panel says so — installing from there is not in this build.
 - A past dictation can be used again: every line in **Recent dictations** is a button that puts that text back on the clipboard, so a sentence said yesterday does not have to be said again. The entry keeps the translation that was inserted, not the raw speech.
 - Every dictation is now kept in a local history: what was said, its translation and the pair of languages, in `history.jsonl` beside the configuration. The Hub lists the last twenty under **Recent dictations** with a clear button, `GET /history` serves them behind the token, `POST /history/clear` removes the file, and the store stops at two hundred entries so it cannot grow without a bound. Nothing leaves the machine.

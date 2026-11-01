@@ -89,7 +89,7 @@
     max-height: 0;
     transition: opacity 160ms ease, max-height 160ms ease;
   }
-  body.showing-hint .hint { opacity: 1; max-height: 2rem; }
+  body.showing-hint .hint { opacity: 1; max-height: 3.2rem; }
   body.listening .hint { opacity: 0; max-height: 0; }
   @keyframes settle {
     from { opacity: 0; transform: translateY(8px) scale(0.98); }
@@ -364,7 +364,8 @@ async function finish() {
       throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
     }
     const result = await response.json();
-    const text = (result.translation || result.text || "").trim();
+    const spoken = (result.text || "").trim();
+    const text = (result.translation || "").trim() || spoken;
     if (!text) {
       setState("Nothing heard", "Speak a little closer to the microphone.", true);
       busy = false;
@@ -372,11 +373,14 @@ async function finish() {
     }
     lastText = text;
     const inserted = await writeIntoField(text);
+    const translated = Boolean(spoken) && spoken !== text;
     setState(inserted ? "Inserted" : "Copied", text, false);
     document.body.classList.add("showing-hint");
-    hintEl.textContent = inserted
-      ? "Written into the field you were in."
-      : "Copied to the clipboard. Paste it where you need it.";
+    hintEl.textContent =
+      (inserted
+        ? "Written into the field you were in."
+        : "Copied to the clipboard. Paste it where you need it.") +
+      (translated ? " Heard: " + spoken : "");
     if (!inserted) {
       try {
         await navigator.clipboard.writeText(text);
