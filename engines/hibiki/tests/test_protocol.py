@@ -119,6 +119,43 @@ class BrokenDictationEngine(FakeDictationEngine):
         raise EngineUnavailable("model missing")
 
 
+class FakeWritingEngine(FakeDictationEngine):
+    def write(self, pcm16, target=None):
+        return "bom dia", "good morning" if target == "en" else "bom dia"
+
+
+class WriteProtocolTest(unittest.TestCase):
+    def payload(self):
+        return base64.b64encode(b"\x00\x00" * 160).decode()
+
+    def test_write_returns_the_sentence_and_its_translation(self):
+        response = handle_line(
+            f'{{"op": "write", "seq": 4, "pcm16": "{self.payload()}", "target": "en"}}',
+            FakeWritingEngine(),
+        )
+        self.assertEqual(response["op"], "written")
+        self.assertEqual(response["seq"], 4)
+        self.assertEqual(response["text"], "bom dia")
+        self.assertEqual(response["translation"], "good morning")
+
+    def test_write_without_a_target_keeps_the_language_spoken(self):
+        response = handle_line(
+            f'{{"op": "write", "pcm16": "{self.payload()}"}}', FakeWritingEngine()
+        )
+        self.assertEqual(response["translation"], "bom dia")
+
+    def test_write_needs_an_engine_that_can_translate(self):
+        response = handle_line(
+            f'{{"op": "write", "pcm16": "{self.payload()}"}}', FakeEngine()
+        )
+        self.assertEqual(response["op"], "error")
+        self.assertIn("another language", response["error"])
+
+    def test_write_rejects_a_missing_payload(self):
+        response = handle_line('{"op": "write"}', FakeWritingEngine())
+        self.assertEqual(response["error"], "pcm16 must be base64 text")
+
+
 class FakeEvent:
     def __init__(self, state, text):
         self.state = state
