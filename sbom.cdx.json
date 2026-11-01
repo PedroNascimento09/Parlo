@@ -1898,6 +1898,28 @@
     },
     {
       "type": "library",
+      "name": "byteorder-lite",
+      "version": "0.1.0",
+      "licenses": [
+        {
+          "expression": "Unlicense OR MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/image-rs/byteorder-lite"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "bytes",
       "version": "1.12.1",
       "licenses": [
@@ -4648,6 +4670,28 @@
     },
     {
       "type": "library",
+      "name": "image",
+      "version": "0.25.10",
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/image-rs/image"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "indexmap",
       "version": "1.9.3",
       "licenses": [
@@ -5545,6 +5589,28 @@
         {
           "type": "website",
           "url": "https://github.com/tokio-rs/mio"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "moxcms",
+      "version": "0.8.1",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause OR Apache-2.0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/awxkee/moxcms.git"
         }
       ]
     },
@@ -6843,6 +6909,28 @@
         {
           "type": "website",
           "url": "https://github.com/dtolnay/proc-macro2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pxfm",
+      "version": "0.1.30",
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause OR Apache-2.0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/awxkee/pxfm"
         }
       ]
     },

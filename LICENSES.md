@@ -129,6 +129,7 @@ SBOM attached to each release.
 | bumpalo | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/fitzgen/bumpalo |
 | bytemuck | Rust programs | Zlib OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/Lokathor/bytemuck |
 | byteorder | Rust programs | Unlicense OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/BurntSushi/byteorder |
+| byteorder-lite | Rust programs | Unlicense OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/image-rs/byteorder-lite |
 | bytes | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tokio-rs/bytes |
 | cairo-rs | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk-rs-core |
 | cairo-sys-rs | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk-rs-core |
@@ -254,6 +255,7 @@ SBOM attached to each release.
 | ident_case | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/TedDriggs/ident_case |
 | idna | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/rust-url/ |
 | idna_adapter | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/hsivonen/idna_adapter |
+| image | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/image-rs/image |
 | indexmap | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/bluss/indexmap |
 | indexmap | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/indexmap-rs/indexmap |
 | infer | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/bojand/infer |
@@ -295,6 +297,7 @@ SBOM attached to each release.
 | miniz_oxide | Rust programs | MIT OR Zlib OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide |
 | miniz_oxide | Rust programs | MIT OR Zlib OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide |
 | mio | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tokio-rs/mio |
+| moxcms | Rust programs | BSD-3-Clause OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/awxkee/moxcms.git |
 | muda | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tauri-apps/muda |
 | ndk | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-mobile/ndk |
 | ndk | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-mobile/ndk |
@@ -354,6 +357,7 @@ SBOM attached to each release.
 | proc-macro-error | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://gitlab.com/CreepySkeleton/proc-macro-error |
 | proc-macro-error-attr | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://gitlab.com/CreepySkeleton/proc-macro-error |
 | proc-macro2 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/proc-macro2 |
+| pxfm | Rust programs | BSD-3-Clause OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/awxkee/pxfm |
 | quick-xml | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tafia/quick-xml |
 | quote | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/quote |
 | r-efi | Rust programs | MIT OR Apache-2.0 OR LGPL-2.1-or-later | None | See the project | Required | Confirmed | See the licence text | https://github.com/r-efi/r-efi |
