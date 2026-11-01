@@ -11,6 +11,7 @@ pub struct Config {
     pub stt: String,
     pub from: String,
     pub to: String,
+    pub write: String,
     pub port: u16,
     pub device: Option<usize>,
 }
@@ -22,6 +23,7 @@ impl Default for Config {
             stt: "parakeet".to_string(),
             from: "pt".to_string(),
             to: "en".to_string(),
+            write: String::new(),
             port: 8787,
             device: None,
         }
@@ -81,6 +83,13 @@ pub fn check_stt(value: &str) -> Result<(), String> {
     }
 }
 
+pub fn check_language(value: &str) -> bool {
+    value.len() == 2
+        && value
+            .chars()
+            .all(|character| character.is_ascii_alphabetic())
+}
+
 pub fn check_pair(from: &str, to: &str) -> Result<(), String> {
     for (value, label) in [(from, "--from"), (to, "--to")] {
         if value.len() != 2
@@ -136,6 +145,7 @@ mod tests {
             stt: "whisper".to_string(),
             from: "en".to_string(),
             to: "pt".to_string(),
+            write: "pt".to_string(),
             port: 9100,
             device: Some(2),
         };
@@ -149,6 +159,14 @@ mod tests {
         assert!(check_pair("pt", "pt").is_err());
         assert!(check_pair("pt", "eng").is_err());
         assert!(check_pair("p1", "en").is_err());
+    }
+
+    #[test]
+    fn accepts_only_two_letter_languages() {
+        assert!(check_language("en"));
+        assert!(!check_language(""));
+        assert!(!check_language("eng"));
+        assert!(!check_language("e1"));
     }
 
     #[test]

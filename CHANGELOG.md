@@ -6,6 +6,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- Dictation can now be written in another language. **Dictation writes** in the Hub takes Portuguese or English, or the language spoken; the island asks the engine to translate the recognised sentence and inserts that instead, so a person who speaks Portuguese can dictate English into any field. The engine translates through the same local models, the choice is stored in `config.json`, and a missing translation model is reported as a sentence rather than a wrong insertion.
 - The tray menu now lands where it says it does: **Live** opens the window and starts live translation, and **Settings** opens the window with the languages and recogniser row in view and in focus. The page reads the `#live` and `#settings` fragments, so the menu no longer drops the user on the Home screen.
 - Parlo now has one presence: a tray icon whose menu offers Dictate, Live, Open Parlo, Settings and Quit, and whose left click shows or hides the dictation island. The shortcut stays as an accelerator, not as the only way in. Everything the menu names exists; nothing in the menu opens a screen the product does not have.
 - Dictation writes into the field it came from. When the island starts listening it asks the engine which window has the focus and remembers it; when the text is ready, `POST /insert` types it with the keyboard only if that same window is still in front, and otherwise the island falls back to the clipboard and says why.

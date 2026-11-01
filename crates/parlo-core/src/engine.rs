@@ -64,6 +64,16 @@ pub trait Engine: Send {
         ))
     }
 
+    fn write(
+        &mut self,
+        _pcm16: &[u8],
+        _target: Option<&str>,
+    ) -> Result<(String, String), EngineError> {
+        Err(EngineError::Rejected(
+            "this engine cannot write in another language".to_string(),
+        ))
+    }
+
     fn reset(&mut self) {}
 }
 

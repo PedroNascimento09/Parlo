@@ -127,6 +127,7 @@ class CascadeEngine:
         self._stt = None
         self._tts = None
         self._translator = None
+        self._writers: dict[str, object] = {}
         self._stream: StreamingSession | None = None
         self._silent_seconds = 0.0
 
@@ -227,6 +228,26 @@ class CascadeEngine:
         if not samples:
             return ""
         return self._transcribe(samples)
+
+    def write(self, pcm16: bytes, target: str | None = None) -> tuple[str, str]:
+        from . import mt
+
+        text = self.transcribe(pcm16)
+        if not text:
+            return "", ""
+        language = (target or self.target).lower()
+        if language == self.source:
+            return text, text
+        translator = self._writers.get(language)
+        if translator is None:
+            translator = mt.from_environment(self.source, language)
+            if translator is None:
+                raise EngineUnavailable(
+                    f"no translation model for {self.source}->{language}; "
+                    "run engines/cascade/scripts/setup_models.py"
+                )
+            self._writers[language] = translator
+        return text, translator(text)
 
     def stream(self, pcm16: bytes) -> list[TextEvent]:
         if not self._ready:

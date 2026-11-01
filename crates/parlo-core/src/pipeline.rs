@@ -116,6 +116,14 @@ impl Pipeline {
         self.engine.dictate(pcm16)
     }
 
+    pub fn write(
+        &mut self,
+        pcm16: &[u8],
+        target: Option<&str>,
+    ) -> Result<(String, String), EngineError> {
+        self.engine.write(pcm16, target)
+    }
+
     pub fn push(&mut self, samples: &[f32]) -> Vec<PipelineOutput> {
         self.pending.extend_from_slice(samples);
         let mut outputs = Vec::new();

@@ -137,6 +137,7 @@ let ticker = null;
 let busy = false;
 let lastText = "";
 let target = false;
+let writeTarget = "";
 
 function setState(text, line, pending) {
   stateEl.textContent = text;
@@ -306,6 +307,19 @@ async function beginTarget() {
   }
 }
 
+async function loadWriteTarget() {
+  try {
+    const response = await fetch("/settings", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const values = await response.json();
+    writeTarget = (values.write || "").toLowerCase();
+  } catch (failure) {
+    writeTarget = "";
+  }
+}
+
 async function writeIntoField(text) {
   if (!target) {
     return false;
@@ -336,9 +350,13 @@ async function finish() {
   }
   setState("Writing", "Your words are being written down.", true);
   try {
+    const headers = { "Content-Type": "audio/wav", Authorization: "Bearer " + token };
+    if (writeTarget) {
+      headers["x-parlo-write"] = writeTarget;
+    }
     const response = await fetch("/dictate", {
       method: "POST",
-      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      headers,
       body: captured.wav,
     });
     if (!response.ok) {
@@ -346,7 +364,7 @@ async function finish() {
       throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
     }
     const result = await response.json();
-    const text = (result.text || "").trim();
+    const text = (result.translation || result.text || "").trim();
     if (!text) {
       setState("Nothing heard", "Speak a little closer to the microphone.", true);
       busy = false;
@@ -391,6 +409,7 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+loadWriteTarget();
 if (!document.hidden) {
   begin();
 }

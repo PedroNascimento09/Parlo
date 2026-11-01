@@ -31,6 +31,8 @@ def handle_line(line: str, engine) -> dict:
         return translate(request, engine)
     if op == "dictate":
         return dictate(request, engine)
+    if op == "write":
+        return write(request, engine)
     if op == "stream":
         return stream(request, engine)
     if op == "stream_close":
@@ -86,6 +88,30 @@ def dictate(request: dict, engine) -> dict:
     except EngineUnavailable as failure:
         return {"op": "error", "seq": seq, "error": str(failure)}
     return {"op": "dictated", "seq": seq, "text": text}
+
+
+def write(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    if not hasattr(engine, "write"):
+        return {
+            "op": "error",
+            "seq": seq,
+            "error": "engine cannot write in another language",
+        }
+    pcm16, error = decode_audio(request)
+    if error is not None:
+        return error
+    target = request.get("target")
+    try:
+        text, translation = engine.write(pcm16, target if isinstance(target, str) else None)
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return {
+        "op": "written",
+        "seq": seq,
+        "text": text,
+        "translation": translation,
+    }
 
 
 def stream(request: dict, engine) -> dict:

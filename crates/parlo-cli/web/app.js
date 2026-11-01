@@ -963,6 +963,7 @@ modelsInstall.addEventListener("click", () => downloadModels());
 welcomeInstall.addEventListener("click", () => downloadModels());
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
+const settingsWrite = document.getElementById("settings-write");
 
 function describePair(from, to) {
   return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
@@ -972,7 +973,8 @@ function settingsChanged() {
   return (
     settingsFrom.value !== savedSettings.from ||
     settingsTo.value !== savedSettings.to ||
-    settingsStt.value !== savedSettings.stt
+    settingsStt.value !== savedSettings.stt ||
+    settingsWrite.value !== savedSettings.write
   );
 }
 
@@ -984,12 +986,17 @@ function reflectSettings(values) {
   settingsFrom.value = values.from || "pt";
   settingsTo.value = values.to || "en";
   settingsStt.value = values.stt || "parakeet";
+  settingsWrite.value = values.write || "";
   savedSettings = {
     from: settingsFrom.value,
     to: settingsTo.value,
     stt: settingsStt.value,
+    write: settingsWrite.value,
   };
-  settingsNote.textContent = describePair(savedSettings.from, savedSettings.to);
+  const pair = describePair(savedSettings.from, savedSettings.to);
+  settingsNote.textContent = savedSettings.write
+    ? pair + ", dictation writes " + (LANGUAGE_NAMES[savedSettings.write] || savedSettings.write)
+    : pair + ", dictation keeps the language spoken";
   refreshApply();
 }
 
@@ -1022,6 +1029,7 @@ function lockSettings(locked) {
   settingsFrom.disabled = locked;
   settingsTo.disabled = locked;
   settingsStt.disabled = locked;
+  settingsWrite.disabled = locked;
   settingsSwap.disabled = locked;
   settingsApply.disabled = locked;
 }
@@ -1044,7 +1052,12 @@ async function saveSettings() {
   }
 
   clearError();
-  const previous = { from: savedSettings.from, to: savedSettings.to, stt: savedSettings.stt };
+  const previous = {
+    from: savedSettings.from,
+    to: savedSettings.to,
+    stt: savedSettings.stt,
+    write: savedSettings.write,
+  };
   lockSettings(true);
   settingsApply.textContent = "Loading models…";
   settingsNote.textContent = "Parlo is loading the models again. This takes about twenty seconds.";
@@ -1060,6 +1073,7 @@ async function saveSettings() {
         from: settingsFrom.value,
         to: settingsTo.value,
         stt: settingsStt.value,
+        write: settingsWrite.value,
       }),
     });
     const detail = await response.json().catch(() => ({}));
@@ -1070,7 +1084,7 @@ async function saveSettings() {
       throw new Error(detail.error || "Parlo could not change the languages.");
     }
     reflectSettings(detail);
-    settingsNote.textContent = describePair(savedSettings.from, savedSettings.to) + ", ready.";
+    settingsNote.textContent = settingsNote.textContent.replace(/, dictation.*$/, "") + ", ready.";
   } catch (failure) {
     reflectSettings(previous);
     showError(failure.message || "Parlo could not change the languages. Try again.");
@@ -1092,6 +1106,8 @@ settingsTo.addEventListener("change", () => {
 });
 
 settingsStt.addEventListener("change", () => refreshApply());
+
+settingsWrite.addEventListener("change", () => refreshApply());
 
 settingsSwap.addEventListener("click", () => {
   if (settingsBusy) {

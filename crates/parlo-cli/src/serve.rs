@@ -52,6 +52,8 @@ struct Settings {
     from: Option<String>,
     #[serde(default)]
     to: Option<String>,
+    #[serde(default)]
+    write: Option<String>,
 }
 
 pub struct Session {
@@ -60,6 +62,7 @@ pub struct Session {
     stt: String,
     from: String,
     to: String,
+    write: String,
     target: Option<usize>,
 }
 
@@ -86,6 +89,7 @@ impl Session {
             stt,
             from,
             to,
+            write: crate::config::load().write,
             target: None,
         })
     }
@@ -96,6 +100,7 @@ impl Session {
         stt: String,
         from: String,
         to: String,
+        write: String,
     ) -> Result<(), String> {
         let pipeline = build(&from, &to, &engine, &stt)?;
         self.pipeline = pipeline;
@@ -103,6 +108,7 @@ impl Session {
         self.stt = stt;
         self.from = from;
         self.to = to;
+        self.write = write;
         self.target = None;
         Ok(())
     }
@@ -120,19 +126,25 @@ impl Session {
         insert::type_text(target, text)
     }
 
-    fn dictate(&mut self, pcm16: &[u8]) -> Result<String, String> {
+    fn write(&mut self, pcm16: &[u8], target: &str) -> Result<(String, String), String> {
+        let target = if target.is_empty() {
+            None
+        } else {
+            Some(target)
+        };
         self.pipeline
-            .dictate(pcm16)
+            .write(pcm16, target)
             .map_err(|error| error.to_string())
     }
 
     fn as_json(&self) -> String {
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
             json_string(&self.engine),
             json_string(&self.stt),
             json_string(&self.from),
-            json_string(&self.to)
+            json_string(&self.to),
+            json_string(&self.write)
         )
     }
 }
@@ -340,9 +352,40 @@ fn handle(
             .unwrap_or_else(|| session.to.clone())
             .to_ascii_lowercase();
 
+        let write = requested
+            .write
+            .unwrap_or_else(|| session.write.clone())
+            .to_ascii_lowercase();
+        if !write.is_empty() && !crate::config::check_language(&write) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"the language for dictation needs a two letter code\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+
         println!("switching to {engine} on {stt}, {from} to {to}, loading models");
         let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
-        let outcome = session.switch(engine, stt, from, to);
+        let stored = (
+            engine.clone(),
+            stt.clone(),
+            from.clone(),
+            to.clone(),
+            write.clone(),
+        );
+        let outcome = session.switch(engine, stt, from, to, write);
+        if outcome.is_ok() {
+            let mut config = crate::config::load();
+            config.engine = stored.0;
+            config.stt = stored.1;
+            config.from = stored.2;
+            config.to = stored.3;
+            config.write = stored.4;
+            if let Err(error) = crate::config::save(&config) {
+                println!("could not store the settings: {error}");
+            }
+        }
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
         if let Err(error) = outcome {
             return respond_json(
@@ -841,10 +884,22 @@ fn handle(
         for sample in &wav.samples {
             pcm16.extend_from_slice(&sample.to_le_bytes());
         }
+        let write = header(&headers, "x-parlo-write")
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        if !write.is_empty() && !crate::config::check_language(&write) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"x-parlo-write needs a two letter language code\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
-        let text = match session.dictate(&pcm16) {
-            Ok(text) => text,
+        let (text, translation) = match session.write(&pcm16, &write) {
+            Ok(pair) => pair,
             Err(error) => {
                 return respond_json(
                     stream,
@@ -860,8 +915,9 @@ fn handle(
             started.elapsed().as_millis()
         );
         let body = format!(
-            "{{\"text\":\"{}\",\"seconds\":{seconds:.3},\"latency_ms\":{}}}",
+            "{{\"text\":\"{}\",\"translation\":\"{}\",\"seconds\":{seconds:.3},\"latency_ms\":{}}}",
             json_string(&text),
+            json_string(&translation),
             started.elapsed().as_millis()
         );
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);

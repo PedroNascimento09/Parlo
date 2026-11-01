@@ -16,6 +16,8 @@ struct Request<'a> {
     seq: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pcm16: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target: Option<&'a str>,
 }
 
 #[derive(Deserialize)]
@@ -31,6 +33,8 @@ struct Response {
     pcm16: Option<String>,
     #[serde(default)]
     text: Option<String>,
+    #[serde(default)]
+    translation: Option<String>,
     #[serde(default)]
     error: Option<String>,
     #[serde(default)]
@@ -157,6 +161,7 @@ impl SidecarEngine {
             op: "hello",
             seq: None,
             pcm16: None,
+            target: None,
         })?;
         if hello.op == "error" {
             return Err(EngineError::Unavailable(
@@ -189,6 +194,7 @@ impl SidecarEngine {
             op: "dictate",
             seq: Some(self.seq),
             pcm16: Some(BASE64.encode(pcm16)),
+            target: None,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(
@@ -198,6 +204,30 @@ impl SidecarEngine {
             ));
         }
         Ok(response.text.unwrap_or_default())
+    }
+
+    pub fn write(
+        &mut self,
+        pcm16: &[u8],
+        target: Option<&str>,
+    ) -> Result<(String, String), EngineError> {
+        self.seq += 1;
+        let response = self.request(&Request {
+            op: "write",
+            seq: Some(self.seq),
+            pcm16: Some(BASE64.encode(pcm16)),
+            target,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+        let text = response.text.unwrap_or_default();
+        let translation = response.translation.unwrap_or_else(|| text.clone());
+        Ok((text, translation))
     }
 
     pub fn stream_mode(&self) -> &str {
@@ -213,6 +243,7 @@ impl SidecarEngine {
             op,
             seq: Some(self.seq),
             pcm16,
+            target: None,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(
@@ -267,12 +298,21 @@ impl Engine for SidecarEngine {
         SidecarEngine::dictate(self, pcm16)
     }
 
+    fn write(
+        &mut self,
+        pcm16: &[u8],
+        target: Option<&str>,
+    ) -> Result<(String, String), EngineError> {
+        SidecarEngine::write(self, pcm16, target)
+    }
+
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError> {
         self.seq += 1;
         let response = self.request(&Request {
             op: "translate",
             seq: Some(self.seq),
             pcm16: Some(encode_pcm16(input.samples())),
+            target: None,
         })?;
 
         if response.op == "error" {
@@ -376,9 +416,22 @@ mod tests {
             op: "hello",
             seq: None,
             pcm16: None,
+            target: None,
         })
         .unwrap();
         assert_eq!(line, "{\"op\":\"hello\"}");
+    }
+
+    #[test]
+    fn a_write_request_carries_its_target() {
+        let line = serde_json::to_string(&Request {
+            op: "write",
+            seq: Some(2),
+            pcm16: Some("AAA=".to_string()),
+            target: Some("en"),
+        })
+        .unwrap();
+        assert!(line.contains("\"target\":\"en\""));
     }
 
     #[test]
