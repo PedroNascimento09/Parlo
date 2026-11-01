@@ -13,7 +13,11 @@ irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/insta
 
 3. When it finishes, **Parlo** is in the Start menu. Open it, press **Download models** in the Models panel, and wait once.
 
-That is the whole installation. The script reads the latest release, downloads the Windows archive, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, and adds the Start menu entry. To read it before running it, open [scripts/install.ps1](../scripts/install.ps1); it downloads and unpacks, nothing else.
+That is the whole installation. The script downloads the Windows archive straight from the latest release with `curl`, unpacks it into `%LOCALAPPDATA%\Programs\Parlo` and adds the Start menu entry. To read it before running it, open [scripts/install.ps1](../scripts/install.ps1); it downloads and unpacks, nothing else.
+
+Measured on the reference machine (Windows 11, no administrator rights): the archive is **220 MB**, it unpacks to **631 MB**, and the whole step took **37 seconds** with the files already in the Windows cache. No terminal stays open, nothing is installed system-wide, and the folder can be deleted to remove it.
+
+The wait people notice is afterwards, on the first start: about **800 MB of models**, once, from the Models panel.
 
 ## Windows, without a terminal
 

@@ -6,12 +6,12 @@ machine="$(uname -m)"
 
 case "$platform" in
     Darwin)
-        pattern="macos-aarch64"
+        asset="parlo-macos-aarch64.tar.gz"
         dest="${PARLO_DIR:-$HOME/Applications/Parlo}"
         bin_dir="$HOME/.local/bin"
         ;;
     Linux)
-        pattern="linux-x86_64"
+        asset="parlo-linux-x86_64.tar.gz"
         dest="${PARLO_DIR:-$HOME/.local/opt/parlo}"
         bin_dir="$HOME/.local/bin"
         ;;
@@ -29,18 +29,11 @@ fi
 command -v curl >/dev/null || { echo "curl is needed to download Parlo." >&2; exit 1; }
 command -v tar >/dev/null || { echo "tar is needed to unpack Parlo." >&2; exit 1; }
 
-api="https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest"
-tag="$(curl -fsSL "$api" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' | head -n1)"
-url="$(curl -fsSL "$api" | sed -n 's/.*"browser_download_url": *"\([^"]*'"$pattern"'[^"]*\.tar\.gz\)".*/\1/p' | head -n1)"
+url="https://github.com/PedroNascimento09/Parlo/releases/latest/download/$asset"
+archive="${TMPDIR:-/tmp}/$asset"
 
-if [ -z "$tag" ] || [ -z "$url" ]; then
-    echo "The latest release has no archive for this platform. Install from source with scripts/parlo-app.sh." >&2
-    exit 1
-fi
-
-archive="${TMPDIR:-/tmp}/$(basename "$url")"
-echo "Downloading Parlo $tag..."
-curl -fL --progress-bar "$url" -o "$archive"
+echo "Downloading $asset..."
+curl -fL --retry 2 --progress-bar "$url" -o "$archive"
 
 rm -rf "$dest"
 mkdir -p "$dest"
@@ -62,6 +55,6 @@ fi
 mkdir -p "$bin_dir"
 ln -sf "$app" "$bin_dir/parlo-app"
 
-echo "Parlo $tag is installed in $dest"
+echo "Parlo is installed in $dest"
 echo "Open it with parlo-app, or from the launcher if $bin_dir is on your PATH."
 echo "The first run downloads about 800 MB of models, once."

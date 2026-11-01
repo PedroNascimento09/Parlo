@@ -5,35 +5,40 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$ProgressPreference = "SilentlyContinue"
 
-$release = Invoke-RestMethod -Uri "https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest"
-$asset = $release.assets | Where-Object { $_.name -like "*windows*x86_64*.zip" } | Select-Object -First 1
-
-if (-not $asset) {
-    throw "The latest release has no Windows archive. Install from source with scripts\parlo-app.cmd instead."
-}
+$url = "https://github.com/PedroNascimento09/Parlo/releases/latest/download/parlo-windows-x86_64.zip"
 
 if ($Archive -ne "") {
     $zip = $Archive
 } else {
-    $zip = Join-Path $env:TEMP $asset.name
-    Write-Host "Downloading Parlo $($release.tag_name), $([math]::Round($asset.size / 1MB)) MB..."
-    Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zip
+    $zip = Join-Path $env:TEMP "parlo-windows-x86_64.zip"
+    $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
+    if ($curl) {
+        & curl.exe --fail --location --retry 2 --progress-bar --output $zip $url
+        if ($LASTEXITCODE -ne 0) {
+            throw "The download failed. Check the connection and run this again; it starts from the beginning."
+        }
+    } else {
+        Write-Host "Downloading Parlo..."
+        Invoke-WebRequest -Uri $url -OutFile $zip
+    }
 }
 
 if (Test-Path $Dest) {
     Remove-Item $Dest -Recurse -Force
 }
 New-Item -ItemType Directory -Path $Dest | Out-Null
-Expand-Archive -Path $zip -DestinationPath $Dest -Force
+
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+[System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $Dest)
 if ($Archive -eq "") {
     Remove-Item $zip -Force
 }
 
 $app = Get-ChildItem -Path $Dest -Recurse -Filter "parlo-app.exe" | Select-Object -First 1
 if (-not $app) {
-    throw "The archive did not contain parlo-app.exe. Nothing was installed correctly in $Dest."
+    throw "The archive did not contain parlo-app.exe. Nothing usable was installed in $Dest."
 }
 
 $shell = New-Object -ComObject WScript.Shell
@@ -45,7 +50,7 @@ $shortcut.IconLocation = "$($app.FullName),0"
 $shortcut.Description = "Parlo, dictation and translation on this computer"
 $shortcut.Save()
 
-Write-Host "Parlo $($release.tag_name) is installed in $Dest"
+Write-Host "Parlo is installed in $Dest"
 Write-Host "It is in the Start menu as Parlo. The first run downloads about 800 MB of models, once."
 
 if (-not $NoLaunch) {
