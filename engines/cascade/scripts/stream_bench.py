@@ -67,10 +67,15 @@ def summarise(reference: str, events: list[tuple[float, object]]) -> dict:
     stable_text = " ".join(event.text for _, event in stables).strip()
     final_text = finals[-1][1].text if finals else ""
     latencies = [event.latency_ms for _, event in events]
+
+    def moment(event):
+        return event.audio_ms + event.latency_ms
+
     return {
-        "first_partial_ms": round(partials[0][0] * 1000, 1) if partials else None,
-        "first_stable_ms": round(stables[0][0] * 1000, 1) if stables else None,
-        "final_ms": round(finals[0][0] * 1000, 1) if finals else None,
+        "first_partial_ms": moment(partials[0][1]) if partials else None,
+        "first_stable_ms": moment(stables[0][1]) if stables else None,
+        "final_ms": moment(finals[0][1]) if finals else None,
+        "process_ms": round(events[-1][0] * 1000, 1) if events else None,
         "decode_ms": round(statistics.mean(latencies), 1) if latencies else None,
         "corrections": len(corrected),
         "partial": partial_text,
@@ -93,9 +98,10 @@ def main() -> int:
     parser.add_argument("--segment", type=float, default=12.0)
     parser.add_argument("--snr", type=float, default=None)
     parser.add_argument("--seed", type=int, default=7)
-    parser.add_argument("--lead", type=float, default=0.3)
+    parser.add_argument("--lead", type=float, default=0.0)
     parser.add_argument("--tail", type=float, default=0.8)
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--events", action="store_true")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -138,6 +144,13 @@ def main() -> int:
         row["sentence"] = sentence
         row["audio_seconds"] = round(audio_seconds, 2)
         rows.append(row)
+        if args.events:
+            for _, event in events:
+                print(
+                    f"      {event.audio_ms:>6d} ms audio  "
+                    f"{event.latency_ms:>5d} ms decode  "
+                    f"{event.state:<9} {event.text}"
+                )
         print(
             f"  {row['first_partial_ms'] or 0:>6.0f} ms  "
             f"{row['first_stable_ms'] or 0:>6.0f} ms  "

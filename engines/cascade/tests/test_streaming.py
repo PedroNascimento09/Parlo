@@ -77,7 +77,8 @@ class StabilityPolicyTest(unittest.TestCase):
         self.assertEqual(policy.observe(["bom", "dia"], 500, 40), [
             TextEvent("partial", "bom dia", 500, 40)
         ])
-        events = policy.observe(["bom", "dia"], 900, 40)
+        self.assertEqual(policy.observe(["bom", "dia"], 900, 40), [])
+        events = policy.observe(["bom", "dia"], 1300, 40)
         stable = [event for event in events if event.state == "stable"]
         self.assertEqual([event.text for event in stable], ["bom dia"])
         self.assertEqual(policy.confirmed, 2)
@@ -85,7 +86,8 @@ class StabilityPolicyTest(unittest.TestCase):
     def test_stable_text_is_emitted_once(self):
         policy = StabilityPolicy(rounds=1)
         policy.observe(["bom"], 500, 40)
-        self.assertEqual(policy.observe(["bom"], 900, 40), [])
+        events = policy.observe(["bom"], 900, 40)
+        self.assertEqual([event.text for event in events], ["bom"])
         self.assertEqual(policy.observe(["bom"], 1300, 40), [])
 
     def test_a_revised_hypothesis_blocks_new_stable_text(self):
@@ -94,14 +96,15 @@ class StabilityPolicyTest(unittest.TestCase):
         policy.observe(["bom", "dia"], 900, 40)
         events = policy.observe(["bom", "noite"], 1300, 40)
         self.assertEqual([event.state for event in events], ["partial"])
-        self.assertEqual(policy.confirmed, 2)
+        self.assertEqual(policy.confirmed, 0)
 
     def test_growth_after_a_stable_prefix_starts_again(self):
         policy = StabilityPolicy(rounds=1)
         policy.observe(["bom"], 500, 40)
-        events = policy.observe(["bom", "dia"], 900, 40)
-        stable = [event.text for event in events if event.state == "stable"]
-        self.assertEqual(stable, ["dia"])
+        first = policy.observe(["bom", "dia"], 900, 40)
+        second = policy.observe(["bom", "dia"], 1300, 40)
+        self.assertEqual([event.text for event in first if event.state == "stable"], ["bom"])
+        self.assertEqual([event.text for event in second if event.state == "stable"], ["dia"])
 
     def test_final_is_always_reported(self):
         policy = StabilityPolicy()
@@ -112,12 +115,14 @@ class StabilityPolicyTest(unittest.TestCase):
     def test_final_reports_a_correction_when_confirmed_text_changed(self):
         policy = StabilityPolicy(rounds=1)
         policy.observe(["bom"], 500, 40)
+        policy.observe(["bom"], 900, 40)
         events = policy.finalize(["boa", "noite"], 2000, 60)
         self.assertEqual([event.state for event in events], ["corrected", "final"])
 
     def test_a_final_matching_the_confirmed_text_is_not_a_correction(self):
         policy = StabilityPolicy(rounds=1)
         policy.observe(["bom"], 500, 40)
+        policy.observe(["bom"], 900, 40)
         events = policy.finalize(["bom"], 2000, 60)
         self.assertEqual([event.state for event in events], ["final"])
 

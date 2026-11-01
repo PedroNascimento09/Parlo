@@ -42,41 +42,49 @@ class StabilityPolicy:
         self.confirmed = 0
         self._confirmed_words: list[str] = []
         self._previous: list[str] = []
-        self._pending: list[str] = []
-        self._pending_rounds = 0
+        self._candidate = 0
+        self._candidate_rounds = 0
 
     def reset(self) -> None:
         self.confirmed = 0
         self._confirmed_words = []
         self._previous = []
-        self._pending = []
-        self._pending_rounds = 0
+        self._candidate = 0
+        self._candidate_rounds = 0
 
     def observe(self, words: list[str], audio_ms: int, latency_ms: int) -> list[TextEvent]:
         text = " ".join(words)
         events = []
         if text and text != " ".join(self._previous):
             events.append(TextEvent("partial", text, audio_ms, latency_ms))
+        overlap = common_prefix(self._previous, words)
         self._previous = list(words)
 
         if self.confirmed and words[: self.confirmed] != self._confirmed_words:
             self._confirmed_words = words[: self.confirmed]
-            self._pending = []
-            self._pending_rounds = 0
+            self._candidate = self.confirmed
+            self._candidate_rounds = 0
 
-        pending = words[self.confirmed :]
-        if pending and pending == self._pending:
-            self._pending_rounds += 1
+        if overlap <= self.confirmed:
+            self._candidate = self.confirmed
+            self._candidate_rounds = 0
+            return events
+
+        if overlap > self._candidate:
+            self._candidate = overlap
+            self._candidate_rounds = 1
+        elif overlap == self._candidate:
+            self._candidate_rounds += 1
         else:
-            self._pending = list(pending)
-            self._pending_rounds = 1 if pending else 0
+            self._candidate = overlap
+            self._candidate_rounds = 1
 
-        if pending and self._pending_rounds >= self.rounds:
-            events.append(TextEvent("stable", " ".join(pending), audio_ms, latency_ms))
-            self.confirmed = len(words)
-            self._confirmed_words = list(words)
-            self._pending = []
-            self._pending_rounds = 0
+        if self._candidate_rounds >= self.rounds:
+            fresh = " ".join(words[self.confirmed : self._candidate])
+            self.confirmed = self._candidate
+            self._confirmed_words = list(words[: self.confirmed])
+            self._candidate_rounds = 0
+            events.append(TextEvent("stable", fresh, audio_ms, latency_ms))
         return events
 
     def finalize(self, words: list[str], audio_ms: int, latency_ms: int) -> list[TextEvent]:

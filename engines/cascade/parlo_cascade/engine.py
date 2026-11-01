@@ -14,6 +14,7 @@ from .streaming import StreamingSession, TextEvent
 SAMPLE_RATE = 16_000
 MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
+SILENCE_HOLD_SECONDS = 0.45
 MODEL_DIR = models_dir()
 REQUIRED_MODULES = ("argostranslate", "piper", "numpy", "sherpa_onnx")
 DEFAULT_THREADS = 4
@@ -125,6 +126,7 @@ class CascadeEngine:
         self._stt = None
         self._tts = None
         self._stream: StreamingSession | None = None
+        self._silent_seconds = 0.0
 
     @property
     def available(self) -> bool:
@@ -221,7 +223,12 @@ class CascadeEngine:
             self._stream = StreamingSession(self._transcribe)
         events = self._stream.feed(samples)
         if rms(samples) < SILENCE_RMS:
-            events.extend(self._stream.close())
+            self._silent_seconds += len(samples) / SAMPLE_RATE
+            if self._silent_seconds >= SILENCE_HOLD_SECONDS:
+                events.extend(self._stream.close())
+                self._silent_seconds = 0.0
+        else:
+            self._silent_seconds = 0.0
         return events
 
     def close_stream(self) -> list[TextEvent]:
