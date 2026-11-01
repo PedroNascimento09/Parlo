@@ -8,6 +8,7 @@ use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
 mod config;
+mod dictate;
 mod dub;
 mod engines;
 mod install;
@@ -34,6 +35,7 @@ fn main() -> ExitCode {
         Some("record") => record_command(&args[1..]),
         Some("listen") => listen_command(&args[1..]),
         Some("captions") => captions_command(&args[1..]),
+        Some("dictate") => dictate_command(&args[1..]),
         Some("app") => app_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("update") => update_command(&args[1..]),
@@ -89,6 +91,10 @@ fn print_help() {
     println!("  install [--dir PATH] [--no-shortcut]  install for this user with a menu entry");
     println!("  uninstall [--purge]                remove the install, keep models unless purged");
     println!("  captions [--seconds N]             translate the microphone as text, no voice");
+    println!(
+        "  dictate [--from pt] [--seconds N]  type with your voice, text lands in the clipboard"
+    );
+    println!("            [--window S] [--no-copy]        no translation and no voice");
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!("  update [--check]                   install the latest release in place");
     println!("  engines                            list engines, licenses and voice levels");
@@ -1177,6 +1183,122 @@ fn captions_command(args: &[String]) -> Result<(), String> {
     }
     if let Some(error) = first_error {
         println!("  engine error     {error}");
+    }
+    Ok(())
+}
+
+fn dictate_command(args: &[String]) -> Result<(), String> {
+    let stored = config::load();
+    let mut seconds = 60.0f32;
+    let mut window = 2.0f32;
+    let mut engine_name = stored.engine.clone();
+    let mut stt = stored.stt.clone();
+    let mut device = stored.device;
+    let mut from = stored.from.clone();
+    let mut copy_text = true;
+    let mut index = 0;
+
+    while index < args.len() {
+        match args[index].as_str() {
+            "--from" => {
+                index += 1;
+                from = args.get(index).cloned().ok_or("--from needs a value")?;
+            }
+            "--seconds" => {
+                index += 1;
+                seconds = args
+                    .get(index)
+                    .ok_or("--seconds needs a value")?
+                    .parse()
+                    .map_err(|_| "seconds must be a number".to_string())?;
+            }
+            "--window" => {
+                index += 1;
+                window = args
+                    .get(index)
+                    .ok_or("--window needs a value")?
+                    .parse()
+                    .map_err(|_| "window must be a number of seconds".to_string())?;
+            }
+            "--engine" => {
+                index += 1;
+                engine_name = args.get(index).cloned().ok_or("--engine needs a value")?;
+            }
+            "--stt" => {
+                index += 1;
+                stt = args.get(index).cloned().ok_or("--stt needs a value")?;
+            }
+            "--device" => {
+                index += 1;
+                device = Some(
+                    args.get(index)
+                        .ok_or("--device needs a value")?
+                        .parse()
+                        .map_err(|_| "device must be a number".to_string())?,
+                );
+            }
+            "--no-copy" => copy_text = false,
+            other => return Err(format!("unknown option: {other}")),
+        }
+        index += 1;
+    }
+
+    if window < 0.5 {
+        return Err("--window must be at least half a second".to_string());
+    }
+    if !matches!(from.as_str(), "pt" | "en") {
+        return Err(format!("cannot dictate in {from}, expected pt or en"));
+    }
+    config::check_stt(&stt)?;
+    env::set_var("PARLO_CASCADE_SOURCE", &from);
+    env::set_var("PARLO_CASCADE_TARGET", &from);
+    env::set_var("PARLO_CASCADE_STT", &stt);
+    env::set_var("PARLO_CASCADE_DICTATE", "1");
+    env::set_var("PARLO_CASCADE_SEGMENT", format!("{window}"));
+
+    let (microphone, input) = record::open_input(device)?;
+    let output = AudioFormat::mono(16_000).map_err(|error| error.to_string())?;
+    let mut pipeline = Pipeline::new(
+        PipelineConfig::new(input, output),
+        build_engine(&engine_name)?,
+    )
+    .map_err(|error| error.to_string())?;
+
+    eprintln!("dictating in {from} with {stt}, {window:.1} s windows, control c stops");
+    let started = std::time::Instant::now();
+    let mut segments: Vec<String> = Vec::new();
+    let mut first_error = None;
+
+    record::chunks(microphone, seconds, |block| {
+        for out in pipeline.push(&block) {
+            if let Some(text) = out.transcript {
+                eprintln!("  {:>4.1} s  {text}", started.elapsed().as_secs_f32());
+                segments.push(text);
+            }
+            if let Some(error) = out.error {
+                first_error.get_or_insert(error);
+            }
+        }
+        true
+    })?;
+
+    eprintln!();
+    let text = dictate::join(&segments);
+    if text.is_empty() {
+        if let Some(error) = first_error {
+            return Err(error);
+        }
+        return Err("nothing was recognised, check the microphone with parlo doctor".to_string());
+    }
+
+    println!("{text}");
+    eprintln!("  listened   {:>5.1} s", started.elapsed().as_secs_f32());
+    eprintln!("  segments   {:>5}", segments.len());
+    if copy_text {
+        match dictate::copy(&text) {
+            Ok(tool) => eprintln!("  clipboard  copied with {tool}"),
+            Err(error) => eprintln!("  clipboard  not copied: {error}"),
+        }
     }
     Ok(())
 }

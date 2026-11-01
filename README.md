@@ -49,6 +49,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Universal cascade: Portuguese and English, both directions, offline, on CPU | Working; RTF 0.11 on 4 threads with Parakeet v3 |
 | File dubbing: `parlo dub video.mp4 --to en`, subtitles included | Working, needs ffmpeg |
 | Captions mode: `parlo captions`, translated text with no voice | Working, about 2.2 s behind while speaking |
+| Dictation: `parlo dictate`, your words transcribed into the clipboard, no voice and no translation | Working in the terminal; no floating bar and no global shortcut yet |
 | Playback: `parlo listen --play --speaker N`, or `parlo speakers` to list devices | Working, Windows verified by stream, not by ear yet |
 | Self-contained engine: the release archive carries `parlo` and a `parlo-engine` folder | Working, no Python needed |
 | Hibiki-Zero premium engine | Optional, not wired |

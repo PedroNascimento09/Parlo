@@ -119,6 +119,7 @@ class CascadeEngine:
         threads = os.environ.get("PARLO_CASCADE_THREADS")
         self.threads = int(threads) if threads else DEFAULT_THREADS
         self.captions = os.environ.get("PARLO_CASCADE_CAPTIONS") == "1"
+        self.dictate = os.environ.get("PARLO_CASCADE_DICTATE") == "1"
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
@@ -136,9 +137,11 @@ class CascadeEngine:
     def warmup(self) -> None:
         if not self._ready:
             return
-        stages = [("recognition", self._load_stt), ("translation", self._translate_warmup)]
-        if self.voice_path.exists():
-            stages.append(("voice", self._synthesize_warmup))
+        stages = [("recognition", self._load_stt)]
+        if not self.dictate:
+            stages.append(("translation", self._translate_warmup))
+            if self.voice_path.exists():
+                stages.append(("voice", self._synthesize_warmup))
         for label, stage in stages:
             try:
                 stage()
@@ -201,6 +204,9 @@ class CascadeEngine:
         text = self._transcribe(buffered)
         if not text:
             return Translation(b"", None, 0)
+        if self.dictate:
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return Translation(pcm16=b"", text=text, latency_ms=elapsed)
         translated = self._translate(text)
         if self.captions:
             elapsed = int((time.perf_counter() - started) * 1000)

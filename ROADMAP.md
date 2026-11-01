@@ -34,7 +34,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 |---|---|---|---|
 | v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
 | v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current**, two of three parts met |
-| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | Not started; no dictation flow, no insertion, no global shortcut |
+| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** `parlo dictate` transcribes into the clipboard with no translation and no voice; still missing the floating bar, the global shortcut and insertion into the focused field |
 | v0.5 Escrever noutra língua | Speak Portuguese, write English, German, Spanish or French in the active field | G1 + G2 | Planned, not complete; the MT stage exists, the dictation surfaces do not |
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead; system audio not |
 | v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks and a model panel, no catalogue, no rollback |

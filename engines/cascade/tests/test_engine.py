@@ -141,6 +141,29 @@ class EngineTest(unittest.TestCase):
         finally:
             os.environ.pop("PARLO_CASCADE_SEGMENT", None)
 
+    def test_dictation_is_off_by_default(self):
+        self.assertFalse(CascadeEngine().dictate)
+
+    def test_dictation_can_be_enabled(self):
+        import os
+
+        os.environ["PARLO_CASCADE_DICTATE"] = "1"
+        try:
+            self.assertTrue(CascadeEngine().dictate)
+        finally:
+            os.environ.pop("PARLO_CASCADE_DICTATE", None)
+
+    def test_dictation_and_captions_are_separate_modes(self):
+        import os
+
+        os.environ["PARLO_CASCADE_DICTATE"] = "1"
+        try:
+            engine = CascadeEngine()
+            self.assertTrue(engine.dictate)
+            self.assertFalse(engine.captions)
+        finally:
+            os.environ.pop("PARLO_CASCADE_DICTATE", None)
+
 
 if __name__ == "__main__":
     unittest.main()
