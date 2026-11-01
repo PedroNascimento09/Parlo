@@ -35,7 +35,7 @@ class TextEvent:
 
 
 class StabilityPolicy:
-    def __init__(self, rounds: int = 2):
+    def __init__(self, rounds: int = 1):
         if rounds < 1:
             raise ValueError("rounds must be at least 1")
         self.rounds = rounds
@@ -108,7 +108,7 @@ class StreamingSession:
         decode_every: float = 0.4,
         segment_seconds: float = 12.0,
         min_audio_seconds: float = 0.6,
-        rounds: int = 2,
+        rounds: int = 1,
         clock=time.perf_counter,
     ):
         if decode_every <= 0:

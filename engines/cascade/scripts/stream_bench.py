@@ -83,6 +83,9 @@ def summarise(reference: str, events: list[tuple[float, object]]) -> dict:
         "final": final_text,
         "partial_wer": round(word_error_rate(reference, partial_text), 3),
         "stable_wer": round(word_error_rate(reference, stable_text), 3),
+        "stable_coverage": round(
+            len(stable_text.split()) / max(len(reference.split()), 1), 3
+        ),
         "final_wer": round(word_error_rate(reference, final_text), 3),
     }
 
@@ -94,7 +97,7 @@ def main() -> int:
     parser.add_argument("--model", default="base")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--decode-every", type=float, default=0.4)
-    parser.add_argument("--rounds", type=int, default=2)
+    parser.add_argument("--rounds", type=int, default=1)
     parser.add_argument("--segment", type=float, default=12.0)
     parser.add_argument("--snr", type=float, default=None)
     parser.add_argument("--seed", type=int, default=7)
@@ -102,6 +105,7 @@ def main() -> int:
     parser.add_argument("--tail", type=float, default=0.8)
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--events", action="store_true")
+    parser.add_argument("--voice", default="")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -112,6 +116,9 @@ def main() -> int:
         raise SystemExit(f"no sentences in {args.corpus}")
 
     engine = CascadeEngine(source="pt", target="en")
+    if args.voice:
+        chosen = Path(args.voice)
+        engine.voice_path = chosen if chosen.exists() else ROOT / "models" / args.voice
     if not engine.available:
         raise SystemExit("install the cascade requirements first")
     if not engine.voice_path.exists():
@@ -132,7 +139,8 @@ def main() -> int:
     rows = []
     print(
         f"\n{args.stt} | rounds {args.rounds} | decode every {args.decode_every:.2f} s"
-        f" | corpus {Path(args.corpus).name} | {len(sentences)} sentences"
+        f" | voice {engine.voice_path.name} | corpus {Path(args.corpus).name}"
+        f" | {len(sentences)} sentences"
     )
     for index, sentence in enumerate(sentences):
         samples = np.asarray(
@@ -178,6 +186,9 @@ def main() -> int:
         "p95_final_ms": percentile(finals, 0.95),
         "mean_partial_wer": round(statistics.mean(row["partial_wer"] for row in rows), 3),
         "mean_stable_wer": round(statistics.mean(row["stable_wer"] for row in rows), 3),
+        "mean_stable_coverage": round(
+            statistics.mean(row["stable_coverage"] for row in rows), 3
+        ),
         "mean_final_wer": round(statistics.mean(row["final_wer"] for row in rows), 3),
         "corrections": sum(row["corrections"] for row in rows),
     }

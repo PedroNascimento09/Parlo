@@ -24,7 +24,13 @@ VOICES = {
         "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx",
         "en/en_US/lessac/medium/en_US-lessac-medium.onnx",
     ),
+    "pt_PT-tugão-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium/pt_PT-tug%C3%A3o-medium.onnx",
+        "pt/pt_PT/tugão/medium/pt_PT-tugão-medium.onnx",
+    ),
 }
+DEFAULT_VOICES = ("pt_BR-faber-medium", "en_US-lessac-medium")
+OPTIONAL_VOICES = {"pt_pt": ("pt_PT-tugão-medium",)}
 DIRECTIONS = (("pt", "en"), ("en", "pt"))
 PARAKEET_BASE = f"https://huggingface.co/{PARAKEET_REPO}/resolve/main"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
@@ -90,8 +96,9 @@ def download(url: str, target: Path, sha256: str | None = None, size: int | None
         raise
 
 
-def install_voices() -> None:
-    for name, (url, path) in VOICES.items():
+def install_voices(names=None) -> None:
+    for name in names or DEFAULT_VOICES:
+        url, path = VOICES[name]
         files = (
             (path, f"{name}.onnx", url),
             (path + ".json", f"{name}.onnx.json", url + ".json"),
@@ -147,6 +154,7 @@ def warm_translation(source: str, target: str) -> None:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stt", choices=["parakeet", "whisper", "both"], default="parakeet")
+    parser.add_argument("--voice", choices=["", "pt_pt"], default="")
     parser.add_argument(
         "--whisper",
         choices=["tiny", "base", "small", "medium", "large-v3"],
@@ -154,7 +162,7 @@ def main(argv=None) -> int:
     )
     args = parser.parse_args(argv)
 
-    install_voices()
+    install_voices(DEFAULT_VOICES + OPTIONAL_VOICES.get(args.voice, ()))
     if args.stt in ("parakeet", "both"):
         install_parakeet()
     if args.stt in ("whisper", "both"):
