@@ -2,6 +2,8 @@ import contextlib
 import json
 import os
 import sys
+import threading
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -22,10 +24,25 @@ def main() -> int:
     if os.environ.get("PARLO_CASCADE_WARMUP", "1") != "0":
         with contextlib.redirect_stdout(sys.stderr):
             engine.warmup()
+    busy = threading.Lock()
+
+    def watch_idle() -> None:
+        while True:
+            time.sleep(60)
+            with busy:
+                dropped = engine.unload_if_idle()
+            if dropped:
+                print(
+                    "unloaded " + ", ".join(dropped) + " after sitting idle",
+                    file=sys.stderr,
+                )
+
+    threading.Thread(target=watch_idle, daemon=True).start()
     for line in sys.stdin:
         if not line.strip():
             continue
-        response = handle_line(line, engine)
+        with busy:
+            response = handle_line(line, engine)
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
     return 0

@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import os
 import sys
 import re
@@ -7,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .corrections import CLEAN_MODES, clean
-from .intelligence import Intelligence, settings_from_config
+from .intelligence import Intelligence, config_path, settings_from_config
 from .models import models_dir
 from .streaming import StreamingSession, TextEvent
 from .tts import PiperVoice, VoiceUnavailable
@@ -28,6 +29,8 @@ VOICES = {
     "en": "en_US-lessac-medium.onnx",
 }
 GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"
+UNLOAD_DEFAULT_MINUTES = 30
+UNLOAD_LIMIT_MINUTES = 1_440
 
 
 class EngineUnavailable(RuntimeError):
@@ -43,6 +46,22 @@ class Translation:
 
 def available() -> bool:
     return all(importlib.util.find_spec(name) is not None for name in REQUIRED_MODULES)
+
+
+def configured_unload() -> int:
+    minutes = None
+    try:
+        payload = json.loads(config_path().read_text(encoding="utf-8"))
+        minutes = payload.get("unload") if isinstance(payload, dict) else None
+    except (OSError, ValueError):
+        minutes = None
+    if isinstance(minutes, bool) or not isinstance(minutes, int):
+        from_environment = os.environ.get("PARLO_UNLOAD_MINUTES")
+        try:
+            minutes = int(from_environment) if from_environment else UNLOAD_DEFAULT_MINUTES
+        except ValueError:
+            minutes = UNLOAD_DEFAULT_MINUTES
+    return max(0, min(minutes, UNLOAD_LIMIT_MINUTES))
 
 
 def pcm16_to_float(pcm16: bytes) -> list[float]:
@@ -129,6 +148,7 @@ class CascadeEngine:
             )
         self.last_original = ""
         self.last_engine = ""
+        self.used_at = time.time()
         self.intelligence = Intelligence(settings_from_config(self.clean_mode), source)
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
@@ -197,7 +217,30 @@ class CascadeEngine:
             )
         return self._stt
 
+    def unload_if_idle(self, now: float | None = None) -> tuple[str, ...]:
+        minutes = configured_unload()
+        if minutes <= 0:
+            return ()
+        moment = time.time() if now is None else now
+        if moment - self.used_at < minutes * 60:
+            return ()
+        dropped = []
+        if self._stt is not None:
+            self._stt = None
+            dropped.append("recognition")
+        if self._translator is not None:
+            self._translator = None
+            dropped.append("translation")
+        if self._writers:
+            self._writers.clear()
+            dropped.append("dictation translation")
+        if self._tts is not None:
+            self._tts = None
+            dropped.append("voice")
+        return tuple(dropped)
+
     def translate(self, pcm16: bytes) -> Translation:
+        self.used_at = time.time()
         if not self._ready:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
@@ -246,6 +289,7 @@ class CascadeEngine:
         return self._transcribe(samples)
 
     def write(self, pcm16: bytes, target: str | None = None) -> tuple[str, str]:
+        self.used_at = time.time()
         from . import mt
 
         text = self.transcribe(pcm16)
@@ -266,6 +310,7 @@ class CascadeEngine:
         return text, translator(text)
 
     def stream(self, pcm16: bytes) -> list[TextEvent]:
+        self.used_at = time.time()
         if not self._ready:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"

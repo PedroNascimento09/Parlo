@@ -57,6 +57,8 @@ struct Settings {
     write: Option<String>,
     #[serde(default)]
     shortcut: Option<String>,
+    #[serde(default)]
+    unload: Option<u32>,
 }
 
 pub struct Session {
@@ -624,6 +626,27 @@ fn handle(
                 && requested.write.is_none();
             if only_shortcut {
                 return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
+            }
+        }
+
+        if let Some(minutes) = requested.unload {
+            if minutes > 1_440 {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"the models cannot be kept for longer than a day\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            let mut config = crate::config::load();
+            config.unload = minutes;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
             }
         }
 

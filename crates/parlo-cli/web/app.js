@@ -36,6 +36,7 @@ const settingsTo = document.getElementById("settings-to");
 const settingsStt = document.getElementById("settings-stt");
 const settingsSwap = document.getElementById("settings-swap");
 const settingsApply = document.getElementById("settings-apply");
+const settingsUnload = document.getElementById("settings-unload");
 const settingsNote = document.getElementById("settings-note");
 const intelligenceMode = document.getElementById("intelligence-mode");
 const intelligenceClean = document.getElementById("intelligence-clean");
@@ -1180,6 +1181,27 @@ settingsSwap.addEventListener("click", () => {
 });
 
 settingsApply.addEventListener("click", () => saveSettings());
+
+settingsUnload.addEventListener("change", async () => {
+  const minutes = Number(settingsUnload.value);
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ unload: minutes }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That delay cannot be used.");
+    }
+    settingsNote.textContent =
+      minutes === 0
+        ? "The models stay loaded until Parlo closes."
+        : "The models are freed after " + minutes + " minutes without use.";
+  } catch (failure) {
+    settingsNote.textContent = failure.message || "That delay cannot be used.";
+  }
+});
 
 let intelligenceProviders = [];
 let intelligenceStore = true;

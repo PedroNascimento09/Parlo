@@ -117,6 +117,18 @@
           <option value="whisper">Whisper, smaller download</option>
         </select>
       </label>
+      <label class="field" for="settings-unload">
+        <span class="field-label">Free the models after</span>
+        <select id="settings-unload" class="field-input">
+          <option value="10">10 minutes idle</option>
+          <option value="15">15 minutes idle</option>
+          <option value="30">30 minutes idle</option>
+          <option value="60">1 hour idle</option>
+          <option value="120">2 hours idle</option>
+          <option value="240">4 hours idle</option>
+          <option value="0">Never</option>
+        </select>
+      </label>
       <button id="settings-apply" class="install settings-apply" type="button" disabled>Apply</button>
     </div>
     <div class="settings-row">

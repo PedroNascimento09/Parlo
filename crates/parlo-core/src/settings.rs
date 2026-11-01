@@ -17,6 +17,7 @@ pub struct Config {
     pub shortcut: String,
     pub port: u16,
     pub device: Option<usize>,
+    pub unload: u32,
     pub intelligence: Intelligence,
 }
 
@@ -59,6 +60,7 @@ impl Default for Config {
             shortcut: DEFAULT_SHORTCUT.to_string(),
             port: 8787,
             device: None,
+            unload: 30,
             intelligence: Intelligence::default(),
         }
     }
