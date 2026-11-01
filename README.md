@@ -24,21 +24,39 @@ Ctrl+Alt+D  →  "Book a table for Friday, I mean, for Monday."
 
 ## Introducing Parlo
 
-Four surfaces, one engine underneath. Every one of them is in the current release.
+Four surfaces, one engine underneath, all four in the current release.
+
+### Parlo Dictate
 
 <p align="center">
-  <img src="assets/island.png" alt="The dictation island after writing the sentence" width="76%"><br>
-  <sub>Parlo Dictate: the sentence it wrote, in the field it came from.</sub>
+  <img src="assets/dictate.png" alt="A notes window with the dictated sentence written after the cursor, and the island above it" width="100%">
 </p>
+
+One shortcut from anywhere on the desktop. The island listens, the sentence is written into the field you were in, and the window you were typing in never loses the cursor.
+
+### Parlo Live
 
 <p align="center">
-  <img src="assets/surfaces.png" alt="Parlo Dictate, Parlo Live, Parlo Meetings and Parlo Translate" width="100%">
+  <img src="assets/live.gif" alt="Portuguese sentences on the left and their English translation appearing on the right" width="100%">
 </p>
 
-- **Parlo Dictate** — one shortcut, anywhere: the island listens, the sentence is written where you were.
-- **Parlo Live** — continuous translation while you speak, one window at a time, spoken back in the other language.
-- **Parlo Meetings** — a transcript imported or recorded from the room, every line with its moment and its speaker.
-- **Parlo Translate** — a file dubbed with subtitles, or a sentence in the other language, offline.
+Translation while you speak: the words land on the left, the other language follows a beat later on the right, and either side can be read aloud in the other voice.
+
+### Parlo Meetings
+
+<p align="center">
+  <img src="assets/meetings.gif" alt="A transcript filling in, with a time and a speaker on every line" width="100%">
+</p>
+
+A recording becomes a transcript with a name and a time on every line. A transcript from a file you already have goes through the same view, and nothing leaves the machine either way.
+
+### Parlo Translate
+
+<p align="center">
+  <img src="assets/translate.png" alt="A dubbed recording with its progress, the language pair and the subtitles it generated" width="100%">
+</p>
+
+A recording comes back dubbed, with subtitles timed to the source written beside it. One sentence goes through the same engine without a file.
 
 ## What it does
 
