@@ -68,6 +68,19 @@ States are the four the plan already fixes, and they are visible: a model that i
 - A person who only wants dictation downloads the recogniser and nothing else.
 - Every download resumes where it stopped, is checked against a published digest, and can be cancelled without leaving a half-installed model behind.
 
+## The rule for every feature, now and later
+
+This is the part that must survive every future feature, not only the ones listed above.
+
+- **A feature is off until the model that serves it is on disk.** Being able to reach a provider, a runtime or a code path is not the same as having the weights; the app checks the files before it offers the action.
+- **Installing is always a choice, and the choice is per model.** A person can add the recogniser and stop there, or add translation, or add a voice, in any order, and the app downloads nothing else on its own.
+- **What was installed is what may run.** A feature whose model is absent says which model and offers the one action that fixes it, in the place the person already is — never a silent failure, never a download in the background.
+- **Removing is honest both ways.** Removing a model frees the space immediately, disables exactly the features that depended on it, and leaves everything else untouched: history, meetings, vocabulary and settings stay.
+- **A recommendation is advice.** It sets the default offer for a machine, never a restriction; any compatible model stays reachable, with the reason stated when it is a poorer choice.
+- **No feature may quietly download.** If something needs bytes, the person sees the size and presses the button.
+
+Applied to the current surfaces: dictation needs a recogniser; write-in-another-language needs a recogniser and one translation pair; Live needs a recogniser, a pair and a voice; translate-a-file needs a pair and `ffmpeg`; meetings need a recogniser and optionally a voice; read-aloud needs a voice. Every one of those checks lives on the same list, so adding a feature means adding a row, not a special case.
+
 ## Rules that do not move
 
 - No model downloads without a switch the person turned on or a button they pressed.
