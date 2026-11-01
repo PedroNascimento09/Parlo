@@ -1,0 +1,86 @@
+{
+  "manifest_version": 1,
+  "id": "opus-mt-tc-big-en-pt",
+  "name": "Helsinki-NLP opus-mt-tc-big-en-pt",
+  "version": "2022-03-13",
+  "task": "mt",
+  "state": "experimental",
+  "evidence": "experimental",
+  "origin": "Helsinki-NLP",
+  "url": "https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-pt",
+  "checksum": "sha256:076fefd494f4fb88872edbed7fc3c8203e556a7e7342aabc5ede9a73425e0eca",
+  "files": [
+    {
+      "name": "pytorch_model.bin",
+      "sha256": "076fefd494f4fb88872edbed7fc3c8203e556a7e7342aabc5ede9a73425e0eca",
+      "bytes": 465092037
+    },
+    {
+      "name": "source.spm",
+      "sha256": "7a7fcf812cf03a5785daa35d4932bbbe69e7e605c0fe56fce5a3f731d6c355aa",
+      "bytes": 802741
+    },
+    {
+      "name": "target.spm",
+      "sha256": "b3cf20ccd4e48a89882cfdba157c05fa1cd71a6b69517dfc80e3a34d387ea91f",
+      "bytes": 824855
+    }
+  ],
+  "license": {
+    "code": "MIT",
+    "weights": "CC-BY-4.0",
+    "weights_verified": true,
+    "attribution": "Helsinki-NLP opus-mt-tc-big-en-pt, weights licensed CC BY 4.0",
+    "data": null
+  },
+  "languages": {
+    "declared": ["pt-PT", "pt-BR", "en"],
+    "validated": []
+  },
+  "runtime": {
+    "engine": "transformers",
+    "min_version": "5.22",
+    "formats": ["pytorch"]
+  },
+  "platforms": {
+    "os": ["windows", "macos", "linux"],
+    "arch": ["x86_64", "arm64"],
+    "backends": ["cpu"]
+  },
+  "resources": {
+    "ram_gb": 2.5,
+    "disk_gb": 0.5,
+    "vram_gb": 0,
+    "quantization": "none"
+  },
+  "api": {
+    "min_schema": 1,
+    "max_schema": 1
+  },
+  "capabilities": {
+    "streaming": false,
+    "timestamps": false,
+    "language_detection": false,
+    "cloning": false,
+    "watermark": false,
+    "provenance_metadata": false
+  },
+  "limits": [
+    "the CTranslate2 build of this checkpoint does not terminate generation and produced 0 of 12 usable sentences",
+    "measured only through transformers, which adds a torch dependency the installer budget does not allow yet",
+    "9 of 12 corpus sentences idiomatic in European Portuguese; train becomes trem and out of order becomes fora de ordem",
+    "proper names are translated: João and Maria came back as John and Mary",
+    "12 sentences written by the project are not a validated pair"
+  ],
+  "benchmarks": {
+    "corpus": "benchmarks/corpus/translation.jsonl, 12 English to Portuguese rows",
+    "complete_sentences": 12,
+    "idiomatic_sentences": 9,
+    "median_ms_beam4": 1025,
+    "median_ms_beam1": 398,
+    "p95_ms_beam1": 500,
+    "hardware": "Windows 11, 4 threads, CPU only",
+    "date": "2026-11-01"
+  },
+  "maintenance": "active"
+}

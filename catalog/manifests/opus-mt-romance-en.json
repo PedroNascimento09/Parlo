@@ -1,0 +1,85 @@
+{
+  "manifest_version": 1,
+  "id": "opus-mt-romance-en",
+  "name": "Helsinki-NLP opus-mt-ROMANCE-en",
+  "version": "2020-08-01",
+  "task": "mt",
+  "state": "experimental",
+  "evidence": "experimental",
+  "origin": "Helsinki-NLP",
+  "url": "https://huggingface.co/Helsinki-NLP/opus-mt-ROMANCE-en",
+  "checksum": "sha256:9d77bbbd43a214959e027ffc8713fbe31f8609d14827fba645f1361ca20a6f3a",
+  "files": [
+    {
+      "name": "pytorch_model.bin",
+      "sha256": "9d77bbbd43a214959e027ffc8713fbe31f8609d14827fba645f1361ca20a6f3a",
+      "bytes": 312087009
+    },
+    {
+      "name": "source.spm",
+      "sha256": "baeab21ec00d0b490382b82499ef0348235c5a8e75de28aec8290adf62b007c4",
+      "bytes": 800087
+    },
+    {
+      "name": "target.spm",
+      "sha256": "121d4e0a20cda2052945d790d335f421f7bea7fa6b0ff7fbc9112eed5f12036f",
+      "bytes": 779494
+    }
+  ],
+  "license": {
+    "code": "MIT",
+    "weights": "Apache-2.0",
+    "weights_verified": true,
+    "attribution": "Helsinki-NLP opus-mt-ROMANCE-en, weights licensed Apache-2.0",
+    "data": null
+  },
+  "languages": {
+    "declared": ["en", "pt-PT", "pt-BR"],
+    "validated": []
+  },
+  "runtime": {
+    "engine": "transformers",
+    "min_version": "5.22",
+    "formats": ["pytorch"]
+  },
+  "platforms": {
+    "os": ["windows", "macos", "linux"],
+    "arch": ["x86_64", "arm64"],
+    "backends": ["cpu"]
+  },
+  "resources": {
+    "ram_gb": 2.0,
+    "disk_gb": 0.32,
+    "vram_gb": 0,
+    "quantization": "none"
+  },
+  "api": {
+    "min_schema": 1,
+    "max_schema": 1
+  },
+  "capabilities": {
+    "streaming": false,
+    "timestamps": false,
+    "language_detection": false,
+    "cloning": false,
+    "watermark": false,
+    "provenance_metadata": false
+  },
+  "limits": [
+    "the CTranslate2 build does not terminate generation and produced 0 of 12 usable sentences",
+    "requires the source language token appended to each sentence and leaks it into 5 of 12 outputs",
+    "proper names are translated: João and Maria came back as John and Mary",
+    "measured only through transformers, which adds a torch dependency the installer budget does not allow yet",
+    "12 sentences written by the project are not a validated pair"
+  ],
+  "benchmarks": {
+    "corpus": "benchmarks/corpus/translation.jsonl, 12 Portuguese to English rows",
+    "complete_sentences": 12,
+    "median_ms_beam4": 878,
+    "median_ms_beam1": 450,
+    "p95_ms_beam1": 539,
+    "hardware": "Windows 11, 4 threads, CPU only",
+    "date": "2026-11-01"
+  },
+  "maintenance": "active"
+}
