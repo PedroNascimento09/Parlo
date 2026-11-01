@@ -33,7 +33,7 @@ LIVE_PAIRS = (
     ("A reunião começa às nove.", "The meeting starts at nine."),
     ("Depois seguimos para o Porto.", "Then we go on to Porto."),
     ("Traz o contrato assinado.", "Bring the signed contract."),
-    ("Precisamos de mais duas cadeiras.", "We need two more chairs."),
+    ("Precisamos de mais cadeiras.", "We need two more chairs."),
     ("Digo-te o preço na sexta.", "I'll tell you the price on Friday."),
 )
 MEETING_ROWS = (
@@ -228,45 +228,46 @@ def dictate():
     image.convert("RGB").save(ASSETS / "dictate.png")
 
 
-def live_frame(pairs, reveal, pulse, width=1200, height=560):
+def live_frame(pairs, reveal, pulse, width=1200, height=470):
     image = paper(width, height)
     draw = ImageDraw.Draw(image)
-    micro(draw, (56, 44), "PARLO LIVE", ACCENT, 12, 2.4)
-    text(draw, (54, 68), "Read the other language while you speak.", 34, INK, SERIF)
+    micro(draw, (56, 34), "PARLO LIVE", ACCENT, 12, 2.4)
+    text(draw, (54, 56), "Read the other language while you speak.", 32, INK, SERIF)
+    chip(draw, (56, 108), "PT → EN", TEAL, CREAM, 11, BODY, 1.0)
+    chip(draw, (188, 108), "STREAMING", ACCENT if pulse else (188, 178, 164))
+    draw.ellipse((1150, 114, 1162, 126), fill=ACCENT if pulse else RULE)
 
-    chip(draw, (56, 128), "PT → EN", TEAL, CREAM, 11, BODY, 1.0)
-    chip(draw, (188, 128), "STREAMING", ACCENT if pulse else (188, 178, 164))
-
-    left = (56, 190, 584, 512)
-    right = (616, 190, 1144, 512)
+    left = (56, 158, 584, 380)
+    right = (616, 158, 1144, 380)
     for box, label in ((left, "YOU SAY"), (right, "PARLO SAYS")):
         card(draw, box)
-        micro(draw, (box[0] + 30, box[1] + 24), label, FAINT, 11, 2.2)
-        draw.line((box[0] + 1, box[1] + 62, box[2] - 1, box[1] + 62), fill=RULE, width=1)
+        micro(draw, (box[0] + 30, box[1] + 22), label, FAINT, 11, 2.2)
+        draw.line((box[0] + 1, box[1] + 54, box[2] - 1, box[1] + 54), fill=RULE, width=1)
 
-    for index in range(min(pairs, len(LIVE_PAIRS))):
-        y = 264 + index * 62
-        text(draw, (left[0] + 30, y), LIVE_PAIRS[index][0], 19, INK)
-    for index in range(min(reveal, len(LIVE_PAIRS))):
-        y = 264 + index * 62
-        text(draw, (right[0] + 30, y), LIVE_PAIRS[index][1], 19, TEAL)
+    window = 3
+    first = max(0, pairs - window)
+    for slot, index in enumerate(range(first, pairs)):
+        y = 214 + slot * 52
+        text(draw, (left[0] + 30, y), LIVE_PAIRS[index][0], 18, INK if index == pairs - 1 else MUTED)
+    first_reveal = max(0, reveal - window)
+    for slot, index in enumerate(range(first_reveal, reveal)):
+        y = 214 + slot * 52
+        text(draw, (right[0] + 30, y), LIVE_PAIRS[index][1], 18, TEAL if index == reveal - 1 else MUTED)
 
-    wave(draw, (56 + 30, 452), 498, 34, min(1.0, reveal / max(1, len(LIVE_PAIRS))), ACCENT)
-    wave(draw, (616 + 30, 452), 498, 34, min(1.0, reveal / max(1, len(LIVE_PAIRS))), TEAL)
-    micro(draw, (56, 520), "0.9 S BEHIND · SPOKEN BACK IN THE OTHER LANGUAGE", FAINT, 10, 1.8)
+    micro(draw, (56, 418), "THE OTHER LANGUAGE ARRIVES WHILE YOU SPEAK · 0.9 S BEHIND", FAINT, 10, 1.8)
     return image
 
 
 def live():
     frames, durations = [], []
     for index in range(len(LIVE_PAIRS)):
-        for tick in range(7):
+        for tick in range(6):
             reveal = index + 1 if tick >= 3 else index
             frames.append(live_frame(index + 1, reveal, tick % 2 == 0))
-            durations.append(190)
-    for tick in range(10):
+            durations.append(220)
+    for tick in range(8):
         frames.append(live_frame(len(LIVE_PAIRS), len(LIVE_PAIRS), tick % 2 == 0))
-        durations.append(240)
+        durations.append(280)
     frames[0].save(
         ASSETS / "live.gif",
         save_all=True,
@@ -277,44 +278,53 @@ def live():
     )
 
 
-def meetings_frame(rows, playhead, width=1200, height=600):
+def meetings_frame(rows, playhead, pulse, width=1200, height=600):
     image = paper(width, height)
     draw = ImageDraw.Draw(image)
-    micro(draw, (56, 44), "PARLO MEETINGS", ACCENT, 12, 2.4)
-    text(draw, (54, 68), "Every line, with a name and a time.", 34, INK, SERIF)
-    chip(draw, (56, 128), "THURSDAY REVIEW · 42 MIN", TEAL)
-    chip(draw, (330, 128), "2 SPEAKERS", (188, 178, 164), INK)
+    micro(draw, (56, 34), "PARLO MEETINGS", ACCENT, 12, 2.4)
+    text(draw, (54, 56), "Every line, with a name and a time.", 32, INK, SERIF)
+    chip(draw, (56, 104), "THURSDAY REVIEW · 42 MIN", TEAL)
+    chip(draw, (330, 104), "2 SPEAKERS", (188, 178, 164), INK)
+    draw.ellipse((1150, 110, 1162, 122), fill=ACCENT if pulse else RULE)
 
-    box = (56, 190, 1144, 540)
+    box = (56, 152, 1144, 536)
     card(draw, box)
-    micro(draw, (box[0] + 30, box[1] + 24), "TRANSCRIPT", FAINT, 11, 2.2)
-    micro(draw, (box[2] - 250, box[1] + 24), "SAVED IN YOUR FOLDER", FAINT, 10, 2.0)
-    draw.line((box[0] + 1, box[1] + 62, box[2] - 1, box[1] + 62), fill=RULE, width=1)
+    micro(draw, (box[0] + 30, box[1] + 22), "TRANSCRIPT", FAINT, 11, 2.2)
+    micro(draw, (box[2] - 250, box[1] + 22), "SAVED IN YOUR FOLDER", FAINT, 10, 2.0)
+    draw.line((box[0] + 1, box[1] + 54, box[2] - 1, box[1] + 54), fill=RULE, width=1)
 
-    for index in range(min(rows, len(MEETING_ROWS))):
-        speaker, moment, line = MEETING_ROWS[index]
-        y = 272 + index * 42
+    rows_written = min(rows, len(MEETING_ROWS))
+    for index, (speaker, moment, line) in enumerate(MEETING_ROWS):
+        y = 226 + index * 44
+        if index >= rows_written:
+            text(draw, (box[0] + 30, y), moment, 14, (206, 197, 184), MONO)
+            draw.rounded_rectangle((box[0] + 126, y - 2, box[0] + 190, y + 22), radius=12, fill=(233, 225, 214))
+            micro(draw, (box[0] + 138, y + 5), speaker, (253, 251, 246), 10, 2.0)
+            text(draw, (box[0] + 208, y), line, 17, (186, 176, 162))
+            continue
+        if index == rows_written - 1:
+            draw.rounded_rectangle((box[0] + 12, y - 9, box[2] - 12, y + 31), radius=8, fill=(246, 238, 231))
         text(draw, (box[0] + 30, y), moment, 14, FAINT, MONO)
         colour = ACCENT if speaker == "ANA" else TEAL
         draw.rounded_rectangle((box[0] + 126, y - 2, box[0] + 190, y + 22), radius=12, fill=colour)
         micro(draw, (box[0] + 138, y + 5), speaker, CREAM, 10, 2.0)
         text(draw, (box[0] + 208, y), line, 17, INK)
 
-    draw.line((box[0] + 30, 508, box[2] - 30, 508), fill=RULE, width=2)
-    draw.line((box[0] + 30, 508, box[0] + 30 + playhead, 508), fill=ACCENT, width=2)
-    micro(draw, (56, 566), "RECORDED FROM THE ROOM · NOTHING UPLOADED", FAINT, 10, 1.8)
+    draw.line((box[0] + 30, 492, box[2] - 30, 492), fill=RULE, width=2)
+    draw.line((box[0] + 30, 492, box[0] + 30 + min(playhead, 1028), 492), fill=ACCENT, width=2)
+    micro(draw, (56, 566), "ONE LINE PER SPEAKER, AS IT IS SAID · NOTHING UPLOADED", FAINT, 10, 1.8)
     return image
 
 
 def meetings():
     frames, durations = [], []
     for index in range(len(MEETING_ROWS)):
-        for tick in range(6):
-            frames.append(meetings_frame(index + 1, 30 + index * 170 + tick * 28))
-            durations.append(200)
+        for tick in range(5):
+            frames.append(meetings_frame(index + 1, 40 + index * 165 + tick * 30, tick % 2 == 0))
+            durations.append(240)
     for tick in range(8):
-        frames.append(meetings_frame(len(MEETING_ROWS), 1020, tick % 2 == 0))
-        durations.append(260)
+        frames.append(meetings_frame(len(MEETING_ROWS), 1028, tick % 2 == 0))
+        durations.append(300)
     frames[0].save(
         ASSETS / "meetings.gif",
         save_all=True,
