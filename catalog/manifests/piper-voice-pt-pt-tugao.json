@@ -1,0 +1,84 @@
+{
+  "manifest_version": 1,
+  "id": "piper-voice-pt-pt-tugao",
+  "name": "Piper voice pt_PT-tugão-medium",
+  "version": "medium",
+  "task": "tts",
+  "state": "external",
+  "evidence": "documented",
+  "origin": "rhasspy/piper-voices",
+  "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium/pt_PT-tug%C3%A3o-medium.onnx",
+  "checksum": "sha256:223a7aaca69a155c61897e8ada7c3b13bc306e16c72dbb9c2fed733e2b0927d4",
+  "files": [
+    {
+      "name": "pt_PT-tugão-medium.onnx",
+      "sha256": "223a7aaca69a155c61897e8ada7c3b13bc306e16c72dbb9c2fed733e2b0927d4",
+      "bytes": 63201294
+    },
+    {
+      "name": "pt_PT-tugão-medium.onnx.json",
+      "sha256": "fe0918dfc0f1a89264a6eea4afe8e95d8e9fed3cc6c81b5c2f87fcb2b50c7320",
+      "bytes": 5026
+    }
+  ],
+  "license": {
+    "code": "MIT",
+    "weights": "MIT",
+    "weights_verified": true,
+    "attribution": "Voice from rhasspy/piper-voices, repository declared MIT; runtime piper1-gpl is GPL-3.0-or-later",
+    "data": null
+  },
+  "languages": {
+    "declared": [
+      "pt-PT"
+    ],
+    "validated": []
+  },
+  "runtime": {
+    "engine": "piper",
+    "min_version": "0.2",
+    "formats": [
+      "onnx"
+    ]
+  },
+  "platforms": {
+    "os": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "arch": [
+      "x86_64",
+      "arm64"
+    ],
+    "backends": [
+      "cpu"
+    ]
+  },
+  "resources": {
+    "ram_gb": 0.4,
+    "disk_gb": 0.13,
+    "vram_gb": 0,
+    "quantization": "none"
+  },
+  "api": {
+    "min_schema": 1,
+    "max_schema": 1
+  },
+  "capabilities": {
+    "streaming": false,
+    "timestamps": false,
+    "language_detection": false,
+    "cloning": false,
+    "watermark": false,
+    "provenance_metadata": false
+  },
+  "limits": [
+    "runtime is GPL-3.0-or-later and installed outside the core",
+    "no voice cloning: fixed voice per model",
+    "quality not measured by this project",
+    "no watermark or provenance metadata in exported audio"
+  ],
+  "benchmarks": {},
+  "maintenance": "active"
+}

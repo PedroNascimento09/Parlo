@@ -157,6 +157,38 @@ class SigningTests(unittest.TestCase):
             self.assertIn(mode, (0o600, 0o666))
 
 
+class CatalogTests(unittest.TestCase):
+    def test_shipped_manifests_are_valid(self):
+        root = Path(__file__).resolve().parents[2]
+        paths = sorted((root / "catalog" / "manifests").glob("*.json"))
+        self.assertTrue(paths)
+        for path in paths:
+            with self.subTest(manifest=path.name):
+                self.assertEqual(manifest.validate(manifest.load(path)), [])
+
+    def test_every_shipped_checksum_matches_a_file_entry(self):
+        root = Path(__file__).resolve().parents[2]
+        for path in sorted((root / "catalog" / "manifests").glob("*.json")):
+            entry = manifest.load(path)
+            if "files" in entry:
+                with self.subTest(manifest=path.name):
+                    self.assertIn(entry["checksum"][7:], [item["sha256"] for item in entry["files"]])
+
+    def test_bad_file_hash_is_reported(self):
+        entry = model(files=[{"name": "encoder.onnx", "sha256": "abc"}])
+        self.assertTrue(any(problem.startswith("files.sha256") for problem in manifest.validate(entry)))
+
+    def test_single_manifest_loads_as_one_entry(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "model.json"
+            path.write_text(json.dumps(model()), encoding="utf-8")
+            self.assertEqual(len(manifest.entries(manifest.load(path))), 1)
+
+    def test_licence_index_is_not_a_manifest(self):
+        with self.assertRaises(manifest.ManifestError):
+            manifest.entries({"schema": 1, "artifacts": []})
+
+
 class HardwareTests(unittest.TestCase):
     def test_profile_reports_measurements(self):
         data = hardware.profile()

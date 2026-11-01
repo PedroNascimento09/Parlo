@@ -1,0 +1,107 @@
+{
+  "manifest_version": 1,
+  "id": "parakeet-tdt-0.6b-v3",
+  "name": "NVIDIA Parakeet TDT 0.6B v3 (int8)",
+  "version": "3",
+  "task": "asr",
+  "state": "compatible",
+  "evidence": "validated",
+  "origin": "NVIDIA",
+  "url": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+  "checksum": "sha256:acfc2b4456377e15d04f0243af540b7fe7c992f8d898d751cf134c3a55fd2247",
+  "files": [
+    {
+      "name": "encoder.int8.onnx",
+      "sha256": "acfc2b4456377e15d04f0243af540b7fe7c992f8d898d751cf134c3a55fd2247",
+      "bytes": 652184281
+    },
+    {
+      "name": "decoder.int8.onnx",
+      "sha256": "179e50c43d1a9de79c8a24149a2f9bac6eb5981823f2a2ed88d655b24248db4e",
+      "bytes": 11845275
+    },
+    {
+      "name": "joiner.int8.onnx",
+      "sha256": "3164c13fc2821009440d20fcb5fdc78bff28b4db2f8d0f0b329101719c0948b3",
+      "bytes": 6355277
+    },
+    {
+      "name": "tokens.txt",
+      "sha256": "d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d",
+      "bytes": 93939
+    }
+  ],
+  "license": {
+    "code": "Apache-2.0",
+    "weights": "CC-BY-4.0",
+    "weights_verified": true,
+    "attribution": "NVIDIA Parakeet TDT 0.6B v3, weights licensed CC BY 4.0",
+    "data": null
+  },
+  "languages": {
+    "declared": [
+      "pt-PT",
+      "en",
+      "es",
+      "fr",
+      "de",
+      "it"
+    ],
+    "validated": [
+      "pt-PT"
+    ]
+  },
+  "runtime": {
+    "engine": "sherpa-onnx",
+    "min_version": "1.12",
+    "formats": [
+      "onnx-int8"
+    ]
+  },
+  "platforms": {
+    "os": [
+      "windows",
+      "macos",
+      "linux"
+    ],
+    "arch": [
+      "x86_64",
+      "arm64"
+    ],
+    "backends": [
+      "cpu"
+    ]
+  },
+  "resources": {
+    "ram_gb": 2.0,
+    "disk_gb": 0.75,
+    "vram_gb": 0,
+    "quantization": "int8"
+  },
+  "api": {
+    "min_schema": 1,
+    "max_schema": 1
+  },
+  "capabilities": {
+    "streaming": false,
+    "timestamps": true,
+    "language_detection": false,
+    "cloning": false,
+    "watermark": false,
+    "provenance_metadata": false
+  },
+  "limits": [
+    "reprocesses audio in blocks instead of native streaming",
+    "quality measured on 20 European Portuguese sentences only",
+    "Brazilian Portuguese variant not measured"
+  ],
+  "benchmarks": {
+    "wer_pt_pt": 0.231,
+    "first_partial_ms": 849,
+    "final_text_ms": 3360,
+    "corpus": "20 European Portuguese sentences via the Piper European voice",
+    "hardware": "Windows 11, 6 physical cores, 4 threads, CPU only",
+    "date": "2026-10-31"
+  },
+  "maintenance": "active"
+}

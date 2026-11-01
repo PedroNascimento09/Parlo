@@ -37,13 +37,22 @@ def _parser():
     return parser
 
 
+def _load(path):
+    if path.is_dir():
+        models = []
+        for file in sorted(path.glob("*.json")):
+            models.extend(manifest.entries(manifest.load(file)))
+        return models
+    return manifest.entries(manifest.load(path))
+
+
 def _dispatch(arguments):
     if arguments.command == "profile":
         print(json.dumps(hardware.profile(arguments.root), indent=2, ensure_ascii=False))
         return 0
 
     if arguments.command == "validate":
-        models = manifest.entries(manifest.load(arguments.path))
+        models = _load(Path(arguments.path))
         problems = []
         for entry in models:
             for problem in manifest.validate(entry):
@@ -52,7 +61,7 @@ def _dispatch(arguments):
         return 1 if problems else 0
 
     if arguments.command == "admit":
-        models = manifest.entries(manifest.load(arguments.path))
+        models = _load(Path(arguments.path))
         device = hardware.profile()
         selection = compat.rank(
             models,

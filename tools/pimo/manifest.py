@@ -10,6 +10,7 @@ SYSTEMS = ("windows", "macos", "linux")
 ARCHITECTURES = ("x86_64", "arm64")
 IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 CHECKSUM = re.compile(r"^sha256:[0-9a-f]{64}$")
+HEX = re.compile(r"^[0-9a-f]{64}$")
 
 TOP_FIELDS = (
     "manifest_version",
@@ -47,7 +48,14 @@ def load(path):
 
 
 def entries(document):
-    models = document.get("models") if isinstance(document, dict) else document
+    if isinstance(document, list):
+        models = document
+    elif isinstance(document, dict) and "models" in document:
+        models = document["models"]
+    elif isinstance(document, dict) and "id" in document and "task" in document:
+        models = [document]
+    else:
+        models = None
     if not isinstance(models, list):
         raise ManifestError(
             "catalogue must be a list or an object with a models list; "
@@ -70,6 +78,7 @@ def validate(entry):
     problems.extend(_resources(entry))
     problems.extend(_api(entry))
     problems.extend(_honesty(entry))
+    problems.extend(_files(entry))
     return problems
 
 
@@ -201,6 +210,24 @@ def _api(entry):
     if isinstance(api.get("min_schema"), int) and isinstance(api.get("max_schema"), int):
         if api["min_schema"] > api["max_schema"]:
             problems.append("api: min_schema is greater than max_schema")
+    return problems
+
+
+def _files(entry):
+    files = entry.get("files")
+    if files is None:
+        return []
+    if not isinstance(files, list) or not files:
+        return ["files: must be a non-empty list when present"]
+    problems = []
+    for item in files:
+        if not isinstance(item, dict):
+            problems.append("files: every entry must be an object")
+            continue
+        if not isinstance(item.get("name"), str) or not item["name"].strip():
+            problems.append("files.name: must be a non-empty string")
+        if not isinstance(item.get("sha256"), str) or not HEX.match(item["sha256"]):
+            problems.append("files.sha256: must be 64 lowercase hex digits")
     return problems
 
 
