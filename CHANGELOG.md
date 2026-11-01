@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-11-01
+
 ### Documentation
 
 - `PARLO_GLOSSARY.md` names the parts of the product once, with the rule that keeps the names honest: PARLO is the root, each engine carries a two-to-four-letter sigla, and a sigla is never reused. **PAVE** (audio and voice), **PSTE** (speech to text), **PTE** (translation), **PIE** (intelligence), **PIMO** (model orchestration) and **PME** (memory), each with its responsibility, dependencies, the code it lives in today and whether it is implemented, tested or validated. Surfaces keep plain names, and no code is renamed for the sake of the name.
