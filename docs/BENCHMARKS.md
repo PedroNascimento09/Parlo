@@ -355,13 +355,14 @@ The check reads value, not typography: `four hours`, `3.000 euros` and `7.05` �
 
 | Direction | Numbers | Clock | Negation | Names | Complete | Gate |
 |---|---|---|---|---|---|---|
-| PT→EN, Parlo's copy | 0.840 | 1.000 | 0.880 | 0.940 | 1.000 | **fails** |
+| PT→EN, Parlo's copy | 1.000 | 1.000 | 1.000 | 0.980 | 1.000 | passes |
+| EN→PT, Parlo's copy | 1.000 | 0.980 | 1.000 | 0.980 | 1.000 | passes |
 
-Rows that lose a number: pt-en-004, 010, 013, 015, 018, 019, 026, 030. Rows that lose a negation: pt-en-002, 011, 023, 028, 045, 048. Rows that lose a name: pt-en-003, 019, 044.
+Neither direction loses a number on this copy. PT→EN loses a name in pt-en-003 (`O João` → `John`) and EN→PT in en-pt-017; EN→PT loses the clock on en-pt-035 (`8.30` → `20h30`), which the 0.95 threshold tolerates and which stays a real error.
 
-Both folders carry the same name and version and are not the same build: the Argos application's copy answers `I ' ve scheduled the meeting for 3 :30 pm on Thursday .` and this one answers the same sentence identically, yet it drops eight quantities and six negations across the corpus. Two mirrors of one index are serving different files, and the one the product installs is below the numbers 0.95 and negation 0.90 thresholds the gate sets.
+The first reading of this same copy scored numbers 0.840 and negation 0.880, and the cause was not the model: `MarianTranslator` joined a hypothesis's pieces with spaces before decoding them, which turns `2026` into `20 26` and `1.250,50` into `1.2 50 , 50`. Decoding the piece list instead of a rebuilt string restores every quantity in both directions. The provenance finding stands — the gate was reading the Argos copy and now reads Parlo's — but the two folders carry the same build for `en-pt`, and the product measures the same on its own folder once the decoder stops inserting spaces.
 
-**Nothing in the two tables above may be quoted as the state of the pair in the product** until it passes here. What this changes: PT→EN is not passing, EN→PT has not been re-measured on Parlo's copy yet, and the pair is further from validated than the earlier reading of the numbers suggested.
+**These are the numbers to quote for the product.** The pair is still not declared validated, because five automatic properties are not a reading and both directions still lose one name.
 
 ### Portuguese to German, through English
 

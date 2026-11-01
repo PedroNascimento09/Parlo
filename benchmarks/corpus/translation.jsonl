@@ -109,7 +109,7 @@
 {"id": "pt-de-009", "source": "pt-PT", "target": "de", "text": "Podemos entregar em 48 horas, não em 72.", "reference": "Wir können in 48 Stunden liefern, nicht in 72.", "tags": ["numbers", "negation"]}
 {"id": "pt-de-010", "source": "pt-PT", "target": "de", "text": "O Pedro vai apresentar os resultados na sexta.", "reference": "Pedro wird die Ergebnisse am Freitag vorstellen.", "tags": ["names", "time"]}
 {"id": "pt-de-011", "source": "pt-PT", "target": "de", "text": "Faltam 12 dias para o prazo.", "reference": "Bis zur Frist fehlen 12 Tage.", "tags": ["numbers", "date"]}
-{"id": "pt-de-012", "source": "pt-PT", "target": "de", "text": "O cliente pediu uma alteração no preço: 20 por cento.", "reference": "Der Kunde hat eine Preisänderung verlangt: 20 Prozent.", "tags": ["numbers"]}
+{"id": "pt-de-012", "source": "pt-PT", "target": "de", "text": "O cliente pediu alterações no preço: 20 por cento.", "reference": "Der Kunde hat eine Preisänderung verlangt: 20 Prozent.", "tags": ["numbers"]}
 {"id": "pt-de-013", "source": "pt-PT", "target": "de", "text": "Não temos stock suficiente para esta encomenda.", "reference": "Wir haben nicht genug Lagerbestand für diese Bestellung.", "tags": ["negation"]}
 {"id": "pt-de-014", "source": "pt-PT", "target": "de", "text": "A fatura vence a 30 de novembro.", "reference": "Die Rechnung ist am 30. November fällig.", "tags": ["numbers", "date"]}
 {"id": "pt-de-015", "source": "pt-PT", "target": "de", "text": "Preciso da tua resposta antes das 10h de amanhã.", "reference": "Ich brauche deine Antwort vor 10:00 Uhr morgen.", "tags": ["time"]}

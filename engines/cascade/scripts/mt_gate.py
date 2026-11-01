@@ -31,7 +31,7 @@ WORD_NUMBERS = {
     "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17,
     "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40,
     "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
-    "dois": 2, "duas": 2, "três": 3, "tres": 3, "quatro": 4,
+    "um": 1, "uma": 1, "dois": 2, "duas": 2, "três": 3, "tres": 3, "quatro": 4,
     "cinco": 5, "seis": 6, "sete": 7, "oito": 8, "nove": 9, "dez": 10, "onze": 11,
     "doze": 12, "treze": 13, "catorze": 14, "quatorze": 14, "quinze": 15,
     "dezasseis": 16, "dezassete": 17, "dezessete": 17, "dezoito": 18,
