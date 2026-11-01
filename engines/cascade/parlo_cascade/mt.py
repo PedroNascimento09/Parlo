@@ -93,9 +93,10 @@ def find_vocabulary(folder):
         if (base / "source.spm").is_file() and (base / "target.spm").is_file():
             return base / "source.spm", base / "target.spm"
     for base in (folder, folder.parent):
-        single = base / "sentencepiece.model"
-        if single.is_file():
-            return single, single
+        for name in ("sentencepiece.model", "sentencepiece.bpe.model"):
+            single = base / name
+            if single.is_file():
+                return single, single
     raise MissingModel(f"no sentencepiece model beside {folder}")
 
 
@@ -117,6 +118,8 @@ class MarianTranslator:
         repetition_penalty=1.2,
         no_repeat_ngram_size=3,
         language=None,
+        source_token=None,
+        target_token=None,
     ):
         import ctranslate2
         import sentencepiece as spm
@@ -125,6 +128,8 @@ class MarianTranslator:
         source, target = find_vocabulary(weights)
         self.prefix = prefix
         self.language = language
+        self.source_token = source_token
+        self.target_token = target_token
         self.beam = beam
         self.repetition_penalty = repetition_penalty
         self.no_repeat_ngram_size = no_repeat_ngram_size
@@ -144,13 +149,20 @@ class MarianTranslator:
         if self.prefix:
             prepared = f"{prepared} {self.prefix}"
         pieces = self.source_piece.encode(prepared, out_type=str)
+        if self.source_token:
+            pieces = [self.source_token] + pieces
         options = {"beam_size": self.beam, "max_batch_size": 1}
         if self.repetition_penalty:
             options["repetition_penalty"] = self.repetition_penalty
         if self.no_repeat_ngram_size:
             options["no_repeat_ngram_size"] = self.no_repeat_ngram_size
+        if self.target_token:
+            options["target_prefix"] = [[self.target_token]]
         result = self.translator.translate_batch([pieces], **options)[0]
-        translated = strip_language_token(self.target_piece.decode(result.hypotheses[0]))
+        decoded = " ".join(result.hypotheses[0])
+        if self.target_token:
+            decoded = decoded.replace(self.target_token, "", 1)
+        translated = strip_language_token(self.target_piece.decode(decoded))
         if self.language == "en":
             translated = restore_meridiem(text, translated)
         return translated
@@ -168,4 +180,6 @@ def from_environment(source=None, target=None):
         prefix=os.environ.get("PARLO_CASCADE_MT_PREFIX") or None,
         threads=int(os.environ.get("PARLO_CASCADE_THREADS") or 0),
         language=target,
+        source_token=os.environ.get("PARLO_CASCADE_MT_SOURCE_TOKEN") or None,
+        target_token=os.environ.get("PARLO_CASCADE_MT_TARGET_TOKEN") or None,
     )

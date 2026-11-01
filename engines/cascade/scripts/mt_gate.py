@@ -177,6 +177,9 @@ def main(argv=None) -> int:
         action="store_true",
         help="go through English when the pair has no package of its own",
     )
+    parser.add_argument("--dir", default="", help="translate with a converted model in this folder")
+    parser.add_argument("--source-token", default="", help="token that names the source language")
+    parser.add_argument("--target-token", default="", help="token that names the target language")
     parser.add_argument("--pack", action="store_true")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--show", action="store_true")
@@ -205,7 +208,23 @@ def main(argv=None) -> int:
         stages = [(source_language, "en"), ("en", target_language)]
     translators = []
     used = []
+    if args.dir:
+        folder = Path(args.dir)
+        if not folder.is_dir():
+            raise SystemExit(f"{folder} is not a folder")
+        translators.append(
+            mt.MarianTranslator(
+                folder,
+                threads=args.threads,
+                language=target_language,
+                source_token=args.source_token or None,
+                target_token=args.target_token or None,
+            )
+        )
+        used.append(folder.name)
     for first, second in stages:
+        if args.dir:
+            break
         found = mt.find_pack(first, second)
         if found is None:
             raise SystemExit(f"no package installed for {first}-{second}")
