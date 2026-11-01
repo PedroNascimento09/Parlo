@@ -149,35 +149,19 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $sevenZip = @(
-            "$env:ProgramFiles\7-Zip\7z.exe",
-            "${env:ProgramFiles(x86)}\7-Zip\7z.exe"
-          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $sevenZip) {
-            choco install 7zip.install -y --no-progress
-            $sevenZip = "$env:ProgramFiles\7-Zip\7z.exe"
-          }
-          if (-not (Test-Path $sevenZip)) { throw "7-Zip is missing, so the one click installer cannot be built" }
-          $sfxModule = @("$(Split-Path $sevenZip)\7z.sfx", "$(Split-Path $sevenZip)\7zCon.sfx") |
-            Where-Object { Test-Path $_ } | Select-Object -First 1
-          if (-not $sfxModule) { throw "The 7-Zip self extracting module is missing" }
-          New-Item -ItemType Directory -Force sfx | Out-Null
-          Copy-Item scripts/install.ps1 sfx/install.ps1
-          Copy-Item scripts/setup.ps1 sfx/setup.ps1
-          & $sevenZip a -t7z -mx=1 sfx/payload.7z ${{ matrix.archive }} sfx/install.ps1 sfx/setup.ps1 | Out-Null
-          if ($LASTEXITCODE -ne 0) { throw "7-Zip could not build the payload" }
-          $config = @(
-            ';!@Install@!UTF-8!'
-            'Title="Parlo"'
-            'BeginPrompt=""'
-            'RunProgram="powershell -NoProfile -ExecutionPolicy Bypass -File setup.ps1"'
-            'GUIMode="1"'
-            ';!@InstallEnd@!'
-          )
-          Set-Content -Path sfx/config.txt -Value $config -Encoding utf8
-          cmd /c copy /b "$sfxModule" + sfx\config.txt + sfx\payload.7z Parlo-Setup.exe
-          if (-not (Test-Path Parlo-Setup.exe)) { throw "The one click installer was not produced" }
-          Get-Item Parlo-Setup.exe | Select-Object Name, Length
+          choco install innosetup -y --no-progress
+          $payload = "build/installer/payload"
+          New-Item -ItemType Directory -Force $payload | Out-Null
+          Copy-Item release/parlo.exe $payload/
+          Copy-Item release/parlo-app.exe $payload/
+          Copy-Item release/parlo.png $payload/
+          Copy-Item release/parlo-engine "$payload/parlo-engine" -Recurse
+          $version = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { throw "Inno Setup is missing, so the one click installer cannot be built" }
+          & $iscc "/DAppVersion=$version" "installer/parlo.iss"
+          if ($LASTEXITCODE -ne 0) { throw "The installer did not compile" }
+          Get-Item build/installer/Parlo-Setup.exe | Select-Object Name, Length
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
@@ -186,5 +170,5 @@ jobs:
           files: |
             ${{ matrix.archive }}
             sbom.cdx.json
-            Parlo-Setup.exe
+            build/installer/Parlo-Setup.exe
           generate_release_notes: false

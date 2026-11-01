@@ -8,7 +8,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
-- The download is a third of what it was. The engine bundle carried a 310 MB `torch_cpu.dll`, pulled in because the licence bench installs torch in the same environment, and a 47 MB `transformers` copy that faster-whisper lists only as an optional extra; neither is imported anywhere on the dictation, translation or voice path, and both are now excluded from the package and filtered out of what the packaging step collects. The Windows archive went from **231 MB to 80 MB** and from **655 MB to 204 MB** unpacked, with the same features, and unpacking a copy already on disk takes **2.3 seconds**.
+- The download is a third of what it was. The engine bundle carried a 310 MB `torch_cpu.dll`, pulled in because the licence bench installs torch in the same environment, and a 47 MB `transformers` copy that faster-whisper lists only as an optional extra; neither is imported anywhere on the dictation, translation or voice path, and both are now excluded from the package and filtered out of what the packaging step collects. The Windows installer went from **231 MB to 52 MB** and from **655 MB to 187 MB** installed, with the same features, and a silent install from a file already on disk took **45 seconds**.
 
 ### Added
 

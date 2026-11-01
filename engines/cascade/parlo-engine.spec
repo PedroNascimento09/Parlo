@@ -45,6 +45,7 @@ dropped = (
     "jax",
     "transformers",
     "PIL",
+    "hf_xet",
 )
 
 
@@ -74,6 +75,7 @@ analysis = Analysis(
         "jax",
         "transformers",
         "PIL",
+        "hf_xet",
         "av",
         "pandas",
         "matplotlib",
