@@ -86,6 +86,7 @@ Regras de corte: se o gate falha, a release não sai e a anterior continua a ser
 | `catalog/models.json` | Existe | Catálogo com hash, licença e estado |
 | Documento de voz | Em falta | Política de voz e consentimento, pública |
 | Política de modelos externos | Em falta | Como instalar modelos fora do catálogo |
+| `docs/COMPLIANCE.md` | Existe | Checklist interna: licenças, voz, privacidade, Artigo 50, distribuição e revisão por release |
 
 O README declara o estado real, diz o que não funciona e liga para `LICENSES.md`. Nenhum badge afirma conformidade, suporte ou desempenho que não exista.
 
