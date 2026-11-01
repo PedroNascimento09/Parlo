@@ -157,6 +157,16 @@ python engines/cascade/scripts/stream_bench.py --voice pt_PT-tugão-medium.onnx 
 
 Limits: synthetic speech from one voice, no noise, no accents, no real speakers. G0 asks for streaming recognition of real PT-PT speech without accumulating delay; what is measured here is a windowed reprocessing pipeline on synthetic audio. Nemotron 3.5 ASR and Qwen3-ASR are untested, so the plan's streaming-native candidate is still open.
 
+### A segment on the current backend
+
+`python engines/cascade/scripts/soak.py out/voice/01.wav --minutes 2 --threads 4`, Windows 11 laptop, no GPU, 5.99 s of Portuguese synthetic speech at 48 kHz resampled to 16 kHz, recognition and voice synthesis included, 29 passes over the clip:
+
+| Segments | Mean | Median | p95 | First ten | Last ten | Errors |
+|---|---|---|---|---|---|---|
+| 66 | **699 ms** | 698 ms | 940 ms | 730 ms | 717 ms | 0 |
+
+The mean does not drift between the start and the end of the run. It is higher than the 420.7 ms published before, and those two are not a before and after: they were taken through the same harness around a different translation stage and a different voice arrangement. This is what the current program costs end to end on one clip, and the translation inside it is the 114 ms table above.
+
 ### Captions latency
 
 Captions skip the synthesiser, so the wait is the window plus recognition and translation. Warm Parakeet, 1.2 s window, three consecutive segments of the same 6.6 s Portuguese clip: **1266, 1024 and 958 ms of processing**, which puts a caption about **2.2 s** after the speech starts.

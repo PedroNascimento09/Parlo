@@ -37,6 +37,7 @@ Blocked by the licence gate: the Argos translation packs in `catalog/models.json
 - The engine log is written to `parlo-engine.log` in the temporary folder when the window starts it, because a double-clicked app has no console.
 - The minimum Rust version is 1.85.
 - `scripts/parlo-app.cmd` and `scripts/parlo-app.sh` build both programs and open the window.
+- A two minute soak of the current program turns a segment around in 699 ms mean, p95 940 ms, 66 segments and no errors, voice synthesis included; the run and its conditions are in `docs/BENCHMARKS.md`.
 - The cascade translates through that backend and nothing else: `argostranslate` left the engine, the requirements, the PyInstaller spec and the licence closure, taking the AGPL `minisbd` sentence splitter with it. The SentencePiece word marker is cleaned out of the output.
 - `setup_models.py` installs the packages itself instead of calling the Argos tooling, and warms the pair through the same backend the engine uses.
 - Piper left the engine program: `parlo-engine` no longer bundles `piper`, `piper_phonemize` or the espeak-ng data, so the packaged engine carries no GPL code. The synthesiser is an optional adapter in `engines/tts-piper`, installed separately by the user and driven over JSON lines on a pipe; without it Parlo translates and recognises as before and says the voice is unavailable.
