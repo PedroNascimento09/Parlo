@@ -40,7 +40,7 @@ Parlo also runs where a GPU is a luxury: a desktop without an NVIDIA card is the
 | Component | State |
 |---|---|
 | Streaming pipeline: 20 ms frames, voice gate, resampler, engine boundary | Working, 25 tests |
-| CLI: `doctor`, `demo`, `translate`, `dub`, `engines`, `profile`, `mic`, `record`, `listen`, `captions`, `speakers` | Working |
+| CLI: `doctor`, `demo`, `translate`, `stream`, `dub`, `engines`, `profile`, `mic`, `record`, `listen`, `captions`, `speakers` | Working |
 | Engine registry with licenses, voice levels, and hardware profiles | Working |
 | Virtual microphone via PipeWire (`parlo mic setup`) | Working on Linux |
 | Sidecar protocol (JSON lines over stdio) and Rust client | Working, tested |

@@ -7,6 +7,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Added
 
 - Text states for streaming recognition: `partial`, `stable`, `final` and `corrected`, with a stable word confirmed once it survives one further decode, a segment that closes after 0.45 s of silence, and the mode reported as `reprocess` rather than native streaming.
+- `parlo stream <file.wav>` prints those states as they arrive, over a new `stream` operation on the sidecar protocol.
 - `engines/cascade/scripts/stream_bench.py` and a 20 sentence European Portuguese corpus measure the first partial, the first stable words, the final text and the word error rate of each stage.
 - `setup_models.py --voice pt_pt` fetches the Piper `pt_PT-tugão-medium` voice.
 
