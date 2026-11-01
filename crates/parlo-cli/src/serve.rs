@@ -12,6 +12,7 @@ use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
 use crate::dub;
+use crate::insert;
 use crate::models;
 
 use crate::update;
@@ -59,6 +60,7 @@ pub struct Session {
     stt: String,
     from: String,
     to: String,
+    target: Option<usize>,
 }
 
 fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
@@ -84,6 +86,7 @@ impl Session {
             stt,
             from,
             to,
+            target: None,
         })
     }
 
@@ -100,7 +103,21 @@ impl Session {
         self.stt = stt;
         self.from = from;
         self.to = to;
+        self.target = None;
         Ok(())
+    }
+
+    fn capture_target(&mut self) -> Result<(), String> {
+        self.target = Some(insert::capture_target()?);
+        Ok(())
+    }
+
+    fn insert_text(&mut self, text: &str) -> Result<(), String> {
+        let target = self
+            .target
+            .take()
+            .ok_or_else(|| "Parlo does not know which field to write into".to_string())?;
+        insert::type_text(target, text)
     }
 
     fn dictate(&mut self, pcm16: &[u8]) -> Result<String, String> {
@@ -735,6 +752,57 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/dictate/begin" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match session.capture_target() {
+            Ok(()) => respond_json(stream, "200 OK", "{\"target\":true}").map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "409 Conflict",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/insert" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: InsertRequest = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        if request.text.trim().is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"nothing to write\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        return match session.insert_text(&request.text) {
+            Ok(()) => respond_json(stream, "200 OK", "{\"inserted\":true}").map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "409 Conflict",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "POST" && path == "/dictate" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -857,6 +925,11 @@ fn handle(
         samples,
     };
     respond_audio(stream, &write_pcm16(&translated), &transcript).map(|()| Flow::Serve)
+}
+
+#[derive(serde::Deserialize)]
+struct InsertRequest {
+    text: String,
 }
 
 #[derive(serde::Deserialize)]

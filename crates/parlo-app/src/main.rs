@@ -13,6 +13,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{LogicalPosition, Manager, RunEvent, Url, WebviewWindow};
 
 mod island;
+mod presence;
 
 const READY_TIMEOUT: Duration = Duration::from_secs(240);
 const ISLAND_WIDTH: f64 = 560.0;
@@ -28,6 +29,9 @@ fn main() {
                 .get_webview_window("main")
                 .ok_or("the main window is missing")?;
             app.manage(Engine(Mutex::new(None)));
+            if let Err(error) = presence::install(app.handle()) {
+                note(&format!("the tray presence is not available: {error}"));
+            }
             island::listen(app.handle().clone());
             let handle = app.handle().clone();
             std::thread::spawn(move || serve(handle, window));

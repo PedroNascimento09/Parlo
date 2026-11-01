@@ -11,6 +11,7 @@ mod config;
 mod dictate;
 mod dub;
 mod engines;
+mod insert;
 mod install;
 mod mic;
 mod models;

@@ -136,6 +136,7 @@ let started = 0;
 let ticker = null;
 let busy = false;
 let lastText = "";
+let target = false;
 
 function setState(text, line, pending) {
   stateEl.textContent = text;
@@ -212,6 +213,7 @@ async function begin() {
   if (stream) {
     return;
   }
+  target = await beginTarget();
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -240,7 +242,7 @@ async function begin() {
   sink.connect(context.destination);
   started = performance.now();
   document.body.classList.add("listening");
-  setState("Listening", "Speak now, then press the shortcut again.", true);
+  setState("Listening", "Speak now. Click Parlo again or press Ctrl+Alt+D when done.", true);
   clearInterval(ticker);
   ticker = setInterval(() => {
     clockEl.textContent = ((performance.now() - started) / 1000).toFixed(1) + " s";
@@ -292,6 +294,34 @@ function release() {
   return { wav: encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE), seconds };
 }
 
+async function beginTarget() {
+  try {
+    const response = await fetch("/dictate/begin", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    return response.ok;
+  } catch (failure) {
+    return false;
+  }
+}
+
+async function writeIntoField(text) {
+  if (!target) {
+    return false;
+  }
+  try {
+    const response = await fetch("/insert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ text: text }),
+    });
+    return response.ok;
+  } catch (failure) {
+    return false;
+  }
+}
+
 async function finish() {
   if (!stream || busy) {
     return;
@@ -323,13 +353,18 @@ async function finish() {
       return;
     }
     lastText = text;
-    setState("Copied", text, false);
+    const inserted = await writeIntoField(text);
+    setState(inserted ? "Inserted" : "Copied", text, false);
     document.body.classList.add("showing-hint");
-    hintEl.textContent = "Copied to the clipboard. Paste it wherever you need it.";
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (failure) {
-      hintEl.textContent = "The clipboard refused the text. Select it here and copy it by hand.";
+    hintEl.textContent = inserted
+      ? "Written into the field you were in."
+      : "Copied to the clipboard. Paste it where you need it.";
+    if (!inserted) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (failure) {
+        hintEl.textContent = "The clipboard refused the text. Select it here and copy by hand.";
+      }
     }
   } catch (failure) {
     setState("Failed", failure.message || "The dictation failed.", true);

@@ -1,22 +1,29 @@
-use tauri::AppHandle;
-
-#[cfg(windows)]
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 
 pub const SHORTCUT: &str = "Ctrl+Alt+D";
 
-#[cfg(windows)]
+pub fn show(handle: &AppHandle) {
+    let Some(window) = handle.get_webview_window("island") else {
+        return;
+    };
+    let _ = window.show();
+}
+
+pub fn hide(handle: &AppHandle) {
+    let Some(window) = handle.get_webview_window("island") else {
+        return;
+    };
+    let _ = window.hide();
+}
+
 pub fn toggle(handle: &AppHandle) {
     let Some(window) = handle.get_webview_window("island") else {
         return;
     };
-    match window.is_visible() {
-        Ok(true) => {
-            let _ = window.hide();
-        }
-        _ => {
-            let _ = window.show();
-        }
+    if window.is_visible().unwrap_or(false) {
+        hide(handle);
+    } else {
+        show(handle);
     }
 }
 

@@ -1,0 +1,212 @@
+#[cfg(windows)]
+mod win {
+    use std::ffi::c_void;
+
+    pub type Window = *mut c_void;
+
+    const INPUT_KEYBOARD: u32 = 1;
+    const KEYEVENTF_KEYUP: u32 = 0x0002;
+    const KEYEVENTF_UNICODE: u32 = 0x0004;
+    const VK_RETURN: u16 = 0x0D;
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct MouseInput {
+        pub dx: i32,
+        pub dy: i32,
+        pub mouse_data: u32,
+        pub flags: u32,
+        pub time: u32,
+        pub extra: usize,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct KeyboardInput {
+        pub vk: u16,
+        pub scan: u16,
+        pub flags: u32,
+        pub time: u32,
+        pub extra: usize,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct HardwareInput {
+        pub message: u32,
+        pub low: u16,
+        pub high: u16,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub union Union {
+        pub mouse: MouseInput,
+        pub keyboard: KeyboardInput,
+        pub hardware: HardwareInput,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    pub struct Input {
+        pub kind: u32,
+        pub union: Union,
+    }
+
+    impl Input {
+        pub fn unicode(unit: u16, released: bool) -> Self {
+            Self {
+                kind: INPUT_KEYBOARD,
+                union: Union {
+                    keyboard: KeyboardInput {
+                        vk: 0,
+                        scan: unit,
+                        flags: if released {
+                            KEYEVENTF_UNICODE | KEYEVENTF_KEYUP
+                        } else {
+                            KEYEVENTF_UNICODE
+                        },
+                        time: 0,
+                        extra: 0,
+                    },
+                },
+            }
+        }
+
+        pub fn enter(released: bool) -> Self {
+            Self {
+                kind: INPUT_KEYBOARD,
+                union: Union {
+                    keyboard: KeyboardInput {
+                        vk: VK_RETURN,
+                        scan: 0,
+                        flags: if released { KEYEVENTF_KEYUP } else { 0 },
+                        time: 0,
+                        extra: 0,
+                    },
+                },
+            }
+        }
+    }
+
+    #[link(name = "user32")]
+    extern "system" {
+        pub fn GetForegroundWindow() -> Window;
+        pub fn GetWindowThreadProcessId(window: Window, process: *mut u32) -> u32;
+        pub fn SendInput(count: u32, inputs: *const Input, size: i32) -> u32;
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        pub fn GetCurrentProcessId() -> u32;
+    }
+}
+
+#[cfg(windows)]
+pub fn capture_target() -> Result<usize, String> {
+    use win::*;
+    let window = unsafe { GetForegroundWindow() };
+    if window.is_null() {
+        return Err("no window has the focus right now".to_string());
+    }
+    let mut process = 0u32;
+    unsafe {
+        GetWindowThreadProcessId(window, &mut process);
+    }
+    if process == unsafe { GetCurrentProcessId() } {
+        return Err("Parlo itself has the focus, so the text would land in Parlo".to_string());
+    }
+    Ok(window as usize)
+}
+
+#[cfg(windows)]
+pub fn type_text(target: usize, text: &str) -> Result<(), String> {
+    use win::*;
+    let window = target as Window;
+    if unsafe { GetForegroundWindow() } != window {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    let mut batch: Vec<Input> = Vec::new();
+    for character in text.chars() {
+        if character == '\n' {
+            batch.push(Input::enter(false));
+            batch.push(Input::enter(true));
+        } else {
+            let mut units = [0u16; 2];
+            for unit in character.encode_utf16(&mut units) {
+                batch.push(Input::unicode(*unit, false));
+                batch.push(Input::unicode(*unit, true));
+            }
+        }
+        if batch.len() >= 256 {
+            send(&batch)?;
+            batch.clear();
+        }
+    }
+    if !batch.is_empty() {
+        send(&batch)?;
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+fn send(batch: &[win::Input]) -> Result<(), String> {
+    let sent = unsafe {
+        win::SendInput(
+            batch.len() as u32,
+            batch.as_ptr(),
+            std::mem::size_of::<win::Input>() as i32,
+        )
+    };
+    if sent as usize == batch.len() {
+        Ok(())
+    } else {
+        Err("the system refused part of the text".to_string())
+    }
+}
+
+#[cfg(not(windows))]
+pub fn capture_target() -> Result<usize, String> {
+    Err("writing into the active field is windows only for now".to_string())
+}
+
+#[cfg(not(windows))]
+pub fn type_text(_target: usize, _text: &str) -> Result<(), String> {
+    Err("writing into the active field is windows only for now".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(windows)]
+    #[test]
+    fn the_keyboard_input_matches_the_system_size() {
+        assert_eq!(std::mem::size_of::<win::Input>(), 40);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_letter_becomes_one_sixteen_bit_unit() {
+        let encoded: Vec<u16> = "ã".encode_utf16().collect();
+        assert_eq!(encoded, vec![0x00E3]);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn one_press_and_one_release_are_queued_per_unit() {
+        let pressed = win::Input::unicode(0x00E3, false);
+        let released = win::Input::unicode(0x00E3, true);
+        assert_eq!(pressed.kind, 1);
+        assert_ne!(unsafe { pressed.union.keyboard.flags }, unsafe {
+            released.union.keyboard.flags
+        });
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn other_platforms_say_what_is_missing() {
+        let error = type_text(0, "olá").unwrap_err();
+        assert!(error.contains("windows only"));
+    }
+}

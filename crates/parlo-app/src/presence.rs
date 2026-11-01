@@ -1,0 +1,67 @@
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{AppHandle, Manager};
+
+const ICON: &[u8] = include_bytes!("../../../assets/parlo-256.png");
+
+pub fn install(app: &AppHandle) -> tauri::Result<()> {
+    let dictate = MenuItem::with_id(app, "dictate", "Dictate", true, None::<&str>)?;
+    let live = MenuItem::with_id(app, "live", "Live", true, None::<&str>)?;
+    let hub = MenuItem::with_id(app, "hub", "Open Parlo", true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit Parlo", true, None::<&str>)?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &dictate,
+            &live,
+            &PredefinedMenuItem::separator(app)?,
+            &hub,
+            &settings,
+            &PredefinedMenuItem::separator(app)?,
+            &quit,
+        ],
+    )?;
+
+    let icon = tauri::image::Image::from_bytes(ICON)?;
+    TrayIconBuilder::with_id("presence")
+        .icon(icon)
+        .tooltip("Parlo")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "dictate" => crate::island::show(app),
+            "live" => focus_hub(app, Some("live")),
+            "hub" => focus_hub(app, None),
+            "settings" => focus_hub(app, Some("settings")),
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
+                button: MouseButton::Left,
+                button_state: MouseButtonState::Up,
+                ..
+            } = event
+            {
+                crate::island::toggle(tray.app_handle());
+            }
+        })
+        .build(app)?;
+    Ok(())
+}
+
+pub fn focus_hub(app: &AppHandle, section: Option<&str>) {
+    let Some(window) = app.get_webview_window("main") else {
+        return;
+    };
+    let _ = window.show();
+    let _ = window.unminimize();
+    let _ = window.set_focus();
+    if let Some(section) = section {
+        if let Ok(mut url) = window.url() {
+            url.set_fragment(Some(section));
+            let _ = window.navigate(url);
+        }
+    }
+}
