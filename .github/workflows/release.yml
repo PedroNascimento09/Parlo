@@ -140,10 +140,11 @@ jobs:
           New-Item -ItemType Directory -Force release | Out-Null
           Copy-Item target/${{ matrix.target }}/release/parlo.exe release/
           Copy-Item target/${{ matrix.target }}/release/parlo-app.exe release/
+          Copy-Item target/${{ matrix.target }}/release/WebView2Loader.dll release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
           Copy-Item assets/parlo.ico, assets/parlo.png release/
           Copy-Item README.md, LICENSE, NOTICE, LICENSES.md, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
-          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
+          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/WebView2Loader.dll, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Build the one click installer
         if: runner.os == 'Windows'
@@ -154,6 +155,7 @@ jobs:
           New-Item -ItemType Directory -Force $payload | Out-Null
           Copy-Item release/parlo.exe $payload/
           Copy-Item release/parlo-app.exe $payload/
+          Copy-Item release/WebView2Loader.dll $payload/
           Copy-Item release/parlo.png $payload/
           Copy-Item release/parlo-engine "$payload/parlo-engine" -Recurse
           $version = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")

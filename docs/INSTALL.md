@@ -7,7 +7,7 @@ Parlo is one folder and one program. Nothing is installed system-wide, no admini
 1. Open the [latest release](https://github.com/PedroNascimento09/Parlo/releases/latest).
 2. Download `Parlo-Setup.exe` and double click it.
 3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The build is unsigned, so this appears once.
-4. The installer opens with the Parlo mark and one sentence about what the program does. Press **Next**, watch the progress bar, then **Finish**: the window opens by itself.
+4. The Parlo window opens with our own design and one sentence about what the program does. Press **Install Parlo**, watch the line fill as it downloads and unpacks, then **Open Parlo**.
 
 It installs into `%LOCALAPPDATA%\Programs\Parlo` for your user alone, adds **Parlo** to the Start menu, and puts an entry in *Apps and Features* with the Parlo icon and the version, so removing it later is the ordinary Windows way. Two optional tick boxes add a Desktop shortcut and starting Parlo with Windows; both are off unless you ask. No administrator password is asked and nothing runs in a console.
 
@@ -24,7 +24,7 @@ irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/insta
 
 That is the whole installation. The script downloads the Windows archive straight from the latest release with `curl`, unpacks it into `%LOCALAPPDATA%\Programs\Parlo` and adds the Start menu entry. To read it before running it, open [scripts/install.ps1](../scripts/install.ps1); it downloads and unpacks, nothing else.
 
-Measured on the reference machine (Windows 11, no administrator rights): the installer is **52 MB** and installs **187 MB**; a silent install from a file already on disk took **45 seconds**, the window wizard the same. The earlier **37 seconds** figure was measured when the package was 220 MB and had to be downloaded first, so the download is now a quarter of the bytes. No terminal stays open, nothing is installed system-wide, and **Apps and Features** removes it.
+Measured on the reference machine (Windows 11, no administrator rights): the installer is **5 MB** and downloads the **72 MB** program once, which installs **187 MB**. The earlier **37 seconds** figure was measured when the package was 220 MB and had to be fetched before anything could start, so the first file is now a fifteenth of the bytes. No terminal stays open, nothing is installed system-wide, and **Apps and Features** removes it.
 
 The wait people notice is afterwards, on the first start: about **800 MB of models**, once, from the Models panel.
 

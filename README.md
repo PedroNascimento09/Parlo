@@ -108,7 +108,7 @@ curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/script
 parlo-windows-x86_64.zip      parlo-macos-aarch64.tar.gz      parlo-linux-x86_64.tar.gz
 ```
 
-The installer is **52 MB** on Windows and installs **187 MB**, in **45 seconds** on the reference machine from a file already on disk. The first run then opens the window with no models: the Models panel has one **Download models** button and fetches about 800 MB once. After that the machine can stay offline for good.
+The installer is a **5 MB** window that downloads the **72 MB** program once and installs **187 MB** into your user folder. The first run then opens the window with no models: the Models panel has one **Download models** button and fetches about 800 MB once. After that the machine can stay offline for good.
 
 **Updating is not reinstalling.** Parlo checks the latest release when it starts, shows its notes in a slim banner and offers one **Install update** button. Nothing installs without that click, and no version is ever installed by uninstalling the old one. Step-by-step, with what each error means: [docs/INSTALL.md](docs/INSTALL.md).
 

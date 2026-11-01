@@ -55,6 +55,7 @@ Name: "startup"; Description: "Open Parlo when Windows starts"; Flags: unchecked
 [Files]
 Source: "{#Payload}\parlo.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo-app.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Payload}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo-engine\*"; DestDir: "{app}\parlo-engine"; Flags: ignoreversion recursesubdirs createallsubdirs
 
