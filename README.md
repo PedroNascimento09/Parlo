@@ -16,7 +16,7 @@
 
 > **Status: v0.1 Spark prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, which now ships inside the `parlo-engine` program. That bundle is therefore distributed under the GPL while the `parlo` binary stays MIT; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. The interface opens in its own window (`parlo-app`, a thin native shell around the page the binary serves on loopback), and voice cloning and a virtual microphone do not exist yet. The cascade is chosen with `--engine cascade` on the command line or is the default in the app.
 
-Version numbers follow the milestones in [ROADMAP.md](ROADMAP.md), and only tagged releases reach users: **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
+Milestones in [ROADMAP.md](ROADMAP.md) are roadmap labels, not version numbers: the version advances one step from the last published tag, so a milestone can close inside any of them. Only tagged releases reach users, **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
 
 ---
 
@@ -285,7 +285,7 @@ CI runs the same commands on Linux, macOS, and Windows.
 
 ## Roadmap
 
-v0.1 Spark is this prototype. Next is v0.2 Foundation (stable engine service and reproducible benchmark), then v0.3 Engines (cascade and captions switchable, medium profile measured), then v0.4 Dub, the first public preview that needs no driver and no NVIDIA card.
+v0.1 Spark and v0.2 Foundation are done: the pipeline, the token bearing local API and the reproducible benchmark exist, and thirty minutes of audio ran at 420.7 ms mean with no drift. The plan's next milestone is **v0.3 Ouvir**, which adds no feature and decides with data: streaming recognition that publishes partial, stable and final text, measured against the reference tools before the interface grows. Then **v0.4 Ditar**, dictation in any application, and **v0.5 Escrever noutra língua**, speaking Portuguese and writing English, German, Spanish or French in the active field. Dubbing, the native window and captions already work and are measured, ahead of where the plan schedules them.
 
 Exit criteria for every step: [ROADMAP.md](ROADMAP.md).
 

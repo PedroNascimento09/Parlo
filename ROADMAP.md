@@ -2,72 +2,70 @@
 
 No dates. A phase ends when its exit criterion is met, not when the code is written. If a criterion fails, the phase does not happen.
 
-## v0.1 Spark (released as v0.1.0)
+The milestones below come from `Parlo_Plano_Mestre_v9.docx`, section 15, which is the authority on product direction. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries.
 
-Prove the pipeline on modest hardware. Command line only, echo engine, no models.
+## Where the work stands (1 November 2026)
 
-**Exit criterion:** pipeline, CLI, engine registry, and microphone commands tested on Linux, macOS, and Windows; licences verified; a demo that makes people ask where to get it. The pipeline, the CLI, and the microphone commands ran end to end on Windows, while the Linux and macOS paths are covered by unit tests only, so this criterion is met on one platform and outstanding on two.
+Published: **v0.1.6**. In the tree and ready to tag: **v0.1.7**, the native window.
 
-## v0.2 Foundation
+The plan calls **v0.2 Foundation** complete, and it is: the CPU cascade translates Portuguese and English offline, the local API answers only with a token on loopback, thirty minutes of audio ran at 420.7 ms mean with no drift, and cold start is measured at 18.1 s.
 
-Turn the prototype into something that survives a real call: a local engine service with a stable protocol, cold start measured, a reproducible benchmark, and an authenticated local API bound to `127.0.0.1`.
+The plan's next milestone, **v0.3 Ouvir**, is not complete, and it is what comes next. Recognition still cuts the audio into 2.5 second windows and commits each one whole, so there is no partial, stable and final text; there is no common audio harness with timestamps, no Portuguese corpus built for streaming, and neither Nemotron nor Qwen3-ASR has been tried. G0 is met on two of its three parts: capture is stable and measured, the licence of the recogniser in use is verified, the streaming behaviour is not there.
 
-**Exit criterion:** 30 minutes of continuous audio without failure or latency drift, and a benchmark a second person can reproduce. Met: the thirty minute soak measured 1095 segments at 420.7 ms mean with zero errors and no drift, cold start measured 18.1 s on Windows, and the soak and the recognition battery are two commands documented in `docs/BENCHMARKS.md` that anyone can rerun. The local service answers only with a token, refuses a foreign `Host` and a cross origin write, and keeps its defaults in `config.json`.
+Three capabilities were built ahead of where the plan schedules them: **dubbing** (plan v1.5), the **interface** in its own window with install and uninstall (plan v0.4 to v0.9), and **captions** with translation (plan v0.6). They are shipped, measured and documented. The plan's order is not being rearranged to fit them, and the next work is still the plan's next work.
 
-## v0.3 Engines
+## Milestones
 
-The universal cascade arrives: streaming speech recognition, translation, and text to speech on CPU. Captions mode, hardware profiles, and a switchable engine selector.
+| Milestone | What a person gains | Gate | Status |
+|---|---|---|---|
+| v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
+| v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current**, two of three parts met |
+| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | Not started |
+| v0.5 Escrever noutra língua | Speak Portuguese, write English, German, Spanish or French in the active field | G1 + G2 | Not started |
+| v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead; system audio not |
+| v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks and a model panel, no catalogue |
+| v0.8 Voz | Read text in a neutral voice, read translations aloud | — | Partial: Piper voice in the cascade, no voice picker, no blind MOS |
+| v0.9 Live | Spoken two-way conversation through a virtual microphone | G1 + G3 | Not started |
+| v1.0 Estável | Dictate, Captions, Live and Models stable, PT↔EN validated, signed installers | G4 | Not started |
+| v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Not started |
+| v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Not started |
+| v1.3 Meeting Chat | Ask the meetings, with verifiable citations | G4 | Not started |
+| v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Not started |
+| v1.5 Dub e Voz própria | Dub files, clone your own voice with consent | G4 | Dubbing shipped ahead; voice cloning not started |
+| v1.6 Equipa e áudio pro | Workspaces, retention, advanced denoise and echo cancellation, public benchmark | G4 | Not started |
 
-**Exit criterion:** two engines run the same test suite; the medium profile works inside its documented latency; switching engines requires no core changes. Met: the same 24 sentence battery runs on Parakeet and on Whisper small, with word error rate 0.215, 0.199 and 0.197 against 0.217, 0.242 and 0.309 for clean, 20 dB and 10 dB, and the medium profile lands at about 2.9 to 3.1 seconds, the 2.5 second window plus the 420 to 600 ms measured per segment in the warm steady state, though a live microphone has not been timed; switching is `--stt parakeet|whisper`, an in-app setting or an environment variable, and touches no core code.
+Windows first, up to v1.0. macOS and Linux arrive after it, first with dictation and captions and only later with Live; on Linux, X11 and Wayland are separate problems.
 
-## v0.4 Dub (current, first public preview)
+## Gates
 
-Something shareable that needs neither a virtual microphone nor an NVIDIA card: dubbing audio and video with the person's own voice, offline. File mode, not real time: transcription, translation and the best voice the profile can afford, with `.srt` subtitles, audio and video through ffmpeg, and the new voice mixed under music and effects where possible. Interface is `parlo dub video.mp4 --to en` plus a simple drag and drop window.
+A release declares the gate it has to pass. If the gate fails the release does not ship; features can move, the gate cannot.
 
-**Exit criterion:** dub a five minute video with your own voice in three commands, on a PC without an NVIDIA card, and at least three outsiders use it without help. The commands and the drag and drop panel are here and dubbing was measured end to end on a 6.6 second clip, so what is left is the one thing code cannot close: three outsiders dubbing a five minute video unaided.
+| Gate | Minimum to advance | Release |
+|---|---|---|
+| G0 · Viabilidade | Streaming recognition of real PT-PT speech without accumulating delay; licence verified; stable capture | v0.3 |
+| G1 · Pipeline de texto | STT→MT for 30 minutes; p95 latency published; an engine failure loses no text. Extends to STT→MT→TTS | v0.5, v0.9 |
+| G2 · Produto | 5 external users install and finish a first session without critical help | v0.4, v0.5 |
+| G3 · Beta | 2 hours without a crash; no sustained queue growth; zero critical bugs; local network audit | v0.9 |
+| G4 · Release | Signed installers, SBOM, licences, documentation, rollback and a compatibility matrix | v1.0 onward |
 
-Note: the interface shipped ahead of this milestone, first as a local page from `parlo app` and now in a native window from `parlo-app`. It does not change the order here, and the tray app, installers and virtual microphone stay in v0.5.
+## v0.3 Ouvir, what it takes
 
-## v0.5 Native
+- A common audio harness with timestamps, a Portuguese corpus and metrics, so a recognition change shows up as a number.
+- Streaming adapters for Parakeet and Whisper, and a first proof of Nemotron 3.5 ASR and Qwen3-ASR on the same hardware.
+- A partial, stable and final protocol, written down and versioned, with a simple diagnostic view of what each stage is doing.
+- A side by side run against the reference tool, measuring when partials and finals appear.
+- A licence check on every candidate before it is wired in.
 
-Own virtual microphone: a PipeWire node on Linux, an Audio Server Plug-in on macOS and a signed driver on Windows, or a documented third party cable as an interim answer. Clean install and uninstall, the right name and icon in call apps, a minimal tray app to switch on and off and pick languages, code signing and notarisation, and `.dmg`, `.msi`, AppImage and `.deb` built in CI.
+Out of scope for this milestone: translation changes, voice, system audio, a public installer.
 
-**Exit criterion:** a clean machine installs and shows Parlo in Zoom, Meet, and Teams in under five minutes, on two operating systems. Partly met: the release archive carries a self-contained engine, `parlo-app` opens the interface in a native window instead of a browser and owns the engine it starts, `parlo install` copies both programs into a per-user directory with a menu entry that opens the window and an icon, and `parlo uninstall` removes it. Still open: the virtual microphone, the tray app, signing, notarisation and the four installer formats, so a call app still sees the system microphone and the first launch is an unzip rather than a signed installer.
+## Open decisions
 
-## v0.6 Alpha
+- **The neutral voice.** The plan keeps Piper out of the distributable core while GPL compatibility is unresolved, and makes Kokoro the baseline with Piper as a reference point. The shipped engine bundles Piper and is therefore GPL-3.0-or-later as a whole, which `docs/LICENSES.md` states. Whether to keep that split or move to a permissively licensed voice is undecided.
+- **Where dubbing belongs.** It works and is measured, and the plan places it at v1.5. Nothing is being removed; the question is only how it is presented until then.
 
-A complete experience for people who do not program: model manager with integrity checks and disk usage, adjustable voice fidelity, per app profiles, stability when headphones come and go, a first run wizard, a captions overlay, a latency indicator, a global shortcut and push to translate, an exportable diagnostic mode, and a closed alpha with 10 to 20 people.
+## Definition of done, for any release
 
-**Exit criterion:** at least 80 percent of testers install alone and complete a call, including those on modest hardware.
-
-## v0.8 Beta
-
-Three platforms at parity, eight interface languages, accessibility, update channels with rollback, published benchmarks.
-
-**Exit criterion:** zero critical bugs in the last round, 90 percent install success.
-
-## v0.9 Release candidate
-
-Frozen model versions, checksums, SBOM, licence audit, final security review, launch checklist.
-
-**Exit criterion:** checklist at 100 percent, five outsiders approve the demo.
-
-## v1.0 Launch
-
-Signed release on GitHub, Homebrew, winget, and Flathub. Launch day plan.
-
-**Exit criterion:** 90 percent install success and a visible, fast response to issues.
-
-## v1.1 to v2.x
-
-| Version | Focus |
-|---|---|
-| v1.1 Hardening | Top 10 issues, more calling apps, better echo handling |
-| v1.2 Listen | Hear others in your language, system audio capture without echo |
-| v1.3 Anything | 20+ input languages with published quality per language |
-| v1.5 Two-way | Two streams, in-person mode, local transcripts |
-| v2.0 Everywhere | Plugin system, mobile app, authenticated local API |
-| v2.x Languages | Community language programme with native speaker review |
+Installer tested on a clean machine and as an upgrade, with rollback proven; the corpus benchmark updated and published with hardware and versions; licence matrix reviewed for everything the release contains, with notices updated; local network audit showing no external connection during use; changelog, known limitations and the state of each language pair; feedback from at least five external users before the next one is announced.
 
 ## Deliberately out of scope
 
