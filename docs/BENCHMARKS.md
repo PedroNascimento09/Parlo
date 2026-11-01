@@ -120,6 +120,32 @@ On clean speech the two are within a fifth of a percent of each other, which is 
 
 Parakeet stays the default for two reasons: it holds its rate under noise, and it is about three times faster per the real time factor table above. Whisper stays selectable through `--stt whisper` for machines where the 640 MB model is too much.
 
+### Streaming, partial to final
+
+The cascade publishes text in four states: partial, stable, final and corrected. The recogniser reads a growing buffer every 0.4 s of audio, a word becomes stable once it survives one further decode, and the buffer closes after 0.45 s of silence or 12 s of audio. The mode is reported as `reprocess`, not native streaming, because every decode re-reads the whole segment.
+
+Corpus: 20 European Portuguese sentences written for this test (`engines/cascade/tests/corpus/pt_pt.txt`), synthesised with the Piper `pt_PT-tugão-medium` voice. Windows 11, 4 threads, decode every 0.4 s, one extra decode before a word is stable.
+
+| Recogniser | First partial | First stable | Final | p95 final | Final WER | Stable coverage |
+|---|---|---|---|---|---|---|
+| **Parakeet TDT 0.6B v3 int8** | 908 ms | 1985 ms | 3398 ms | 3861 ms | **0.237** | 67.3% |
+| Whisper base int8 | 898 ms | 1902 ms | 3391 ms | 3932 ms | **0.219** | 74.4% |
+
+Reading: the first provisional text lands about 0.9 s after speech starts, the first confirmed words after about 1.9 s, and the finished sentence about 3.4 s after it began. Both recognisers are within 0.02 of each other on the final text, so this test does not rank them; the real time factor table above still favours Parakeet by roughly three times, and a gap of 0.018 on 20 sentences is inside the noise of a set this small.
+
+The stable text is a prefix of the sentence, so its word error rate counts the words it has not reached yet as errors (0.438 for Parakeet, 0.387 for Whisper). Coverage is the honest companion: about two thirds of the sentence is confirmed when the segment closes. Requiring two extra decodes instead of one dropped coverage to 6.7% and raised the final rate, because both recognisers revise earlier words constantly; that is a property of windowed reprocessing, not a tuning accident.
+
+The voice matters more than the recogniser: the same 20 sentences synthesised with the Brazilian `pt_BR-faber-medium` voice scored 0.67 and 0.65 final WER, against 0.24 and 0.22 with the European voice. A recogniser cannot be judged on PT-PT with a PT-BR voice.
+
+The spread inside a recogniser is wide: the best sentence scored 0.0 and the worst 0.8, so a mean of 0.23 is not a per sentence guarantee.
+
+```bash
+python engines/cascade/scripts/setup_models.py --voice pt_pt
+python engines/cascade/scripts/stream_bench.py --voice pt_PT-tugão-medium.onnx --out out/stream.json
+```
+
+Limits: synthetic speech from one voice, no noise, no accents, no real speakers. G0 asks for streaming recognition of real PT-PT speech without accumulating delay; what is measured here is a windowed reprocessing pipeline on synthetic audio. Nemotron 3.5 ASR and Qwen3-ASR are untested, so the plan's streaming-native candidate is still open.
+
 ### Captions latency
 
 Captions skip the synthesiser, so the wait is the window plus recognition and translation. Warm Parakeet, 1.2 s window, three consecutive segments of the same 6.6 s Portuguese clip: **1266, 1024 and 958 ms of processing**, which puts a caption about **2.2 s** after the speech starts.
