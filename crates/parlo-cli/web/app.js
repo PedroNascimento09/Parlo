@@ -42,6 +42,8 @@ const welcomeInstall = document.getElementById("welcome-install");
 const welcomeStatus = document.getElementById("welcome-status");
 const liveButton = document.getElementById("live");
 const liveNote = document.getElementById("live-note");
+const dictateButton = document.getElementById("dictate");
+const dictateNote = document.getElementById("dictate-note");
 
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 30;
@@ -72,6 +74,7 @@ let dubTimer = null;
 let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
 let settingsBusy = false;
 let live = false;
+let dictating = false;
 let liveTimer = null;
 let liveLines = [];
 let liveWindows = 0;
@@ -335,8 +338,7 @@ async function finish() {
   micEl.textContent = "ready";
   clearTimeout(maxTimer);
   talk.setAttribute("aria-pressed", "false");
-  label.textContent = "Hold to speak";
-  sub.textContent = "Release to hear the translation";
+  describeButton();
 
   const captured = chunks;
   chunks = [];
@@ -353,6 +355,11 @@ async function finish() {
   for (const chunk of captured) {
     merged.set(chunk, offset);
     offset += chunk.length;
+  }
+
+  if (dictating) {
+    await dictateSpeech(merged, rate, seconds);
+    return;
   }
 
   setProgress("Translating " + seconds.toFixed(1) + " s of speech.");
@@ -380,6 +387,61 @@ async function finish() {
   } catch (failure) {
     setProgress("");
     showError(failure.message || "The translation failed. Check that the engine is running and try again.");
+  }
+}
+
+function describeButton() {
+  label.textContent = dictating ? "Hold to dictate" : "Hold to speak";
+  sub.textContent = dictating
+    ? "Release to get your words as text"
+    : "Release to hear the translation";
+}
+
+async function dictateSpeech(merged, rate, seconds) {
+  setProgress("Writing down " + seconds.toFixed(1) + " s of speech.");
+  try {
+    const wav = encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE);
+    const startedAt = performance.now();
+    const response = await fetch("/dictate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: wav,
+    });
+    if (response.status === 401) {
+      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+    }
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
+    }
+    const result = await response.json();
+    const waited = (performance.now() - startedAt) / 1000;
+    const text = (result.text || "").trim();
+    if (!text) {
+      setProgress("");
+      showError("Nothing was recognised. Move closer to the microphone and try again.");
+      return;
+    }
+    translation.textContent = text;
+    translation.hidden = false;
+    latencyEl.textContent = waited.toFixed(1) + " s from speech to text";
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (failure) {
+      copied = false;
+    }
+    setProgress(
+      copied
+        ? "Copied to the clipboard. Paste it wherever you need it."
+        : "The text is ready above. Copy it with the keyboard, the clipboard refused it.",
+    );
+  } catch (failure) {
+    setProgress("");
+    showError(
+      failure.message || "The dictation failed. Check that the engine is running and try again.",
+    );
   }
 }
 
@@ -499,6 +561,10 @@ async function startLive() {
   }
   if (recording) {
     showError("Release the record button first, then start live mode.");
+    return;
+  }
+  if (dictating) {
+    showError("Turn off dictation before going live.");
     return;
   }
   clearError();
@@ -1216,6 +1282,21 @@ document.addEventListener("drop", (event) => {
   if (file) {
     startDub();
   }
+});
+
+dictateButton.addEventListener("click", () => {
+  if (live) {
+    showError("Stop live mode before dictating.");
+    return;
+  }
+  dictating = !dictating;
+  dictateButton.setAttribute("aria-pressed", dictating ? "true" : "false");
+  dictateNote.textContent = dictating
+    ? "Dictation is on. Hold the button, speak, and let go: your words arrive as text in the clipboard, with no translation and no voice."
+    : "Holding the button writes down what you say instead of translating it. The text goes to your clipboard.";
+  clearError();
+  clearTranslation();
+  describeButton();
 });
 
 talk.addEventListener("pointerdown", (event) => {
