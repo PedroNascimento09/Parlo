@@ -39,8 +39,8 @@ impl fmt::Display for Fidelity {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum License {
-    Mit,
-    MitOptionalGpl,
+    Apache2,
+    Apache2OptionalGpl,
     CcByNcSa4,
     Proprietary,
 }
@@ -48,8 +48,8 @@ pub enum License {
 impl License {
     pub fn label(self) -> &'static str {
         match self {
-            Self::Mit => "MIT",
-            Self::MitOptionalGpl => "MIT, optional GPL voice",
+            Self::Apache2 => "Apache-2.0",
+            Self::Apache2OptionalGpl => "Apache-2.0, optional GPL voice",
             Self::CcByNcSa4 => "CC BY-NC-SA 4.0",
             Self::Proprietary => "vendor terms",
         }
@@ -57,8 +57,8 @@ impl License {
 
     pub fn commercial_note(self) -> &'static str {
         match self {
-            Self::Mit => "commercial use ok",
-            Self::MitOptionalGpl => "MIT engine, GPL voice optional",
+            Self::Apache2 => "commercial use ok",
+            Self::Apache2OptionalGpl => "Apache-2.0 engine, GPL voice optional",
             Self::CcByNcSa4 => "non commercial",
             Self::Proprietary => "check vendor terms",
         }
@@ -87,7 +87,7 @@ pub const ENGINES: &[EngineInfo] = &[
             Fidelity::Approximate,
             Fidelity::Cloned,
         ],
-        license: License::MitOptionalGpl,
+        license: License::Apache2OptionalGpl,
         hardware: "any recent CPU",
         requires_gpu: false,
         available: true,
@@ -97,7 +97,7 @@ pub const ENGINES: &[EngineInfo] = &[
         id: "echo",
         name: "Echo for development",
         fidelity: &[Fidelity::Neutral],
-        license: License::Mit,
+        license: License::Apache2,
         hardware: "any",
         requires_gpu: false,
         available: true,
@@ -266,14 +266,17 @@ mod tests {
 
     #[test]
     fn labels_vendor_licenses_separately() {
-        assert_eq!(License::Mit.commercial_note(), "commercial use ok");
+        assert_eq!(License::Apache2.commercial_note(), "commercial use ok");
         assert_eq!(License::CcByNcSa4.commercial_note(), "non commercial");
         assert_eq!(License::Proprietary.commercial_note(), "check vendor terms");
         assert_eq!(
-            License::MitOptionalGpl.commercial_note(),
-            "MIT engine, GPL voice optional"
+            License::Apache2OptionalGpl.commercial_note(),
+            "Apache-2.0 engine, GPL voice optional"
         );
-        assert_eq!(License::MitOptionalGpl.label(), "MIT, optional GPL voice");
+        assert_eq!(
+            License::Apache2OptionalGpl.label(),
+            "Apache-2.0, optional GPL voice"
+        );
     }
 
     #[test]

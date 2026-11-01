@@ -18,6 +18,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - Piper left the engine program: `parlo-engine` no longer bundles `piper`, `piper_phonemize` or the espeak-ng data, so the packaged engine carries no GPL code. The synthesiser is an optional adapter in `engines/tts-piper`, installed separately by the user and driven over JSON lines on a pipe; without it Parlo translates and recognises as before and says the voice is unavailable.
 - Engine requirements are pinned to exact versions, every commit in a pull request must carry a DCO sign-off, and the release workflow refuses to build while the licence gate reports an open issue.
+- The original code moved to the Apache License 2.0 once the copyright holders confirmed the whole history; releases up to v0.1.7 keep the MIT text they were published with, in `licenses/MIT-Parlo-0.1.x.txt`.
+- `LICENSES.md` at the root indexes every licence the project carries, by section, with the code licence, the model or voice licence, the holder, whether it is required or optional, whether it was confirmed and what it obliges; CI regenerates it and fails when it drifts.
 - On the European Portuguese voice the cascade reaches the first partial at 849 ms and the final text at 3.36 s, with 0.231 final word error rate for Parakeet and 0.279 for Whisper base, and 81% of the sentence confirmed before the segment closes. The Brazilian voice reading the same European sentences scored about 0.66 for both, so the corpus now uses the PT-PT voice.
 
 ## [0.1.7] - 2026-10-31

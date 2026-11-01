@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-2ea44f?style=flat-square"></a>
   <img alt="Rust" src="https://img.shields.io/badge/rust-1.85%2B-b7410e?style=flat-square&logo=rust">
   <img alt="Runtime dependencies" src="https://img.shields.io/badge/core%20dependencies-none-4c566a?style=flat-square">
   <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-4c566a?style=flat-square">
@@ -112,7 +112,7 @@ hardware profile
 
 ```text
 engines
-  cascade  available MIT, optional GPL voice any recent CPU    cpu ok   MIT engine, GPL voice optional
+  cascade  available Apache-2.0, optional GPL voice  any recent CPU  cpu ok   Apache-2.0 engine, GPL voice optional
            Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice, 3 cloned voice
   echo     available MIT                   any                      cpu ok   commercial use ok
            Echo for development | 1 neutral voice
@@ -121,7 +121,7 @@ engines
   cloud    planned   vendor terms          any                      cpu ok   check vendor terms
            Cloud with your key | 4 end to end transfer
 
-default engine: cascade (MIT)
+default engine: cascade (Apache-2.0)
 ```
 
 ### Record your own voice and compare recognisers
@@ -206,14 +206,14 @@ One product, several engines, one quality ladder. The default must stay usable f
 
 | Engine | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | MIT, voice optional and GPL | **Default** |
-| B. Captions | Text overlay | Any CPU | MIT | Weak hardware |
+| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | Apache-2.0, voice optional and GPL | **Default** |
+| B. Captions | Text overlay | Any CPU | Apache-2.0 | Weak hardware |
 | C. Hibiki-Zero | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | D. Cloud with your key | Voice | Any | Vendor terms | Opt-in, off by default |
 
 **Hibiki-Zero is non-commercial.** Its weights are CC BY-NC-SA 4.0, which is why it is a downloadable option with a visible licence warning, never the default engine and never inside the archive.
 
-**The core is permissive and the voice is optional.** The engine, the CLI, the window and the cascade are MIT today, with Apache-2.0 prepared for the next release once the copyright holders are confirmed. Piper is GPL-3.0-or-later and lives in `engines/tts-piper`, which is not in any archive and is installed by its own command, so no Parlo download distributes a GPL work. The recogniser weights are CC-BY-4.0 and the Argos translation models are MIT. The full table, and what each licence asks of you, is in [docs/LICENSES.md](docs/LICENSES.md).
+**The core is permissive and the voice is optional.** The engine, the CLI, the window and the cascade are Apache-2.0. Piper is GPL-3.0-or-later and lives in `engines/tts-piper`, which is not in any archive and is installed by its own command, so no Parlo download distributes a GPL work. The recogniser weights are CC-BY-4.0 and the Argos translation models are MIT. The full table, and what each licence asks of you, is in [docs/LICENSES.md](docs/LICENSES.md).
 
 ## Hardware profiles
 
@@ -300,10 +300,8 @@ Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.
 
 The speech-to-speech approach builds on [Hibiki-Zero](https://github.com/kyutai-labs/hibiki) by Kyutai, used as an optional premium engine under its own licence. Parlo is independent and not affiliated with Kyutai.
 
-## License
+## Licensing
 
-Parlo is **open source**. The original code, the three Rust crates, the page, the cascade engine and the scripts, is MIT and is moving to Apache-2.0 once the copyright holders are confirmed, see [LICENSE](LICENSE). Commercial use, modification, redistribution and use inside proprietary products are allowed today.
+Parlo is open source. The original code, the three Rust crates, the page, the cascade engine, the tools and the scripts, is **Apache-2.0**, which allows commercial use, modification, redistribution and use inside proprietary products, and adds an express patent grant. See [LICENSE](LICENSE).
 
-`parlo-engine`, the packaged engine inside a release archive, now contains no GPL code: Piper left the bundle. Piper is GPL-3.0-or-later and remains available as the optional adapter in [engines/tts-piper](engines/tts-piper), installed by the user with its own command and its own licence. Model weights and voices are downloaded from their publishers and keep their own licences; `parlo engines` prints them and [catalog/models.json](catalog/models.json) records each one.
-
-The component by component table, the notices and the open questions are in [docs/LICENSES.md](docs/LICENSES.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [docs/MODEL_LICENSES.md](docs/MODEL_LICENSES.md).
+Some things have their own licence and are not covered by it: the optional Piper adapter is GPL-3.0-or-later, the packaged engine ships no GPL code, and every model weight or voice keeps the licence of its publisher. **[LICENSES.md](LICENSES.md) is the index** of all of them, section by section, with what each one obliges you to do. Notices and full texts are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [`licenses/`](licenses), the reasoning is in [docs/LICENSES.md](docs/LICENSES.md).

@@ -26,7 +26,7 @@ Rules an adapter must follow:
 
 | Id | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| `cascade` | Voice, captions | Any modern CPU, GPU optional | MIT, optional GPL voice | Default, working for Portuguese and English |
+| `cascade` | Voice, captions | Any modern CPU, GPU optional | Apache-2.0, optional GPL voice | Default, working for Portuguese and English |
 | `echo` | Development only | Any | MIT | Tests and demos |
 | `hibiki` | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | `cloud` | Voice | Any | Vendor terms | Opt-in, off by default |
