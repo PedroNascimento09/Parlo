@@ -1,0 +1,24 @@
+{"id":"pt-en-001","source":"pt-PT","target":"en","text":"Marquei a reunião para as 15h30 de quinta-feira.","reference":"I booked the meeting for 3.30 pm on Thursday.","tags":["time","format"]}
+{"id":"pt-en-002","source":"pt-PT","target":"en","text":"Não recebi o relatório de setembro.","reference":"I haven't received the September report.","tags":["negation","date"]}
+{"id":"pt-en-003","source":"pt-PT","target":"en","text":"O João e a Maria vão chegar atrasados.","reference":"João and Maria will arrive late.","tags":["names","future"]}
+{"id":"pt-en-004","source":"pt-PT","target":"en","text":"Custa 249,90 euros, com IVA incluído.","reference":"It costs 249.90 euros, VAT included.","tags":["numbers","money"]}
+{"id":"pt-en-005","source":"pt-PT","target":"en","text":"Preciso de carregar o telemóvel antes de sairmos.","reference":"I need to charge my phone before we leave.","tags":["vocabulary"]}
+{"id":"pt-en-006","source":"pt-PT","target":"en","text":"Estou a preparar a apresentação para amanhã.","reference":"I'm preparing the presentation for tomorrow.","tags":["gerund"]}
+{"id":"pt-en-007","source":"pt-PT","target":"en","text":"Fica combinado: encontramo-nos à porta às 9h.","reference":"That's settled then: we meet at the door at 9.","tags":["idiom"]}
+{"id":"pt-en-008","source":"pt-PT","target":"en","text":"Não faz sentido adiar outra vez.","reference":"There's no point postponing it again.","tags":["negation","idiom"]}
+{"id":"pt-en-009","source":"pt-PT","target":"en","text":"Enviei-lhe o ficheiro por correio eletrónico.","reference":"I sent you the file by email.","tags":["clitic"]}
+{"id":"pt-en-010","source":"pt-PT","target":"en","text":"O prazo termina a 31 de dezembro de 2026.","reference":"The deadline ends on 31 December 2026.","tags":["date"]}
+{"id":"pt-en-011","source":"pt-PT","target":"en","text":"Ele disse que não podia comparecer.","reference":"He said he couldn't attend.","tags":["reported-speech","negation"]}
+{"id":"pt-en-012","source":"pt-PT","target":"en","text":"A casa de banho fica ao fundo do corredor.","reference":"The bathroom is at the end of the corridor.","tags":["vocabulary"]}
+{"id":"en-pt-001","source":"en","target":"pt-PT","text":"I'll send the invoice by Friday.","reference":"Envio a fatura até sexta-feira.","tags":["future"]}
+{"id":"en-pt-002","source":"en","target":"pt-PT","text":"We don't have the budget for that.","reference":"Não temos orçamento para isso.","tags":["negation"]}
+{"id":"en-pt-003","source":"en","target":"pt-PT","text":"The train leaves at 7.45 am.","reference":"O comboio parte às 7h45.","tags":["time","numbers"]}
+{"id":"en-pt-004","source":"en","target":"pt-PT","text":"She said she would call back later.","reference":"Ela disse que ligava mais tarde.","tags":["reported-speech"]}
+{"id":"en-pt-005","source":"en","target":"pt-PT","text":"Please find the contract attached.","reference":"Segue em anexo o contrato.","tags":["formal","idiom"]}
+{"id":"en-pt-006","source":"en","target":"pt-PT","text":"The deadline is 31 December 2026.","reference":"O prazo termina a 31 de dezembro de 2026.","tags":["date"]}
+{"id":"en-pt-007","source":"en","target":"pt-PT","text":"It costs 249.90 euros, VAT included.","reference":"Custa 249,90 euros, com IVA incluído.","tags":["numbers","money"]}
+{"id":"en-pt-008","source":"en","target":"pt-PT","text":"Can you confirm the meeting on Thursday?","reference":"Pode confirmar a reunião de quinta-feira?","tags":["formal"]}
+{"id":"en-pt-009","source":"en","target":"pt-PT","text":"There's no need to reschedule.","reference":"Não é preciso remarcar.","tags":["negation"]}
+{"id":"en-pt-010","source":"en","target":"pt-PT","text":"The lift is out of order until Monday.","reference":"O elevador está avariado até segunda-feira.","tags":["vocabulary"]}
+{"id":"en-pt-011","source":"en","target":"pt-PT","text":"Let's keep it simple and ship today.","reference":"Vamos manter isto simples e lançar hoje.","tags":["idiom"]}
+{"id":"en-pt-012","source":"en","target":"pt-PT","text":"He hasn't replied to my email yet.","reference":"Ele ainda não respondeu ao meu correio eletrónico.","tags":["negation","tense"]}

@@ -1,0 +1,170 @@
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from pimo import compat, hardware, manifest, signing
+
+
+def model(**overrides):
+    entry = {
+        "manifest_version": 1,
+        "id": "parakeet-tdt-0.6b-v3",
+        "name": "Parakeet TDT 0.6B v3",
+        "version": "3",
+        "task": "asr",
+        "state": "recommended",
+        "evidence": "validated",
+        "origin": "NVIDIA",
+        "url": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+        "checksum": "sha256:" + "a" * 64,
+        "license": {
+            "code": "Apache-2.0",
+            "weights": "CC-BY-4.0",
+            "weights_verified": True,
+            "attribution": "NVIDIA Parakeet TDT 0.6B v3",
+        },
+        "languages": {"declared": ["pt-PT", "en"], "validated": ["pt-PT", "en"]},
+        "runtime": {"engine": "sherpa-onnx", "min_version": "1.12", "formats": ["onnx"]},
+        "platforms": {"os": ["windows", "macos", "linux"], "arch": ["x86_64", "arm64"], "backends": ["cpu"]},
+        "resources": {"ram_gb": 2.0, "disk_gb": 0.7, "vram_gb": 0},
+        "api": {"min_schema": 1, "max_schema": 2},
+        "capabilities": {"streaming": False},
+        "limits": ["reprocesses audio in blocks instead of streaming"],
+        "benchmarks": {},
+        "maintenance": "active",
+    }
+    entry.update(overrides)
+    return entry
+
+
+def device(**overrides):
+    data = {
+        "os": "windows",
+        "arch": "x86_64",
+        "ram_available_gb": 8.0,
+        "disk_free_gb": 50.0,
+        "vram_gb": 0.0,
+        "backends": ["cpu"],
+    }
+    data.update(overrides)
+    return data
+
+
+class ManifestTests(unittest.TestCase):
+    def test_valid_manifest_passes(self):
+        self.assertEqual(manifest.validate(model()), [])
+
+    def test_automatic_state_requires_validated_evidence(self):
+        entry = model(evidence="documented")
+        self.assertTrue(manifest.validate(entry))
+        self.assertFalse(manifest.is_auto_eligible(entry))
+
+    def test_missing_field_is_reported(self):
+        entry = model()
+        del entry["checksum"]
+        self.assertIn("checksum: missing", manifest.validate(entry))
+
+    def test_checksum_must_be_sha256(self):
+        self.assertTrue(manifest.validate(model(checksum="sha256:abc")))
+
+    def test_validated_language_must_be_declared(self):
+        entry = model(languages={"declared": ["pt-PT"], "validated": ["pt-BR"]})
+        self.assertTrue(any("not declared" in problem for problem in manifest.validate(entry)))
+
+    def test_unverified_weights_block_automatic_use(self):
+        entry = model()
+        entry["license"] = dict(entry["license"], weights_verified=False)
+        self.assertFalse(manifest.is_auto_eligible(entry))
+
+
+class CompatTests(unittest.TestCase):
+    def test_admits_compatible_model(self):
+        self.assertEqual(compat.admit(model(), device()), (True, None))
+
+    def test_rejects_other_system(self):
+        entry = model(platforms={"os": ["windows"], "arch": ["x86_64"], "backends": ["cpu"]})
+        self.assertEqual(compat.admit(entry, device(os="linux")), (False, "os"))
+
+    def test_rejects_insufficient_memory(self):
+        entry = model(resources={"ram_gb": 32.0, "disk_gb": 1.0, "vram_gb": 0})
+        self.assertEqual(compat.admit(entry, device()), (False, "ram"))
+
+    def test_rejects_schema_outside_range(self):
+        entry = model(api={"min_schema": 2, "max_schema": 3})
+        self.assertEqual(compat.admit(entry, device(), schema=1), (False, "api"))
+
+    def test_rejects_unvalidated_locale(self):
+        entry = model(languages={"declared": ["pt-PT", "pt-BR"], "validated": ["pt-PT"]})
+        self.assertEqual(compat.admit(entry, device(), locale="pt-BR"), (False, "locale"))
+
+    def test_rejects_experimental_state(self):
+        entry = model(state="experimental", evidence="experimental")
+        self.assertEqual(compat.admit(entry, device()), (False, "state:experimental"))
+
+    def test_rejects_unknown_backend(self):
+        entry = model(platforms={"os": ["windows"], "arch": ["x86_64"], "backends": ["cuda"]})
+        self.assertEqual(compat.admit(entry, device()), (False, "backend"))
+
+    def test_rank_splits_candidates(self):
+        catalogue = [
+            model(),
+            model(id="heavy-model", resources={"ram_gb": 64.0, "disk_gb": 1.0, "vram_gb": 0}),
+        ]
+        result = compat.rank(catalogue, device())
+        self.assertEqual(result["admitted"], ["parakeet-tdt-0.6b-v3"])
+        self.assertEqual(result["rejected"], [{"id": "heavy-model", "reason": "ram"}])
+
+
+class SigningTests(unittest.TestCase):
+    def test_signature_verifies_only_the_signed_payload(self):
+        with tempfile.TemporaryDirectory() as folder:
+            key = Path(folder) / "key.txt"
+            public = signing.generate(key)
+            signature = signing.sign({"models": []}, key)
+            self.assertTrue(signing.verify({"models": []}, signature, public))
+            self.assertFalse(signing.verify({"models": [model()]}, signature, public))
+
+    def test_file_round_trip_detects_tampering(self):
+        with tempfile.TemporaryDirectory() as folder:
+            key = Path(folder) / "key.txt"
+            public = signing.generate(key)
+            path = Path(folder) / "catalogue.json"
+            path.write_text(json.dumps({"models": [model()]}), encoding="utf-8")
+            target = signing.sign_file(path, key)
+            self.assertTrue(target.exists())
+            self.assertTrue(signing.verify_file(path, public))
+            path.write_text(json.dumps({"models": [model(limits=["changed after signing"])]}), encoding="utf-8")
+            self.assertFalse(signing.verify_file(path, public))
+
+    def test_rejects_another_key(self):
+        with tempfile.TemporaryDirectory() as folder:
+            key = Path(folder) / "key.txt"
+            signing.generate(key)
+            other = Path(folder) / "other.txt"
+            other_public = signing.generate(other)
+            signature = signing.sign({"models": []}, key)
+            self.assertFalse(signing.verify({"models": []}, signature, other_public))
+
+    def test_private_key_is_not_world_readable(self):
+        with tempfile.TemporaryDirectory() as folder:
+            key = Path(folder) / "key.txt"
+            signing.generate(key)
+            mode = key.stat().st_mode & 0o777
+            self.assertIn(mode, (0o600, 0o666))
+
+
+class HardwareTests(unittest.TestCase):
+    def test_profile_reports_measurements(self):
+        data = hardware.profile()
+        for field in ("os", "arch", "ram_total_gb", "ram_available_gb", "disk_free_gb", "backends"):
+            self.assertIn(field, data)
+        self.assertGreaterEqual(data["ram_total_gb"], data["ram_available_gb"])
+        self.assertIn("cpu", data["backends"])
+
+
+if __name__ == "__main__":
+    unittest.main()
