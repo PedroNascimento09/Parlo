@@ -347,7 +347,21 @@ Numbers, negations and completeness are clean in both directions. Two things are
 
 The check reads value, not typography: `four hours`, `3.000 euros` and `7.05` → `7h05` all count as preserved, because the same quantity arrives. `8.30` → `20h30` (en-pt-035) is a real error and is counted as one. Thresholds were set before the run and left alone: numbers 0.95, clock 0.95, negation 0.90, names 0.80, complete 1.00.
 
-**The gate passes on both sides, and the pair is still not declared validated.** Five automatic properties are not a reading: one PT→EN row still translates a name (`O João` → `John`), and an idiom can pass every count while being wrong. Declaring the pair approved is the competent-speaker step the plan asks for, and it has not been done.
+**On the Argos copy the gate passes on both sides; on the copy Parlo installs it fails, as the next subsection records.** The pair is still not declared validated either way. Five automatic properties are not a reading: one PT→EN row still translates a name (`O João` → `John`), and an idiom can pass every count while being wrong. Declaring the pair approved is the competent-speaker step the plan asks for, and it has not been done.
+
+### The same corpus on the copy Parlo installs
+
+`parlo_cascade.mt.find_pack` used to search the Argos application's package folders before the folder Parlo installs into, so the two tables above described the Argos copy. `pack_roots` now reads Parlo's own folder first, and the pair was measured again on the copy `packs.install` produces, downloaded from the index it uses, `translate-pt_en-1_9`, Windows 11, 4 threads, beam 4:
+
+| Direction | Numbers | Clock | Negation | Names | Complete | Gate |
+|---|---|---|---|---|---|---|
+| PT→EN, Parlo's copy | 0.840 | 1.000 | 0.880 | 0.940 | 1.000 | **fails** |
+
+Rows that lose a number: pt-en-004, 010, 013, 015, 018, 019, 026, 030. Rows that lose a negation: pt-en-002, 011, 023, 028, 045, 048. Rows that lose a name: pt-en-003, 019, 044.
+
+Both folders carry the same name and version and are not the same build: the Argos application's copy answers `I ' ve scheduled the meeting for 3 :30 pm on Thursday .` and this one answers the same sentence identically, yet it drops eight quantities and six negations across the corpus. Two mirrors of one index are serving different files, and the one the product installs is below the numbers 0.95 and negation 0.90 thresholds the gate sets.
+
+**Nothing in the two tables above may be quoted as the state of the pair in the product** until it passes here. What this changes: PT→EN is not passing, EN→PT has not been re-measured on Parlo's copy yet, and the pair is further from validated than the earlier reading of the numbers suggested.
 
 ### Portuguese to German, through English
 
