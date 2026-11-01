@@ -3,12 +3,24 @@ from dataclasses import dataclass
 
 SAMPLE_RATE = 16_000
 TEXT_STATES = ("partial", "stable", "final", "corrected")
+POLICY = "local-agreement"
 
 
 def common_prefix(left, right) -> int:
     count = 0
     for first, second in zip(left, right):
         if first != second:
+            break
+        count += 1
+    return count
+
+
+def agreement(hypotheses: list[list[str]]) -> int:
+    if not hypotheses:
+        return 0
+    count = 0
+    for words in zip(*hypotheses):
+        if len(set(words)) != 1:
             break
         count += 1
     return count
@@ -35,55 +47,37 @@ class TextEvent:
 
 
 class StabilityPolicy:
-    def __init__(self, rounds: int = 1):
-        if rounds < 1:
-            raise ValueError("rounds must be at least 1")
+    policy = POLICY
+
+    def __init__(self, rounds: int = 2):
+        if rounds < 2:
+            raise ValueError("local agreement needs at least two hypotheses")
         self.rounds = rounds
         self.confirmed = 0
         self._confirmed_words: list[str] = []
-        self._previous: list[str] = []
-        self._candidate = 0
-        self._candidate_rounds = 0
+        self._history: list[list[str]] = []
 
     def reset(self) -> None:
         self.confirmed = 0
         self._confirmed_words = []
-        self._previous = []
-        self._candidate = 0
-        self._candidate_rounds = 0
+        self._history = []
 
     def observe(self, words: list[str], audio_ms: int, latency_ms: int) -> list[TextEvent]:
-        text = " ".join(words)
         events = []
-        if text and text != " ".join(self._previous):
+        previous = self._history[-1] if self._history else []
+        text = " ".join(words)
+        if text and text != " ".join(previous):
             events.append(TextEvent("partial", text, audio_ms, latency_ms))
-        overlap = common_prefix(self._previous, words)
-        self._previous = list(words)
 
-        if self.confirmed and words[: self.confirmed] != self._confirmed_words:
-            self._confirmed_words = words[: self.confirmed]
-            self._candidate = self.confirmed
-            self._candidate_rounds = 0
+        self._history.append(list(words))
+        if len(self._history) > self.rounds:
+            self._history.pop(0)
 
-        if overlap <= self.confirmed:
-            self._candidate = self.confirmed
-            self._candidate_rounds = 0
-            return events
-
-        if overlap > self._candidate:
-            self._candidate = overlap
-            self._candidate_rounds = 1
-        elif overlap == self._candidate:
-            self._candidate_rounds += 1
-        else:
-            self._candidate = overlap
-            self._candidate_rounds = 1
-
-        if self._candidate_rounds >= self.rounds:
-            fresh = " ".join(words[self.confirmed : self._candidate])
-            self.confirmed = self._candidate
-            self._confirmed_words = list(words[: self.confirmed])
-            self._candidate_rounds = 0
+        shared = agreement(self._history)
+        if len(self._history) == self.rounds and shared > self.confirmed:
+            fresh = " ".join(self._history[-1][self.confirmed : shared])
+            self.confirmed = shared
+            self._confirmed_words = list(self._history[-1][:shared])
             events.append(TextEvent("stable", fresh, audio_ms, latency_ms))
         return events
 
@@ -108,7 +102,7 @@ class StreamingSession:
         decode_every: float = 0.4,
         segment_seconds: float = 12.0,
         min_audio_seconds: float = 0.6,
-        rounds: int = 1,
+        rounds: int = 2,
         clock=time.perf_counter,
     ):
         if decode_every <= 0:
@@ -124,6 +118,10 @@ class StreamingSession:
         self._samples: list[float] = []
         self._decoded_seconds = 0.0
         self._clock = clock
+
+    @property
+    def policy(self) -> str:
+        return self._policy.policy
 
     @property
     def audio_seconds(self) -> float:

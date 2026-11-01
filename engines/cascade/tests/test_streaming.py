@@ -8,6 +8,7 @@ from parlo_cascade.streaming import (
     StabilityPolicy,
     StreamingSession,
     TextEvent,
+    agreement,
     common_prefix,
 )
 
@@ -31,16 +32,20 @@ class Scripted:
         return self.replies.pop(0)
 
 
-class CommonPrefixTest(unittest.TestCase):
+class AgreementTest(unittest.TestCase):
     def test_counts_the_shared_start(self):
         self.assertEqual(common_prefix(["a", "b", "c"], ["a", "b", "d"]), 2)
+        self.assertEqual(agreement([["a", "b"], ["a", "b", "c"]]), 2)
 
-    def test_empty_side(self):
-        self.assertEqual(common_prefix([], ["a"]), 0)
-        self.assertEqual(common_prefix(["a"], []), 0)
+    def test_a_single_hypothesis_agrees_with_itself(self):
+        self.assertEqual(agreement([["a", "b"]]), 2)
 
-    def test_identical(self):
-        self.assertEqual(common_prefix(["a", "b"], ["a", "b"]), 2)
+    def test_disagreement_stops_the_count(self):
+        self.assertEqual(agreement([["a", "b"], ["a", "c"]]), 1)
+        self.assertEqual(agreement([["a"], ["b"]]), 0)
+
+    def test_no_hypotheses(self):
+        self.assertEqual(agreement([]), 0)
 
 
 class TextEventTest(unittest.TestCase):
@@ -57,6 +62,13 @@ class TextEventTest(unittest.TestCase):
 
 
 class StabilityPolicyTest(unittest.TestCase):
+    def test_rejects_a_window_of_one(self):
+        with self.assertRaises(ValueError):
+            StabilityPolicy(rounds=1)
+
+    def test_names_the_policy(self):
+        self.assertEqual(StabilityPolicy().policy, "local-agreement")
+
     def test_reports_every_changed_hypothesis_as_partial(self):
         policy = StabilityPolicy()
         events = policy.observe(["bom"], 500, 40)
@@ -66,40 +78,43 @@ class StabilityPolicyTest(unittest.TestCase):
         policy = StabilityPolicy()
         policy.observe(["bom"], 500, 40)
         partials = [
-            event
-            for event in policy.observe(["bom"], 900, 40)
-            if event.state == "partial"
+            event for event in policy.observe(["bom"], 900, 40) if event.state == "partial"
         ]
         self.assertEqual(partials, [])
 
-    def test_stable_needs_two_identical_decodes(self):
+    def test_two_agreeing_hypotheses_confirm_the_prefix(self):
         policy = StabilityPolicy(rounds=2)
-        self.assertEqual(policy.observe(["bom", "dia"], 500, 40), [
-            TextEvent("partial", "bom dia", 500, 40)
-        ])
-        self.assertEqual(policy.observe(["bom", "dia"], 900, 40), [])
-        events = policy.observe(["bom", "dia"], 1300, 40)
-        stable = [event for event in events if event.state == "stable"]
-        self.assertEqual([event.text for event in stable], ["bom dia"])
+        self.assertEqual(
+            policy.observe(["bom", "dia"], 500, 40),
+            [TextEvent("partial", "bom dia", 500, 40)],
+        )
+        events = policy.observe(["bom", "dia"], 900, 40)
+        self.assertEqual([event.text for event in events if event.state == "stable"], ["bom dia"])
         self.assertEqual(policy.confirmed, 2)
 
     def test_stable_text_is_emitted_once(self):
-        policy = StabilityPolicy(rounds=1)
+        policy = StabilityPolicy()
         policy.observe(["bom"], 500, 40)
-        events = policy.observe(["bom"], 900, 40)
-        self.assertEqual([event.text for event in events], ["bom"])
+        policy.observe(["bom"], 900, 40)
         self.assertEqual(policy.observe(["bom"], 1300, 40), [])
 
-    def test_a_revised_hypothesis_blocks_new_stable_text(self):
+    def test_a_three_window_needs_three_hypotheses(self):
+        policy = StabilityPolicy(rounds=3)
+        policy.observe(["bom", "dia"], 500, 40)
+        self.assertEqual([event.state for event in policy.observe(["bom", "dia"], 900, 40)], [])
+        events = policy.observe(["bom", "dia"], 1300, 40)
+        self.assertEqual([event.text for event in events if event.state == "stable"], ["bom dia"])
+
+    def test_a_revision_does_not_confirm_new_words(self):
         policy = StabilityPolicy(rounds=2)
         policy.observe(["bom", "dia"], 500, 40)
         policy.observe(["bom", "dia"], 900, 40)
         events = policy.observe(["bom", "noite"], 1300, 40)
         self.assertEqual([event.state for event in events], ["partial"])
-        self.assertEqual(policy.confirmed, 0)
+        self.assertEqual(policy.confirmed, 2)
 
-    def test_growth_after_a_stable_prefix_starts_again(self):
-        policy = StabilityPolicy(rounds=1)
+    def test_growth_confirms_one_step_at_a_time(self):
+        policy = StabilityPolicy(rounds=2)
         policy.observe(["bom"], 500, 40)
         first = policy.observe(["bom", "dia"], 900, 40)
         second = policy.observe(["bom", "dia"], 1300, 40)
@@ -113,25 +128,26 @@ class StabilityPolicyTest(unittest.TestCase):
         self.assertEqual(events[0].text, "bom dia")
 
     def test_final_reports_a_correction_when_confirmed_text_changed(self):
-        policy = StabilityPolicy(rounds=1)
-        policy.observe(["bom"], 500, 40)
-        policy.observe(["bom"], 900, 40)
+        policy = StabilityPolicy()
+        policy.observe(["bom", "dia"], 500, 40)
+        policy.observe(["bom", "dia"], 900, 40)
         events = policy.finalize(["boa", "noite"], 2000, 60)
         self.assertEqual([event.state for event in events], ["corrected", "final"])
 
     def test_a_final_matching_the_confirmed_text_is_not_a_correction(self):
-        policy = StabilityPolicy(rounds=1)
-        policy.observe(["bom"], 500, 40)
-        policy.observe(["bom"], 900, 40)
-        events = policy.finalize(["bom"], 2000, 60)
+        policy = StabilityPolicy()
+        policy.observe(["bom", "dia"], 500, 40)
+        policy.observe(["bom", "dia"], 900, 40)
+        events = policy.finalize(["bom", "dia"], 2000, 60)
         self.assertEqual([event.state for event in events], ["final"])
 
     def test_silent_segment_produces_no_event(self):
         self.assertEqual(StabilityPolicy().finalize([], 2000, 60), [])
 
     def test_reset_clears_the_state(self):
-        policy = StabilityPolicy(rounds=2)
+        policy = StabilityPolicy()
         policy.observe(["bom"], 500, 40)
+        policy.observe(["bom"], 900, 40)
         policy.reset()
         self.assertEqual(policy.confirmed, 0)
         self.assertEqual([event.state for event in policy.observe(["bom"], 500, 40)], ["partial"])
@@ -180,8 +196,10 @@ class StreamingSessionTest(unittest.TestCase):
         self.assertIn("final", [event.state for event in events])
         self.assertEqual(session.audio_seconds, 0.0)
 
-    def test_mode_declares_reprocessing(self):
-        self.assertEqual(StreamingSession.mode, "reprocess")
+    def test_declares_reprocessing_and_the_policy(self):
+        session = self.session(["bom dia"])
+        self.assertEqual(session.mode, "reprocess")
+        self.assertEqual(session.policy, "local-agreement")
 
 
 if __name__ == "__main__":

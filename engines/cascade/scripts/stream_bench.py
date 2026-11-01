@@ -97,7 +97,7 @@ def main() -> int:
     parser.add_argument("--model", default="base")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--decode-every", type=float, default=0.4)
-    parser.add_argument("--rounds", type=int, default=1)
+    parser.add_argument("--rounds", type=int, default=2)
     parser.add_argument("--segment", type=float, default=12.0)
     parser.add_argument("--snr", type=float, default=None)
     parser.add_argument("--seed", type=int, default=7)
@@ -176,6 +176,7 @@ def main() -> int:
         "threads": args.threads,
         "decode_every": args.decode_every,
         "rounds": args.rounds,
+        "policy": engine._stream.policy,
         "segment": args.segment,
         "snr": args.snr,
         "seed": args.seed,
