@@ -602,6 +602,29 @@ body.first-run .dub {
   font-weight: 600;
 }
 
+.models-action {
+  margin-left: auto;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.models-action:hover:not([disabled]),
+.models-action:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.models-action[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .models-install {
   margin-top: 18px;
 }

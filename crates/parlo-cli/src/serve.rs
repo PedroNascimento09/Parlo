@@ -1127,7 +1127,7 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        if let Err(error) = models::install() {
+        if let Err(error) = models::install(&[]) {
             return respond_json(
                 stream,
                 "500 Internal Server Error",
@@ -1136,6 +1136,84 @@ fn handle(
             .map(|()| Flow::Serve);
         }
         return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/models/dictation" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if models::dictation_ready(&models::status()) {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"dictation is already installed\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if let Err(error) = models::install(models::DICTATION_UNITS) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/models/rest" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if let Err(error) = models::install(models::REMAINING_UNITS) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path.starts_with("/models/download/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = &path["/models/download/".len()..];
+        if !["parakeet", "voice-pt", "voice-en"].contains(&id) {
+            return respond_json(stream, "404 Not Found", "{\"error\":\"unknown model\"}")
+                .map(|()| Flow::Serve);
+        }
+        if let Err(error) = models::install(&[id]) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path.starts_with("/models/remove/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = &path["/models/remove/".len()..];
+        return match models::remove(id) {
+            Ok(()) => respond_json(stream, "200 OK", "{\"removed\":true}").map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "409 Conflict",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
     }
 
     if method == "GET" && path == "/update" {

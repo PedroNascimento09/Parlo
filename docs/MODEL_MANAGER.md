@@ -77,4 +77,6 @@ States are the four the plan already fixes, and they are visible: a model that i
 
 ## Status
 
-Specified, not built. Today the app lists the recogniser and two voices, downloads all of them with one button, and has no switches, no per-model removal, no relocation and no recommendation. The plan places this work at **v0.7 Modelos**, and the first-start download split is the part that changes the install experience soonest.
+**Partly built.** The app lists the recogniser and the two voices, each with its own size and its own button: **Download** fetches that model alone and **Remove** deletes it, refusing while a download is running and saying why. The engine accepts `--only parakeet`, `--only voice-pt` and the rest, so a machine can be given the recogniser by itself.
+
+Not built yet: the first-start screen still offers the full set instead of promising dictation first, there is no recommendation from the machine profile, no feature switches, no relocation of the model folder, and the translation pairs are not in the list because the app cannot yet verify their files. The plan keeps this work at **v0.7 Modelos**.

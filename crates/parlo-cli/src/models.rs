@@ -7,20 +7,24 @@ use std::time::Instant;
 
 const DOWNLOAD_WINDOW_SECONDS: u64 = 3_600;
 
-const PARAKEET: &[&str] = &[
+const PARAKEET_FILES: &[&str] = &[
     "encoder.int8.onnx",
     "decoder.int8.onnx",
     "joiner.int8.onnx",
     "tokens.txt",
 ];
-const VOICES: &[(&str, &str)] = &[
-    ("pt_BR-faber-medium.onnx", "Portuguese voice"),
-    ("en_US-lessac-medium.onnx", "English voice"),
+const VOICES: &[(&str, &str, &str)] = &[
+    ("voice-pt", "pt_BR-faber-medium.onnx", "Portuguese voice"),
+    ("voice-en", "en_US-lessac-medium.onnx", "English voice"),
 ];
+pub const DICTATION_UNITS: &[&str] = &["parakeet"];
+pub const REMAINING_UNITS: &[&str] = &["voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"];
 
 pub struct Model {
+    pub id: &'static str,
     pub name: String,
     pub kind: &'static str,
+    pub feature: &'static str,
     pub installed: bool,
     pub bytes: u64,
 }
@@ -54,20 +58,36 @@ fn size(directory: &Path, files: &[&str]) -> (bool, u64) {
     (installed, bytes)
 }
 
+fn voice_size(directory: &Path, file: &str) -> (bool, u64) {
+    let (installed, bytes) = size(directory, &[file]);
+    if !installed {
+        return (false, bytes);
+    }
+    let settings = directory.join(format!("{file}.json"));
+    (
+        true,
+        bytes + fs::metadata(settings).map(|data| data.len()).unwrap_or(0),
+    )
+}
+
 pub fn status() -> Vec<Model> {
     let root = models_root();
-    let (parakeet_installed, parakeet_bytes) = size(&root.join("parakeet"), PARAKEET);
+    let (parakeet_installed, parakeet_bytes) = size(&root.join("parakeet"), PARAKEET_FILES);
     let mut models = vec![Model {
+        id: "parakeet",
         name: "Parakeet 0.6B v3".to_string(),
         kind: "recogniser",
+        feature: "Dictation",
         installed: parakeet_installed,
         bytes: parakeet_bytes,
     }];
-    for (file, label) in VOICES {
-        let (installed, bytes) = size(&root, &[*file]);
+    for (id, file, label) in VOICES {
+        let (installed, bytes) = voice_size(&root, file);
         models.push(Model {
+            id,
             name: (*label).to_string(),
             kind: "voice",
+            feature: "Read aloud",
             installed,
             bytes,
         });
@@ -77,6 +97,29 @@ pub fn status() -> Vec<Model> {
 
 pub fn ready(models: &[Model]) -> bool {
     models.iter().all(|model| model.installed)
+}
+
+pub fn dictation_ready(models: &[Model]) -> bool {
+    models
+        .iter()
+        .find(|model| model.id == "parakeet")
+        .is_some_and(|model| model.installed)
+}
+
+fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
+    let root = models_root();
+    match id {
+        "parakeet" => Some(vec![root.join("parakeet")]),
+        "voice-pt" => Some(vec![
+            root.join("pt_BR-faber-medium.onnx"),
+            root.join("pt_BR-faber-medium.onnx.json"),
+        ]),
+        "voice-en" => Some(vec![
+            root.join("en_US-lessac-medium.onnx"),
+            root.join("en_US-lessac-medium.onnx.json"),
+        ]),
+        _ => None,
+    }
 }
 
 fn python() -> PathBuf {
@@ -92,11 +135,14 @@ fn python() -> PathBuf {
     PathBuf::from("python")
 }
 
-pub fn install() -> Result<(), String> {
+pub fn install(units: &[&str]) -> Result<(), String> {
     let mut command = match crate::sidecar::bundled_engine() {
         Some(engine) => {
             let mut command = Command::new(&engine);
             command.arg("--download-models");
+            if !units.is_empty() {
+                command.arg("--only").args(units);
+            }
             command
         }
         None => {
@@ -108,7 +154,12 @@ pub fn install() -> Result<(), String> {
                 ));
             }
             let mut command = Command::new(python());
-            command.arg(&script).args(["--stt", "parakeet"]);
+            command.arg(&script);
+            if units.is_empty() {
+                command.args(["--stt", "parakeet"]);
+            } else {
+                command.arg("--only").args(units);
+            }
             command
         }
     };
@@ -119,6 +170,29 @@ pub fn install() -> Result<(), String> {
         .spawn()
         .map(|_| mark_started())
         .map_err(|error| format!("cannot start the model download: {error}"))
+}
+
+pub fn remove(id: &str) -> Result<(), String> {
+    let paths = paths_for(id).ok_or_else(|| format!("{id} is not a model this app manages"))?;
+    if downloading(&status()) {
+        return Err("a download is running; wait for it to finish".to_string());
+    }
+    for path in paths {
+        let removed = if path.is_dir() {
+            fs::remove_dir_all(&path)
+        } else if path.exists() {
+            fs::remove_file(&path)
+        } else {
+            Ok(())
+        };
+        if let Err(error) = removed {
+            return Err(format!(
+                "{} could not be removed: {error}. Close Parlo and try again.",
+                path.display()
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn started() -> &'static Mutex<Option<Instant>> {
@@ -147,15 +221,16 @@ pub fn as_json(models: &[Model]) -> String {
         .iter()
         .map(|model| {
             format!(
-                "{{\"name\":\"{}\",\"kind\":\"{}\",\"installed\":{},\"bytes\":{}}}",
-                model.name, model.kind, model.installed, model.bytes
+                "{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"{}\",\"feature\":\"{}\",\"installed\":{},\"bytes\":{}}}",
+                model.id, model.name, model.kind, model.feature, model.installed, model.bytes
             )
         })
         .collect();
     format!(
-        "{{\"models\":[{}],\"ready\":{},\"downloading\":{}}}",
+        "{{\"models\":[{}],\"ready\":{},\"dictation\":{},\"downloading\":{}}}",
         rows.join(","),
         ready(models),
+        dictation_ready(models),
         downloading(models)
     )
 }
@@ -167,13 +242,28 @@ mod tests {
     #[test]
     fn installed_models_are_never_downloading() {
         let models = vec![Model {
+            id: "voice-en",
             name: "voice".to_string(),
             kind: "voice",
+            feature: "Read aloud",
             installed: true,
             bytes: 1024,
         }];
         assert!(!downloading(&models));
         assert!(as_json(&models).contains("\"downloading\":false"));
+    }
+
+    #[test]
+    fn an_unknown_model_is_refused_before_any_file_is_touched() {
+        assert!(remove("nonsense").is_err());
+    }
+
+    #[test]
+    fn every_row_carries_its_own_id_and_feature() {
+        let models = status();
+        assert!(models.iter().all(|model| !model.id.is_empty()));
+        assert!(models.iter().any(|model| model.feature == "Dictation"));
+        assert!(as_json(&models).contains("\"dictation\":"));
     }
 
     #[test]

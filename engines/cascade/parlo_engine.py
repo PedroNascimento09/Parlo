@@ -13,7 +13,8 @@ def download_models() -> int:
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return module.main([])
+    arguments = sys.argv[sys.argv.index("--download-models") + 1 :]
+    return module.main(arguments)
 
 
 def intelligence_admin() -> int:

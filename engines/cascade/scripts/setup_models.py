@@ -143,6 +143,9 @@ def warm_translation(source: str, target: str) -> None:
     print(f"cached    sentence model for {source}->{target}")
 
 
+UNITS = ("parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt", "whisper")
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stt", choices=["parakeet", "whisper", "both"], default="parakeet")
@@ -152,17 +155,47 @@ def main(argv=None) -> int:
         choices=["tiny", "base", "small", "medium", "large-v3"],
         default="base",
     )
+    parser.add_argument("--only", nargs="+", choices=list(UNITS), default=None)
     args = parser.parse_args(argv)
 
-    install_voices(DEFAULT_VOICES + OPTIONAL_VOICES.get(args.voice, ()))
-    if args.stt in ("parakeet", "both"):
+    only = set(args.only) if args.only else None
+
+    def wanted(unit: str) -> bool:
+        return only is None or unit in only
+
+    voices = []
+    if only is None:
+        voices = list(DEFAULT_VOICES) + list(OPTIONAL_VOICES.get(args.voice, ()))
+    else:
+        if "voice-pt" in only:
+            voices.append("pt_BR-faber-medium")
+        if "voice-en" in only:
+            voices.append("en_US-lessac-medium")
+    install_voices(voices)
+
+    if only is None:
+        install_parakeet() if args.stt in ("parakeet", "both") else None
+        warm_whisper(args.whisper) if args.stt in ("whisper", "both") else None
+    elif "parakeet" in only:
         install_parakeet()
-    if args.stt in ("whisper", "both"):
+    elif "whisper" in only:
         warm_whisper(args.whisper)
-    for source, target in DIRECTIONS:
+
+    directions = []
+    if only is None:
+        directions = list(DIRECTIONS)
+    else:
+        if "mt-pt-en" in only:
+            directions.append(("pt", "en"))
+        if "mt-en-pt" in only:
+            directions.append(("en", "pt"))
+    for source, target in directions:
         install_pack(source, target)
-    for source, target in DIRECTIONS:
+    for source, target in directions:
         warm_translation(source, target)
+
+    if wanted("parakeet"):
+        print("parakeet is in place")
     print("models ready")
     return 0
 

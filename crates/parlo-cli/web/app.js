@@ -862,7 +862,14 @@ function describeModels(state) {
     fact.className = "models-fact" + (model.installed ? " ready" : "");
     fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";
 
-    row.append(name, fact);
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "models-action";
+    action.textContent = model.installed ? "Remove" : "Download";
+    action.disabled = Boolean(state.downloading);
+    action.addEventListener("click", () => modelAction(model, action));
+
+    row.append(name, fact, action);
     modelsList.append(row);
   }
   modelsBox.hidden = false;
@@ -889,6 +896,31 @@ function describeModels(state) {
   modelsInstall.disabled = modelsPolling;
   reflectFirstRun(false, false);
   return false;
+}
+
+async function modelAction(model, button) {
+  const path = (model.installed ? "/models/remove/" : "/models/download/") + model.id;
+  button.disabled = true;
+  try {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      modelsNote.textContent =
+        detail.error || "That could not be done. Close Parlo, open it again and try once more.";
+      button.disabled = false;
+      return;
+    }
+    modelsNote.textContent = model.installed
+      ? "Removed. The feature that needed it will say so before it is used."
+      : "Downloading " + model.name + ". This page stays usable meanwhile.";
+    await loadModels();
+  } catch (failure) {
+    modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
+    button.disabled = false;
+  }
 }
 
 async function loadModels() {

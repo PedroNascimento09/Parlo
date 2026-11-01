@@ -83,6 +83,7 @@ A recording comes back dubbed, with subtitles timed to the source written beside
 | **Your words** | A local vocabulary fixes the names the recogniser keeps missing, before any model reads the sentence. |
 | **Engines and keys** | Rules only, a model on this machine, or your own cloud key — kept in DPAPI, the macOS keychain or the Linux secret service, never in a config file, a log or an error message. |
 | **Memory** | Loaded models are released after 10 minutes to 4 hours of silence, or never, your choice. |
+| **Models** | One row per model with its size on disk and its own **Download** or **Remove** button; removing is real, and the feature that needed it says so before it is used. |
 | **Updates** | The latest release is offered with its notes and one button; the running copy is replaced, never uninstalled first. |
 
 ## Install
