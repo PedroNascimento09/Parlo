@@ -12,7 +12,7 @@ body:
     attributes:
       label: The problem
       description: What are you trying to do, and where does Parlo get in the way?
-      placeholder: I take client calls in Portuguese but my clients only speak English, and I need to keep my own voice.
+      placeholder: I take client calls in a language my clients do not speak, and I need to keep my own voice.
     validations:
       required: true
   - type: textarea
