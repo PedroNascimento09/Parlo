@@ -6,6 +6,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [0.2.0] - 2026-11-01
 
+### Changed
+
+- The download is a third of what it was. The engine bundle carried a 310 MB `torch_cpu.dll`, pulled in because the licence bench installs torch in the same environment, and a 47 MB `transformers` copy that faster-whisper lists only as an optional extra; neither is imported anywhere on the dictation, translation or voice path, and both are now excluded from the package and filtered out of what the packaging step collects. The Windows archive went from **231 MB to 80 MB** and from **655 MB to 204 MB** unpacked, with the same features, and unpacking a copy already on disk takes **2.3 seconds**.
+
 ### Added
 
 - Models install and leave one at a time. Every row of the list names the feature it serves, its size on disk and its own **Download** or **Remove** button, so a machine can carry the recogniser alone and nothing else; removing frees the space at once, refuses while a download is running, and leaves history, meetings, vocabulary and settings untouched. `POST /models/download/<id>` and `POST /models/remove/<id>` are the routes, and the engine accepts `--only parakeet` so the same split works without the window.

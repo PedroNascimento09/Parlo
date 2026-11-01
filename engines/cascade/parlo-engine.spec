@@ -23,7 +23,6 @@ hiddenimports = [
 
 for package in (
     "sherpa_onnx",
-    "onnxruntime",
     "faster_whisper",
     "ctranslate2",
     "tokenizers",
@@ -37,6 +36,25 @@ for package in (
     binaries += package_binaries
     hiddenimports += package_hidden
 
+dropped = (
+    "torch",
+    "torchaudio",
+    "torchvision",
+    "onnxruntime",
+    "tensorflow",
+    "jax",
+    "transformers",
+    "PIL",
+)
+
+
+def kept(entry: str) -> bool:
+    return not any(part in dropped for part in Path(entry).parts)
+
+
+binaries = [entry for entry in binaries if kept(entry[0])]
+datas = [entry for entry in datas if kept(entry[0])]
+
 analysis = Analysis(
     ["parlo_engine.py"],
     pathex=[str(root), str(root.parent / "hibiki")],
@@ -48,14 +66,23 @@ analysis = Analysis(
         "matplotlib",
         "pytest",
         "IPython",
+        "torch",
         "torchaudio",
         "torchvision",
+        "onnxruntime",
+        "tensorflow",
+        "jax",
+        "transformers",
+        "PIL",
         "av",
         "pandas",
         "matplotlib",
     ],
     noarchive=False,
 )
+
+for collected in (analysis.binaries, analysis.datas):
+    collected[:] = [entry for entry in collected if kept(entry[0])]
 
 pyz = PYZ(analysis.pure)
 
