@@ -4,6 +4,12 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-11-01
+
+### Fixed
+
+- Dictation in the app was asking the engine for the other language. `/dictate` passed the request as it arrived, so an empty «Dictation writes» reached the engine as `pt` to `en` and came back translated: the island inserted the English instead of what was said, and a machine without the translation package failed outright. The endpoint now resolves the target first — the language spoken unless another one was asked for — and the change is covered by a test on that resolution.
+
 ### Added
 
 - The dictation island now asks for the latest release when it opens, through the same `/update` route the window uses, and says «v0.1.9 is available, you are on v0.1.8. Open Parlo to update.» in its hint. The island still installs nothing on its own: installing stays a click in the window, and a failed or rate limited lookup shows nothing rather than a wrong version.

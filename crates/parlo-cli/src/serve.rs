@@ -1228,9 +1228,10 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        let target = dictation_target(&write, &session.from);
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
-        let (text, translation) = match session.write(&pcm16, &write) {
+        let (text, translation) = match session.write(&pcm16, &target) {
             Ok(pair) => pair,
             Err(error) => {
                 return respond_json(
@@ -1242,16 +1243,11 @@ fn handle(
             }
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        let target_language = if write.is_empty() {
-            &session.from
-        } else {
-            &write
-        };
         if let Err(error) = crate::history::append(&crate::history::Entry::now(
             &text,
             &translation,
             &session.from,
-            target_language,
+            &target,
         )) {
             println!("could not store the dictation: {error}");
         }
@@ -1571,6 +1567,14 @@ fn origin_allowed(headers: &[(String, String)], port: u16) -> bool {
     }
 }
 
+fn dictation_target(write: &str, from: &str) -> String {
+    if write.is_empty() {
+        from.to_string()
+    } else {
+        write.to_string()
+    }
+}
+
 fn json_string(value: &str) -> String {
     value
         .replace('\\', "\\\\")
@@ -1751,6 +1755,13 @@ mod tests {
         let header = transcript_header("olá mundo");
         assert!(header.starts_with("X-Parlo-Transcript: b2zDoSBtdW5kbw=="));
         assert!(header.contains("Access-Control-Expose-Headers"));
+    }
+
+    #[test]
+    fn dictation_writes_the_language_spoken_unless_another_is_asked_for() {
+        assert_eq!(dictation_target("", "pt"), "pt");
+        assert_eq!(dictation_target("", "en"), "en");
+        assert_eq!(dictation_target("en", "pt"), "en");
     }
 
     #[test]
