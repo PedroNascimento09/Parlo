@@ -6,7 +6,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
-- The window can dictate. A **Dictate** button beside **Live** turns the record button into transcription: hold it, speak, let go, and the text appears in the window and in the clipboard, with no translation and no voice. It goes through a new `POST /dictate` on the local API, which answers with the text and its latency, and which the server answers from a second sidecar started only when dictation is first used.
+- The window can dictate. A **Dictate** button beside **Live** turns the record button into transcription: hold it, speak, let go, and the text appears in the window and in the clipboard, with no translation and no voice. It goes through a new `POST /dictate` on the local API, which answers with the text and its latency. The request travels the same `dictate` path as the one behind the terminal: `Engine` gained a dictation method, the pipeline forwards it, and the sidecar answers it on the recogniser it already has loaded, so dictating costs no second copy of the model.
 - `parlo dictate` turns the microphone into a clipboard: it transcribes in Portuguese or English, prints each segment as it closes, and copies the joined text with `clip`, `pbcopy`, `wl-copy` or `xclip`. The engine gained a dictation mode that skips translation and voice, so a machine without the OPUS-MT packages can still dictate.
 - The translation corpus grew to 100 original sentences, 50 in each direction, with numbers, negations, names, dates and times; the first 24 are unchanged.
 - `engines/cascade/scripts/mt_gate.py` checks a package against that corpus for numbers, clocks, negations, names and completeness, and exits non-zero below its thresholds.

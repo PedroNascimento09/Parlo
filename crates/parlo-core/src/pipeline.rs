@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::audio::{AudioFormat, Frame};
-use crate::engine::Engine;
+use crate::engine::{Engine, EngineError};
 use crate::gain::AutoGain;
 use crate::latency::LatencyBudget;
 use crate::resample::Resampler;
@@ -112,6 +112,10 @@ impl Pipeline {
         self.gain.gain()
     }
 
+    pub fn dictate(&mut self, pcm16: &[u8]) -> Result<String, EngineError> {
+        self.engine.dictate(pcm16)
+    }
+
     pub fn push(&mut self, samples: &[f32]) -> Vec<PipelineOutput> {
         self.pending.extend_from_slice(samples);
         let mut outputs = Vec::new();
@@ -161,7 +165,56 @@ impl Pipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::EchoEngine;
+    use crate::engine::{EchoEngine, EngineOutput};
+
+    struct DictatingEngine;
+
+    impl Engine for DictatingEngine {
+        fn id(&self) -> &str {
+            "dictating"
+        }
+
+        fn target_languages(&self) -> Vec<String> {
+            Vec::new()
+        }
+
+        fn latency_ms(&self) -> u32 {
+            10
+        }
+
+        fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::translated(Frame::new(
+                input.format(),
+                Vec::new(),
+            )))
+        }
+
+        fn dictate(&mut self, pcm16: &[u8]) -> Result<String, EngineError> {
+            Ok(format!("{} bytes of speech", pcm16.len()))
+        }
+    }
+
+    #[test]
+    fn dictation_reaches_the_engine() {
+        let input = AudioFormat::mono(48_000).unwrap();
+        let output = AudioFormat::mono(16_000).unwrap();
+        let mut pipeline = Pipeline::new(
+            PipelineConfig::new(input, output),
+            Box::new(DictatingEngine),
+        )
+        .unwrap();
+        assert_eq!(
+            pipeline.dictate(&[0, 1, 2, 3]).unwrap(),
+            "4 bytes of speech"
+        );
+    }
+
+    #[test]
+    fn an_engine_without_dictation_says_so() {
+        let mut pipeline = pipeline();
+        let error = pipeline.dictate(&[0, 1]).unwrap_err();
+        assert!(error.to_string().contains("cannot dictate"));
+    }
 
     fn pipeline() -> Pipeline {
         let input = AudioFormat::mono(48_000).unwrap();

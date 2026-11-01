@@ -13,7 +13,7 @@ use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
 use crate::dub;
 use crate::models;
-use crate::sidecar::SidecarEngine;
+
 use crate::update;
 
 #[derive(PartialEq, Eq)]
@@ -58,7 +58,6 @@ pub struct Session {
     stt: String,
     from: String,
     to: String,
-    dictation: Option<SidecarEngine>,
 }
 
 fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
@@ -84,7 +83,6 @@ impl Session {
             stt,
             from,
             to,
-            dictation: None,
         })
     }
 
@@ -97,7 +95,6 @@ impl Session {
     ) -> Result<(), String> {
         let pipeline = build(&from, &to, &engine, &stt)?;
         self.pipeline = pipeline;
-        self.dictation = None;
         self.engine = engine;
         self.stt = stt;
         self.from = from;
@@ -106,29 +103,9 @@ impl Session {
     }
 
     fn dictate(&mut self, pcm16: &[u8]) -> Result<String, String> {
-        if self.dictation.is_none() {
-            self.start_dictation()?;
-        }
-        self.dictation
-            .as_mut()
-            .ok_or_else(|| "dictation engine is not running".to_string())?
+        self.pipeline
             .dictate(pcm16)
             .map_err(|error| error.to_string())
-    }
-
-    fn start_dictation(&mut self) -> Result<(), String> {
-        std::env::set_var("PARLO_CASCADE_DICTATE", "1");
-        std::env::set_var("PARLO_CASCADE_SOURCE", &self.from);
-        std::env::set_var("PARLO_CASCADE_TARGET", &self.from);
-        std::env::set_var("PARLO_CASCADE_STT", &self.stt);
-        let directory = std::env::var("PARLO_CASCADE_DIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("engines/cascade"));
-        let spawned = SidecarEngine::spawn(&directory);
-        std::env::remove_var("PARLO_CASCADE_DICTATE");
-        std::env::set_var("PARLO_CASCADE_TARGET", &self.to);
-        self.dictation = Some(spawned.map_err(|error| error.to_string())?);
-        Ok(())
     }
 
     fn as_json(&self) -> String {

@@ -263,6 +263,10 @@ impl Engine for SidecarEngine {
         DECLARED_LATENCY_MS
     }
 
+    fn dictate(&mut self, pcm16: &[u8]) -> Result<String, EngineError> {
+        SidecarEngine::dictate(self, pcm16)
+    }
+
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError> {
         self.seq += 1;
         let response = self.request(&Request {

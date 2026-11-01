@@ -58,6 +58,12 @@ pub trait Engine: Send {
 
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError>;
 
+    fn dictate(&mut self, _pcm16: &[u8]) -> Result<String, EngineError> {
+        Err(EngineError::Rejected(
+            "this engine cannot dictate on its own".to_string(),
+        ))
+    }
+
     fn reset(&mut self) {}
 }
 
@@ -122,6 +128,13 @@ mod tests {
         assert_eq!(audio.samples(), &[0.5, -0.5]);
         assert_eq!(engine.latency_ms(), 1_200);
         assert_eq!(engine.target_languages(), vec!["en".to_string()]);
+    }
+
+    #[test]
+    fn echo_reports_that_it_cannot_dictate() {
+        let mut engine = EchoEngine::default();
+        let error = engine.dictate(&[0, 0]).unwrap_err();
+        assert!(error.to_string().contains("cannot dictate"));
     }
 
     #[test]
