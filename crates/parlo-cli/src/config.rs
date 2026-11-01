@@ -72,6 +72,7 @@ mod tests {
             shortcut: "Ctrl+Shift+D".to_string(),
             port: 9100,
             device: Some(2),
+            intelligence: Default::default(),
         };
         let text = serde_json::to_string(&config).unwrap();
         assert_eq!(serde_json::from_str::<Config>(&text).unwrap(), config);

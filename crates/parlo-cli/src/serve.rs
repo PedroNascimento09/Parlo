@@ -8,6 +8,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
+use parlo_core::settings::Intelligence;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
@@ -587,6 +588,162 @@ fn handle(
             session.to
         );
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/intelligence" {
+        let settings = crate::config::load().intelligence;
+        let state = crate::intelligence::state_json(&settings, &crate::intelligence::status());
+        return respond_json(stream, "200 OK", &state).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/intelligence" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let mut requested: Intelligence = match serde_json::from_slice(&body) {
+            Ok(settings) => settings,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        requested.mode = requested.mode.trim().to_ascii_lowercase();
+        requested.clean = requested.clean.trim().to_ascii_lowercase();
+        requested.provider = requested.provider.trim().to_ascii_lowercase();
+        requested.model = requested.model.trim().to_string();
+        requested.base_url = requested.base_url.trim().trim_end_matches('/').to_string();
+        requested.local_url = requested.local_url.trim().to_string();
+        requested.local_model = requested.local_model.trim().to_string();
+        if let Err(error) = crate::intelligence::check(&requested) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let mut config = crate::config::load();
+        config.intelligence = requested;
+        if let Err(error) = crate::config::save(&config) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let state =
+            crate::intelligence::state_json(&config.intelligence, &crate::intelligence::status());
+        return respond_json(stream, "200 OK", &state).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/intelligence/key" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: KeyRequest = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        if !crate::intelligence::PROVIDERS.contains(&request.provider.as_str()) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"choose a provider before saving a key\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if request.key.trim().is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"a key is needed to store one\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let payload = serde_json::json!({
+            "action": "store",
+            "provider": request.provider,
+            "key": request.key,
+        });
+        return answer_with(
+            stream,
+            crate::intelligence::run(&payload),
+            "{\"stored\":true}",
+        );
+    }
+
+    if method == "POST" && path == "/intelligence/key/delete" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: KeyRequest = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        if !crate::intelligence::PROVIDERS.contains(&request.provider.as_str()) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"choose a provider before removing a key\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let payload = serde_json::json!({
+            "action": "delete",
+            "provider": request.provider,
+        });
+        return answer_with(
+            stream,
+            crate::intelligence::run(&payload),
+            "{\"deleted\":true}",
+        );
+    }
+
+    if method == "POST" && path == "/intelligence/test" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let payload = serde_json::json!({ "action": "test" });
+        return match crate::intelligence::run(&payload) {
+            Ok(reply) => match reply.get("error").and_then(serde_json::Value::as_str) {
+                Some(error) => respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(error)),
+                )
+                .map(|()| Flow::Serve),
+                None => respond_json(stream, "200 OK", &reply.to_string()).map(|()| Flow::Serve),
+            },
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
     }
 
     if method == "GET" && path.starts_with("/dub/") {
@@ -1169,6 +1326,38 @@ fn handle(
         samples,
     };
     respond_audio(stream, &write_pcm16(&translated), &transcript).map(|()| Flow::Serve)
+}
+
+#[derive(serde::Deserialize)]
+struct KeyRequest {
+    #[serde(default)]
+    provider: String,
+    #[serde(default)]
+    key: String,
+}
+
+fn answer_with(
+    stream: &mut TcpStream,
+    outcome: Result<serde_json::Value, String>,
+    success: &str,
+) -> Result<Flow, String> {
+    match outcome {
+        Ok(reply) => match reply.get("error").and_then(serde_json::Value::as_str) {
+            Some(error) => respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(error)),
+            )
+            .map(|()| Flow::Serve),
+            None => respond_json(stream, "200 OK", success).map(|()| Flow::Serve),
+        },
+        Err(error) => respond_json(
+            stream,
+            "500 Internal Server Error",
+            &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+        )
+        .map(|()| Flow::Serve),
+    }
 }
 
 #[derive(serde::Deserialize)]

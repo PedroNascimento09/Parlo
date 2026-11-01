@@ -128,6 +128,73 @@
     </div>
   </section>
 
+  <section class="settings" id="intelligence" aria-labelledby="intelligence-title">
+    <div class="settings-head">
+      <h2 id="intelligence-title">How dictation is cleaned up</h2>
+      <p class="settings-note" id="intelligence-note" aria-live="polite">Reading what Parlo is set to do.</p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="intelligence-mode">
+        <span class="field-label">Cleanup engine</span>
+        <select id="intelligence-mode" class="field-input">
+          <option value="off">Rules only, nothing leaves this machine</option>
+          <option value="local">Rules and a model on this machine</option>
+          <option value="cloud">Rules and the cloud provider I chose</option>
+          <option value="auto">Automatic</option>
+        </select>
+      </label>
+      <label class="field" for="intelligence-clean">
+        <span class="field-label">How much to change</span>
+        <select id="intelligence-clean" class="field-input">
+          <option value="original">Keep my words as they came</option>
+          <option value="light">Light, fix the obvious</option>
+          <option value="intelligent">Intelligent, tidy the sentence</option>
+        </select>
+      </label>
+      <label class="field" for="intelligence-provider">
+        <span class="field-label">Cloud provider</span>
+        <select id="intelligence-provider" class="field-input">
+          <option value="">None</option>
+        </select>
+      </label>
+      <label class="field" for="intelligence-model">
+        <span class="field-label">Model</span>
+        <input id="intelligence-model" class="field-input" type="text" list="intelligence-models" autocomplete="off" spellcheck="false" placeholder="gpt-4o-mini">
+      </label>
+      <datalist id="intelligence-models"></datalist>
+      <label class="check" for="intelligence-allow">
+        <input id="intelligence-allow" type="checkbox">
+        <span>Allow cloud AI to read my dictation</span>
+      </label>
+      <label class="field field-wide" for="intelligence-local-url">
+        <span class="field-label">Local model address, optional</span>
+        <input id="intelligence-local-url" class="field-input" type="text" placeholder="http://127.0.0.1:8080/v1/chat/completions" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field" for="intelligence-local-model">
+        <span class="field-label">Local model name</span>
+        <input id="intelligence-local-model" class="field-input" type="text" placeholder="qwen2.5-7b-instruct" autocomplete="off" spellcheck="false">
+      </label>
+      <label class="field field-wide" for="intelligence-base-url">
+        <span class="field-label">Compatible server address, optional</span>
+        <input id="intelligence-base-url" class="field-input" type="text" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false">
+      </label>
+      <button id="intelligence-apply" class="install settings-apply" type="button">Apply</button>
+    </div>
+    <div class="settings-row">
+      <label class="field field-wide" for="intelligence-key">
+        <span class="field-label">API key for the chosen provider</span>
+        <input id="intelligence-key" class="field-input" type="password" autocomplete="off" spellcheck="false" placeholder="Saved by this computer and never shown again">
+      </label>
+      <button id="intelligence-key-save" class="install" type="button">Save key</button>
+      <button id="intelligence-key-remove" class="install" type="button">Remove key</button>
+    </div>
+    <p class="settings-note" id="intelligence-key-note" aria-live="polite"></p>
+    <div class="settings-row">
+      <button id="intelligence-test" class="install" type="button">Send a test sentence</button>
+      <p class="settings-note field-wide" id="intelligence-test-note" aria-live="polite"></p>
+    </div>
+  </section>
+
   <section class="settings" id="meetings" aria-labelledby="meetings-title">
     <div class="settings-head">
       <h2 id="meetings-title">Meetings</h2>

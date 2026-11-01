@@ -17,6 +17,35 @@ pub struct Config {
     pub shortcut: String,
     pub port: u16,
     pub device: Option<usize>,
+    pub intelligence: Intelligence,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Intelligence {
+    pub mode: String,
+    pub clean: String,
+    pub allow_cloud: bool,
+    pub provider: String,
+    pub model: String,
+    pub base_url: String,
+    pub local_url: String,
+    pub local_model: String,
+}
+
+impl Default for Intelligence {
+    fn default() -> Self {
+        Self {
+            mode: "auto".to_string(),
+            clean: "light".to_string(),
+            allow_cloud: false,
+            provider: String::new(),
+            model: String::new(),
+            base_url: String::new(),
+            local_url: String::new(),
+            local_model: String::new(),
+        }
+    }
 }
 
 impl Default for Config {
@@ -30,6 +59,7 @@ impl Default for Config {
             shortcut: DEFAULT_SHORTCUT.to_string(),
             port: 8787,
             device: None,
+            intelligence: Intelligence::default(),
         }
     }
 }
@@ -103,5 +133,22 @@ mod tests {
     #[test]
     fn the_path_ends_in_config_json() {
         assert!(path().ends_with("config.json"));
+    }
+
+    #[test]
+    fn an_older_config_keeps_the_cleanup_defaults() {
+        let config: Config = serde_json::from_str("{\"from\": \"en\"}").unwrap();
+        assert_eq!(config.intelligence.mode, "auto");
+        assert_eq!(config.intelligence.clean, "light");
+        assert!(!config.intelligence.allow_cloud);
+    }
+
+    #[test]
+    fn the_cleanup_settings_survive_a_round_trip() {
+        let mut config = Config::default();
+        config.intelligence.provider = "openai".to_string();
+        config.intelligence.allow_cloud = true;
+        let text = serde_json::to_string(&config).unwrap();
+        assert_eq!(serde_json::from_str::<Config>(&text).unwrap(), config);
     }
 }

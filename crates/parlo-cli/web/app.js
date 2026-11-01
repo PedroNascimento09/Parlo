@@ -37,6 +37,23 @@ const settingsStt = document.getElementById("settings-stt");
 const settingsSwap = document.getElementById("settings-swap");
 const settingsApply = document.getElementById("settings-apply");
 const settingsNote = document.getElementById("settings-note");
+const intelligenceMode = document.getElementById("intelligence-mode");
+const intelligenceClean = document.getElementById("intelligence-clean");
+const intelligenceProvider = document.getElementById("intelligence-provider");
+const intelligenceModel = document.getElementById("intelligence-model");
+const intelligenceModels = document.getElementById("intelligence-models");
+const intelligenceAllow = document.getElementById("intelligence-allow");
+const intelligenceBaseUrl = document.getElementById("intelligence-base-url");
+const intelligenceLocalUrl = document.getElementById("intelligence-local-url");
+const intelligenceLocalModel = document.getElementById("intelligence-local-model");
+const intelligenceApply = document.getElementById("intelligence-apply");
+const intelligenceNote = document.getElementById("intelligence-note");
+const intelligenceKey = document.getElementById("intelligence-key");
+const intelligenceKeySave = document.getElementById("intelligence-key-save");
+const intelligenceKeyRemove = document.getElementById("intelligence-key-remove");
+const intelligenceKeyNote = document.getElementById("intelligence-key-note");
+const intelligenceTest = document.getElementById("intelligence-test");
+const intelligenceTestNote = document.getElementById("intelligence-test-note");
 const welcomeBox = document.getElementById("welcome");
 const welcomeInstall = document.getElementById("welcome-install");
 const welcomeStatus = document.getElementById("welcome-status");
@@ -1156,6 +1173,214 @@ settingsSwap.addEventListener("click", () => {
 
 settingsApply.addEventListener("click", () => saveSettings());
 
+let intelligenceProviders = [];
+let intelligenceStore = true;
+
+function intelligenceHeaders() {
+  return { "Content-Type": "application/json", Authorization: "Bearer " + token };
+}
+
+function intelligenceLabel(name) {
+  const found = intelligenceProviders.find((provider) => provider.name === name);
+  return found ? found.label : name;
+}
+
+function fillIntelligenceModels() {
+  const chosen = intelligenceProviders.find(
+    (provider) => provider.name === intelligenceProvider.value
+  );
+  intelligenceModels.replaceChildren();
+  ((chosen && chosen.models) || []).forEach((model) => {
+    const option = document.createElement("option");
+    option.value = model;
+    intelligenceModels.append(option);
+  });
+  if (chosen && !intelligenceModel.value && chosen.models.length) {
+    intelligenceModel.value = chosen.models[0];
+  }
+}
+
+function describeIntelligenceKey(names) {
+  if (!names.length) {
+    intelligenceKeyNote.textContent = "Choose a provider to save a key.";
+    return;
+  }
+  const saved = names.filter((name) => name.key).map((name) => name.label);
+  const missing = names.filter((name) => !name.key).map((name) => name.label);
+  if (!intelligenceStore) {
+    intelligenceKeyNote.textContent =
+      "This computer has no credential store Parlo can use, so a key cannot be saved here.";
+    return;
+  }
+  if (saved.length && missing.length) {
+    intelligenceKeyNote.textContent =
+      "A key is saved for " + saved.join(", ") + ". Nothing is saved for " + missing.join(", ") + ".";
+    return;
+  }
+  intelligenceKeyNote.textContent = saved.length
+    ? "A key is saved for " + saved.join(", ") + ". Parlo cannot show it again."
+    : "No key is saved yet. Parlo never shows a key after saving it.";
+}
+
+function renderIntelligence(state) {
+  const settings = state.settings || {};
+  intelligenceProviders = state.providers || [];
+  intelligenceStore = state.store !== false;
+  intelligenceMode.value = settings.mode || "auto";
+  intelligenceClean.value = settings.clean || "light";
+  intelligenceProvider.replaceChildren();
+  const none = document.createElement("option");
+  none.value = "";
+  none.textContent = "None";
+  intelligenceProvider.append(none);
+  intelligenceProviders.forEach((provider) => {
+    const option = document.createElement("option");
+    option.value = provider.name;
+    option.textContent = provider.label;
+    intelligenceProvider.append(option);
+  });
+  intelligenceProvider.value = settings.provider || "";
+  intelligenceModel.value = settings.model || "";
+  intelligenceAllow.checked = settings.allow_cloud === true;
+  intelligenceBaseUrl.value = settings.base_url || "";
+  intelligenceLocalUrl.value = settings.local_url || "";
+  intelligenceLocalModel.value = settings.local_model || "";
+  fillIntelligenceModels();
+  describeIntelligenceKey(intelligenceProviders);
+  intelligenceNote.textContent = state.error
+    ? "Parlo could not read every setting: " + state.error
+    : "Saved settings apply to the next thing you dictate.";
+}
+
+async function loadIntelligence() {
+  try {
+    const response = await fetch("/intelligence", { cache: "no-store" });
+    if (!response.ok) {
+      intelligenceNote.textContent = "The cleanup settings could not be read.";
+      return;
+    }
+    renderIntelligence(await response.json());
+  } catch (failure) {
+    intelligenceNote.textContent = "The cleanup settings could not be read.";
+  }
+}
+
+async function saveIntelligence() {
+  const chosen = intelligenceProvider.value;
+  intelligenceApply.disabled = true;
+  intelligenceNote.textContent = "Saving.";
+  try {
+    const response = await fetch("/intelligence", {
+      method: "POST",
+      headers: intelligenceHeaders(),
+      body: JSON.stringify({
+        mode: intelligenceMode.value,
+        clean: intelligenceClean.value,
+        allow_cloud: intelligenceAllow.checked,
+        provider: chosen,
+        model: intelligenceModel.value.trim(),
+        base_url: intelligenceBaseUrl.value.trim(),
+        local_url: intelligenceLocalUrl.value.trim(),
+        local_model: intelligenceLocalModel.value.trim(),
+      }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "Parlo could not save these settings.");
+    }
+    renderIntelligence(detail);
+    intelligenceNote.textContent = "Saved. It applies to the next thing you dictate.";
+  } catch (failure) {
+    intelligenceNote.textContent = failure.message || "Parlo could not save these settings.";
+  } finally {
+    intelligenceApply.disabled = false;
+  }
+}
+
+async function saveIntelligenceKey() {
+  const wanted = intelligenceKey.value.trim();
+  if (!wanted) {
+    intelligenceKeyNote.textContent = "Paste the key before saving it.";
+    return;
+  }
+  if (!intelligenceProvider.value) {
+    intelligenceKeyNote.textContent = "Choose a provider before saving a key.";
+    return;
+  }
+  try {
+    const response = await fetch("/intelligence/key", {
+      method: "POST",
+      headers: intelligenceHeaders(),
+      body: JSON.stringify({ provider: intelligenceProvider.value, key: wanted }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The key could not be saved.");
+    }
+    intelligenceKey.value = "";
+    await loadIntelligence();
+    intelligenceKeyNote.textContent =
+      "Saved for " + intelligenceLabel(intelligenceProvider.value) + ". Parlo cannot show it again.";
+  } catch (failure) {
+    intelligenceKeyNote.textContent = failure.message || "The key could not be saved.";
+  }
+}
+
+async function removeIntelligenceKey() {
+  if (!intelligenceProvider.value) {
+    intelligenceKeyNote.textContent = "Choose a provider before removing a key.";
+    return;
+  }
+  try {
+    const response = await fetch("/intelligence/key/delete", {
+      method: "POST",
+      headers: intelligenceHeaders(),
+      body: JSON.stringify({ provider: intelligenceProvider.value }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The key could not be removed.");
+    }
+    intelligenceKey.value = "";
+    await loadIntelligence();
+    intelligenceKeyNote.textContent =
+      "The saved key for " + intelligenceLabel(intelligenceProvider.value) + " is gone.";
+  } catch (failure) {
+    intelligenceKeyNote.textContent = failure.message || "The key could not be removed.";
+  }
+}
+
+async function testIntelligence() {
+  intelligenceTest.disabled = true;
+  intelligenceTestNote.textContent = "Sending one sentence, this can take a few seconds.";
+  try {
+    const response = await fetch("/intelligence/test", {
+      method: "POST",
+      headers: intelligenceHeaders(),
+      body: "{}",
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "Parlo could not run the test.");
+    }
+    const engine = detail.engine === "cloud" || detail.engine === "local" ? detail.engine : "the rules";
+    const model = detail.model ? " with " + detail.model : "";
+    intelligenceTestNote.textContent = detail.fallback
+      ? "Tested " + engine + model + ", which declined, so " + detail.reason + "."
+      : "Written by " + engine + model + ": " + detail.text;
+  } catch (failure) {
+    intelligenceTestNote.textContent = failure.message || "Parlo could not run the test.";
+  } finally {
+    intelligenceTest.disabled = false;
+  }
+}
+
+intelligenceProvider.addEventListener("change", () => fillIntelligenceModels());
+intelligenceApply.addEventListener("click", () => saveIntelligence());
+intelligenceKeySave.addEventListener("click", () => saveIntelligenceKey());
+intelligenceKeyRemove.addEventListener("click", () => removeIntelligenceKey());
+intelligenceTest.addEventListener("click", () => testIntelligence());
+
 function formatClock(seconds) {
   const whole = Math.max(0, Math.floor(seconds || 0));
   return Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0");
@@ -1652,6 +1877,7 @@ setInterval(refreshHealth, 5000);
 checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
 loadModels();
 loadSettings();
+loadIntelligence();
 describeLive();
 
 const voiceForm = document.getElementById("voice-form");
