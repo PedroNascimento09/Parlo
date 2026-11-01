@@ -263,6 +263,31 @@ The only row that changed for the worse was `Let's keep it simple and ship today
 
 Rule that survives this: a number from a broken build is worse than no number, because it closes a question that is still open.
 
+### The installed OPUS-MT package, read without the Argos runtime
+
+`parlo_cascade/mt.py` reads a package's CTranslate2 model and its SentencePiece vocabulary directly, so the model runs with no Argos code on the path. Same 24 sentence corpus, Windows 11 laptop with no NVIDIA GPU, 4 threads, beam 4, warm process:
+
+```bash
+python engines/cascade/scripts/mt_bench.py --pack --direction pt-en
+python engines/cascade/scripts/mt_bench.py --pack --direction en-pt
+```
+
+| Direction | Package | Median | p95 | Complete sentences | Wording a person would accept |
+|---|---|---|---|---|---|
+| PT→EN | `translate-pt_en-1_9` | **114 ms** | 131 ms | 12 of 12 | 9 of 12 |
+| EN→PT | `translate-en_pt-1_9` | **111 ms** | 128 ms | 12 of 12 | 10 of 12 |
+
+The same corpus on the OPUS-MT weights through transformers takes 450 and 398 ms at beam 1, and the CTranslate2 builds converted in the tree repeat themselves until the length cap. The package is about four times faster than the weights it was built from and, unlike that conversion, stops at the end of the sentence.
+
+What it still gets wrong, four rows out of twenty four:
+
+- **Names.** `O João e a Maria vão chegar atrasados.` → `John and Maria are gonna be late.`
+- **A dropped clause.** `Fica combinado: encontramo-nos à porta às 9h.` → `We'll meet at the door at 9:00.`
+- **A guessed pronoun.** `Enviei-lhe o ficheiro por correio eletrónico.` → `I e-mailed him the file.`, where the sentence says `you`.
+- **Old spelling.** `I'll send the invoice by Friday.` → `Mando a factura até sexta-feira.`
+
+Reading: about 110 ms per sentence, model alone, is the first translation figure this project has that fits Live, where the whole first utterance with recognition and voice targets 2.5 s. It is not a pipeline number and it says nothing about a cold process. The package licence is CC BY 4.0 with the authors named in `catalog/models.json`; the runtime that ships it is not needed and not used.
+
 ## What gets measured
 
 | Metric | Method |

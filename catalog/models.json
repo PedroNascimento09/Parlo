@@ -65,13 +65,22 @@
       "attribution": "Whisper large-v3, licensed MIT"
     },
     {
-      "id": "argos-translate-pack",
+      "id": "opus-mt-pt-en",
       "kind": "mt",
-      "version": "unversioned",
-      "license": "unverified",
-      "status": "unverified",
+      "version": "1.9",
+      "license": "CC-BY-4.0",
+      "status": "verified",
       "source": "https://github.com/argosopentech/argospm-index",
-      "attribution": ""
+      "attribution": "OPUS-MT Portuguese to English 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech"
+    },
+    {
+      "id": "opus-mt-en-pt",
+      "kind": "mt",
+      "version": "1.9",
+      "license": "CC-BY-4.0",
+      "status": "verified",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT English to Portuguese 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech"
     }
   ]
 }

@@ -583,7 +583,8 @@ as if its terms were known.
 | qwen3-asr-0.6b | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Qwen3-ASR 0.6B, licensed Apache 2.0, experimental in Parlo | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Qwen/Qwen3-ASR-0.6B |
 | kokoro-82m | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Kokoro-82M, licensed Apache 2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/hexgrad/Kokoro-82M |
 | whisper-large-v3 | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper large-v3, licensed MIT | External | Confirmed | See the licence text | https://huggingface.co/openai/whisper-large-v3 |
-| argos-translate-pack | Downloaded, never shipped | See the runtime dependencies | unverified | See the source | External | Not verified | See the licence text | https://github.com/argosopentech/argospm-index |
+| opus-mt-pt-en | Downloaded, never shipped | See the runtime dependencies | CC-BY-4.0 | OPUS-MT Portuguese to English 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech | External | Confirmed | Credit the author | https://github.com/argosopentech/argospm-index |
+| opus-mt-en-pt | Downloaded, never shipped | See the runtime dependencies | CC-BY-4.0 | OPUS-MT English to Portuguese 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech | External | Confirmed | Credit the author | https://github.com/argosopentech/argospm-index |
 
 ## 5. Voices and datasets
 

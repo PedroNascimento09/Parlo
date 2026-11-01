@@ -259,7 +259,7 @@ class CascadeEngine:
         from . import mt
 
         if self._translator is None:
-            self._translator = mt.from_environment()
+            self._translator = mt.from_environment(self.source, self.target)
         if self._translator is not None:
             return self._translator(text)
 
