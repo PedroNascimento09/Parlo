@@ -152,4 +152,4 @@ jobs:
           files: |
             ${{ matrix.archive }}
             sbom.cdx.json
-          generate_release_notes: true
+          generate_release_notes: false
