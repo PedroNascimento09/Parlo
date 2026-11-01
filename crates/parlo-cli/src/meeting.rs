@@ -156,6 +156,44 @@ pub fn import(title: &str, text: &str) -> Result<Meeting, String> {
     })
 }
 
+pub fn start(title: &str) -> Meeting {
+    let label = title.trim();
+    Meeting {
+        id: new_id(),
+        title: if label.is_empty() {
+            "Meeting".to_string()
+        } else {
+            label.to_string()
+        },
+        started_at: now(),
+        segments: Vec::new(),
+    }
+}
+
+pub fn append(
+    meeting: &mut Meeting,
+    speaker: &str,
+    text: &str,
+    at_ms: u64,
+) -> Result<usize, String> {
+    let spoken = text.trim();
+    if spoken.is_empty() {
+        return Err("a segment needs a sentence".to_string());
+    }
+    let label = speaker.trim();
+    meeting.segments.push(Segment {
+        at_ms,
+        speaker: if label.is_empty() {
+            "Me".to_string()
+        } else {
+            label.to_string()
+        },
+        text: spoken.to_string(),
+        name: None,
+    });
+    Ok(meeting.segments.len())
+}
+
 fn parse(text: &str) -> Vec<Segment> {
     let mut segments = Vec::new();
     let mut last: Option<String> = None;
@@ -363,6 +401,47 @@ mod tests {
         assert_eq!(list_in(&folder).len(), 2);
         clear_in(&folder).unwrap();
         assert!(list_in(&folder).is_empty());
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn a_live_meeting_starts_empty_and_named() {
+        let meeting = start("  Design review  ");
+        assert_eq!(meeting.title, "Design review");
+        assert!(meeting.segments.is_empty());
+        assert_eq!(start("   ").title, "Meeting");
+    }
+
+    #[test]
+    fn a_segment_is_appended_with_the_speaker_and_the_moment() {
+        let mut meeting = start("Retro");
+        assert_eq!(
+            append(&mut meeting, "", "Primeira frase.", 1500).unwrap(),
+            1
+        );
+        append(&mut meeting, "Ana", "Segunda frase.", 4200).unwrap();
+        assert_eq!(meeting.segments[0].speaker, "Me");
+        assert_eq!(meeting.segments[0].at_ms, 1500);
+        assert_eq!(meeting.segments[1].speaker, "Ana");
+        assert_eq!(meeting.speakers(), vec!["Me", "Ana"]);
+    }
+
+    #[test]
+    fn an_empty_segment_is_refused() {
+        let mut meeting = start("Retro");
+        assert!(append(&mut meeting, "Me", "   ", 0).is_err());
+        assert!(meeting.segments.is_empty());
+    }
+
+    #[test]
+    fn a_live_meeting_round_trips_through_the_folder() {
+        let folder = scratch("live");
+        let mut meeting = start("Planning");
+        append(&mut meeting, "Me", "Fica para sexta.", 2000).unwrap();
+        save_in(&folder, &meeting).unwrap();
+        let kept = load_in(&folder, &meeting.id).unwrap();
+        assert_eq!(kept.segments.len(), 1);
+        assert_eq!(kept.segments[0].text, "Fica para sexta.");
         fs::remove_dir_all(&folder).unwrap();
     }
 

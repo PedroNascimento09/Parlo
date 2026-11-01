@@ -988,6 +988,8 @@ const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
 const meetingList = document.getElementById("meeting-list");
 const meetingNote = document.getElementById("meetings-note");
+const meetingLive = document.getElementById("meeting-live");
+const meetingLiveNote = document.getElementById("meeting-live-note");
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
@@ -1724,6 +1726,177 @@ async function deleteMeeting(id) {
     meetingNote.textContent = "The meeting could not be deleted. Try again.";
   }
 }
+
+const MEETING_SECONDS = 5;
+
+let meetingRecording = false;
+let meetingId = "";
+let meetingStarted = 0;
+let meetingTimer = null;
+let meetingLines = 0;
+let meetingFailures = 0;
+
+function meetingStatus(last) {
+  if (!meetingRecording) {
+    meetingLiveNote.textContent =
+      "Records the microphone into a meeting transcript, a few seconds behind. Sound from another application is not captured yet.";
+    return;
+  }
+  const kept = meetingLines === 1 ? "1 line kept" : meetingLines + " lines kept";
+  meetingLiveNote.textContent =
+    "Recording, " + kept + ". " + (last ? "Last: " + last : "Speak normally.");
+}
+
+async function meetingSegment(wav) {
+  const response = await fetch("/dictate", {
+    method: "POST",
+    headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+    body: wav,
+  });
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
+  }
+  const result = await response.json();
+  const text = (result.text || "").trim();
+  if (!text) {
+    return "";
+  }
+  const saved = await fetch("/meeting/segment", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({
+      id: meetingId,
+      speaker: "Me",
+      text,
+      at_ms: Math.max(0, Math.round(performance.now() - meetingStarted)),
+    }),
+  });
+  if (!saved.ok) {
+    const detail = await saved.json().catch(() => ({}));
+    throw new Error(detail.error || "The line could not be kept.");
+  }
+  return text;
+}
+
+async function meetingStep() {
+  meetingTimer = null;
+  if (!meetingRecording) {
+    return;
+  }
+  const wav = takeWindow(MEETING_SECONDS);
+  if (!wav) {
+    meetingTimer = setTimeout(meetingStep, 300);
+    return;
+  }
+  try {
+    const text = await meetingSegment(wav);
+    meetingFailures = 0;
+    if (text) {
+      meetingLines += 1;
+    }
+    meetingStatus(text);
+  } catch (failure) {
+    meetingFailures += 1;
+    if (meetingFailures >= LIVE_FAILURES) {
+      await stopMeeting(
+        "Recording stopped after " + LIVE_FAILURES + " failures in a row. " + (failure.message || ""),
+      );
+      return;
+    }
+    showError(failure.message || "One window could not be written down. The meeting is still recording.");
+  }
+  if (meetingRecording) {
+    meetingTimer = setTimeout(meetingStep, 0);
+  }
+}
+
+async function startMeeting() {
+  if (meetingRecording) {
+    return;
+  }
+  if (live) {
+    showError("Stop live mode before recording a meeting.");
+    return;
+  }
+  if (recording || dictating) {
+    showError("Finish the current dictation before recording a meeting.");
+    return;
+  }
+  if (!welcomeBox.hidden || modelsDownloading) {
+    showError("Download the models first; a meeting is written down on this machine.");
+    return;
+  }
+  clearError();
+  try {
+    await ensureAudio();
+  } catch (failure) {
+    micEl.textContent = "blocked";
+    showError(describeMicrophoneError(failure));
+    return;
+  }
+  try {
+    const response = await fetch("/meeting/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ title: meetingTitle.value.trim() || "Meeting" }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The meeting could not be started.");
+    }
+    meetingId = detail.id;
+  } catch (failure) {
+    showError(failure.message || "The meeting could not be started.");
+    return;
+  }
+  meetingRecording = true;
+  meetingStarted = performance.now();
+  meetingLines = 0;
+  meetingFailures = 0;
+  chunks = [];
+  meetingLive.setAttribute("aria-pressed", "true");
+  micEl.textContent = "recording";
+  meetingStatus("");
+  clearTimeout(meetingTimer);
+  meetingTimer = setTimeout(meetingStep, 200);
+}
+
+async function stopMeeting(message) {
+  if (!meetingRecording) {
+    if (message) {
+      showError(message);
+    }
+    return;
+  }
+  meetingRecording = false;
+  clearTimeout(meetingTimer);
+  meetingTimer = null;
+  meetingLive.setAttribute("aria-pressed", "false");
+  micEl.textContent = "ready";
+  const rest = takeWindow(LIVE_MIN_SECONDS);
+  chunks = [];
+  meetingStatus("");
+  if (rest) {
+    try {
+      await meetingSegment(rest);
+    } catch (failure) {
+      showError(failure.message || "The last words could not be written down.");
+    }
+  }
+  await loadMeetings();
+  if (message) {
+    showError(message);
+  }
+}
+
+meetingLive.addEventListener("click", () => {
+  if (meetingRecording) {
+    stopMeeting("");
+  } else {
+    startMeeting();
+  }
+});
 
 meetingImport.addEventListener("click", () => importMeeting());
 

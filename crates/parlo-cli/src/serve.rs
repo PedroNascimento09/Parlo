@@ -436,6 +436,62 @@ fn handle(
         };
     }
 
+    if method == "POST" && (path == "/meeting/start" || path == "/meeting/segment") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let field = |name: &str| {
+            request
+                .get(name)
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string()
+        };
+
+        if path == "/meeting/start" {
+            let meeting = crate::meeting::start(&field("title"));
+            if let Err(error) = crate::meeting::save(&meeting) {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+            return respond_json(stream, "200 OK", &meeting_json(meeting).to_string())
+                .map(|()| Flow::Serve);
+        }
+
+        let mut meeting = match crate::meeting::load(&field("id")) {
+            Ok(meeting) => meeting,
+            Err(error) => {
+                return respond_json(stream, "404 Not Found", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let at_ms = request
+            .get("at_ms")
+            .and_then(|value| value.as_u64())
+            .unwrap_or_default();
+        if let Err(error) =
+            crate::meeting::append(&mut meeting, &field("speaker"), &field("text"), at_ms)
+        {
+            return respond_json(stream, "400 Bad Request", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        return match crate::meeting::save(&meeting) {
+            Ok(()) => respond_json(stream, "200 OK", &meeting_json(meeting).to_string())
+                .map(|()| Flow::Serve),
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path == "/catalog" {
         return respond_json(stream, "200 OK", &crate::catalog::as_json()).map(|()| Flow::Serve);
     }

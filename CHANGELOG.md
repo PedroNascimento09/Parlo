@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+
+- A meeting can be recorded instead of only imported: **Record a meeting** takes the name from the same field, keeps the transcript in `meetings/` with the moment each line was said, and appends line by line as the recogniser closes them, so a crash costs the last window and not the hour. The microphone is what Parlo hears, so the sound of another application is not captured yet and every line is filed under `Me`; naming a speaker still works on top of that. `POST /meeting/start` and `POST /meeting/segment` are the two routes behind it, and a meeting with no title is called `Meeting`.
+
 ## [0.1.9] - 2026-11-01
 
 ### Fixed
