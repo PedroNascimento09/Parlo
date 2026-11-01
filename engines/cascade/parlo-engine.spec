@@ -23,9 +23,6 @@ hiddenimports = [
 
 for package in (
     "sherpa_onnx",
-    "piper",
-    "piper_phonemize",
-    "espeakng_loader",
     "argostranslate",
     "onnxruntime",
     "faster_whisper",

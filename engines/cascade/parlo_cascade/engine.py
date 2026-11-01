@@ -1,22 +1,21 @@
 import importlib.util
-import io
 import os
 import sys
 import re
 import time
-import wave
 from dataclasses import dataclass
 from pathlib import Path
 
 from .models import models_dir
 from .streaming import StreamingSession, TextEvent
+from .tts import PiperVoice, VoiceUnavailable
 
 SAMPLE_RATE = 16_000
 MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
 SILENCE_HOLD_SECONDS = 0.45
 MODEL_DIR = models_dir()
-REQUIRED_MODULES = ("argostranslate", "piper", "numpy", "sherpa_onnx")
+REQUIRED_MODULES = ("argostranslate", "numpy", "sherpa_onnx")
 DEFAULT_THREADS = 4
 STT_BACKENDS = ("parakeet", "whisper")
 WHISPER_SIZES = ("tiny", "base", "small", "medium", "large-v3")
@@ -188,11 +187,6 @@ class CascadeEngine:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
             )
-        if not self.captions and not self.voice_path.exists():
-            raise EngineUnavailable(
-                f"missing voice model {self.voice_path.name}; run engines/cascade/scripts/setup_models.py"
-            )
-
         self._buffer.extend(pcm16)
         buffered = pcm16_to_float(bytes(self._buffer))
         if len(buffered) < int(self.min_segment * SAMPLE_RATE):
@@ -210,7 +204,10 @@ class CascadeEngine:
         if self.captions:
             elapsed = int((time.perf_counter() - started) * 1000)
             return Translation(pcm16=b"", text=translated, latency_ms=elapsed)
-        audio = self._synthesize(translated)
+        try:
+            audio = self._synthesize(translated)
+        except VoiceUnavailable as error:
+            raise EngineUnavailable(str(error)) from error
         elapsed = int((time.perf_counter() - started) * 1000)
         return Translation(pcm16=audio, text=translated, latency_ms=elapsed)
 
@@ -263,23 +260,7 @@ class CascadeEngine:
         return argostranslate.translate.translate(text, self.source, self.target)
 
     def _synthesize(self, text: str) -> bytes:
-        from piper import PiperVoice
-
         if self._tts is None:
-            self._tts = PiperVoice.load(str(self.voice_path))
-
-        buffer = io.BytesIO()
-        with wave.open(buffer, "wb") as wav:
-            self._tts.synthesize_wav(text, wav)
-        buffer.seek(0)
-        with wave.open(buffer, "rb") as wav:
-            rate = wav.getframerate()
-            channels = wav.getnchannels()
-            frames = wav.readframes(wav.getnframes())
-
-        import numpy as np
-
-        samples = np.frombuffer(frames, dtype="<i2").astype("float32") / 32_768.0
-        if channels > 1:
-            samples = samples.reshape(-1, channels).mean(axis=1)
-        return float_to_pcm16(resample(samples, rate, SAMPLE_RATE))
+            self._tts = PiperVoice(self.voice_path)
+        pcm16, rate = self._tts.synthesize(text)
+        return float_to_pcm16(resample(pcm16_to_float(pcm16), rate, SAMPLE_RATE))
