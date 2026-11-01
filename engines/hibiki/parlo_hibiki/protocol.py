@@ -29,27 +29,39 @@ def handle_line(line: str, engine) -> dict:
         return hello(engine)
     if op == "translate":
         return translate(request, engine)
+    if op == "stream":
+        return stream(request, engine)
+    if op == "stream_close":
+        return close_stream(request, engine)
     return {"op": "error", "error": f"unknown op: {op}"}
 
 
-def translate(request: dict, engine) -> dict:
+def decode_audio(request: dict):
     seq = request.get("seq", 0)
     payload = request.get("pcm16")
     if not isinstance(payload, str):
-        return {"op": "error", "seq": seq, "error": "pcm16 must be base64 text"}
+        return None, {"op": "error", "seq": seq, "error": "pcm16 must be base64 text"}
 
     try:
         pcm16 = base64.b64decode(payload, validate=True)
     except (binascii.Error, ValueError):
-        return {"op": "error", "seq": seq, "error": "pcm16 is not valid base64"}
+        return None, {"op": "error", "seq": seq, "error": "pcm16 is not valid base64"}
 
     if len(pcm16) % 2 != 0:
-        return {"op": "error", "seq": seq, "error": "pcm16 must hold 16 bit samples"}
+        return None, {"op": "error", "seq": seq, "error": "pcm16 must hold 16 bit samples"}
+    return pcm16, None
+
+
+def translate(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    pcm16, error = decode_audio(request)
+    if error is not None:
+        return error
 
     try:
         result = engine.translate(pcm16)
-    except EngineUnavailable as error:
-        return {"op": "error", "seq": seq, "error": str(error)}
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
 
     return {
         "op": "translated",
@@ -57,4 +69,38 @@ def translate(request: dict, engine) -> dict:
         "pcm16": base64.b64encode(result.pcm16).decode("ascii"),
         "text": result.text,
         "latency_ms": result.latency_ms,
+    }
+
+
+def stream(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    if not hasattr(engine, "stream"):
+        return {"op": "error", "seq": seq, "error": "engine does not stream"}
+    pcm16, error = decode_audio(request)
+    if error is not None:
+        return error
+    try:
+        events = engine.stream(pcm16)
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return stream_response(engine, seq, events)
+
+
+def close_stream(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    if not hasattr(engine, "close_stream"):
+        return {"op": "error", "seq": seq, "error": "engine does not stream"}
+    try:
+        events = engine.close_stream()
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return stream_response(engine, seq, events)
+
+
+def stream_response(engine, seq, events) -> dict:
+    return {
+        "op": "stream",
+        "seq": seq,
+        "mode": getattr(engine, "stream_mode", "reprocess"),
+        "events": [event.as_dict() for event in events],
     }

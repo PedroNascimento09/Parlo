@@ -101,6 +101,7 @@ def resample(samples, from_rate: int, to_rate: int):
 
 class CascadeEngine:
     id = "cascade"
+    stream_mode = "reprocess"
     sample_rate = SAMPLE_RATE
 
     def __init__(self, source: str = "pt", target: str = "en", voice: Path | None = None):

@@ -33,6 +33,18 @@ struct Response {
     text: Option<String>,
     #[serde(default)]
     error: Option<String>,
+    #[serde(default)]
+    events: Vec<StreamEvent>,
+    #[serde(default)]
+    mode: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct StreamEvent {
+    pub state: String,
+    pub text: String,
+    pub audio_ms: u64,
+    pub latency_ms: u64,
 }
 
 pub struct SidecarEngine {
@@ -43,6 +55,7 @@ pub struct SidecarEngine {
     languages: Vec<String>,
     sample_rate: u32,
     seq: u64,
+    stream_mode: String,
 }
 
 pub fn python_for(script_dir: &Path) -> String {
@@ -137,6 +150,7 @@ impl SidecarEngine {
             languages: Vec::new(),
             sample_rate: 16_000,
             seq: 0,
+            stream_mode: "unknown".to_string(),
         };
 
         let hello = engine.request(&Request {
@@ -157,6 +171,43 @@ impl SidecarEngine {
             engine.sample_rate = rate;
         }
         Ok(engine)
+    }
+
+    pub fn stream(&mut self, samples: &[f32]) -> Result<Vec<StreamEvent>, EngineError> {
+        self.seq += 1;
+        self.exchange("stream", Some(encode_pcm16(samples)))
+    }
+
+    pub fn close_stream(&mut self) -> Result<Vec<StreamEvent>, EngineError> {
+        self.seq += 1;
+        self.exchange("stream_close", None)
+    }
+
+    pub fn stream_mode(&self) -> &str {
+        &self.stream_mode
+    }
+
+    fn exchange(
+        &mut self,
+        op: &str,
+        pcm16: Option<String>,
+    ) -> Result<Vec<StreamEvent>, EngineError> {
+        let response = self.request(&Request {
+            op,
+            seq: Some(self.seq),
+            pcm16,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+        if let Some(mode) = response.mode {
+            self.stream_mode = mode;
+        }
+        Ok(response.events)
     }
 
     fn request(&mut self, request: &Request) -> Result<Response, EngineError> {
