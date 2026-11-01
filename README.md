@@ -171,7 +171,7 @@ CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps
 
 ## Roadmap
 
-The next release is **v0.2.0**: cloud cost control, per-model unload rules in the interface, and Ask Parlo over past meetings. Then **v0.3 Listen** decides with data before adding features, and the plan stops at **v0.5 Write in another language** — any supported language into the active field, with a measured quality gate rather than a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels; releases live in [docs/releases](docs/releases) and are announced inside the app.
+The next release is **v0.2.0**, and it carries what is already on `main`: meetings captured live, a vocabulary the recogniser actually uses, and models released after silence. The plan's next milestone is **v0.3 Listen**, which decides with data before adding features, and the committed scope stops at **v0.5** — speak one language, write another in the active field, behind a measured gate instead of a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels, never version numbers; releases live in [docs/releases](docs/releases) and are announced inside the app.
 
 ## Docs and contributing
 

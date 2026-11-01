@@ -82,7 +82,7 @@ People correct themselves while they talk, and the dictated text should be the s
 
 A correction is applied when the words after «quer dizer», «afinal», «não, espera», «ou melhor» or «corrigindo» replace what came before: «Quero comprar 2 bilhetes para o cinema, quer dizer, 3 bilhetes para o cinema» becomes «Quero comprar 3 bilhetes para o cinema». When the second half adds something instead of replacing it, as in «Gosto de cinema, quer dizer, gosto especialmente de filmes de ficção científica», both halves stay and only the marker goes, because dropping an idea is worse than leaving a hesitation. The sentence that was heard is always kept beside the cleaned one, so nothing is destroyed, and `original` brings all of it back.
 
-The cleanup runs on text alone, after recognition and before anything is inserted: no model, no network, microseconds. It only recognises the markers it was taught, in Portuguese and English, so a correction said without a marker («2 bilhetes… 3 bilhetes») is left alone.
+The cleanup runs on text alone, after recognition and before anything is inserted: no model, no network, microseconds. It only knows the markers it was taught, in both supported languages, so a correction said without a marker ("two tickets… three tickets") is left alone.
 
 ## Dub a file
 
