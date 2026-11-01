@@ -169,9 +169,16 @@ The mean does not drift between the start and the end of the run. It is higher t
 
 ### Captions latency
 
-Captions skip the synthesiser, so the wait is the window plus recognition and translation. Warm Parakeet, 1.2 s window, three consecutive segments of the same 6.6 s Portuguese clip: **1266, 1024 and 958 ms of processing**, which puts a caption about **2.2 s** after the speech starts.
+Captions skip the synthesiser, so the wait is the window plus recognition and translation. Measured again on 1 November after translation moved off the Argos runtime, warm Parakeet, the 20 sentence PT-PT corpus, audio fed in 100 ms blocks:
 
-The basic profile targets captions under two seconds, and this window does not reach it. The honest fix is a shorter window, bought with accuracy, not a larger claim: the measurement above is what a person will feel, and it is published as it is.
+| Window | Sentences | Processing mean | Median | Max | Caption after speech starts |
+|---|---|---|---|---|---|
+| 1.2 s | 20 | **444 ms** | 433 ms | 578 ms | **about 1.6 s** |
+| 2.5 s | 20 | 844 ms | 835 ms | 1122 ms | about 3.3 s |
+
+The window is what dominates: a caption cannot appear before the window closes, and the 1.2 s row puts one on screen at roughly 1.6 s, inside the two second target the earlier run missed. That earlier run measured **2.2 s** with the Argos translation stage taking about a second of it; the translation now costs about a tenth of that.
+
+The number is window plus processing, not a stopwatch in front of a screen: processing is measured, the window is arithmetic, and a real microphone adds the capture buffer on top.
 
 ```bash
 parlo captions --window 1.2 --seconds 20
