@@ -1,0 +1,22 @@
+# European Portuguese sentences for streaming recognition.
+# Text only: the harness synthesises the audio with the installed voice.
+Marquei a reunião para as nove e meia da manhã.
+O telemóvel ficou em cima da secretária.
+Preciso de imprimir o relatório até quinta-feira.
+A casa de banho fica ao fundo do corredor.
+Vou apanhar o autocarro para o centro da cidade.
+O pequeno-almoço está incluído na reserva.
+A fatura número duzentos e catorze já foi enviada.
+O João disse que chegava atrasado por causa do trânsito.
+Temos uma chamada com o cliente às catorze horas.
+Podes enviar-me o endereço por correio eletrónico?
+O projeto começa no dia três de novembro.
+Este computador não tem placa gráfica dedicada.
+A tradução tem de manter os nomes e os números.
+O senhor Antunes trabalha no segundo andar.
+A reunião foi adiada para a semana seguinte.
+Compra duas garrafas de água e um pacote de café.
+O sistema funciona sem internet e sem enviar dados.
+A conta ficou em trezentos e vinte euros.
+Falamos amanhã depois do almoço, se te der jeito.
+O comboio para o Porto parte às dezanove e quarenta.

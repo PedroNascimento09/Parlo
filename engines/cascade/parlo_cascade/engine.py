@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .models import models_dir
+from .streaming import StreamingSession, TextEvent
 
 SAMPLE_RATE = 16_000
 MIN_SEGMENT_SECONDS = 2.5
@@ -123,6 +124,7 @@ class CascadeEngine:
         self._ready = available()
         self._stt = None
         self._tts = None
+        self._stream: StreamingSession | None = None
 
     @property
     def available(self) -> bool:
@@ -208,6 +210,24 @@ class CascadeEngine:
         audio = self._synthesize(translated)
         elapsed = int((time.perf_counter() - started) * 1000)
         return Translation(pcm16=audio, text=translated, latency_ms=elapsed)
+
+    def stream(self, pcm16: bytes) -> list[TextEvent]:
+        if not self._ready:
+            raise EngineUnavailable(
+                "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
+            )
+        samples = pcm16_to_float(pcm16)
+        if self._stream is None:
+            self._stream = StreamingSession(self._transcribe)
+        events = self._stream.feed(samples)
+        if rms(samples) < SILENCE_RMS:
+            events.extend(self._stream.close())
+        return events
+
+    def close_stream(self) -> list[TextEvent]:
+        if self._stream is None:
+            return []
+        return self._stream.close()
 
     def _transcribe(self, samples) -> str:
         import numpy as np

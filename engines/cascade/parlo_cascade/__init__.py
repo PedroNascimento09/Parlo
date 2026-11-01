@@ -11,6 +11,7 @@ from .engine import (
     rms,
 )
 from .models import data_root, models_dir
+from .streaming import StabilityPolicy, StreamingSession, TextEvent
 
 __all__ = [
     "CascadeEngine",
@@ -23,6 +24,9 @@ __all__ = [
     "pcm16_to_float",
     "resample",
     "rms",
+    "StabilityPolicy",
+    "StreamingSession",
+    "TextEvent",
     "data_root",
     "models_dir",
 ]
