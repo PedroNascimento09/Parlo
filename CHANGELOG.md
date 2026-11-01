@@ -4,6 +4,12 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- **Voice profiles in the app.** Create a profile for your own voice, or for someone
+  else's with their permission, and Parlo records the consent locally with the purpose,
+  the notice version and the time. Revoke or delete it from the same panel; deleting
+  removes the folder and everything in it. Recording the sample needs the voice engine,
+  which is not in this build yet, so a profile can be created but not used.
+
 ### Added
 
 - A licence gate, `tools/licenses.py`, that reads the Rust closure from `cargo metadata`, the Python closure from the pinned requirements and the model catalogue, and fails when a licence is missing, denied, outside the allow list for that scope, or attached to an unpinned requirement.
