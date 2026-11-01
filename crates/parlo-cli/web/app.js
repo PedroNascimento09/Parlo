@@ -964,6 +964,8 @@ welcomeInstall.addEventListener("click", () => downloadModels());
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 const settingsWrite = document.getElementById("settings-write");
+const catalogList = document.getElementById("catalog-list");
+const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
 const historyNote = document.getElementById("history-note");
 const historyClear = document.getElementById("history-clear");
@@ -1343,6 +1345,45 @@ function openSection() {
   }
 }
 
+const CATALOG_KINDS = {
+  asr: "Speech recognition",
+  mt: "Translation",
+  tts: "Speech synthesis",
+  voice: "Voice",
+};
+
+async function loadCatalog() {
+  try {
+    const response = await fetch("/catalog", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    renderCatalog(await response.json());
+  } catch (failure) {
+    catalogNote.textContent = "The catalogue could not be read.";
+  }
+}
+
+function renderCatalog(entries) {
+  catalogList.replaceChildren();
+  if (!entries.length) {
+    catalogNote.textContent = "This build carries an empty catalogue.";
+    return;
+  }
+  for (const entry of entries) {
+    const term = document.createElement("dt");
+    const kind = CATALOG_KINDS[entry.kind] || entry.kind;
+    term.textContent = entry.id + (entry.version ? " · " + entry.version : "") + " · " + kind;
+    const detail = document.createElement("dd");
+    const verified = entry.status === "verified" ? "licence checked" : entry.status;
+    detail.textContent = entry.license + " · " + verified;
+    catalogList.append(term, detail);
+  }
+  catalogNote.textContent =
+    entries.length +
+    " components this build knows, with their licence and its state. Installing from here is not in this build yet.";
+}
+
 async function loadHistory() {
   try {
     const response = await fetch("/history", {
@@ -1419,6 +1460,7 @@ historyClear.addEventListener("click", () => clearHistory());
 
 window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {
+  loadCatalog();
   loadHistory();
   if (location.hash) {
     openSection();

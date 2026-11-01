@@ -321,6 +321,10 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/catalog" {
+        return respond_json(stream, "200 OK", &crate::catalog::as_json()).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/history" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
