@@ -5,7 +5,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ## [Unreleased]
 
 
-## [0.1.7] - 2026-11-01
+## [0.1.7] - unreleased
+
+Blocked by the licence gate: the Argos translation packs in `catalog/models.json` carry no licence metadata, so the release workflow refuses to build until Argos leaves the core. Everything below is in the tree and installable from source.
 
 ### Added
 
