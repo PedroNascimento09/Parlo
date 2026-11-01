@@ -65,7 +65,7 @@ A release declares the gate it has to pass. If the gate fails the release does n
 Section 48 of the plan lists a second, differently numbered set of gates, reusing G1 and G2 for dictation and translation and adding two that the table above does not carry:
 
 - **Hardware.** At least one CPU-only path measured on an 8 GB corporate PC and one balanced 16 GB path, plus a modern machine, with what is not supported written down.
-- **Release alignment.** `README.md`, `ROADMAP.md`, `PROGRESS.md`, `AGENTS.md`, the changelog, the cover, the index and the change log of the plan updated together, with the tag following the policy in force.
+- **Release alignment.** `README.md`, `ROADMAP.md`, `CHANGELOG.md` and `docs/releases/` updated together, with the tag following the policy in force.
 
 Both are treated as requirements here; the numbering of section 14.4 stays the one releases declare.
 
