@@ -158,10 +158,10 @@ class MarianTranslator:
         if self.target_token:
             options["target_prefix"] = [[self.target_token]]
         result = self.translator.translate_batch([pieces], **options)[0]
-        decoded = " ".join(result.hypotheses[0])
-        if self.target_token:
-            decoded = decoded.replace(self.target_token, "", 1)
-        translated = strip_language_token(self.target_piece.decode(decoded))
+        hypothesis = result.hypotheses[0]
+        if self.target_token and hypothesis and hypothesis[0] == self.target_token:
+            hypothesis = hypothesis[1:]
+        translated = strip_language_token(self.target_piece.decode(hypothesis))
         if self.language == "en":
             translated = restore_meridiem(text, translated)
         return translated
