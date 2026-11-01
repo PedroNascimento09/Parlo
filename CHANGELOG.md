@@ -4,31 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
-- **Voice profiles in the app.** Create a profile for your own voice, or for someone
-  else's with their permission, and Parlo records the consent locally with the purpose,
-  the notice version and the time. Revoke or delete it from the same panel; deleting
-  removes the folder and everything in it. Recording the sample needs the voice engine,
-  which is not in this build yet, so a profile can be created but not used.
 
-### Added
-
-- A licence gate, `tools/licenses.py`, that reads the Rust closure from `cargo metadata`, the Python closure from the pinned requirements and the model catalogue, and fails when a licence is missing, denied, outside the allow list for that scope, or attached to an unpinned requirement.
-- `THIRD_PARTY_NOTICES.md` and a CycloneDX SBOM generated from the same inventory, both included in every release archive next to `LICENSE` and `NOTICE`.
-- `docs/MODEL_LICENSES.md`, `SUPPORT.md`, `GOVERNANCE.md` and a model catalogue at `catalog/models.json`, so each downloadable artefact carries its own licence instead of inheriting the one of the code.
-- Text states for streaming recognition: `partial`, `stable`, `final` and `corrected`, with stable words confirmed by local agreement between the last two hypotheses, a segment that closes after 0.45 s of silence, and the mode reported as `reprocess` rather than native streaming.
-- `parlo stream <file.wav>` prints those states as they arrive, over a new `stream` operation on the sidecar protocol.
-- `engines/cascade/scripts/stream_bench.py` and a 20 sentence European Portuguese corpus measure the first partial, the first stable words, the final text and the word error rate of each stage.
-- `setup_models.py --voice pt_pt` fetches the Piper `pt_PT-tugão-medium` voice.
-
-### Changed
-
-- Piper left the engine program: `parlo-engine` no longer bundles `piper`, `piper_phonemize` or the espeak-ng data, so the packaged engine carries no GPL code. The synthesiser is an optional adapter in `engines/tts-piper`, installed separately by the user and driven over JSON lines on a pipe; without it Parlo translates and recognises as before and says the voice is unavailable.
-- Engine requirements are pinned to exact versions, every commit in a pull request must carry a DCO sign-off, and the release workflow refuses to build while the licence gate reports an open issue.
-- The original code moved to the Apache License 2.0 once the copyright holders confirmed the whole history; releases up to v0.1.7 keep the MIT text they were published with, in `licenses/MIT-Parlo-0.1.x.txt`.
-- `LICENSES.md` at the root indexes every licence the project carries, by section, with the code licence, the model or voice licence, the holder, whether it is required or optional, whether it was confirmed and what it obliges; CI regenerates it and fails when it drifts.
-- On the European Portuguese voice the cascade reaches the first partial at 849 ms and the final text at 3.36 s, with 0.231 final word error rate for Parakeet and 0.279 for Whisper base, and 81% of the sentence confirmed before the segment closes. The Brazilian voice reading the same European sentences scored about 0.66 for both, so the corpus now uses the PT-PT voice.
-
-## [0.1.7] - 2026-10-31
+## [0.1.7] - 2026-11-01
 
 ### Added
 
@@ -36,6 +13,18 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Closing the window stops the engine, and `PARLO_APP_GUARD` makes the engine exit when its parent's pipe closes, so a crashed window leaves no process holding the port.
 - `parlo app` opens the window when `parlo-app` sits beside `parlo`, and falls back to the browser otherwise.
 - The release archive carries `parlo-app` next to `parlo` and `parlo-engine`.
+- A licence gate, `tools/licenses.py`, that reads the Rust closure from `cargo metadata`, the Python closure from the pinned requirements and the model catalogue, and fails when a licence is missing, denied, outside the allow list for that scope, or attached to an unpinned requirement.
+- `THIRD_PARTY_NOTICES.md` and a CycloneDX SBOM generated from the same inventory, both included in every release archive next to `LICENSE` and `NOTICE`.
+- `docs/MODEL_LICENSES.md`, `SUPPORT.md`, `GOVERNANCE.md` and a model catalogue at `catalog/models.json`, so each downloadable artefact carries its own licence instead of inheriting the one of the code.
+- Text states for streaming recognition: `partial`, `stable`, `final` and `corrected`, with stable words confirmed by local agreement between the last two hypotheses, a segment that closes after 0.45 s of silence, and the mode reported as `reprocess` rather than native streaming.
+- `parlo stream <file.wav>` prints those states as they arrive, over a new `stream` operation on the sidecar protocol.
+- `engines/cascade/scripts/stream_bench.py` and a 20 sentence European Portuguese corpus measure the first partial, the first stable words, the final text and the word error rate of each stage.
+- `setup_models.py --voice pt_pt` fetches the Piper `pt_PT-tugão-medium` voice.
+- **Voice profiles in the app.** Create a profile for your own voice, or for someone
+  else's with their permission, and Parlo records the consent locally with the purpose,
+  the notice version and the time. Revoke or delete it from the same panel; deleting
+  removes the folder and everything in it. Recording the sample needs the voice engine,
+  which is not in this build yet, so a profile can be created but not used.
 
 ### Changed
 
@@ -43,6 +32,11 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - The engine log is written to `parlo-engine.log` in the temporary folder when the window starts it, because a double-clicked app has no console.
 - The minimum Rust version is 1.85.
 - `scripts/parlo-app.cmd` and `scripts/parlo-app.sh` build both programs and open the window.
+- Piper left the engine program: `parlo-engine` no longer bundles `piper`, `piper_phonemize` or the espeak-ng data, so the packaged engine carries no GPL code. The synthesiser is an optional adapter in `engines/tts-piper`, installed separately by the user and driven over JSON lines on a pipe; without it Parlo translates and recognises as before and says the voice is unavailable.
+- Engine requirements are pinned to exact versions, every commit in a pull request must carry a DCO sign-off, and the release workflow refuses to build while the licence gate reports an open issue.
+- The original code moved to the Apache License 2.0 once the copyright holders confirmed the whole history; releases up to v0.1.7 keep the MIT text they were published with, in `licenses/MIT-Parlo-0.1.x.txt`.
+- `LICENSES.md` at the root indexes every licence the project carries, by section, with the code licence, the model or voice licence, the holder, whether it is required or optional, whether it was confirmed and what it obliges; CI regenerates it and fails when it drifts.
+- On the European Portuguese voice the cascade reaches the first partial at 849 ms and the final text at 3.36 s, with 0.231 final word error rate for Parakeet and 0.279 for Whisper base, and 81% of the sentence confirmed before the segment closes. The Brazilian voice reading the same European sentences scored about 0.66 for both, so the corpus now uses the PT-PT voice.
 
 ## [0.1.6] - 2026-10-31
 
