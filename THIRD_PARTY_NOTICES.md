@@ -15,18 +15,18 @@ Regenerate it whenever a dependency or a catalogue entry changes.
 | anyio | 4.15.1 | MIT | - |
 | argostranslate | 1.11.0 | MIT | https://www.argosopentech.com |
 | av | 19.0.2 | BSD-3-Clause | https://pyav.basswood.io |
-| blis | 1.3.4 | BSD | https://github.com/explosion/cython-blis |
+| blis | 1.3.4 | BSD-3-Clause | https://github.com/explosion/cython-blis |
 | catalogue | 2.0.10 | MIT | https://github.com/explosion/catalogue |
 | certifi | 2026.10.23 | MPL-2.0 | https://github.com/certifi/python-certifi |
 | charset-normalizer | 3.5.2 | MIT | - |
 | click | 8.5.0 | BSD-3-Clause | - |
 | cloudpathlib | 0.26.0 | MIT | - |
 | cloudpickle | 3.1.2 | BSD-3-Clause | https://github.com/cloudpipe/cloudpickle |
-| colorama | 0.4.6 | BSD | https://github.com/tartley/colorama |
+| colorama | 0.4.6 | BSD-3-Clause | https://github.com/tartley/colorama |
 | confection | 1.3.4 | MIT | https://github.com/explosion/confection |
 | ctranslate2 | 4.8.4 | MIT | https://opennmt.net |
 | cymem | 2.0.16 | MIT | https://github.com/explosion/cymem |
-| emoji | 2.16.0 | BSD | https://github.com/carpedm20/emoji/ |
+| emoji | 2.16.0 | BSD-3-Clause | https://github.com/carpedm20/emoji/ |
 | faster-whisper | 1.2.1 | MIT | https://github.com/SYSTRAN/faster-whisper |
 | filelock | 4.2.6 | MIT | https://github.com/tox-dev/filelock |
 | flatbuffers | 25.12.19 | Apache-2.0 | https://google.github.io/flatbuffers/ |
@@ -39,13 +39,13 @@ Regenerate it whenever a dependency or a catalogue entry changes.
 | httpx2 | 2.16.0 | BSD-3-Clause | https://github.com/pydantic/httpx2 |
 | huggingface_hub | 2.4.0 | Apache-2.0 | https://github.com/huggingface/huggingface_hub |
 | idna | 3.20 | BSD-3-Clause | - |
-| Jinja2 | 3.1.6 | BSD | - |
+| Jinja2 | 3.1.6 | BSD-3-Clause | - |
 | joblib | 1.6.0 | BSD-3-Clause | https://joblib.readthedocs.io |
 | markdown-it-py | 4.2.0 | MIT | https://github.com/executablebooks/markdown-it-py |
 | MarkupSafe | 3.0.4 | BSD-3-Clause | - |
 | mdurl | 0.1.2 | MIT | https://github.com/executablebooks/mdurl |
 | minisbd | 0.9.5 | AGPL-3.0-only | https://github.com/LibreTranslate/MiniSBD |
-| mpmath | 1.3.0 | BSD | http://mpmath.org/ |
+| mpmath | 1.3.0 | BSD-3-Clause | http://mpmath.org/ |
 | murmurhash | 1.0.16 | MIT | https://github.com/explosion/murmurhash |
 | networkx | 3.7 | BSD-3-Clause | https://networkx.org/ |
 | numpy | 2.5.4 | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | https://numpy.org |
@@ -75,10 +75,10 @@ Regenerate it whenever a dependency or a catalogue entry changes.
 | spacy-loggers | 1.0.5 | MIT | https://github.com/explosion/spacy-loggers |
 | srsly | 2.5.5 | MIT | https://github.com/explosion/srsly |
 | stanza | 1.10.1 | Apache-2.0 | https://github.com/stanfordnlp/stanza |
-| sympy | 1.14.0 | BSD | https://sympy.org |
+| sympy | 1.14.0 | BSD-3-Clause | https://sympy.org |
 | thinc | 8.3.14 | MIT | https://github.com/explosion/thinc |
 | tokenizers | 0.23.3 | Apache Software | https://github.com/huggingface/tokenizers |
-| torch | 2.15.0 | UNKNOWN | https://pytorch.org |
+| torch | 2.15.0 | BSD-3-Clause | https://pytorch.org |
 | tqdm | 4.70.1 | MPL-2.0 AND MIT | https://tqdm.github.io |
 | truststore | 0.10.5 | MIT | - |
 | typer | 0.27.3 | MIT | https://github.com/fastapi/typer |

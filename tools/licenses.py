@@ -358,6 +358,14 @@ def recorded() -> list[Component]:
     return [Component(**entry) for entry in data["packages"]]
 
 
+def effective(components: list[Component]) -> list[Component]:
+    overrides = {canonical(name): value for name, value in policy().get("overrides", {}).items()}
+    return [
+        replace(component, license=overrides.get(canonical(component.name), component.license))
+        for component in components
+    ]
+
+
 def notices(components: list[Component]) -> str:
     lines = [
         "# Third party notices",
@@ -474,6 +482,7 @@ def main() -> int:
     if not components:
         components = python_components()[0]
     components += rust_components()
+    components = effective(components)
     if arguments.command == "notices":
         text = notices(components)
         if arguments.out:
