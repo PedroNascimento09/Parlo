@@ -964,6 +964,9 @@ welcomeInstall.addEventListener("click", () => downloadModels());
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 const settingsWrite = document.getElementById("settings-write");
+const historyList = document.getElementById("history-list");
+const historyNote = document.getElementById("history-note");
+const historyClear = document.getElementById("history-clear");
 
 function describePair(from, to) {
   return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
@@ -1340,8 +1343,68 @@ function openSection() {
   }
 }
 
+async function loadHistory() {
+  try {
+    const response = await fetch("/history", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      return;
+    }
+    renderHistory(await response.json());
+  } catch (failure) {
+    historyNote.textContent = "The recent dictations could not be read.";
+  }
+}
+
+function renderHistory(entries) {
+  historyList.replaceChildren();
+  if (!entries.length) {
+    historyNote.textContent = "Nothing dictated yet. What you dictate and its translation will appear here.";
+    historyClear.hidden = true;
+    return;
+  }
+  for (const entry of entries) {
+    const term = document.createElement("dt");
+    const moment = new Date((entry.at || 0) * 1000);
+    term.textContent =
+      moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+      " · " +
+      (LANGUAGE_NAMES[entry.from] || entry.from) +
+      " → " +
+      (LANGUAGE_NAMES[entry.to] || entry.to);
+    const detail = document.createElement("dd");
+    detail.textContent = entry.translation || entry.text;
+    historyList.append(term, detail);
+  }
+  historyNote.textContent =
+    entries.length === 1
+      ? "1 dictation kept on this computer."
+      : entries.length + " dictations kept on this computer.";
+  historyClear.hidden = false;
+}
+
+async function clearHistory() {
+  try {
+    const response = await fetch("/history/clear", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    renderHistory([]);
+  } catch (failure) {
+    historyNote.textContent = "The history could not be cleared. Try again.";
+  }
+}
+
+historyClear.addEventListener("click", () => clearHistory());
+
 window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {
+  loadHistory();
   if (location.hash) {
     openSection();
   }

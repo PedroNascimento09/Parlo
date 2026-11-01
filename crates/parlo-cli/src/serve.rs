@@ -321,6 +321,30 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/history" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "200 OK", &crate::history::as_json(20)).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/history/clear" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match crate::history::clear() {
+            Ok(()) => respond_json(stream, "200 OK", "{\"cleared\":true}").map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path == "/settings" {
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
     }
@@ -910,6 +934,19 @@ fn handle(
             }
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        let target_language = if write.is_empty() {
+            &session.from
+        } else {
+            &write
+        };
+        if let Err(error) = crate::history::append(&crate::history::Entry::now(
+            &text,
+            &translation,
+            &session.from,
+            target_language,
+        )) {
+            println!("could not store the dictation: {error}");
+        }
         println!(
             "dictated {seconds:.1} s in {} ms",
             started.elapsed().as_millis()
