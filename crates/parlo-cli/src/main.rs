@@ -649,6 +649,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
             }
             "--from" => config.from = value,
             "--to" => config.to = value,
+            "--shortcut" => config.shortcut = parlo_core::Shortcut::parse(&value)?.text(),
             "--port" => {
                 config.port = value
                     .parse()
@@ -678,6 +679,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
     println!("  stt      {}", config.stt);
     println!("  from     {}", config.from);
     println!("  to       {}", config.to);
+    println!("  shortcut {}", config.shortcut);
     println!("  port     {}", config.port);
     match config.device {
         Some(device) => println!("  device   {device}"),

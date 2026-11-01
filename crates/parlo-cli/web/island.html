@@ -138,6 +138,7 @@ let busy = false;
 let lastText = "";
 let target = false;
 let writeTarget = "";
+let shortcut = "Ctrl+Alt+D";
 
 function setState(text, line, pending) {
   stateEl.textContent = text;
@@ -243,7 +244,7 @@ async function begin() {
   sink.connect(context.destination);
   started = performance.now();
   document.body.classList.add("listening");
-  setState("Listening", "Speak now. Click Parlo again or press Ctrl+Alt+D when done.", true);
+  setState("Listening", "Speak now. Click Parlo again or press " + shortcut + " when done.", true);
   clearInterval(ticker);
   ticker = setInterval(() => {
     clockEl.textContent = ((performance.now() - started) / 1000).toFixed(1) + " s";
@@ -315,6 +316,7 @@ async function loadWriteTarget() {
     }
     const values = await response.json();
     writeTarget = (values.write || "").toLowerCase();
+    shortcut = values.shortcut || shortcut;
   } catch (failure) {
     writeTarget = "";
   }

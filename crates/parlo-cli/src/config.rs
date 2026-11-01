@@ -1,74 +1,7 @@
-use std::env;
-use std::fs;
-use std::path::PathBuf;
+pub use parlo_core::settings::{data_root, load, path, save};
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Config {
-    pub engine: String,
-    pub stt: String,
-    pub from: String,
-    pub to: String,
-    pub write: String,
-    pub port: u16,
-    pub device: Option<usize>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            engine: "cascade".to_string(),
-            stt: "parakeet".to_string(),
-            from: "pt".to_string(),
-            to: "en".to_string(),
-            write: String::new(),
-            port: 8787,
-            device: None,
-        }
-    }
-}
-
-pub fn data_root() -> PathBuf {
-    if let Ok(configured) = env::var("PARLO_DATA_DIR") {
-        return PathBuf::from(configured);
-    }
-    if cfg!(target_os = "windows") {
-        if let Ok(appdata) = env::var("APPDATA") {
-            return PathBuf::from(appdata).join("parlo");
-        }
-    }
-    if cfg!(target_os = "macos") {
-        let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-        return PathBuf::from(home)
-            .join("Library")
-            .join("Application Support")
-            .join("parlo");
-    }
-    if let Ok(xdg) = env::var("XDG_DATA_HOME") {
-        return PathBuf::from(xdg).join("parlo");
-    }
-    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home)
-        .join(".local")
-        .join("share")
-        .join("parlo")
-}
-
-pub fn path() -> PathBuf {
-    if let Ok(configured) = env::var("PARLO_CONFIG") {
-        return PathBuf::from(configured);
-    }
-    data_root().join("config.json")
-}
-
-pub fn load() -> Config {
-    fs::read_to_string(path())
-        .ok()
-        .and_then(|text| serde_json::from_str(&text).ok())
-        .unwrap_or_default()
-}
+#[cfg(test)]
+pub use parlo_core::settings::Config;
 
 pub const RECOGNISERS: [&str; 2] = ["parakeet", "whisper"];
 
@@ -108,16 +41,6 @@ pub fn check_pair(from: &str, to: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn save(config: &Config) -> Result<PathBuf, String> {
-    let path = path();
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|error| format!("{}: {error}", parent.display()))?;
-    }
-    let text = serde_json::to_string_pretty(config).map_err(|error| error.to_string())?;
-    fs::write(&path, text + "\n").map_err(|error| format!("{}: {error}", path.display()))?;
-    Ok(path)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,6 +69,7 @@ mod tests {
             from: "en".to_string(),
             to: "pt".to_string(),
             write: "pt".to_string(),
+            shortcut: "Ctrl+Shift+D".to_string(),
             port: 9100,
             device: Some(2),
         };

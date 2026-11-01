@@ -13,4 +13,5 @@ description = "Native window for Parlo"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+parlo-core.workspace = true
 tauri = { version = "2", features = ["tray-icon", "image-png"] }

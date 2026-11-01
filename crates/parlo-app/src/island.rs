@@ -1,6 +1,6 @@
+use parlo_core::settings;
+use parlo_core::shortcut::{Shortcut, NO_REPEAT};
 use tauri::{AppHandle, Manager};
-
-pub const SHORTCUT: &str = "Ctrl+Alt+D";
 
 pub fn show(handle: &AppHandle) {
     let Some(window) = handle.get_webview_window("island") else {
@@ -29,14 +29,20 @@ pub fn toggle(handle: &AppHandle) {
 
 #[cfg(windows)]
 pub fn listen(handle: AppHandle) {
+    let text = settings::load().shortcut;
+    let shortcut = match Shortcut::parse(&text) {
+        Ok(shortcut) => shortcut,
+        Err(error) => {
+            crate::note(&format!(
+                "the dictation shortcut {text} is unusable: {error}"
+            ));
+            return;
+        }
+    };
     std::thread::spawn(move || unsafe {
         use std::ffi::c_void;
 
         const WM_HOTKEY: u32 = 0x0312;
-        const MOD_ALT: u32 = 0x0001;
-        const MOD_CONTROL: u32 = 0x0002;
-        const MOD_NOREPEAT: u32 = 0x4000;
-        const VK_D: u32 = 0x44;
         const ID: i32 = 0x5041;
 
         #[repr(C)]
@@ -68,12 +74,15 @@ pub fn listen(handle: AppHandle) {
             fn DispatchMessageW(message: *const Message) -> isize;
         }
 
-        let modifiers = MOD_CONTROL | MOD_ALT | MOD_NOREPEAT;
-        if RegisterHotKey(std::ptr::null_mut(), ID, modifiers, VK_D) == 0 {
-            crate::note("the dictation shortcut is taken by another program");
+        let modifiers = shortcut.modifiers | NO_REPEAT;
+        if RegisterHotKey(std::ptr::null_mut(), ID, modifiers, shortcut.key) == 0 {
+            crate::note(&format!(
+                "the dictation shortcut {} is taken by another program",
+                shortcut.text()
+            ));
             return;
         }
-        crate::note(&format!("dictation shortcut ready on {SHORTCUT}"));
+        crate::note(&format!("dictation shortcut ready on {}", shortcut.text()));
 
         let mut message: Message = std::mem::zeroed();
         while GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) > 0 {
@@ -88,7 +97,8 @@ pub fn listen(handle: AppHandle) {
 
 #[cfg(not(windows))]
 pub fn listen(_handle: AppHandle) {
+    let text = settings::load().shortcut;
     crate::note(&format!(
-        "the global dictation shortcut ({SHORTCUT}) is windows only for now"
+        "the global dictation shortcut ({text}) is windows only for now"
     ));
 }

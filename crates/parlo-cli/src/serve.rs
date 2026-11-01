@@ -63,6 +63,7 @@ pub struct Session {
     from: String,
     to: String,
     write: String,
+    shortcut: String,
     target: Option<usize>,
 }
 
@@ -83,13 +84,15 @@ fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, Stri
 impl Session {
     fn open(engine: String, stt: String, from: String, to: String) -> Result<Self, String> {
         let pipeline = build(&from, &to, &engine, &stt)?;
+        let stored = crate::config::load();
         Ok(Self {
             pipeline,
             engine,
             stt,
             from,
             to,
-            write: crate::config::load().write,
+            write: stored.write,
+            shortcut: stored.shortcut,
             target: None,
         })
     }
@@ -139,12 +142,13 @@ impl Session {
 
     fn as_json(&self) -> String {
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
             json_string(&self.engine),
             json_string(&self.stt),
             json_string(&self.from),
             json_string(&self.to),
-            json_string(&self.write)
+            json_string(&self.write),
+            json_string(&self.shortcut)
         )
     }
 }

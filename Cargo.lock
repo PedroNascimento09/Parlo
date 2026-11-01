@@ -2399,6 +2399,7 @@ dependencies = [
 name = "parlo-app"
 version = "0.1.7"
 dependencies = [
+ "parlo-core",
  "tauri",
  "tauri-build",
 ]
