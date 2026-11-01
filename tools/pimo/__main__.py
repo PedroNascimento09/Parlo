@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pimo import compat, hardware, manifest, signing
+from pimo import compat, hardware, manifest, session, signing
 
 
 def _parser():
@@ -34,6 +34,11 @@ def _parser():
     verify = commands.add_parser("verify", help="verify a signed catalogue file")
     verify.add_argument("path")
     verify.add_argument("--public", required=True)
+
+    live = commands.add_parser("live", help="resolve both directions of a Live session")
+    live.add_argument("path")
+    live.add_argument("--speakers", required=True)
+    live.add_argument("--schema", type=int, default=1)
     return parser
 
 
@@ -88,6 +93,12 @@ def _dispatch(arguments):
         print(json.dumps({"verified": verified}, ensure_ascii=False))
         return 0 if verified else 1
 
+    if arguments.command == "live":
+        speakers = json.loads(Path(arguments.speakers).read_text(encoding="utf-8"))
+        plan = session.live(_load(Path(arguments.path)), hardware.profile(), speakers, arguments.schema)
+        print(json.dumps(plan, indent=2, ensure_ascii=False))
+        return 0
+
     return 2
 
 
@@ -95,7 +106,7 @@ def main(argv=None):
     arguments = _parser().parse_args(argv)
     try:
         return _dispatch(arguments)
-    except (manifest.ManifestError, signing.SigningError, hardware.ProfileError, OSError) as error:
+    except (manifest.ManifestError, signing.SigningError, hardware.ProfileError, session.LiveError, ValueError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 

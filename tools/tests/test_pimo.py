@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from pimo import compat, hardware, manifest, signing
+from pimo import compat, hardware, manifest, session, signing
 
 
 def model(**overrides):
@@ -187,6 +187,88 @@ class CatalogTests(unittest.TestCase):
     def test_licence_index_is_not_a_manifest(self):
         with self.assertRaises(manifest.ManifestError):
             manifest.entries({"schema": 1, "artifacts": []})
+
+
+class LiveTests(unittest.TestCase):
+    def catalogue(self):
+        return [
+            model(id="mt-en", task="mt", languages={"declared": ["en"], "validated": ["en"]}),
+            model(
+                id="clone-en",
+                task="clone",
+                languages={"declared": ["en"], "validated": ["en"]},
+                benchmarks={"identity": 0.81},
+            ),
+        ]
+
+    def speakers(self):
+        return [
+            {"id": "a", "locale": "pt-PT", "profile": True, "authorised": True},
+            {"id": "b", "locale": "en"},
+        ]
+
+    def test_resolves_both_directions(self):
+        result = session.live(self.catalogue(), device(), self.speakers())
+        forward = result["directions"][0]
+        self.assertEqual((forward["from"], forward["to"]), ("a", "b"))
+        self.assertEqual(forward["translation"]["id"], "mt-en")
+        self.assertEqual(forward["voice"]["id"], "clone-en")
+        self.assertEqual(forward["identity"], "measured")
+
+    def test_missing_clone_refuses_to_promise_identity(self):
+        catalogue = [model(id="mt-en", task="mt", languages={"declared": ["en"], "validated": ["en"]})]
+        result = session.live(catalogue, device(), self.speakers())
+        forward = result["directions"][0]
+        self.assertIsNone(forward["voice"]["id"])
+        self.assertEqual(forward["identity"], "unavailable")
+        self.assertIn("cannot be promised", result["notice"])
+
+    def test_unauthorised_profile_is_not_used(self):
+        speakers = [
+            {"id": "a", "locale": "pt-PT", "profile": True, "authorised": False},
+            {"id": "b", "locale": "en"},
+        ]
+        forward = session.live(self.catalogue(), device(), speakers)["directions"][0]
+        self.assertIsNone(forward["voice"]["id"])
+        self.assertIn("not authorised", forward["voice"]["reason"])
+
+    def test_same_locale_needs_no_translation(self):
+        speakers = [
+            {"id": "a", "locale": "pt-PT"},
+            {"id": "b", "locale": "pt-PT"},
+        ]
+        result = session.live(self.catalogue(), device(), speakers)
+        self.assertEqual(result["directions"][0]["identity"], "not applicable")
+        self.assertIn("same locale", result["notice"])
+
+    def test_two_candidates_are_listed_not_chosen(self):
+        catalogue = self.catalogue() + [
+            model(id="mt-en-b", task="mt", languages={"declared": ["en"], "validated": ["en"]})
+        ]
+        translation = session.live(catalogue, device(), self.speakers())["directions"][0]["translation"]
+        self.assertIsNone(translation["id"])
+        self.assertEqual(translation["candidates"], ["mt-en", "mt-en-b"])
+
+    def test_unmeasured_clone_is_reported_as_such(self):
+        catalogue = [
+            model(id="mt-en", task="mt", languages={"declared": ["en"], "validated": ["en"]}),
+            model(id="clone-en", task="clone", languages={"declared": ["en"], "validated": ["en"]}),
+        ]
+        result = session.live(catalogue, device(), self.speakers())
+        self.assertEqual(result["directions"][0]["identity"], "unmeasured")
+        self.assertIn("not measured", result["notice"])
+
+    def test_one_speaker_is_rejected(self):
+        with self.assertRaises(session.LiveError):
+            session.live(self.catalogue(), device(), [{"id": "a", "locale": "pt-PT"}])
+
+    def test_duplicate_speaker_is_rejected(self):
+        speakers = [
+            {"id": "a", "locale": "pt-PT"},
+            {"id": "a", "locale": "en"},
+        ]
+        with self.assertRaises(session.LiveError):
+            session.live(self.catalogue(), device(), speakers)
 
 
 class HardwareTests(unittest.TestCase):
