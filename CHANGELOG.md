@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+
+- The dictation island now asks for the latest release when it opens, through the same `/update` route the window uses, and says «v0.1.9 is available, you are on v0.1.8. Open Parlo to update.» in its hint. The island still installs nothing on its own: installing stays a click in the window, and a failed or rate limited lookup shows nothing rather than a wrong version.
+
 ## [0.1.8] - 2026-11-01
 
 ### Documentation

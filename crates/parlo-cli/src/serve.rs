@@ -1773,6 +1773,7 @@ mod tests {
     fn the_island_page_dictates_and_carries_the_version() {
         let page = ISLAND.replace("__PARLO_VERSION__", VERSION);
         assert!(page.contains("/dictate"));
+        assert!(page.contains("/update"));
         assert!(page.contains(&format!("content=\"{VERSION}\"")));
         assert!(!page.contains("__PARLO_VERSION__"));
     }

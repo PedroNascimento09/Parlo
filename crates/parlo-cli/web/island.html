@@ -125,6 +125,7 @@ const stateEl = document.getElementById("state");
 const lineEl = document.getElementById("line");
 const clockEl = document.getElementById("clock");
 const hintEl = document.getElementById("hint");
+const version = document.querySelector('meta[name="parlo-version"]').content;
 
 let stream = null;
 let context = null;
@@ -322,6 +323,24 @@ async function loadWriteTarget() {
   }
 }
 
+async function loadVersion() {
+  try {
+    const response = await fetch("/update", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const update = await response.json();
+    if (!update.available || !update.latest) {
+      return;
+    }
+    hintEl.textContent =
+      "v" + update.latest + " is available, you are on v" + version + ". Open Parlo to update.";
+    document.body.classList.add("showing-hint");
+  } catch (failure) {
+    return;
+  }
+}
+
 async function writeIntoField(text) {
   if (!target) {
     return false;
@@ -415,6 +434,7 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+loadVersion();
 loadWriteTarget();
 if (!document.hidden) {
   begin();
