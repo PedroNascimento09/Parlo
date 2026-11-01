@@ -250,7 +250,16 @@ Four things it gets wrong, all of them worth writing down:
 
 Reading: the checkpoint is good enough to be the EN→PT candidate and not good enough to be published as a validated pair. Nine of twelve idiomatic on twelve sentences written by the person who built the corpus is a direction, not a grade, and the three defects above are exactly what the plan's gates ask for: European vocabulary, preserved names, and no prefix left in the output.
 
-Latency sets the other limit: about a second per sentence, four threads, beam 4. That is fine for dictation and too slow for Live, where the target is 2.5 seconds for the whole first utterance including recognition and voice. Beam 1 was not measured here and will be, because a third of that latency is the search, not the model.
+Latency sets the other limit: about a second per sentence, four threads, beam 4. That is fine for dictation and too slow for Live, where the target is 2.5 seconds for the whole first utterance including recognition and voice.
+
+Beam 1, same corpus, same threads:
+
+| Direction | Beam 4 median | Beam 1 median | Beam 1 p95 | Complete sentences | Rows whose wording got worse |
+|---|---|---|---|---|---|
+| EN→PT | 1025 ms | **398 ms** | 500 ms | 12 of 12 | 1 of 12 |
+| PT→EN | 878 ms | **450 ms** | 539 ms | 12 of 12 | 0 of 12 |
+
+The only row that changed for the worse was `Let's keep it simple and ship today`: beam 4 gave `Vamos mantê-lo simples e navio hoje` and beam 1 gave `Vamos manter a simplicidade e navegar hoje`. Both mistranslate `ship`; beam 1 is more readable while still wrong, which is exactly the kind of improvement that must not be mistaken for correctness. Two and a half times faster for one paragraph worse in twelve is a trade worth taking for a caption and not yet justified for a sentence someone will send to a client.
 
 Rule that survives this: a number from a broken build is worse than no number, because it closes a question that is still open.
 
