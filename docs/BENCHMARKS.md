@@ -369,6 +369,10 @@ That table is not a verdict and the pair is **not** declared working:
 python engines/cascade/scripts/mt_gate.py --pack --direction pt-de --pivot
 ```
 
+A direct model was attempted and is not usable yet. Helsinki-NLP publishes `es-de`, `fr-de` and `it-de` but no `pt-de`, so the candidate was `facebook/m2m100_418M` (MIT), which the plan itself names. It converts to CTranslate2 int8 in 471 MB and answers, and every sentence degenerates into repeated tokens: `Ich habe das Tre Tre Tre Tre …`, `12 12 12 Tage bis bis bis zum Term Term Term`. The behaviour is the same with beam 4 and greedy, with the repetition penalty and the no-repeat n-gram rule the Marian path uses set to off, and with or without the source language token.
+
+The mechanical gate scored that output at numbers 0.950, clocks 0.950, negations 0.950, names 0.950, completeness 1.000, which is the clearest demonstration of what the gate is worth: it counts quantities and punctuation, and cannot hear that the sentence is broken. Nothing from that run is published as a result, and PT→DE still runs only through English.
+
 ## What gets measured
 
 | Metric | Method |
