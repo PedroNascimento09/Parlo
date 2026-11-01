@@ -2,11 +2,11 @@ import re
 import sys
 from pathlib import Path
 
-SOURCES = "docs/plan/v12_4"
-DOCX_OUT = "Parlo_Plano_Mestre_v12_4_FINAL.docx"
-PDF_OUT = "Parlo_Plano_Mestre_v12_4_FINAL.pdf"
+SOURCES = "docs/plan/v12_5"
+DOCX_OUT = "Parlo_Plano_Mestre_v12_5_FINAL.docx"
+PDF_OUT = "Parlo_Plano_Mestre_v12_5_FINAL.pdf"
 TITLE = "PARLO"
-HEADER = "Parlo · Plano Mestre v12.4"
+HEADER = "Parlo · Plano Mestre v12.5"
 
 ACCENT = (0x1F, 0x3A, 0x4D)
 MUTED = (0x5B, 0x6B, 0x77)
@@ -386,7 +386,7 @@ def build_pdf(blocks):
         rightMargin=2.3 * cm,
         topMargin=2.3 * cm,
         bottomMargin=2.0 * cm,
-        title="Parlo — Plano Mestre v12.4",
+        title="Parlo — Plano Mestre v12.5",
         author="Pedro Nascimento",
         subject="Plano mestre técnico, produto e open source do Parlo",
     )

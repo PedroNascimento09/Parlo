@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Documentation
+
+- The master plan moves to **v12.5** with a new Part XV: model selection that recommends without blocking, Parlo Meetings as a pillar with transcript, speakers and retroactive naming, a post-meeting surface with decisions kept distinct from proposals, Ask Parlo with citations, meeting memory between sessions, privacy per stored item, four support states per call platform, and three implementation layers. The appendices now come after Part XIV, where the index always said they were.
+
 ### Added
 
 - Dictation can now be written in another language. **Dictation writes** in the Hub takes Portuguese or English, or the language spoken; the island asks the engine to translate the recognised sentence and inserts that instead, so a person who speaks Portuguese can dictate English into any field. The engine translates through the same local models, the choice is stored in `config.json`, and a missing translation model is reported as a sentence rather than a wrong insertion.

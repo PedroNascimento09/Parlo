@@ -2,7 +2,7 @@
 
 No dates. A phase ends when its exit criterion is met, not when the code is written. If a criterion fails, the phase does not happen.
 
-The milestones below come from `Parlo_Plano_Mestre_v12_4_FINAL.docx`: section 68 for the sequence, section 69 for the phases and the exit criteria, sections 66.1 to 66.3 for Parlo Live, sections 15 to 20 for the reported state, the model catalogue and the decisions still open, and sections 83 to 101 for the interface, the tokens and the states every screen has to use. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries. Section 46 of the plan states the same rule, so plan and repository no longer disagree about numbering.
+The milestones below come from `Parlo_Plano_Mestre_v12_5_FINAL.docx`: section 68 for the sequence, section 69 for the phases and the exit criteria, sections 66.1 to 66.3 for Parlo Live, sections 15 to 20 for the reported state, the model catalogue and the decisions still open, sections 83 to 101 for the interface, the tokens and the states every screen has to use, and sections 103 to 113 for the model selection policy, Parlo Meetings, the meeting summary, Ask Parlo, meeting memory and the three implementation layers. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries. Section 46 of the plan states the same rule, so plan and repository no longer disagree about numbering.
 
 ## The committed scope
 
