@@ -179,6 +179,52 @@ That figure contains spawning the Python sidecar, loading Parakeet TDT 0.6B v3 i
 
 Not measured yet, and blank on purpose: VRAM (there is no NVIDIA GPU here), perceived latency through a live microphone, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
+### Translation on the corpus
+
+`benchmarks/corpus/translation.jsonl` holds 24 sentence pairs written for this project, 12 in each direction, with times, dates, numbers, negations, clitics, reported speech and idioms. `engines/cascade/scripts/mt_bench.py` runs one checkpoint over one direction and prints every row, so any number below arrives with the text that produced it.
+
+```bash
+python engines/cascade/scripts/mt_bench.py --model engines/cascade/models/mt/en-pt/ct2-fixed --direction en-pt --repetition-penalty 1.2 --no-repeat-ngram-size 3
+python engines/cascade/scripts/mt_bench.py --model engines/cascade/models/mt/pt-en/ct2-fixed --direction pt-en --repetition-penalty 1.2 --no-repeat-ngram-size 3
+```
+
+Windows 11, 4 threads, CTranslate2 int8, beam 4.
+
+| Direction | Checkpoint | Build | Prefix | Median | p95 | Leading clause right | Whole output clean |
+|---|---|---|---|---|---|---|---|
+| EN→PT | `opus-mt-tc-big-en-pt` | CT2 int8, converted here | none | 851 ms | 1665 ms | 11 of 12 | **0 of 12** |
+| PT→EN | `opus-mt-ROMANCE-en` | CT2 int8, converted here | none | 1521 ms | 4338 ms | 9 of 12 | **0 of 12** |
+| PT→EN | `opus-mt-ROMANCE-en` | CT2 int8, build already in the tree | `>>por<<` | 711 ms | 921 ms | 9 of 12 | **0 of 12** |
+
+Every output begins with a correct or near-correct clause and then keeps going: the model paraphrases the same sentence again and again instead of stopping. That is not a translation quality problem, it is a generation that never reaches an end token, and it makes every row unusable as a sentence.
+
+```
+src  I'll send the invoice by Friday.
+ref  Envio a fatura até sexta-feira.
+out  Vou enviar a fatura até sexta-feira. Eu vou enviar a factura até sexta sexta- sexta.
+     I envio a factura na sexta- feira. eu vou enviar até sexta..
+```
+
+**The checkpoint is not the problem.** The same weights run through transformers produce one clean sentence in all five probes:
+
+| Probe | Hugging Face weights | CTranslate2 build |
+|---|---|---|
+| We don't have the budget for that. | Não temos orçamento para isso. | Spanish and repetition |
+| The deadline is 31 December 2026. | O prazo é 31 de dezembro de 2026. | Fragments and repetition |
+| Não faz sentido adiar outra vez. | It doesn't make sense to postpone it again. | Nine words, then garbage |
+| O prazo termina a 31 de dezembro de 2026. | The deadline ends on 31 December 2026. | Correct clause, then garbage |
+| A casa de banho fica ao fundo do corredor. | The bathroom is at the bottom of the hall. `>>by<<` | Correct clause, then garbage |
+
+The CT2 builds in the tree were mis-converted: both were 79 MB, which cannot be right for a 300 M parameter model next to a 77 M one, and reconverting the EN→PT checkpoint from its own weights gives 235 MB. Both builds also lose the end token, so decoding runs until the length cap turns into invented paraphrases.
+
+The mechanism, narrowed down on 1 November: the converted config starts decoding on `</s>` where the checkpoint starts on its pad token, and the pad token is missing from the shared vocabulary the converter wrote, although the weights still carry its row. Appending it by hand crashes the translator with a segmentation fault, which says the vocabulary size is baked into the model binary: the fix belongs in the conversion, not in a patched text file.
+
+What this corrects, in the plan and in `docs/LICENSES.md`: EN→PT was recorded as a checkpoint that degenerates with every language prefix. It degenerates **after conversion**. In transformers the same weights answer five of five probes cleanly, which is the first working EN→PT evidence this project has. It is not yet a translated pair: five probes are not a corpus, and nothing is published as a pair until the conversion is fixed and the 12 sentence table comes back clean.
+
+The leaked `>>by<<` on the PT→EN probe is the language prefix coming out the other side, which says the prefix placement is also still wrong.
+
+Rule that survives this: a number from a broken build is worse than no number, because it closes a question that is still open.
+
 ## What gets measured
 
 | Metric | Method |

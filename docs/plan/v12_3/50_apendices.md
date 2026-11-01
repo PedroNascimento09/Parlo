@@ -14,8 +14,8 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | Qwen3-ASR 0.6B | Reconhecimento | Apache-2.0 | Apache-2.0 | Por confirmar | Experimental |
 | Argos Translate 1.11.0 | Tradução | MIT | Pacotes por verificar | Sim | Em revisão |
 | MiniSBD | Segmentação de frases | AGPLv3 | Não aplicável | Não aplicável | Risco: sair do núcleo |
-| OPUS-MT ROMANCE-en | Tradução PT→EN | MIT (Opus-MT) | Apache-2.0 | Sim | Candidato |
-| OPUS-MT tc-big-en-pt | Tradução EN→PT | MIT (Opus-MT) | CC-BY-4.0 | Falhou | Por resolver |
+| OPUS-MT ROMANCE-en | Tradução PT→EN | MIT (Opus-MT) | Apache-2.0 | Sim | Candidato, geração por terminar |
+| OPUS-MT tc-big-en-pt | Tradução EN→PT | MIT (Opus-MT) | CC-BY-4.0 | Viável nos pesos; falhou na build CT2 | Candidato, conversão por corrigir |
 | M2M100 418M | Tradução | MIT | Por confirmar | Por medir | Candidato |
 | Qwen3-TTS 0.6B Base | Clonagem | Apache-2.0 | Apache-2.0 | Por medir | Candidato prioritário |
 | Qwen3-TTS 1.7B Base | Clonagem | Apache-2.0 | Apache-2.0 | Por medir | Candidato |

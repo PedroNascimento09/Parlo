@@ -64,8 +64,7 @@ The gate reads the Rust closure from `cargo metadata`, the Python closures from 
 1. **`minisbd` is AGPL-3.0-only** and reaches the engine through `argostranslate`, so the gate tracks it and no release passes while it is there. The replacement named in the master plan is OPUS-MT on CTranslate2. The attempt on 1 November 2026 did not produce a shippable model and nothing was published:
 
    - `Helsinki-NLP/opus-mt-pt-en` and `Helsinki-NLP/opus-mt-en-pt` answer 401 and cannot be downloaded.
-   - `Helsinki-NLP/opus-mt-ROMANCE-en` works português→inglês with the `>>por<<` source prefix, beam 4, `no_repeat_ngram_size=3` and `repetition_penalty=1.2`: 69 to 130 ms per sentence on four threads, correct output on three of three samples.
-   - `Helsinki-NLP/opus-mt-tc-big-en-pt` and `Helsinki-NLP/opus-mt-en-ROMANCE` degenerate into repeated fragments inglês→português with every target prefix tried (`>>por<<`, `>>pt<<`, none).
+   - `Helsinki-NLP/opus-mt-ROMANCE-en` works português→inglês with the `>>por<<` source prefix, beam 4, `no_repeat_ngram_size=3` and `repetition_penalty=1.2`: 69 to 130 ms per sentence on four threads, correct output on three of three samples.    - `Helsinki-NLP/opus-mt-tc-big-en-pt` was recorded as degenerating inglês→português with every target prefix. That was measured through a mis-converted CTranslate2 build: on 1 November the same weights were run through transformers and answered two of two probes correctly. The conversion, not the checkpoint, was at fault, and the pair stays unpublished until the corpus table is clean. Details in `docs/BENCHMARKS.md`.
 
    The engine still calls Argos, so `G-LIC-MT` stays open and releases stay blocked until a working permissive pair is chosen and measured with the same sentences.
 2. **`r-efi` is LGPL-2.1-or-later**, reachable only through the UEFI target of `getrandom`. It is not in any shipped binary today; the position needs a lawyer if a UEFI build is ever published.

@@ -199,8 +199,8 @@ A tradução é a área com maior dívida técnica do projeto. A conclusão ante
 | Caminho | Estado | Factos |
 |---|---|---|
 | Argos Translate 1.11.0 | No código publicado, em revisão | Declara MIT, mas depende de MiniSBD, que declara AGPLv3, e o código importa-a diretamente |
-| OPUS-MT PT→EN (`opus-mt-ROMANCE-en`) | Medido, não publicado | Apache-2.0; 69 a 130 ms por frase em CTranslate2 int8; 3 de 3 amostras corretas |
-| OPUS-MT EN→PT (`opus-mt-tc-big-en-pt`, `opus-mt-en-ROMANCE`) | Falhou | CC-BY-4.0 e Apache-2.0; degeneram em fragmentos repetidos com e sem token de idioma |
+| OPUS-MT PT→EN (`opus-mt-ROMANCE-en`) | Medido, primeira oração correta em 9 de 12 | Apache-2.0; 711 ms de mediana no corpus de 12 frases; nenhuma saída completa, porque a geração não termina; prefixo de idioma ainda mal colocado |
+| OPUS-MT EN→PT (`opus-mt-tc-big-en-pt`) | Falhou na build CT2; viável nos pesos | CC-BY-4.0; a build CTranslate2 em árvore estava mal convertida e não termina a geração; os pesos originais dão frases limpas em 2 de 2 sondagens |
 | OPUS-MT bilíngues `opus-mt-pt-en` e `opus-mt-en-pt` | Inacessíveis | O repositório devolveu 401 na data da medição |
 | M2M100 418M | Candidato por avaliar | Código MIT; licença dos pesos por confirmar no cartão do checkpoint |
 | NLLB-200 | Excluído | Pesos CC-BY-NC-4.0 |
