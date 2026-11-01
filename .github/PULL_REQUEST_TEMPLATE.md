@@ -12,7 +12,9 @@
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings`
 - [ ] `cargo test --workspace`
 - [ ] Python tests, if the sidecar changed
+- [ ] `python tools/licenses.py check`, if a dependency or a model changed
 - [ ] Documentation updated, if behaviour changed
+- [ ] Every commit is signed off (`git commit -s`)
 
 ## Risk
 

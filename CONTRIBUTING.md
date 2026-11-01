@@ -22,6 +22,8 @@ cargo run -p parlo-cli -- doctor
 cargo run -p parlo-cli -- demo out/demo.wav
 
 cd engines/hibiki && python -m unittest discover -s tests
+
+python tools/licenses.py check
 ```
 
 CI runs the same checks on Linux, macOS, and Windows. A pull request that fails them will not be merged.
@@ -43,6 +45,20 @@ CI runs the same checks on Linux, macOS, and Windows. A pull request that fails 
 ## Commit messages
 
 Short imperative sentences in English, describing the change and why it matters. One logical change per commit.
+
+## Licensing a contribution
+
+Every commit carries a Developer Certificate of Origin sign-off:
+
+```bash
+git commit -s -m "your message"
+```
+
+The sign-off line, `Signed-off-by: Your Name <you@example.com>`, states that you wrote the patch or otherwise have the right to submit it under the licence of this repository. CI checks every commit in a pull request for it.
+
+You keep the copyright of what you write. No assignment is asked for.
+
+Never paste code from a source you cannot cite. If a change follows another project closely, name it and its licence in the pull request. A dependency under a copyleft licence belongs in an optional component, never in the core, and `python tools/licenses.py check` refuses it there.
 
 ## Good first issues
 

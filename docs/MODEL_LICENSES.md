@@ -1,0 +1,47 @@
+# Model licences
+
+Weights, voices and translation packages carry their own licences. None of them follows the licence of the code that loads it, and none of them is shipped in a release archive: the user downloads them from the original source.
+
+The single source of truth is [`catalog/models.json`](../catalog/models.json). This page explains it and records what is still unverified.
+
+## What a catalogue entry says
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable name used by the code and the notices |
+| `kind` | `asr`, `tts`, `mt` or `voice` |
+| `version` | The artefact version, or `unversioned` |
+| `license` | The licence of the artefact, or `unverified` |
+| `status` | `verified` once the licence and the source were read, `unverified` until then |
+| `source` | The official distribution URL, never a mirror |
+| `attribution` | The sentence the licence requires, empty when none is required |
+
+`python tools/licenses.py check` refuses an entry marked `verified` that lacks a licence or an attribution, and `--strict-models` fails while any entry remains `unverified`.
+
+## The artefacts
+
+| Artefact | Kind | Licence | State | Attribution |
+|---|---|---|---|---|
+| Parakeet TDT 0.6B v3 | asr | CC-BY-4.0 | Verified | Required: NVIDIA Parakeet TDT 0.6B v3, CC BY 4.0 |
+| Whisper large-v3 | asr | MIT | Verified | Not required |
+| Kokoro-82M | tts | Apache-2.0 | Verified | Notices only |
+| Piper voices (`pt_PT-tugão`, `pt_BR-faber`, `en_US-lessac`) | voice | Not confirmed per voice | **Unverified** | Unknown |
+| Argos language packages | mt | Not confirmed per package | **Unverified** | Unknown |
+| Qwen3-ASR | asr | Not confirmed | **Unverified** | Unknown |
+| Hibiki-Zero | tts | CC BY-NC-SA 4.0 | Verified, non commercial | Required, and never the default |
+
+## Rules the code follows
+
+1. No weights, voices or language packages are inside a release archive.
+2. Every download comes from the official source and is checked against the digest the source publishes before it is used.
+3. An artefact whose licence is not confirmed is not installed silently: the setup script needs an explicit opt in and prints what is unknown.
+4. A model that forbids commercial use is never the default engine and is described as such wherever it is offered.
+
+## What is still open
+
+- The licence of each Piper voice, per voice. The project page does not state one for each voice file, and the voice cards do not agree. Until this is read voice by voice, the entries stay `unverified`.
+- The licence of each Argos language package. `argostranslate` publishes the index without a licence field per package; the packages themselves carry one that must be read.
+- Qwen3-ASR weights.
+- The training data licences for Parakeet and Whisper are documented by their publishers, not audited here. Redistributing the weights is allowed by the weight licence; the data is a separate question only if the weights are retrained or redistributed as a dataset.
+
+This page is not legal advice.

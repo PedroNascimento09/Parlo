@@ -13,8 +13,50 @@ permissions:
   contents: write
 
 jobs:
+  licences:
+    name: Licence gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            engines/cascade/requirements.txt
+            engines/tts-piper/requirements.txt
+
+      - name: Install the dependency closures
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r engines/cascade/requirements.txt
+          python -m pip install -r engines/tts-piper/requirements.txt
+
+      - name: Check licences, models and pinned versions
+        run: python tools/licenses.py check --verify-installed --strict --strict-models
+
+      - name: Regenerate the notices and the SBOM
+        run: |
+          python tools/licenses.py notices --out THIRD_PARTY_NOTICES.md
+          python tools/licenses.py sbom --out sbom.cdx.json
+          git diff --exit-code THIRD_PARTY_NOTICES.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: licence-documents
+          path: |
+            THIRD_PARTY_NOTICES.md
+            sbom.cdx.json
+
   build:
     name: Build ${{ matrix.target }}
+    needs: licences
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -72,6 +114,10 @@ jobs:
           pyinstaller --noconfirm --clean parlo-engine.spec
           du -sh dist/parlo-engine
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: licence-documents
+
       - name: Package unix
         if: runner.os != 'Windows'
         run: |
@@ -80,8 +126,10 @@ jobs:
           cp target/${{ matrix.target }}/release/parlo-app release/
           cp -r engines/cascade/dist/parlo-engine release/
           cp assets/parlo.ico assets/parlo.png release/
-          cp README.md release/
-          tar -czf ${{ matrix.archive }} -C release parlo parlo-app parlo-engine parlo.png parlo.ico README.md
+          cp README.md LICENSE NOTICE THIRD_PARTY_NOTICES.md sbom.cdx.json release/
+          tar -czf ${{ matrix.archive }} -C release \
+            parlo parlo-app parlo-engine parlo.png parlo.ico \
+            README.md LICENSE NOTICE THIRD_PARTY_NOTICES.md sbom.cdx.json
 
       - name: Package windows
         if: runner.os == 'Windows'
@@ -92,12 +140,14 @@ jobs:
           Copy-Item target/${{ matrix.target }}/release/parlo-app.exe release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
           Copy-Item assets/parlo.ico, assets/parlo.png release/
-          Copy-Item README.md release/
-          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md -DestinationPath ${{ matrix.archive }} -Force
+          Copy-Item README.md, LICENSE, NOTICE, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
+          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          files: ${{ matrix.archive }}
+          files: |
+            ${{ matrix.archive }}
+            sbom.cdx.json
           generate_release_notes: true

@@ -1,0 +1,8 @@
+Parlo
+Copyright 2026 Parlo contributors
+
+This product includes software developed by third parties, listed with their
+licences in THIRD_PARTY_NOTICES.md.
+
+Piper and the espeak-ng data it loads are GPL-3.0-or-later and are not part of
+this distribution. They are installed separately as an optional adapter.

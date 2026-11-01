@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "artifacts": [
+    {
+      "id": "piper-voice-pt-pt-tugao",
+      "kind": "voice",
+      "version": "medium",
+      "license": "unverified",
+      "status": "unverified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium",
+      "attribution": ""
+    },
+    {
+      "id": "piper-voice-pt-br-faber",
+      "kind": "voice",
+      "version": "medium",
+      "license": "unverified",
+      "status": "unverified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium",
+      "attribution": ""
+    },
+    {
+      "id": "piper-voice-en-us-lessac",
+      "kind": "voice",
+      "version": "medium",
+      "license": "unverified",
+      "status": "unverified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium",
+      "attribution": ""
+    },
+    {
+      "id": "parakeet-tdt-0.6b-v3",
+      "kind": "asr",
+      "version": "3",
+      "license": "CC-BY-4.0",
+      "status": "verified",
+      "source": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
+      "attribution": "NVIDIA Parakeet TDT 0.6B v3, licensed CC BY 4.0"
+    },
+    {
+      "id": "kokoro-82m",
+      "kind": "tts",
+      "version": "1.0",
+      "license": "Apache-2.0",
+      "status": "verified",
+      "source": "https://huggingface.co/hexgrad/Kokoro-82M",
+      "attribution": "Kokoro-82M, licensed Apache 2.0"
+    },
+    {
+      "id": "whisper-large-v3",
+      "kind": "asr",
+      "version": "3",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/openai/whisper-large-v3",
+      "attribution": "Whisper large-v3, licensed MIT"
+    },
+    {
+      "id": "argos-translate-pack",
+      "kind": "mt",
+      "version": "unversioned",
+      "license": "unverified",
+      "status": "unverified",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": ""
+    },
+    {
+      "id": "qwen3-asr",
+      "kind": "asr",
+      "version": "unversioned",
+      "license": "unverified",
+      "status": "unverified",
+      "source": "https://huggingface.co/Qwen",
+      "attribution": ""
+    }
+  ]
+}

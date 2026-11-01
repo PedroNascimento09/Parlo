@@ -1,41 +1,62 @@
 # Licences
 
-Two artefacts ship from this repository and they do not carry the same licence. This page says which, and why.
+This page says which licence covers each piece of Parlo, what the releases contain, and what is still open. It is the page the repository, the manifests and the notices must agree with.
 
 ## The short version
 
-`parlo`, the Rust command line program, is **MIT** and comes from [`LICENSE`](../LICENSE).
-
-`parlo-engine`, the packaged Python engine that sits next to it in a release archive, is **GPL-3.0-or-later**, because it contains Piper and the espeak-ng data Piper loads.
-
-## Why the engine is GPL
-
-Piper is the speech synthesiser of the default cascade and it is GPL-3.0-or-later. Until the packaging changed, Parlo invoked a Piper that the user installed separately, which kept the two programs apart. `parlo-engine` ends that separation: [`parlo-engine.spec`](../engines/cascade/parlo-engine.spec) builds one program that contains the `piper` package, the `piper_phonemize` bindings and the espeak-ng data they load at runtime. A program that contains GPL code and links it in the same process is a combined work, so the whole bundle is distributed under the GPL.
-
-The GPL asks for the complete corresponding source of what was shipped. It is this repository: `engines/cascade` plus the spec file that builds it.
-
-## What each piece is
-
-| Piece | Licence | Where it lives |
+| Piece | Licence | Where it is |
 |---|---|---|
-| `parlo` command line program | MIT | [`LICENSE`](../LICENSE), `crates/` |
-| `parlo-engine` bundle | GPL-3.0-or-later | `engines/cascade`, built by `parlo-engine.spec` |
-| sherpa-onnx runtime | Apache-2.0 | bundled in `parlo-engine` |
-| Parakeet TDT 0.6B v3 weights | CC-BY-4.0 | downloaded, not shipped |
-| Argos Translate | MIT | bundled in `parlo-engine` |
-| faster-whisper | MIT | bundled in `parlo-engine` when installed |
-| CTranslate2 | MIT | bundled in `parlo-engine` |
-| Piper | GPL-3.0-or-later | bundled in `parlo-engine` |
-| espeak-ng and its data | GPL-3.0-or-later | bundled in `parlo-engine` |
-| Piper voices for Portuguese and English | CC BY 4.0, as published by the voice authors | downloaded, not shipped |
-| Hibiki-Zero weights | CC BY-NC-SA 4.0 | optional, downloaded, never the default |
+| Parlo code: `parlo-core`, `parlo-cli`, `parlo-app`, the page, the cascade engine, the scripts, the tests | **MIT** today, **Apache-2.0** prepared for the next release | [`LICENSE`](../LICENSE), `crates/`, `engines/cascade`, `engines/hibiki` |
+| Piper speech synthesiser | **GPL-3.0-or-later** | [engines/tts-piper](../engines/tts-piper), installed and licensed separately, never in a release archive |
+| Model weights and voices | Their own licences, one per artefact | [`catalog/models.json`](../catalog/models.json), downloaded by the user, never shipped |
 
-`parlo engines` prints the same policy from the registry the program is built with, so the table cannot drift away from the code.
+## Why the core is permissive and the voice is not shipped
 
-## What that means for you
+Piper is GPL-3.0-or-later and carries the espeak-ng data it loads. A release that put Piper in the same program as the engine would distribute one combined work under the GPL, which is what earlier releases did.
 
-Using, modifying or redistributing `parlo-engine` carries the GPL obligations, including making the corresponding source available; using the MIT `parlo` binary on its own does not. Running either of them locally, for your own calls and recordings, obliges you to nothing.
+Since this change the engine program contains no Piper code: `engines/cascade/parlo-engine.spec` no longer bundles `piper`, `piper_phonemize` or `espeak-ng-data`, and `engines/cascade/requirements.txt` no longer lists `piper-tts`. The synthesiser is an optional adapter in [engines/tts-piper](../engines/tts-piper) that the user installs with its own command, and the engine talks to it over a JSON line protocol on stdin and stdout.
 
-## Why this is not where it should end
+**A process boundary is not a legal conclusion.** Running two programs side by side and exchanging data on a pipe is the arrangement the project can implement and describe; whether a given distribution is one work or two is a question for a lawyer, and it is listed as such under the open questions below.
 
-A permissive synthesiser would let the whole distribution stay MIT and remove the split above. That is the reason the project intends to replace Piper with one, and it is a decision about measured quality, not a date.
+Without the adapter Parlo still translates, still recognises speech, still dubs files that need no voice, and says in a sentence that synthesis is unavailable and why.
+
+## What a release contains
+
+Each archive carries the two programs, the packaged engine, the icons, `README.md`, `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md` and `sbom.cdx.json`. It carries no Piper, no espeak-ng data and no model weights.
+
+The Python closure that the packaged engine contains is recorded in [`tools/python-packages.json`](../tools/python-packages.json) and reproduced in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md), generated by `python tools/licenses.py notices`. The SBOM is CycloneDX 1.5, generated by `python tools/licenses.py sbom`.
+
+## Models and voices
+
+Weights and voices keep their own licences, which never follow the licence of the code that loads them:
+
+| Artefact | Licence | State |
+|---|---|---|
+| Parakeet TDT 0.6B v3 | CC-BY-4.0 | Verified, attribution required |
+| Whisper large-v3 | MIT | Verified |
+| Kokoro-82M | Apache-2.0 | Verified |
+| Piper voices | Per voice, not yet confirmed | **Unverified**, downloaded only with an explicit opt in |
+| Argos language packages | Per package, not yet confirmed | **Unverified** |
+| Qwen3-ASR | Not confirmed | **Unverified** |
+
+The catalogue is the single place where this is recorded: `catalog/models.json` gives each artefact a name, a version, an official source, a licence, the attribution it requires and a status. `python tools/licenses.py check` refuses an entry that is marked verified without a licence and an attribution, and `--strict-models` fails while any entry stays unverified. Details per artefact: [MODEL_LICENSES.md](MODEL_LICENSES.md).
+
+## The gate
+
+```bash
+python tools/licenses.py check             # every component, every scope
+python tools/licenses.py check --strict    # a release: tracked issues fail too
+```
+
+The gate reads the Rust closure from `cargo metadata`, the Python closure from `engines/cascade/requirements.txt` and `engines/tts-piper/requirements.txt`, and the catalogue. It fails when a licence is missing, when it is denied, when it is not on the allow list for that scope, when a requirement is not pinned to an exact version, and when a recorded version does not match what is installed. GPL is allowed for the optional components and not for the core, because that is where the isolation is real.
+
+`tools/license-policy.json` holds the allow lists, the per component overrides, and the tracked issues with the reason each one is still open.
+
+## Open questions
+
+1. **Two commit identities.** The git history carries `PedroNascimento09` and `Pedromrn0903`. Until the owner confirms both belong to the same copyright holder, the licence stays MIT; the transition is then one change to `LICENSE`, the manifests and the badges.
+2. **`minisbd` is AGPL-3.0-only** and reaches the engine through `argostranslate`. The gate tracks it and release builds refuse to pass while it is there. The choice is to pin an Argos version without it, to replace Argos, or to accept an AGPL engine; it is a product decision and it is not taken here.
+3. **`r-efi` is LGPL-2.1-or-later**, reachable only through the UEFI target of `getrandom`. It is not in any shipped binary today; the position needs a lawyer if a UEFI build is ever published.
+4. **The process boundary with Piper** needs a legal view before the repository claims that the two are separate works, not before.
+
+Nothing on this page is legal advice.
