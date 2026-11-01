@@ -6,14 +6,14 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
-- Text states for streaming recognition: `partial`, `stable`, `final` and `corrected`, with a stable word confirmed once it survives one further decode, a segment that closes after 0.45 s of silence, and the mode reported as `reprocess` rather than native streaming.
+- Text states for streaming recognition: `partial`, `stable`, `final` and `corrected`, with stable words confirmed by local agreement between the last two hypotheses, a segment that closes after 0.45 s of silence, and the mode reported as `reprocess` rather than native streaming.
 - `parlo stream <file.wav>` prints those states as they arrive, over a new `stream` operation on the sidecar protocol.
 - `engines/cascade/scripts/stream_bench.py` and a 20 sentence European Portuguese corpus measure the first partial, the first stable words, the final text and the word error rate of each stage.
 - `setup_models.py --voice pt_pt` fetches the Piper `pt_PT-tugão-medium` voice.
 
 ### Changed
 
-- On the European Portuguese voice the cascade reaches the first partial at 908 ms and the final text at 3.40 s, with 0.237 final word error rate for Parakeet and 0.219 for Whisper base. The Brazilian voice reading the same European sentences scored about 0.66 for both, so the corpus now uses the PT-PT voice.
+- On the European Portuguese voice the cascade reaches the first partial at 849 ms and the final text at 3.36 s, with 0.231 final word error rate for Parakeet and 0.279 for Whisper base, and 81% of the sentence confirmed before the segment closes. The Brazilian voice reading the same European sentences scored about 0.66 for both, so the corpus now uses the PT-PT voice.
 
 ## [0.1.7] - 2026-10-31
 

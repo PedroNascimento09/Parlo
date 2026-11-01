@@ -122,18 +122,29 @@ Parakeet stays the default for two reasons: it holds its rate under noise, and i
 
 ### Streaming, partial to final
 
-The cascade publishes text in four states: partial, stable, final and corrected. The recogniser reads a growing buffer every 0.4 s of audio, a word becomes stable once it survives one further decode, and the buffer closes after 0.45 s of silence or 12 s of audio. The mode is reported as `reprocess`, not native streaming, because every decode re-reads the whole segment.
+The cascade publishes text in four states: partial, stable, final and corrected. The recogniser reads a growing buffer every 0.4 s of audio and confirms a word only when the last two hypotheses agree on it (LocalAgreement, the policy section 4.3 of the plan names for models that cannot stream natively); the buffer closes after 0.45 s of silence or 12 s of audio. The mode is reported as `reprocess`, not native streaming, because every decode re-reads the whole segment.
 
-Corpus: 20 European Portuguese sentences written for this test (`engines/cascade/tests/corpus/pt_pt.txt`), synthesised with the Piper `pt_PT-tugão-medium` voice. Windows 11, 4 threads, decode every 0.4 s, one extra decode before a word is stable.
+Corpus: 20 European Portuguese sentences written for this test (`engines/cascade/tests/corpus/pt_pt.txt`), synthesised with the Piper `pt_PT-tugão-medium` voice. Windows 11, 4 threads, decode every 0.4 s, two agreeing hypotheses before a word is stable.
 
 | Recogniser | First partial | First stable | Final | p95 final | Final WER | Stable coverage |
 |---|---|---|---|---|---|---|
-| **Parakeet TDT 0.6B v3 int8** | 908 ms | 1985 ms | 3398 ms | 3861 ms | **0.237** | 67.3% |
-| Whisper base int8 | 898 ms | 1902 ms | 3391 ms | 3932 ms | **0.219** | 74.4% |
+| **Parakeet TDT 0.6B v3 int8** | 849 ms | 1978 ms | 3355 ms | 3918 ms | **0.231** | 81.1% |
+| Whisper base int8 | 887 ms | 1951 ms | 3379 ms | 3907 ms | **0.279** | 72.8% |
 
-Reading: the first provisional text lands about 0.9 s after speech starts, the first confirmed words after about 1.9 s, and the finished sentence about 3.4 s after it began. Both recognisers are within 0.02 of each other on the final text, so this test does not rank them; the real time factor table above still favours Parakeet by roughly three times, and a gap of 0.018 on 20 sentences is inside the noise of a set this small.
+Reading: the first provisional text lands about 0.9 s after speech starts, the first confirmed words after about 2.0 s, and the finished sentence about 3.4 s after it began. Parakeet scored 0.231 against 0.279 for Whisper base, which is the first time the two separate by more than noise on this corpus; at 20 sentences that is a direction, not a ranking, and the real time factor table above favours Parakeet by roughly three times regardless.
 
-The stable text is a prefix of the sentence, so its word error rate counts the words it has not reached yet as errors (0.438 for Parakeet, 0.387 for Whisper). Coverage is the honest companion: about two thirds of the sentence is confirmed when the segment closes. Requiring two extra decodes instead of one dropped coverage to 6.7% and raised the final rate, because both recognisers revise earlier words constantly; that is a property of windowed reprocessing, not a tuning accident.
+The stable text is a prefix of the sentence, so its word error rate counts the words it has not reached yet as errors. Coverage is the honest companion: 81.1% of the sentence is confirmed when the segment closes, which is what someone dictating would see as settled text. The earlier policy, which required a word to repeat across decodes before accepting it, reached 67.3%; local agreement is both simpler and better here.
+
+Agreement window and decode cadence, Parakeet, the same 20 sentences:
+
+| Policy window | Decode every | First partial | First stable | Final | Stable coverage | Final WER |
+|---|---|---|---|---|---|---|
+| **LocalAgreement 2** | **0.4 s** | **849 ms** | **1978 ms** | **3355 ms** | **81.1%** | **0.231** |
+| LocalAgreement 2 | 0.6 s | 921 ms | 2299 ms | 3349 ms | 64.2% | 0.209 |
+| LocalAgreement 3 | 0.4 s | 835 ms | 2409 ms | 3367 ms | 42.2% | 0.222 |
+| LocalAgreement 3 | 0.6 s | 937 ms | 2732 ms | 3391 ms | 21.2% | 0.268 |
+
+**Decision taken:** two hypotheses and a 0.4 s cadence stay. Waiting for a third hypothesis halves the confirmed text and adds half a second to the first stable words for a final rate inside the noise; decoding less often saves CPU and costs both latency and coverage.
 
 The voice matters more than the recogniser: the same 20 sentences synthesised with the Brazilian `pt_BR-faber-medium` voice scored 0.67 and 0.65 final WER, against 0.24 and 0.22 with the European voice. A recogniser cannot be judged on PT-PT with a PT-BR voice.
 
