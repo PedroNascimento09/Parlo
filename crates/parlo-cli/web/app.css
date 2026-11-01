@@ -625,6 +625,18 @@ body.first-run .dub {
   cursor: default;
 }
 
+.install.quiet {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.install.quiet:hover:not([disabled]),
+.install.quiet:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .models-install {
   margin-top: 18px;
 }

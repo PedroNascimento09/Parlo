@@ -57,6 +57,7 @@ const intelligenceTest = document.getElementById("intelligence-test");
 const intelligenceTestNote = document.getElementById("intelligence-test-note");
 const welcomeBox = document.getElementById("welcome");
 const welcomeInstall = document.getElementById("welcome-install");
+const modelsDictation = document.getElementById("models-dictation");
 const welcomeStatus = document.getElementById("welcome-status");
 const liveButton = document.getElementById("live");
 const liveNote = document.getElementById("live-note");
@@ -843,7 +844,10 @@ function reflectFirstRun(ready, downloading) {
   );
 }
 
+let modelState = { models: [], ready: false, dictation: false, downloading: false };
+
 function describeModels(state) {
+  modelState = state;
   modelsList.replaceChildren();
   for (const model of state.models || []) {
     const row = document.createElement("li");
@@ -887,12 +891,26 @@ function describeModels(state) {
     modelsNote.textContent =
       "Downloading models, this can take a few minutes on a normal connection. You can leave this page open.";
     modelsInstall.hidden = true;
+    modelsDictation.hidden = true;
     reflectFirstRun(false, true);
     return false;
   }
 
-  modelsNote.textContent = "Some models are missing. They are a one time download and stay on this machine.";
+  const missing = (state.models || []).filter((model) => !model.installed);
+  const byFeature = new Map();
+  for (const model of missing) {
+    const feature = model.feature || "A feature";
+    if (!byFeature.has(feature)) {
+      byFeature.set(feature, []);
+    }
+    byFeature.get(feature).push(model.name);
+  }
+  const sentences = Array.from(byFeature, ([feature, names]) => feature + " needs " + names.join(" and "));
+  modelsNote.textContent = sentences.length
+    ? "Missing: " + sentences.join("; ") + ". Each one can be downloaded on its own, and nothing else comes with it."
+    : "Some models are missing. They are a one time download and stay on this machine.";
   modelsInstall.hidden = false;
+  modelsDictation.hidden = missing.every((model) => model.installed) || !missing.some((model) => model.id === "parakeet");
   modelsInstall.disabled = modelsPolling;
   reflectFirstRun(false, false);
   return false;
@@ -956,7 +974,7 @@ function stopPollingModels() {
   welcomeInstall.textContent = "Download models";
 }
 
-async function downloadModels() {
+async function downloadModels(path = "/models") {
   if (modelsPolling) {
     return;
   }
@@ -967,9 +985,12 @@ async function downloadModels() {
   welcomeInstall.disabled = true;
   welcomeInstall.textContent = "Downloading…";
   startWelcomeClock();
-  modelsNote.textContent = "Downloading the models. This takes a while on a slow connection; the page stays usable meanwhile.";
+  modelsNote.textContent =
+    path === "/models/dictation"
+      ? "Downloading the recogniser. Dictation works as soon as it lands; translation and voices stay optional."
+      : "Downloading the models. This takes a while on a slow connection; the page stays usable meanwhile.";
   try {
-    const response = await fetch("/models", {
+    const response = await fetch(path, {
       method: "POST",
       headers: { Authorization: "Bearer " + token },
     });
@@ -988,7 +1009,8 @@ async function downloadModels() {
     modelsTimer = setInterval(async () => {
       const wasDownloading = modelsDownloading;
       const ready = await loadModels();
-      if (ready) {
+      const done = path === "/models/dictation" ? Boolean(modelState.dictation) : ready;
+      if (done) {
         stopPollingModels();
         modelsNote.textContent = "The models are installed. If the translator does not answer, reload this page.";
         return;
@@ -1011,6 +1033,7 @@ async function downloadModels() {
 
 modelsInstall.addEventListener("click", () => downloadModels());
 welcomeInstall.addEventListener("click", () => downloadModels());
+modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 const settingsWrite = document.getElementById("settings-write");
