@@ -35,6 +35,7 @@ A numeração é contínua de 1 a 82, agrupada em treze partes, sem títulos dup
 - Roadmap e fases passam a ser definidos por dependências e critérios de conclusão, sem datas nem estimativas.
 - A orquestração de modelos ganha especificação própria na Parte VI: PIMO, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição de pipeline, monitorização com histerese, recuperação, ciclo de vida e protetor da identidade vocal.
 - A biblioteca passa a ser uma camada independente na Parte VII: catálogo que evolui sem reinstalar a aplicação, compatibilidade entre versões, instalação e remoção por modelo, armazenamento com recursos partilhados, importação externa, distribuição assinada e ciclos de atualização separados.
+- As decisões finais do autor ficam fixadas: objetivo de 100 MB para o instalador, catálogo em `parlo-models` com manifestos assinados em Ed25519, Piper e Argos fora do núcleo, corpus de avaliação original sob CC0-1.0, latência publicada em P50 e P95, e uma checklist interna de conformidade em vez de parecer jurídico.
 
 ## Índice
 

@@ -22,14 +22,26 @@ Contrato: campos obrigatórios validados dos dois lados; versão de protocolo ne
 
 Caminho do áudio: captura do dispositivo, verificação de formato, deteção de atividade, reconhecimento incremental, estabilização de texto, tradução por unidades semânticas, síntese ou legendas, e saída para o dispositivo, para o campo ativo ou para ficheiro.
 
-| Etapa | Orçamento no perfil equilibrado | Como é medido |
-|---|---|---|
-| Captura a primeiro parcial | 1,5 s | Timestamp do primeiro evento parcial menos início de fala |
-| Primeiro parcial a texto estável | 1,0 s | Evento estável contra o parcial anterior |
-| Texto estável a tradução | 400 ms | Tempo de tradução por unidade |
-| Tradução a primeiro áudio sintetizado | 1,2 s | Soma de síntese e reamostragem |
+A latência é medida em quatro pontos distintos, porque somar tudo num número esconde o gargalo:
 
-Os valores atuais medidos são: 849 ms até ao primeiro parcial e 3,36 s até ao texto final em PT-PT. O orçamento de síntese ainda não tem medição porque nenhum clonador está integrado. O controlador adaptativo reduz o tamanho das unidades, muda o modo de processamento ou desativa a voz quando o atraso acumula, e diz ao utilizador o que mudou.
+| Medição | Início | Fim |
+|---|---|---|
+| Reconhecimento | Início de fala | Primeiro resultado parcial |
+| Tradução | Texto estável | Texto traduzido |
+| Voz | Texto traduzido | Primeiro áudio sintetizado |
+| Total | Início de fala | Primeiro áudio audível |
+
+Para cada modo mede-se também a latência depois de a conversa estar estabelecida, e publicam-se P50 e P95 com as condições de teste: hardware, modelos, quantização, threads e duração da sessão.
+
+| Perfil | Objetivo | O que privilegia |
+|---|---|---|
+| Baixa latência | Primeiro áudio cedo, qualidade de voz menor | Modo quase-tempo-real em máquinas modestas |
+| Equilibrado | 2,5 s até ao primeiro áudio traduzido, como objetivo inicial | Melhor relação entre atraso e qualidade |
+| Alta qualidade | Latência maior, identidade vocal e naturalidade primeiro | Gravação, dobragem e leitura |
+
+Os 2,5 segundos são um objetivo do perfil equilibrado, não uma garantia universal nem uma promessa de release. Se não forem atingidos, o produto apresenta o valor real e nomeia o gargalo em vez de esconder o atraso. A identidade vocal e a qualidade da tradução não se sacrificam para cumprir um tempo: nesse caso muda-se de perfil e diz-se que mudou.
+
+O controlador adaptativo reduz unidades, muda o modo de processamento ou desativa a voz quando o atraso acumula, e diz ao utilizador o que mudou.
 
 ## 59. Hardware, backends e perfis
 

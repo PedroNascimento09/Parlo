@@ -35,6 +35,8 @@ Separar processos é uma decisão de engenharia; a qualificação de obra combin
 
 Regras de fronteira: o núcleo não importa código GPL nem AGPL; os adaptadores copyleft vivem em processos separados, com a sua licença, e são instalados por ação explícita do utilizador; o produto funciona sem eles; o protocolo entre núcleo e adaptador é público e documentado; e nenhuma release agrega um binário copyleft ao pacote principal. A documentação diz que esta fronteira é técnica e que a qualificação jurídica de distribuição conjunta fica para parecer, quando existir.
 
+Decisão fechada: o Argos deixa de ser dependência obrigatória do núcleo. A integração pode permanecer como adaptador externo opcional, documentado, mas nenhuma cadeia que inclua MiniSBD volta ao caminho principal sem análise específica e decisão registada.
+
 ## 23. Pesos, vozes e datasets
 
 Cada artefacto descarregável tem um registo com: identificador e versão, origem oficial, URL, hash, licença, atribuição obrigatória, condições conhecidas e estado de verificação. O procedimento é o mesmo para todos:
@@ -59,6 +61,8 @@ Estado atual: as três vozes Piper incluídas estão verificadas como MIT no rep
 Ficam bloqueados: F5-TTS (pesos CC-BY-NC), XTTS-v2 (licença não comercial), NLLB-200 e SeamlessM4T v2 (CC-BY-NC), e qualquer checkpoint cuja licença não tenha sido confirmada. Ficam experimentais: Qwen3-ASR, VoxCPM, VoiceDesign e diarização com pesos condicionados. Ficam externos: Piper e Argos, se o Argos voltar.
 
 Um modelo bloqueado pode ser usado por quem o instalar por sua conta, mas o Parlo não o descarrega, o PIMO não o admite na seleção automática e o produto não o apresenta como capacidade.
+
+Estado do Argos: sai do núcleo e das dependências obrigatórias. Fica documentado como possibilidade experimental futura, sujeita à resolução da cadeia AGPL, e não aparece na distribuição normal.
 
 ## 25. Direitos de voz e uso aceitável
 
@@ -210,10 +214,14 @@ Uma pontuação única não compara modelos de tarefas diferentes. Cada categori
 
 | Tarefa | Métricas | Cuidados |
 |---|---|---|
-| Reconhecimento | WER, CER, pontuação e segmentação, timestamps, robustez a ruído, vocabulário | PT-PT e PT-BR avaliados em separado; sotaques declarados |
+| Reconhecimento | WER, CER, pontuação e segmentação, timestamps, robustez a ruído, vocabulário | PT-PT e PT-BR em separado; sotaques declarados |
 | Tradução | BLEU, chrF, COMET quando disponível, preservação de números e negações, terminologia, fluidez | Ambas as direções; conjunto representativo; validação humana no desenvolvimento |
 | Clonagem e síntese | Semelhança de locutor, naturalidade, inteligibilidade, pronúncia, prosódia, consistência entre frases, estabilidade em sessão, latência, memória | Semelhança é indicador, não prova de identidade preservada |
-| Tempo real | Latência ponta a ponta, primeiro resultado, primeiro áudio, atraso acumulado, jitter, perdas, interrupções | Distinguir latência de componente de latência de experiência |
+| Tempo real | P50 e P95 do primeiro resultado, do primeiro áudio e do total, atraso acumulado, jitter, perdas | Distinguir latência de componente de latência de experiência |
+
+O corpus de avaliação é escrito para o projeto e versionado com o código: frases curtas e longas, conversa formal e informal, vocabulário técnico, números, datas, nomes próprios e expressões idiomáticas, em português europeu, português brasileiro e inglês, nos dois sentidos de tradução. Os textos originais ficam sob CC0-1.0 e a origem é registada. Não se usam mensagens privadas nem texto de terceiros sem autorização.
+
+Um corpus escrito mede tradução, não reconhecimento. Para reconhecimento são necessárias gravações autorizadas, e a diferença é declarada em cada resultado.
 
 Regra de publicação: um número aparece com modelo, versão, quantização, runtime, threads, hardware, corpus e data. Média sem condições não entra em notas de release. Métricas automáticas não substituem avaliação humana nos pares de línguas e nas vozes que o produto declara suportar.
 

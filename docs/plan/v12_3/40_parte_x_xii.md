@@ -45,7 +45,9 @@ As fases 1 a 3 têm precedência. A clonagem antes da voz neutra é ordem de pro
 
 ## 70. Definição de concluída e regras de corte
 
-Uma release está concluída quando: instala em máquina limpa e atualiza sobre a anterior; o rollback funciona; o benchmark do corpus está atualizado com hardware e versões; a matriz de licenças foi revista para tudo o que a release inclui; a auditoria de rede mostra zero ligações externas; o changelog declara limitações conhecidas; a acessibilidade mínima foi verificada nos fluxos principais; cada funcionalidade está classificada como experimental, preview, beta ou estável; e pelo menos cinco utilizadores externos a experimentaram.
+Uma release está concluída quando: instala em máquina limpa e atualiza sobre a anterior; o rollback funciona; o benchmark do corpus está atualizado com hardware e versões; a matriz de licenças foi revista para tudo o que a release inclui; a auditoria de rede mostra zero ligações externas além da consulta ao catálogo; o changelog declara limitações conhecidas; a acessibilidade mínima foi verificada nos fluxos principais; cada funcionalidade está classificada como experimental, preview, beta ou estável; e o instalador está dentro do orçamento de tamanho ou o desvio está explicado.
+
+Validação com utilizadores externos é um gate próprio, não uma condição de todo o desenvolvimento. Enquanto não existirem testadores reais, os testes internos, funcionais e de acessibilidade podem avançar, e o produto nunca anuncia resultados de usabilidade que não foram medidos. O gate de usabilidade fica registado como não realizado, não como aprovado.
 
 Regras de corte: se o gate falha, a release não sai e a anterior continua a ser a estável; se um modelo não passa, a release sai sem ele com a alternativa já aprovada; trabalho fora do objetivo entra apenas se não atrasar o gate; e o roadmap é revisto com dados medidos, não com expectativas.
 
@@ -130,19 +132,24 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 |---|---|---|
 | 1 | Voz própria é o caminho principal | Clonagem antes de voz neutra; fallback explícito |
 | 2 | Nenhum modelo é default sem gate interno | Fim das promoções por leitura de model card |
-| 3 | Argos fora do núcleo enquanto houver AGPL | Tradução por NMT aprovado por par |
+| 3 | Argos fora do núcleo e das dependências obrigatórias | Tradução por NMT aprovado por par |
 | 4 | Piper opcional e externo | Núcleo sem GPL; vozes com licença própria |
 | 5 | Pesos e vozes nunca nos arquivos de release | Catálogo com hash e licença por artefacto |
 | 6 | Licença Apache-2.0 no código original | `LICENSE` e `NOTICE`; MIT histórico preservado |
 | 7 | DCO sem transferência de direitos | Contribuições verificadas no CI |
-| 8 | Carbono local-first | Nenhuma telemetria; atualização é a única chamada |
+| 8 | Local-first sem telemetria | A consulta ao catálogo é a única chamada externa |
 | 9 | Model Hub decide, utilizador não compara | Interface com Automático e override avançado |
-| 10 | Nenhuma capacidade anunciada antes de medida | README e notas de release limitados ao real |
-| 11 | A orquestração é determinística, sem modelo de aprendizado a escolher modelos | Regras, manifestos e resultados medidos explicam cada escolha |
-| 12 | Nenhum benchmark pesado corre na máquina do utilizador | Nível A no arranque, nível B na primeira utilização, nível C em CI |
-| 13 | A aplicação não incorpora pesos nem cresce com o catálogo | Instalador limitado pelo código; biblioteca separada |
-| 14 | Catálogo e modelos atualizam-se sem reinstalar a aplicação | Esquema de catálogo versionado e compatibilidade calculada |
-| 15 | Nada é instalado, substituído ou apagado sem decisão do utilizador | Recomendação com razão; remoção sempre explícita |
+| 10 | Nenhuma capacidade anunciada antes de medida | README e notas limitados ao real |
+| 11 | Orquestração determinística, sem meta-modelo | Regras, manifestos e medições explicam cada escolha |
+| 12 | Sem benchmarks pesados na máquina do utilizador | Níveis A, B e C separados |
+| 13 | Aplicação sem pesos, com orçamento próprio | Objetivo de 100 MB, limite de referência de 150 MB |
+| 14 | Biblioteca independente em `parlo-models` | Catálogo e pesos evoluem sem reinstalar a aplicação |
+| 15 | Manifestos assinados com Ed25519 | Chave pública na aplicação; privada fora do repositório |
+| 16 | Sem Authenticode nesta fase | Hashes e instruções, sem os apresentar como assinatura |
+| 17 | Clonagem da própria voz e de terceiros autorizados | Declaração obrigatória; engano proibido |
+| 18 | Corpus de avaliação original sob CC0-1.0 | Texto próprio, sem dados privados de terceiros |
+| 19 | Latência publicada em P50 e P95 por perfil | 2,5 s é objetivo do perfil equilibrado, não garantia |
+| 20 | Sem parecer jurídico nesta fase | Checklist interna de conformidade revista por release |
 
 ## 78. Decisões que o Parlo toma automaticamente
 
@@ -170,14 +177,20 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 
 ## 80. Questões que exigem decisão humana ou validação jurídica
 
-| # | Questão | Quem decide |
+O Parlo é um projeto pessoal, gratuito, open-source e público, sem venda, subscrição, publicidade ou rendimento associado. Nesta fase não há parecer jurídico contratado e a ausência dele não bloqueia desenvolvimento nem publicação. Também não é apresentado como conformidade jurídica: o projeto cumpre o que consegue verificar e identifica o que exige interpretação.
+
+| Obrigação ou questão | Estado no projeto | O que falta |
 |---|---|---|
-| 1 | Qualificação de obra combinada ao distribuir um adaptador GPL ao lado do núcleo | Parecer jurídico em Portugal e UE |
-| 2 | Se o adaptador Piper pode ser oferecido no instalador como opção | Parecer, com factos e versões |
-| 3 | Forma de divulgação de conteúdo sintético que satisfaça o Artigo 50 | Parecer, com o texto do regulamento aplicável |
-| 4 | Tratamento de embeddings de voz como dado biométrico em cada finalidade | Parecer, com base na finalidade concreta |
-| 5 | Dever de informar participantes de reuniões gravadas em cada jurisdição | Utilizador e parecer |
-| 6 | Texto final da política de voz e do uso aceitável | Autor do projeto |
+| Licenças de código, dependências e pesos | Verificadas por artefacto, com gate automático | Manter atualizado a cada dependência nova |
+| Avisos e atribuições | `NOTICE`, avisos de terceiros e índice gerados | Revisão manual antes de cada release |
+| Consentimento de voz | Registo local com finalidade, âmbito e data | Texto final da política de voz |
+| Dados vocais e retenção | Local, apagável, sem envio | Confirmar cada finalidade nova |
+| Regulamento Europeu da IA, Artigo 50 | Marcação e divulgação identificadas por interveniente | Forma técnica de marcação por formato |
+| RGPD | Minimização, finalidade e eliminação implementadas | Qualificação de embeddings por finalidade |
+
+Três pontos ficam explicitamente como interpretação jurídica, sem bloquear o trabalho: a qualificação de obra combinada ao distribuir um adaptador GPL ao lado do núcleo; a forma de divulgação de conteúdo sintético que satisfaça o Artigo 50; e o tratamento de representações vocais como dado biométrico em cada finalidade concreta.
+
+Consulta jurídica só se justifica quando existir dúvida material e concreta que não se resolva com documentação oficial, licença aplicável ou análise técnica razoável — por exemplo, uma distribuição que combine binários copyleft com o núcleo, ou um pedido de utilização comercial que dependa dessa qualificação. O acompanhamento fica numa checklist interna de conformidade, revista a cada release.
 
 ## 81. Riscos por severidade
 

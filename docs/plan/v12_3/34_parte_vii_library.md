@@ -2,7 +2,7 @@
 
 ## 44. Duas camadas: aplicação e biblioteca
 
-O Parlo separa o que é plataforma do que é conteúdo. A aplicação contém a experiência, a inteligência de decisão e a infraestrutura de execução; a biblioteca contém os modelos que cada utilizador escolhe instalar. O tamanho da aplicação é determinado pelo código, não pelo tamanho do catálogo.
+O Parlo separa o que é plataforma do que é conteúdo. A aplicação contém a experiência, a inteligência de decisão e a infraestrutura de execução; a biblioteca contém os modelos que cada utilizador escolhe instalar.
 
 | Camada | Contém | Não contém | Cresce com o catálogo? |
 |---|---|---|---|
@@ -10,7 +10,11 @@ O Parlo separa o que é plataforma do que é conteúdo. A aplicação contém a 
 | Biblioteca | Artefactos de reconhecimento, tradução, clonagem, síntese, VAD, diarização, processamento auxiliar, idiomas e variantes | Código da aplicação | Sim, indefinidamente |
 | Dados do utilizador | Perfis de voz, transcrições, traduções, histórico, preferências | Modelos | Não |
 
-Regra de dimensionamento: o instalador não incorpora pesos e não pode crescer porque a biblioteca ganhou modelos. Uma versão nova da aplicação pode ser maior por código novo, nunca por catálogo novo. Os dados do utilizador vivem numa terceira área, separada das duas anteriores, e sobrevivem a qualquer atualização ou remoção de modelo.
+Regra de dimensionamento: o instalador não incorpora pesos e não pode crescer porque a biblioteca ganhou modelos. Uma versão nova da aplicação pode ser maior por código novo, nunca por catálogo novo.
+
+Orçamento de tamanho: 100 MB é o objetivo do instalador sem modelos, e 150 MB o limite de referência da primeira versão. Se o objetivo for excedido, a release nomeia os componentes responsáveis pelo excesso e documenta o desvio. Segurança, estabilidade e funcionalidades essenciais não se cortam para cumprir um número.
+
+Os dados do utilizador vivem numa terceira área, separada das duas anteriores, e sobrevivem a qualquer atualização ou remoção de modelo.
 
 ## 45. Contratos entre aplicação, biblioteca e runtimes
 
@@ -33,6 +37,13 @@ O contrato entre camadas é explícito: a aplicação conhece o catálogo por um
 
 O catálogo é metadado, não peso. Atualiza-se de forma independente da aplicação e independente dos downloads.
 
+| Elemento | Onde vive | Regra |
+|---|---|---|
+| Catálogo, manifestos e hashes | Repositório público dedicado, `parlo-models` | Versionado, assinado e independente da aplicação |
+| Pesos e vozes | Fontes oficiais e armazenamento próprio de artefactos | Não entram no Git nem no instalador |
+| Cliente de catálogo | Aplicação | Lê um esquema versionado de uma origem fixa |
+| Origem alternativa | Qualquer hospedagem estática ou CDN | Mudar de origem não exige alterar a aplicação |
+
 1. É publicada uma versão da aplicação.
 2. A biblioteca recebe modelos novos, sem tocar na aplicação.
 3. O cliente atualiza o catálogo e descobre as novidades.
@@ -41,7 +52,7 @@ O catálogo é metadado, não peso. Atualiza-se de forma independente da aplica�
 6. O utilizador decide o que instalar.
 7. Só os modelos escolhidos são descarregados.
 
-Regras: descobrir não descarrega; atualizar o catálogo não substitui modelos instalados; não altera preferências; e uma entrada nova entra como não instalada, mesmo que seja claramente melhor para aquele dispositivo. Se o catálogo não puder ser atualizado, a aplicação continua a funcionar com a cópia local e diz há quanto tempo não é atualizada.
+Regras: descobrir não descarrega; atualizar o catálogo não substitui modelos instalados nem altera preferências; uma entrada nova entra como não instalada, mesmo que seja claramente melhor para aquele dispositivo. Se o catálogo não puder ser atualizado, a aplicação funciona com a cópia local e diz há quanto tempo não é atualizada. A consulta ao catálogo é a única chamada externa permitida e não transporta áudio, conteúdo, perfis nem identificadores de utilizador: envia a versão da aplicação e do esquema.
 
 ## 47. Compatibilidade entre versões
 
@@ -137,16 +148,22 @@ Três categorias ficam sempre distintas na interface: importado, oficial da bibl
 
 | Controle | Efeito |
 |---|---|
-| Manifesto versionado e assinado | Origem autenticada e conteúdo verificável |
-| Hash por ficheiro | Integridade depois do download |
+| Manifesto assinado com Ed25519 | Autenticidade da origem, além da integridade |
+| Chave pública embutida na aplicação | Verificação sem depender da rede nem de uma autoridade externa |
+| Chave privada fora do repositório | Guardada pelo mantenedor, nunca versionada, com procedimento escrito |
+| Rotação de chave | Duas chaves aceites durante a transição, com aviso de validade |
+| Recuperação | Procedimento documentado para substituir uma chave comprometida |
+| Hash SHA-256 por ficheiro | Integridade depois do download |
 | Transporte seguro | Nada por canais não autenticados |
-| Proteção contra downgrade | Uma versão mais antiga não substitui a atual sem pedido explícito |
-| Retoma de download | Interrupção não obriga a recomeçar do zero |
+| Proteção contra downgrade | Versão mais antiga não substitui a atual sem pedido explícito |
+| Retoma de download | Interrupção não obriga a recomeçar |
 | Instalação atómica | Falha deixa o estado anterior funcional |
 | Rollback | Atualização problemática reverte sem reinstalar tudo |
 | Histórico de alterações | Cada versão de catálogo e de modelo tem registo |
 
-A atualização do catálogo é independente do download dos pesos, e a identidade de um artefacto nunca é confirmada pelo nome ou pelo URL: é confirmada pelo hash e pela assinatura do manifesto.
+A assinatura é o que distingue autenticidade de integridade: um hash confirma que o ficheiro não mudou depois de descarregado, mas não prova quem o publicou. Por isso o manifesto é assinado e a chave pública viaja dentro da aplicação.
+
+O instalador Windows não tem assinatura Authenticode nesta fase. Publicam-se hashes SHA-256 e instruções de verificação, com o aviso honesto de que o Windows mostrará alertas de origem desconhecida. Os hashes não são apresentados como substituto da assinatura de código, e o processo de distribuição fica preparado para acrescentar Authenticode sem ser reescrito.
 
 ## 54. Ciclos de atualização independentes
 
@@ -166,4 +183,7 @@ Uma atualização da aplicação só é obrigatória quando muda a API do catál
 | Automático | A aplicação identifica o dispositivo, o PIMO escolhe, o Model Hub instala o necessário, as novidades aparecem quando relevantes | Experiência completa e predefinida |
 | Avançado | Biblioteca completa, instalação individual, importação, versões, preferências por idioma e tarefa, controlo de atualizações e de espaço | Quem quer decidir |
 
-O modo avançado não é requisito de qualidade: um utilizador que nunca o abra tem a melhor configuração que o dispositivo permite. O modo avançado existe para quem quer fixar escolhas, importar artefactos ou limitar downloads, e nesse caso o Parlo diz que a escolha deixou de ser automática.
+No primeiro arranque, o Parlo analisa o dispositivo e apresenta uma configuração recomendada, com o tamanho total, a finalidade de cada modelo, o espaço disponível e uma estimativa de utilidade por ligação. A instalação da configuração recomendada faz-se com uma confirmação; instalar apenas parte dela é igualmente simples. Nada é descarregado sem essa confirmação, e a biblioteca completa nunca é proposta de uma vez.
+
+O modo avançado não é requisito de qualidade: um utilizador que nunca o abra tem a melhor configuração que o dispositivo permite. Existe para quem quer fixar escolhas, importar artefactos ou limitar downloads, e nesse caso o Parlo diz que a escolha deixou de ser automática.
+
