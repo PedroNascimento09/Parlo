@@ -1,49 +1,59 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Parlo: dictation that writes what you meant" width="100%">
+  <img src="assets/banner.png" alt="Parlo: type with your voice, without leaving your computer" width="100%">
 </p>
 
 <p align="center">
-  <b>A desktop app that turns speech into clean text, and text into another language.</b><br>
-  Everything runs on your machine. No account, no telemetry, no subscription.
+  <img src="assets/mark.png" width="36" alt=""><br>
+  <b>Parlo turns speech into clean text, and text into another language, on your own computer.</b><br>
+  Windows, macOS and Linux. No account, no telemetry, no subscription.
 </p>
 
 <p align="center">
   <a href="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Latest release" src="https://img.shields.io/github/v/release/PedroNascimento09/Parlo?style=flat-square&color=f2693a">
+  <img alt="Latest release" src="https://img.shields.io/github/v/release/PedroNascimento09/Parlo?style=flat-square&color=b03c1e">
   <img alt="Downloads" src="https://img.shields.io/github/downloads/PedroNascimento09/Parlo/total?style=flat-square">
-  <img alt="Licence" src="https://img.shields.io/badge/licence-Apache--2.0-2ea44f?style=flat-square">
-  <img alt="Platforms" src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-4c566a?style=flat-square">
-  <img alt="Telemetry" src="https://img.shields.io/badge/telemetry-none-4c566a?style=flat-square">
+  <img alt="Licence" src="https://img.shields.io/badge/licence-Apache--2.0-1e4f4a?style=flat-square">
 </p>
 
 You press one shortcut, speak, and the sentence appears in the field you were already in — typed, not pasted, because Parlo remembers which window had the focus. What gets written is what you meant, not what you said: a correction after "I mean" replaces the words it corrects, hesitations and false starts disappear, and the sentence you actually spoke is kept beside the result.
-
-It speaks two languages so far, Portuguese and English, in both directions, and translates as well as transcribes.
 
 ```text
 Ctrl+Alt+D  →  "Book a table for Friday, I mean, for Monday."
             →  Book a table for Monday.
 ```
 
-## What works today
+## Introducing Parlo
 
-| | |
-|---|---|
-| **Dictation anywhere** | `Ctrl+Alt+D` shows the island and starts listening; the text is typed into the window you came from, or copied when that window is gone. Working on Windows; macOS and Linux build and translate, but the global shortcut is not there yet and the text goes to the clipboard. |
-| **The sentence you meant** | Self-corrections, hesitations, false starts and repetitions fixed on rules alone: **61.9 µs** per sentence, no model, no network, and the original kept beside it. |
-| **Cleanup your way** | *Rules only*, *a model on this machine*, *your cloud provider*, or *Automatic*. Cloud is never reached without an explicit switch and a stored key. |
-| **Your key, your vault** | OpenAI, Anthropic, Gemini and any OpenAI-compatible server. Keys go to DPAPI, the macOS keychain or the Linux secret service — never a config file, a log or an error message. |
-| **Words you actually use** | Names and short forms the recogniser keeps missing, applied before any model reads the sentence, kept in a local file. |
-| **Meetings** | Import a transcript with speakers, or record the microphone into one, line by line with timestamps. |
-| **Translation and voice** | Portuguese ↔ English offline, with a neutral voice; dubbing a video with subtitles works too. |
-| **Free when idle** | Loaded models are released after 10 minutes to 4 hours of silence — or never, your choice. |
+Four surfaces, one engine underneath. Every one of them is in the current release.
+
+<p align="center">
+  <img src="assets/island.png" alt="The dictation island after writing the sentence" width="76%"><br>
+  <sub>Parlo Dictate: the sentence it wrote, in the field it came from.</sub>
+</p>
+
+<p align="center">
+  <img src="assets/surfaces.png" alt="Parlo Dictate, Parlo Live, Parlo Meetings and Parlo Translate" width="100%">
+</p>
+
+- **Parlo Dictate** — one shortcut, anywhere: the island listens, the sentence is written where you were.
+- **Parlo Live** — continuous translation while you speak, one window at a time, spoken back in the other language.
+- **Parlo Meetings** — a transcript imported or recorded from the room, every line with its moment and its speaker.
+- **Parlo Translate** — a file dubbed with subtitles, or a sentence in the other language, offline.
+
+## What it does
+
+- **The sentence you meant.** Self-corrections, false starts, hesitations and accidental repetitions are fixed on rules alone: **61.9 µs** per sentence, no model, no network. Your words are kept beside the result.
+- **A choice of engine.** Rules only, a model on this machine, your cloud provider, or automatic. Cloud is never reached without an explicit switch and a key you stored.
+- **Your key stays yours.** OpenAI, Anthropic, Gemini and any OpenAI-compatible server; keys go to DPAPI, the macOS keychain or the Linux secret service — never a config file, a log or an error message.
+- **Words you actually use.** Names and short forms the recogniser keeps missing, applied before any model reads the sentence, kept in a local file.
+- **Nothing held longer than needed.** Loaded models are released after 10 minutes to 4 hours of silence — or never, your choice.
 
 ## Install
 
-**From a release — no Python, no Rust.** Download the archive for your platform, unpack it, double-click `parlo-app`, let it fetch about 800 MB of models once. After that it is offline for good.
+**From a release — no Python, no Rust.** Download the archive for your platform, unpack it, double-click `parlo-app`, and let it fetch about 800 MB of models once. After that it is offline for good.
 
 ```text
-parlo-windows-x86_64.zip     parlo-macos-aarch64.tar.gz     parlo-linux-x86_64.tar.gz
+parlo-windows-x86_64.zip      parlo-macos-aarch64.tar.gz      parlo-linux-x86_64.tar.gz
 ```
 
 **From source** — Rust 1.85 or newer, nothing else.
@@ -55,19 +65,14 @@ target/release/parlo-app
 
 `parlo install` copies it into your user folder with a menu entry. `parlo update` replaces the running copy in place, and the window offers every new release with its notes and an **Install update** button — no version is ever installed by uninstalling the old one.
 
-## See it
+## The path
 
 <p align="center">
-  <img src="assets/flow.gif" alt="Speech, recognition, the cleaned sentence, and the field: the dictation path" width="100%"><br>
-  <sub>Animated by <code>tools/brand.py</code> — a diagram of the real path, not a screen recording.</sub>
+  <img src="assets/flow.gif" alt="Speech, recognition, the cleaned sentence, and the field" width="100%"><br>
+  <sub>Animated by <code>tools/brand.py</code>: a diagram of the real path, not a screen recording.</sub>
 </p>
 
-<p align="center">
-  <img src="assets/island.png" alt="The dictation island showing the sentence it inserted" width="88%"><br>
-  <sub>The island after a correction was resolved and the text was typed where you were.</sub>
-</p>
-
-Two more pictures, both generated from the same script: [the pipeline](assets/pipeline.png) and [the banner](assets/banner.png).
+Each engine owns one responsibility, and the names are fixed in the [glossary](PARLO_GLOSSARY.md): **PAVE** the audio, **PSTE** recognition, **PIE** the text, **PTE** translation, **PIMO** which model runs and when it leaves memory, **PME** what is remembered.
 
 ## Measured
 
@@ -84,7 +89,7 @@ Windows 11 laptop, no GPU, 4 threads, warm process. Conditions and raw rows in [
 
 Not measured, and claimed nowhere: any cloud provider's latency or price. No live request to one has been made with a real key.
 
-## How it differs
+## How it compares
 
 | | Native call translation | Parlo |
 |---|---|---|
@@ -95,7 +100,7 @@ Not measured, and claimed nowhere: any cloud provider's latency or price. No liv
 | Cloud AI | Required | Optional, your key, off by default |
 | Languages | Many | Two today, grown by the community |
 
-## How it works
+## Under the hood
 
 ```mermaid
 flowchart LR
@@ -106,7 +111,7 @@ flowchart LR
     I -.->|translated| T[PTE<br/>another language]
 ```
 
-Each engine owns one responsibility: **PAVE** the audio, **PSTE** recognition, **PIE** the text, **PTE** translation, **PIMO** which model runs and when it leaves memory, **PME** what is remembered. The model side is a Python sidecar behind a newline-delimited JSON protocol, so a model crash cannot take the window down; the app itself is Rust with a Tauri shell. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+The model side is a Python sidecar behind a newline-delimited JSON protocol, so a model crash cannot take the window down. The app is Rust with a Tauri shell and a page served on loopback; the core crate has no dependencies. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Privacy
 
@@ -116,6 +121,14 @@ Each engine owns one responsibility: **PAVE** the audio, **PSTE** recognition, *
 - History, meetings and vocabulary stay in your user data folder, and each can be deleted from the interface.
 
 Verify it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
+
+## What is not there yet
+
+- The dictation shortcut is Windows-only; on macOS and Linux the text goes to the clipboard.
+- Two languages, Portuguese and English. German is published as **not validated** by a native speaker.
+- Dictation is tested, not yet validated with real recordings by people other than the author.
+- The archives are unsigned: SmartScreen asks once, and there is no installer.
+- Meetings capture the microphone, not the sound of another application.
 
 ## Build and test
 
@@ -127,17 +140,15 @@ cargo test --workspace
 cd engines/cascade && PYTHONPATH=. python -m unittest discover -s tests
 ```
 
-CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps every artefact's terms in [LICENSES.md](LICENSES.md).
+CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps every artefact's terms in [LICENSES.md](LICENSES.md). The visuals are generated, not hand-exported: `python tools/brand.py`.
 
 ## Roadmap
 
 The next release is **v0.2.0**: cloud cost control, per-model unload rules in the interface, and Ask Parlo over past meetings. Then **v0.3 Listen** decides with data before adding features, and the plan stops at **v0.5 Write in another language** — any supported language into the active field, with a measured quality gate rather than a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels; releases live in [docs/releases](docs/releases) and are announced inside the app.
 
-## Docs
+## Docs and contributing
 
 [App guide](docs/APP.md) · [Architecture](docs/ARCHITECTURE.md) · [Engines](docs/ENGINES.md) · [Benchmarks](docs/BENCHMARKS.md) · [Intelligence engine](docs/INTELLIGENCE.md) · [Glossary](PARLO_GLOSSARY.md) · [Privacy](docs/PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Licences](docs/LICENSES.md)
-
-## Contributing
 
 Issues and pull requests are welcome. The three smallest useful things right now: a hardware report from your own machine, a recording in your accent, or a translation of this page into a language you speak. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and look for `good first issue`.
 

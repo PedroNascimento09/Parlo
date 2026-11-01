@@ -2,158 +2,219 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-PAPER = (250, 246, 239)
-CARD = (255, 252, 246)
-INK = (27, 22, 19)
-MUTED = (107, 98, 87)
-ACCENT = (242, 105, 58)
-TEAL = (47, 111, 106)
-LINE = (226, 217, 204)
-DARK = (20, 17, 16)
-CREAM = (250, 246, 239)
-SOFT = (182, 170, 155)
+PAPER = (247, 244, 237)
+CARD = (252, 250, 245)
+INK = (18, 16, 14)
+MUTED = (112, 105, 96)
+RULE = (214, 206, 193)
+ACCENT = (176, 60, 30)
+TEAL = (30, 79, 74)
+DARK = (20, 18, 16)
+CREAM = (247, 244, 237)
+SOFT = (168, 158, 146)
 
 FONTS = Path("C:/Windows/Fonts")
-BOLD = "segoeuib.ttf"
-REGULAR = "segoeui.ttf"
+SERIF = "georgiab.ttf"
+BODY = "segoeui.ttf"
+MICRO = "bahnschrift.ttf"
 MONO = "consola.ttf"
 
 ASSETS = Path("assets")
 SPOKEN = "«Book a table for Friday, I mean, for Monday.»"
 WRITTEN = "Book a table for Monday."
-
-
-def font(name: str, size: int):
-    return ImageFont.truetype(str(FONTS / name), size)
-
-
-def spaced(draw, xy, text, face, fill, gap):
-    x, y = xy
-    for character in text:
-        draw.text((x, y), character, font=face, fill=fill)
-        x += draw.textlength(character, font=face) + gap
-    return x
-
-
-def canvas(width: int, height: int, color=PAPER, alpha=False):
-    mode = "RGBA" if alpha else "RGB"
-    background = color + (0,) if alpha else color
-    return Image.new(mode, (width, height), background)
-
-
-def card(draw, box, radius, fill, outline=None, width=1):
-    draw.rounded_rectangle(box, radius=radius, fill=fill, outline=outline, width=width)
-
-
-def banner():
-    width, height = 1600, 520
-    image = canvas(width, height)
-    draw = ImageDraw.Draw(image)
-    draw.rectangle((0, 0, width, 8), fill=ACCENT)
-    draw.text((96, 78), "Parlo", font=font(BOLD, 104), fill=INK)
-    draw.text((96, 210), "Dictation that writes", font=font(BOLD, 46), fill=INK)
-    draw.text((96, 268), "what you actually meant.", font=font(BOLD, 46), fill=ACCENT)
-    draw.text(
-        (96, 348),
-        "Translation too, on your own computer. Nothing uploaded,",
-        font=font(REGULAR, 24),
-        fill=MUTED,
-    )
-    draw.text(
-        (96, 382),
-        "no account, no telemetry, no subscription.",
-        font=font(REGULAR, 24),
-        fill=MUTED,
-    )
-
-    card(draw, (880, 112, 1504, 300), 90, DARK)
-    draw.ellipse((926, 188, 950, 212), fill=ACCENT)
-    spaced(draw, (980, 152), "LISTENING", font(BOLD, 16), SOFT, 3)
-    draw.text((980, 184), SPOKEN, font=font(REGULAR, 20), fill=CREAM)
-    draw.text((980, 224), "1.9 s", font=font(MONO, 19), fill=SOFT)
-
-    chips = (("LOCAL MODELS", ACCENT), ("YOUR KEYS", TEAL), ("NO TELEMETRY", MUTED))
-    x = 96
-    for label, color in chips:
-        text_width = sum(draw.textlength(character, font=font(BOLD, 15)) + 2 for character in label)
-        card(draw, (x, 430, x + text_width + 44, 470), 20, PAPER, LINE, 1)
-        spaced(draw, (x + 22, 442), label, font(BOLD, 15), color, 2)
-        x += text_width + 66
-
-    image.save(ASSETS / "banner.png")
-
-
-def island():
-    width, height = 1120, 260
-    image = canvas(width, height, alpha=True)
-    draw = ImageDraw.Draw(image)
-    card(draw, (20, 30, 1100, 230), 96, DARK + (238,))
-    draw.ellipse((70, 118, 94, 142), fill=ACCENT)
-    spaced(draw, (124, 84), "INSERTED", font(BOLD, 15), SOFT, 3)
-    draw.text((124, 112), WRITTEN, font=font(REGULAR, 32), fill=CREAM)
-    draw.text(
-        (124, 162),
-        "Typed into the field you were in.",
-        font=font(REGULAR, 19),
-        fill=SOFT,
-    )
-    draw.text((946, 112), "1.9 s", font=font(MONO, 22), fill=SOFT)
-    image.save(ASSETS / "island.png")
-
-
 STEPS = (
     ("PAVE", "audio in"),
     ("PSTE", "speech to text"),
     ("PIE", "the sentence you meant"),
     ("FIELD", "where you were writing"),
 )
-
 CAPTIONS = (
     "Listening on your microphone.",
     "Turning speech into text, on this machine.",
     SPOKEN,
     WRITTEN,
 )
+SURFACES = (
+    ("PARLO DICTATE", "Speak once and the sentence is typed into the window you were in.", "AVAILABLE"),
+    ("PARLO LIVE", "Keeps translating as you speak, one window at a time.", "AVAILABLE"),
+    ("PARLO MEETINGS", "Records the room and keeps every line with its speaker.", "AVAILABLE"),
+    ("PARLO TRANSLATE", "A file, a call or a page, in the other language.", "AVAILABLE"),
+)
+
+
+def font(name: str, size: int):
+    return ImageFont.truetype(str(FONTS / name), size)
+
+
+def canvas(width: int, height: int, color=PAPER, alpha=False):
+    mode = "RGBA" if alpha else "RGB"
+    return Image.new(mode, (width, height), color + (0,) if alpha else color)
+
+
+def micro(draw, xy, text, fill, size=13, gap=2.4, face=MICRO):
+    x, y = xy
+    label = font(face, size)
+    for character in text:
+        draw.text((x, y), character, font=label, fill=fill)
+        x += draw.textlength(character, font=label) + gap
+    return x
+
+
+def mark(draw, x, y, size, ink=INK, accent=ACCENT):
+    radius = size / 2
+    centre = (x + radius, y + radius)
+    draw.ellipse(
+        (centre[0] - size * 0.09, centre[1] - size * 0.09, centre[0] + size * 0.09, centre[1] + size * 0.09),
+        fill=ink,
+    )
+    for index, factor in enumerate((0.34, 0.58, 0.84)):
+        box = (
+            centre[0] - size * factor,
+            centre[1] - size * factor,
+            centre[0] + size * factor,
+            centre[1] + size * factor,
+        )
+        draw.arc(box, start=-58, end=58, fill=accent if index == 2 else ink, width=max(2, int(size * 0.035)))
+
+
+def rule(draw, y, x0, x1, color=RULE, width=1):
+    draw.line((x0, y, x1, y), fill=color, width=width)
+
+
+def banner():
+    width, height = 1600, 580
+    image = canvas(width, height)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, width, 5), fill=ACCENT)
+    mark(draw, 108, 64, 28)
+    micro(draw, (172, 76), "PARLO", INK, 14, 3.4)
+    micro(draw, (1290, 76), "NO ACCOUNT · NO TELEMETRY", MUTED, 12)
+
+    draw.text((108, 168), "Type with your voice,", font=font(SERIF, 72), fill=INK)
+    draw.text((108, 254), "without leaving", font=font(SERIF, 72), fill=INK)
+    draw.text((108, 340), "your computer.", font=font(SERIF, 72), fill=ACCENT)
+
+    draw.text(
+        (112, 448),
+        "Speech becomes clean text, and text becomes another language,",
+        font=font(BODY, 21),
+        fill=MUTED,
+    )
+    draw.text(
+        (112, 480),
+        "with every model on your own disk.",
+        font=font(BODY, 21),
+        fill=MUTED,
+    )
+
+    panel = (1000, 150, 1492, 486)
+    draw.rectangle(panel, fill=CARD, outline=RULE, width=1)
+    micro(draw, (1032, 182), "INPUT", MUTED, 12)
+    draw.text((1032, 206), "Book a table for Friday,", font=font(MONO, 17), fill=INK)
+    draw.text((1032, 232), "I mean, for Monday.", font=font(MONO, 17), fill=INK)
+    rule(draw, 268, 1032, 1460)
+    micro(draw, (1032, 290), "ENGINE", MUTED, 12)
+    draw.text((1032, 314), "PIE · rules only · 61.9 µs", font=font(MONO, 17), fill=INK)
+    rule(draw, 350, 1032, 1460)
+    micro(draw, (1032, 372), "OUTPUT", MUTED, 12)
+    draw.text((1032, 396), WRITTEN, font=font(MONO, 20), fill=ACCENT)
+    micro(draw, (1032, 446), "NOWHERE BUT HERE", MUTED, 12)
+
+    rule(draw, 520, 110, 1490)
+    columns = (
+        ("DICTATE", "anywhere you type"),
+        ("LIVE", "translated as you speak"),
+        ("MEETINGS", "every line, with a speaker"),
+        ("TRANSLATE", "files, calls, pages"),
+    )
+    x = 110
+    for title, caption in columns:
+        micro(draw, (x, 542), title, INK, 12)
+        draw.text((x + 92, 540), caption, font=font(BODY, 15), fill=MUTED)
+        x += 372
+
+    image.save(ASSETS / "banner.png")
+
+
+def surfaces():
+    width, height = 1500, 400
+    image = canvas(width, height)
+    draw = ImageDraw.Draw(image)
+    rule(draw, 96, 60, 1440)
+    for index, (title, sentence, state) in enumerate(SURFACES):
+        x = 60 + index * 372
+        micro(draw, (x, 124), title, INK, 13)
+        words = sentence.split(" ")
+        lines = []
+        current = ""
+        for word in words:
+            candidate = (current + " " + word).strip()
+            if draw.textlength(candidate, font=font(BODY, 18)) > 292:
+                lines.append(current)
+                current = word
+            else:
+                current = candidate
+        lines.append(current)
+        for line_index, line in enumerate(lines):
+            draw.text((x, 162 + line_index * 28), line, font=font(BODY, 18), fill=MUTED)
+        micro(draw, (x, 306), state, ACCENT, 11)
+        if index < len(SURFACES) - 1:
+            draw.line((x + 330, 124, x + 330, 330), fill=RULE, width=1)
+    rule(draw, 352, 60, 1440)
+    image.save(ASSETS / "surfaces.png")
+
+
+def island():
+    width, height = 1120, 240
+    image = canvas(width, height, alpha=True)
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((20, 24, 1100, 216), radius=92, fill=DARK + (240,))
+    draw.ellipse((70, 106, 90, 126), fill=ACCENT)
+    micro(draw, (122, 74), "INSERTED", SOFT, 12)
+    draw.text((122, 100), WRITTEN, font=font(BODY, 31), fill=CREAM)
+    draw.text((122, 148), "Typed into the field you were in.", font=font(BODY, 18), fill=SOFT)
+    draw.text((952, 100), "1.9 s", font=font(MONO, 21), fill=SOFT)
+    image.save(ASSETS / "island.png")
 
 
 def layout(draw, active):
     for index, (title, caption) in enumerate(STEPS):
-        x = 60 + index * 290
+        x = 60 + index * 286
         lit = index == active
-        card(draw, (x, 84, x + 250, 206), 24, CARD if lit else PAPER, ACCENT if lit else LINE, 3 if lit else 2)
-        draw.text((x + 24, 106), title, font=font(BOLD, 26), fill=ACCENT if lit else INK)
-        draw.text((x + 24, 150), caption, font=font(REGULAR, 17), fill=MUTED)
+        draw.rectangle(
+            (x, 78, x + 246, 198),
+            fill=CARD if lit else PAPER,
+            outline=ACCENT if lit else RULE,
+            width=1,
+        )
+        micro(draw, (x + 22, 100), title, ACCENT if lit else INK, 13)
+        draw.text((x + 22, 134), caption, font=font(BODY, 17), fill=MUTED)
         if index < len(STEPS) - 1:
-            draw.line((x + 260, 145, x + 280, 145), fill=MUTED, width=2)
-            draw.line((x + 273, 138, x + 281, 145), fill=MUTED, width=2)
-            draw.line((x + 273, 152, x + 281, 145), fill=MUTED, width=2)
+            draw.line((x + 256, 138, x + 276, 138), fill=RULE, width=1)
+            draw.line((x + 270, 133, x + 277, 138), fill=RULE, width=1)
+            draw.line((x + 270, 143, x + 277, 138), fill=RULE, width=1)
 
 
 def flow():
-    width, height = 1200, 360
+    width, height = 1200, 330
     frames = []
     for phase in range(len(STEPS)):
         for tick in range(6):
             image = canvas(width, height)
             draw = ImageDraw.Draw(image)
-            draw.rectangle((0, 0, width, 6), fill=ACCENT)
+            draw.rectangle((0, 0, width, 4), fill=ACCENT)
             layout(draw, phase)
             total = len(STEPS) * 6
             filled = int(1140 * (phase * 6 + tick + 1) / total)
-            draw.rounded_rectangle((60, 228, 1200, 234), radius=3, fill=(236, 228, 218))
-            if filled > 8:
-                draw.rounded_rectangle((60, 228, 60 + filled, 234), radius=3, fill=ACCENT)
+            draw.line((60, 218, 1140, 218), fill=RULE, width=2)
+            if filled > 4:
+                draw.line((60, 218, 60 + filled, 218), fill=ACCENT, width=2)
             text = CAPTIONS[phase]
             if phase == len(STEPS) - 1:
                 visible = max(1, round(len(text) * (tick + 1) / 6))
                 text = text[:visible] + ("▌" if tick < 5 else "")
-            draw.text((60, 260), text, font=font(REGULAR, 25), fill=INK)
-            draw.text(
-                (60, 312),
-                "Rules in microseconds · a model only if you allowed one · a check that refuses to change meaning",
-                font=font(REGULAR, 18),
-                fill=SOFT,
-            )
+            draw.text((60, 246), text, font=font(BODY, 24), fill=INK)
+            micro(draw, (60, 292), "RULES IN MICROSECONDS · A MODEL ONLY IF YOU ALLOWED ONE", SOFT, 10, 1.8)
             frames.append(image)
     frames[0].save(
         ASSETS / "flow.gif",
@@ -165,42 +226,22 @@ def flow():
     )
 
 
-def pipeline():
-    width, height = 1500, 430
-    image = canvas(width, height)
+def mark_file():
+    size = 512
+    image = canvas(size, size, alpha=True)
     draw = ImageDraw.Draw(image)
-    for index, (title, caption) in enumerate(STEPS):
-        x = 60 + index * 350
-        card(draw, (x, 110, x + 300, 250), 28, PAPER, LINE, 2)
-        draw.text((x + 32, 138), title, font=font(BOLD, 30), fill=ACCENT if title == "PIE" else INK)
-        draw.text((x + 32, 186), caption, font=font(REGULAR, 20), fill=MUTED)
-        if index < len(STEPS) - 1:
-            arrow = x + 316
-            draw.line((arrow, 180, arrow + 22, 180), fill=MUTED, width=3)
-            draw.line((arrow + 14, 172, arrow + 24, 180), fill=MUTED, width=3)
-            draw.line((arrow + 14, 188, arrow + 24, 180), fill=MUTED, width=3)
-    draw.text(
-        (60, 296),
-        "Rules in microseconds, then a model only if you allowed one, then a check that refuses to change meaning.",
-        font=font(REGULAR, 22),
-        fill=MUTED,
-    )
-    draw.text(
-        (60, 336),
-        "Languages today: Portuguese and English, both directions. PAVE audio · PSTE transcription · PIE intelligence · PTE translation",
-        font=font(MONO, 15),
-        fill=SOFT,
-    )
-    image.save(ASSETS / "pipeline.png")
+    mark(draw, 76, 76, 360)
+    image.save(ASSETS / "mark.png")
 
 
 def main():
     ASSETS.mkdir(exist_ok=True)
     banner()
+    surfaces()
     island()
-    pipeline()
     flow()
-    print("wrote assets/banner.png, assets/island.png, assets/pipeline.png, assets/flow.gif")
+    mark_file()
+    print("wrote banner, surfaces, island, flow.gif and mark")
 
 
 if __name__ == "__main__":
