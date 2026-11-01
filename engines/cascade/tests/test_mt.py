@@ -31,6 +31,29 @@ class CleanTests(unittest.TestCase):
         self.assertEqual(mt.strip_language_token("\u2581Hello there , >>pt<<"), "Hello there")
 
 
+class MeridiemTests(unittest.TestCase):
+    def test_an_afternoon_hour_gets_its_marker_back(self):
+        self.assertEqual(mt.restore_meridiem("às 15h30", "at 3:30"), "at 3:30 pm")
+
+    def test_a_whole_afternoon_hour_gets_its_marker_back(self):
+        self.assertEqual(mt.restore_meridiem("até às 18h", "by 6:00."), "by 6:00 pm.")
+
+    def test_a_marked_time_is_left_alone(self):
+        self.assertEqual(mt.restore_meridiem("às 17h", "at 5:00 pm"), "at 5:00 pm")
+
+    def test_a_morning_time_is_left_alone(self):
+        self.assertEqual(mt.restore_meridiem("às 9h30", "at 9:30"), "at 9:30")
+
+    def test_a_different_hour_is_left_alone(self):
+        self.assertEqual(mt.restore_meridiem("às 18h", "at 4:00"), "at 4:00")
+
+    def test_only_the_afternoon_clock_of_a_sentence_is_touched(self):
+        self.assertEqual(
+            mt.restore_meridiem("às 9h e às 18h", "at 9 and at 6:00"),
+            "at 9 and at 6:00 pm",
+        )
+
+
 class DiscoveryTests(unittest.TestCase):
     def test_finds_the_newest_pack_for_a_pair(self):
         with tempfile.TemporaryDirectory() as folder:

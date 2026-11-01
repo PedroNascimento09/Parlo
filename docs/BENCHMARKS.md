@@ -318,17 +318,17 @@ Windows 11 laptop, no GPU, 4 threads, beam 4, warm process, the installed `1.9` 
 
 | Direction | Numbers | Clock | Negation | Names | Complete | Gate |
 |---|---|---|---|---|---|---|
-| PT→EN | 1.000 | **0.940** | 1.000 | 0.920 | 1.000 | **fails** |
+| PT→EN | 1.000 | 1.000 | 1.000 | 0.920 | 1.000 | passes |
 | EN→PT | 1.000 | 0.980 | 1.000 | 0.980 | 1.000 | passes |
 
 Numbers, negations and completeness are clean in both directions. Two things are not:
 
-- **PT→EN loses the am/pm on afternoon times.** `15h30` → `3:30`, `18h` → `6:00`, `17h` → `5:00` (pt-en-001, 016, 043). The hour is right; the half of the day, which a reader cannot recover from context, is gone.
+- **PT→EN used to lose the half of the day.** `15h30` → `3:30`, `18h` → `6:00`, `17h` → `5:00` (pt-en-001, 016, 043). The hour was right and the reader could not recover the rest. The backend now restores the marker when the source states a 24 hour afternoon time and the translation carries the same clock without one; that is a rule in `parlo_cascade/mt.py` with six tests behind it, not a change in the model. The table above is measured after it.
 - **Names get translated.** `O João` → `John`, plus three more rows that drop or translate a name (pt-en-003, 017, 019, 044).
 
 The check reads value, not typography: `four hours`, `3.000 euros` and `7.05` → `7h05` all count as preserved, because the same quantity arrives. `8.30` → `20h30` (en-pt-035) is a real error and is counted as one. Thresholds were set before the run and left alone: numbers 0.95, clock 0.95, negation 0.90, names 0.80, complete 1.00.
 
-**The pair is not declared validated.** EN→PT clears the gate and PT→EN does not, and a pair is approved as a pair, not as the good half of one.
+**The gate passes on both sides, and the pair is still not declared validated.** Five automatic properties are not a reading: four PT→EN rows still translate a name (`O João` → `John`), and an idiom can pass every count while being wrong. Declaring the pair approved is the competent-speaker step the plan asks for, and it has not been done.
 
 ## What gets measured
 

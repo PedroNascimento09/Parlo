@@ -6,10 +6,35 @@ from . import packs
 
 LANGUAGE_TOKEN = re.compile(r"\s*>>[A-Za-z_]{2,8}<<\s*$")
 TRAILING_SEPARATOR = re.compile(r"\s+[,.;:]+$")
+SOURCE_CLOCK = re.compile(r"\b(1[3-9]|2[0-3])\s?[h:.]\s?([0-5]\d)?\b")
+TARGET_CLOCK = re.compile(r"\b(\d{1,2})\s?([:.])\s?([0-5]\d)\b")
+MARKED_CLOCK = re.compile(r"\b\d{1,2}\s?[:.]\s?[0-5]\d\s?(?:am|pm)\b|\b\d{1,2}\s?(?:am|pm)\b", re.I)
 
 
 class MissingModel(RuntimeError):
     pass
+
+
+def restore_meridiem(source, translation):
+    if not description_has_afternoon_clock(source):
+        return translation
+    result = translation
+    for hour_text, minute_text in SOURCE_CLOCK.findall(source):
+        hour = int(hour_text)
+        minute = int(minute_text) if minute_text else 0
+        expected = hour - 12
+        for match in TARGET_CLOCK.finditer(result):
+            if int(match.group(1)) != expected or int(match.group(3)) != minute:
+                continue
+            if MARKED_CLOCK.search(result[max(0, match.start() - 4) : match.end() + 4]):
+                continue
+            result = f"{result[:match.end()]} pm{result[match.end():]}"
+            break
+    return result
+
+
+def description_has_afternoon_clock(text):
+    return bool(SOURCE_CLOCK.search(text))
 
 
 def clean(text):
@@ -83,13 +108,23 @@ def find_weights(folder):
 
 
 class MarianTranslator:
-    def __init__(self, folder, prefix=None, threads=0, beam=4, repetition_penalty=1.2, no_repeat_ngram_size=3):
+    def __init__(
+        self,
+        folder,
+        prefix=None,
+        threads=0,
+        beam=4,
+        repetition_penalty=1.2,
+        no_repeat_ngram_size=3,
+        language=None,
+    ):
         import ctranslate2
         import sentencepiece as spm
 
         weights = find_weights(folder)
         source, target = find_vocabulary(weights)
         self.prefix = prefix
+        self.language = language
         self.beam = beam
         self.repetition_penalty = repetition_penalty
         self.no_repeat_ngram_size = no_repeat_ngram_size
@@ -115,7 +150,10 @@ class MarianTranslator:
         if self.no_repeat_ngram_size:
             options["no_repeat_ngram_size"] = self.no_repeat_ngram_size
         result = self.translator.translate_batch([pieces], **options)[0]
-        return strip_language_token(self.target_piece.decode(result.hypotheses[0]))
+        translated = strip_language_token(self.target_piece.decode(result.hypotheses[0]))
+        if self.language == "en":
+            translated = restore_meridiem(text, translated)
+        return translated
 
 
 def from_environment(source=None, target=None):
@@ -129,4 +167,5 @@ def from_environment(source=None, target=None):
         folder,
         prefix=os.environ.get("PARLO_CASCADE_MT_PREFIX") or None,
         threads=int(os.environ.get("PARLO_CASCADE_THREADS") or 0),
+        language=target,
     )

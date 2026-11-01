@@ -20,7 +20,7 @@ Dubbing is published and is not removed for being early. It is an anticipated ca
 
 Published: **v0.1.7**, the native window, the voice profile panel and a translation stage that no longer needs the Argos runtime. The licence gate passes with `--strict`, and the one copyleft crate it still lists, `r-efi`, is checked against every release target and fails the build if it ever reaches one.
 
-Translation has a gate of its own: 100 original sentences, 50 per direction, checked by `engines/cascade/scripts/mt_gate.py` for numbers, clocks, negations, names and completeness. EN→PT passes every criterion; PT→EN fails the clock one at 0.940, because three afternoon times lose the half of the day, and four rows translate a name. The pair is not declared validated.
+Translation has a gate of its own: 100 original sentences, 50 per direction, checked by `engines/cascade/scripts/mt_gate.py` for numbers, clocks, negations, names and completeness. Both directions pass every criterion; PT→EN afternoon times kept losing the half of the day until the backend restored the marker from the source clock. Four PT→EN rows still translate a name, so the pair is not declared validated: that is the human reading, not a count.
 
 The plan calls **v0.2 Foundation** complete, and it is: the CPU cascade translates Portuguese and English offline, the local API answers only with a token on loopback, thirty minutes of audio ran at 420.7 ms mean with no drift, and cold start is measured at 18.1 s. The plan keeps those numbers as reported measurements and asks for hardware, method and commit to be attached before they are used in public.
 

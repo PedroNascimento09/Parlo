@@ -85,6 +85,9 @@ def minutes(text: str) -> set[int]:
     for raw in TIME.finditer(text):
         span = raw.group(0).lower().replace(" ", "")
         marker = raw.group(3)
+        if marker is None:
+            trailing = text[raw.end() : raw.end() + 3].strip().lower()
+            marker = "pm" if trailing.startswith("pm") else "am" if trailing.startswith("am") else ""
         cleaned = span.replace("am", "").replace("pm", "")
         separator = next((char for char in "h:." if char in cleaned), None)
         if separator is None:
@@ -178,7 +181,7 @@ def main(argv=None) -> int:
     pack = mt.find_pack(source.split("-")[0], target.split("-")[0])
     if pack is None:
         raise SystemExit(f"no package installed for {args.direction}")
-    translate = mt.MarianTranslator(pack, threads=args.threads)
+    translate = mt.MarianTranslator(pack, threads=args.threads, language=target.split("-")[0])
 
     results = []
     for row in rows:
