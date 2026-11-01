@@ -2388,6 +2388,10 @@ dependencies = [
 [[package]]
 name = "parlo-core"
 version = "0.1.7"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "percent-encoding"
