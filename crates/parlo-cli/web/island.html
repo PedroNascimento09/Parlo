@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="parlo-version" content="__PARLO_VERSION__">
+<meta name="color-scheme" content="light dark">
+<title>Parlo Dictate</title>
+<style>
+  :root {
+    --shell: rgba(20, 17, 16, 0.92);
+    --ink: #faf6ef;
+    --muted: #b6aa9b;
+    --line: rgba(250, 246, 239, 0.14);
+    --accent: #f2693a;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --shell: rgba(255, 253, 249, 0.94);
+      --ink: #1b1613;
+      --muted: #6b6257;
+      --line: rgba(27, 22, 19, 0.12);
+      --accent: #d9481f;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: transparent; }
+  body {
+    display: grid;
+    align-items: center;
+    padding: 8px;
+    font: 13px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+  .island {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    background: var(--shell);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    backdrop-filter: blur(18px) saturate(140%);
+    animation: settle 180ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 160ms ease;
+  }
+  body.listening .dot {
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(242, 105, 58, 0.55);
+    animation: pulse 1.4s ease-out infinite;
+  }
+  .readout { min-width: 0; display: grid; gap: 2px; }
+  .state {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .line {
+    font-size: 14px;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .line.pending { color: var(--muted); }
+  .clock {
+    font-family: "Cascadia Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .hint {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: var(--muted);
+    opacity: 0;
+    max-height: 0;
+    transition: opacity 160ms ease, max-height 160ms ease;
+  }
+  body.showing-hint .hint { opacity: 1; max-height: 2rem; }
+  body.listening .hint { opacity: 0; max-height: 0; }
+  @keyframes settle {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0.5); }
+    70% { box-shadow: 0 0 0 12px rgba(242, 105, 58, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .island { animation: none; }
+    body.listening .dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="island">
+    <span class="dot" aria-hidden="true"></span>
+    <div class="readout">
+      <span class="state" id="state">Ready</span>
+      <span class="line pending" id="line">Press the shortcut and speak.</span>
+    </div>
+    <span class="clock" id="clock">0.0 s</span>
+    <p class="hint" id="hint">Text goes to the clipboard when you stop.</p>
+  </div>
+<script>
+const token = new URLSearchParams(location.search).get("t") || "";
+const TARGET_RATE = 16000;
+const MAX_SECONDS = 60;
+
+const stateEl = document.getElementById("state");
+const lineEl = document.getElementById("line");
+const clockEl = document.getElementById("clock");
+const hintEl = document.getElementById("hint");
+
+let stream = null;
+let context = null;
+let source = null;
+let processor = null;
+let sink = null;
+let chunks = [];
+let started = 0;
+let ticker = null;
+let busy = false;
+let lastText = "";
+
+function setState(text, line, pending) {
+  stateEl.textContent = text;
+  if (line !== undefined) {
+    lineEl.textContent = line;
+    lineEl.classList.toggle("pending", Boolean(pending));
+  }
+}
+
+function describeMicrophone(failure) {
+  const name = failure && failure.name;
+  if (name === "NotAllowedError") {
+    return "The microphone is blocked. Allow it in the Parlo window and try again.";
+  }
+  if (name === "NotFoundError") {
+    return "No microphone was found. Plug one in and try again.";
+  }
+  return "The microphone did not open. Check that another program is not using it.";
+}
+
+function downsample(samples, from, to) {
+  if (from === to) {
+    return samples;
+  }
+  const ratio = from / to;
+  const length = Math.max(Math.floor(samples.length / ratio), 1);
+  const out = new Float32Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(Math.floor((index + 1) * ratio), samples.length);
+    let sum = 0;
+    let count = 0;
+    for (let cursor = start; cursor < end; cursor += 1) {
+      sum += samples[cursor];
+      count += 1;
+    }
+    out[index] = count ? sum / count : 0;
+  }
+  return out;
+}
+
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const text = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  text(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  text(8, "WAVE");
+  text(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  text(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  for (let index = 0; index < samples.length; index += 1) {
+    const value = Math.max(-1, Math.min(1, samples[index]));
+    view.setInt16(44 + index * 2, value * 32767, true);
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+async function begin() {
+  if (busy || document.hidden) {
+    return;
+  }
+  if (stream) {
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+    });
+  } catch (failure) {
+    setState("Microphone blocked", describeMicrophone(failure), true);
+    return;
+  }
+  context = new (window.AudioContext || window.webkitAudioContext)();
+  source = context.createMediaStreamSource(stream);
+  processor = context.createScriptProcessor(2048, 1, 1);
+  sink = context.createGain();
+  sink.gain.value = 0;
+  chunks = [];
+  processor.onaudioprocess = (event) => {
+    const block = event.inputBuffer.getChannelData(0);
+    const copy = new Float32Array(block.length);
+    copy.set(block);
+    chunks.push(copy);
+    if (chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
+      finish();
+    }
+  };
+  source.connect(processor);
+  processor.connect(sink);
+  sink.connect(context.destination);
+  started = performance.now();
+  document.body.classList.add("listening");
+  setState("Listening", "Speak now, then press the shortcut again.", true);
+  clearInterval(ticker);
+  ticker = setInterval(() => {
+    clockEl.textContent = ((performance.now() - started) / 1000).toFixed(1) + " s";
+  }, 100);
+}
+
+function release() {
+  clearInterval(ticker);
+  ticker = null;
+  document.body.classList.remove("listening");
+  if (processor) {
+    processor.onaudioprocess = null;
+    processor.disconnect();
+  }
+  if (source) {
+    source.disconnect();
+  }
+  if (sink) {
+    sink.disconnect();
+  }
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+  if (context && context.state !== "closed") {
+    context.close();
+  }
+  const rate = context ? context.sampleRate : 48000;
+  stream = null;
+  context = null;
+  source = null;
+  processor = null;
+  sink = null;
+  const collected = chunks;
+  chunks = [];
+  const length = collected.reduce((total, chunk) => total + chunk.length, 0);
+  if (!length) {
+    return null;
+  }
+  const merged = new Float32Array(length);
+  let offset = 0;
+  for (const chunk of collected) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  const seconds = length / rate;
+  if (seconds < 0.2) {
+    return null;
+  }
+  return { wav: encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE), seconds };
+}
+
+async function finish() {
+  if (!stream || busy) {
+    return;
+  }
+  busy = true;
+  const captured = release();
+  clockEl.textContent = "0.0 s";
+  if (!captured) {
+    setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
+    busy = false;
+    return;
+  }
+  setState("Writing", "Your words are being written down.", true);
+  try {
+    const response = await fetch("/dictate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: captured.wav,
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
+    }
+    const result = await response.json();
+    const text = (result.text || "").trim();
+    if (!text) {
+      setState("Nothing heard", "Speak a little closer to the microphone.", true);
+      busy = false;
+      return;
+    }
+    lastText = text;
+    setState("Copied", text, false);
+    document.body.classList.add("showing-hint");
+    hintEl.textContent = "Copied to the clipboard. Paste it wherever you need it.";
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (failure) {
+      hintEl.textContent = "The clipboard refused the text. Select it here and copy it by hand.";
+    }
+  } catch (failure) {
+    setState("Failed", failure.message || "The dictation failed.", true);
+  }
+  busy = false;
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    finish();
+  } else {
+    begin();
+  }
+});
+
+window.addEventListener("focus", () => {
+  begin();
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    finish();
+  }
+});
+
+if (!document.hidden) {
+  begin();
+}
+</script>
+</body>
+</html>

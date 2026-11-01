@@ -31,6 +31,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const INDEX: &str = include_str!("../web/index.html");
 const STYLESHEET: &str = include_str!("../web/app.css");
 const SCRIPT: &str = include_str!("../web/app.js");
+const ISLAND: &str = include_str!("../web/island.html");
 
 pub fn new_token() -> String {
     let nanos = SystemTime::now()
@@ -701,6 +702,17 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && (path == "/island" || path == "/island.html") {
+        let page = ISLAND.replace("__PARLO_VERSION__", VERSION);
+        return respond(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            page.as_bytes(),
+        )
+        .map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/app.js" {
         return respond(
             stream,
@@ -1222,6 +1234,14 @@ mod tests {
         assert!(page.contains(&format!("content=\"{VERSION}\"")));
         assert!(!page.contains("__PARLO_VERSION__"));
         assert!(page.contains("/app.css") && page.contains("/app.js"));
+    }
+
+    #[test]
+    fn the_island_page_dictates_and_carries_the_version() {
+        let page = ISLAND.replace("__PARLO_VERSION__", VERSION);
+        assert!(page.contains("/dictate"));
+        assert!(page.contains(&format!("content=\"{VERSION}\"")));
+        assert!(!page.contains("__PARLO_VERSION__"));
     }
 
     #[test]

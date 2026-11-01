@@ -17,6 +17,21 @@
         "center": true,
         "resizable": true,
         "backgroundColor": "#faf6ef"
+      },
+      {
+        "label": "island",
+        "title": "Parlo Dictate",
+        "width": 560,
+        "height": 96,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false,
+        "backgroundColor": "#00000000"
       }
     ],
     "security": {

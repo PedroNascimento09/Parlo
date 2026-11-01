@@ -10,9 +10,14 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use tauri::{Manager, RunEvent, Url, WebviewWindow};
+use tauri::{LogicalPosition, Manager, RunEvent, Url, WebviewWindow};
+
+mod island;
 
 const READY_TIMEOUT: Duration = Duration::from_secs(240);
+const ISLAND_WIDTH: f64 = 560.0;
+const ISLAND_HEIGHT: f64 = 96.0;
+const ISLAND_MARGIN: f64 = 64.0;
 
 struct Engine(Mutex<Option<Child>>);
 
@@ -23,6 +28,7 @@ fn main() {
                 .get_webview_window("main")
                 .ok_or("the main window is missing")?;
             app.manage(Engine(Mutex::new(None)));
+            island::listen(app.handle().clone());
             let handle = app.handle().clone();
             std::thread::spawn(move || serve(handle, window));
             Ok(())
@@ -70,6 +76,37 @@ fn serve(handle: tauri::AppHandle, window: WebviewWindow) {
             fail(&window);
         }
     }
+
+    show_island(&handle, port, &token);
+}
+
+fn show_island(handle: &tauri::AppHandle, port: u16, token: &str) {
+    let Some(window) = handle.get_webview_window("island") else {
+        note("the dictation island is missing from the window list");
+        return;
+    };
+    place(&window);
+    match Url::parse(&format!("http://127.0.0.1:{port}/island?t={token}")) {
+        Ok(url) => {
+            if let Err(error) = window.navigate(url) {
+                note(&format!("cannot open the dictation island: {error}"));
+            }
+        }
+        Err(error) => note(&format!("cannot build the island address: {error}")),
+    }
+}
+
+fn place(window: &WebviewWindow) {
+    let Ok(Some(monitor)) = window.primary_monitor() else {
+        note("no monitor was reported, the dictation island keeps its default place");
+        return;
+    };
+    let scale = monitor.scale_factor();
+    let width = monitor.size().width as f64 / scale;
+    let height = monitor.size().height as f64 / scale;
+    let x = (width - ISLAND_WIDTH) / 2.0;
+    let y = height - ISLAND_HEIGHT - ISLAND_MARGIN;
+    let _ = window.set_position(LogicalPosition::new(x.max(0.0), y.max(0.0)));
 }
 
 fn launch() -> Result<(Child, u16, String), String> {
