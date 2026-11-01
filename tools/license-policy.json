@@ -59,7 +59,13 @@
     "sympy": "BSD-3-Clause",
     "torch": "BSD-3-Clause"
   },
-  "known_issues": {
-    "r-efi": "LGPL-2.1-or-later, reachable only through the UEFI target of getrandom"
-  }
+  "known_issues": {},
+  "not_shipped": {
+    "r-efi": "LGPL-2.1-or-later, reachable only through the UEFI target of getrandom, and absent from every release target the gate checks"
+  },
+  "release_targets": [
+    "x86_64-unknown-linux-gnu",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc"
+  ]
 }

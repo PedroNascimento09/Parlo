@@ -1,5 +1,7 @@
 sherpa-onnx==2.0.1
 faster-whisper==1.2.1
+ctranslate2==4.8.4
+sentencepiece==0.2.2
 numpy==2.5.4
 truststore==0.10.5
 psutil==7.2.2

@@ -18,7 +18,7 @@ Dubbing is published and is not removed for being early. It is an anticipated ca
 
 ## Where the work stands (1 November 2026)
 
-Published: **v0.1.6**. In the tree and not yet published: **v0.1.7**, the native window and voice profiles. It was held back by the licence gate until the Argos runtime left the core, which it now has. The gate still refuses a release with `--strict` on `r-efi`, documented as unreachable in the binaries this project ships, so the release waits on that decision and not on the translation work.
+Published: **v0.1.7**, the native window, the voice profile panel and a translation stage that no longer needs the Argos runtime. The licence gate passes with `--strict`, and the one copyleft crate it still lists, `r-efi`, is checked against every release target and fails the build if it ever reaches one.
 
 The plan calls **v0.2 Foundation** complete, and it is: the CPU cascade translates Portuguese and English offline, the local API answers only with a token on loopback, thirty minutes of audio ran at 420.7 ms mean with no drift, and cold start is measured at 18.1 s. The plan keeps those numbers as reported measurements and asks for hardware, method and commit to be attached before they are used in public.
 

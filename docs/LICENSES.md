@@ -61,13 +61,13 @@ The gate reads the Rust closure from `cargo metadata`, the Python closures from 
 
 ## Open questions
 
-1. **The Argos runtime is out of the engine**, so `minisbd`, the AGPL sentence splitter it pulled in, no longer reaches the shipped program and the gate reports one tracked issue, `r-efi`. The translation stage reads an OPUS-MT package through CTranslate2, and the two packages in use declare CC BY 4.0 with their authors named in the catalogue. What the earlier attempts established:
+1. **The Argos runtime is out of the engine**, so `minisbd`, the AGPL sentence splitter it pulled in, no longer reaches the shipped program and the gate reports no open issue at all. The translation stage reads an OPUS-MT package through CTranslate2, and the two packages in use declare CC BY 4.0 with their authors named in the catalogue. What the earlier attempts established:
 
    - `Helsinki-NLP/opus-mt-pt-en` and `Helsinki-NLP/opus-mt-en-pt` answer 401 and cannot be downloaded.
    - `Helsinki-NLP/opus-mt-ROMANCE-en` works português→inglês with the `>>por<<` source prefix, beam 4, `no_repeat_ngram_size=3` and `repetition_penalty=1.2`: 69 to 130 ms per sentence on four threads, correct output on three of three samples.    - `Helsinki-NLP/opus-mt-tc-big-en-pt` was recorded as degenerating inglês→português with every target prefix. That was measured through a mis-converted CTranslate2 build: on 1 November the same weights were run through transformers and answered two of two probes correctly. The conversion, not the checkpoint, was at fault: the same weights now translate 12 of 12 corpus sentences in both directions, with 9 of 12 idiomatic in European Portuguese. The pair stays unpublished until the European wording, the name preservation and the prefix leak are fixed. Details in `docs/BENCHMARKS.md`.
 
    `G-LIC-MT` is closed on the licence question and open on quality: the pair finishes 12 of 12 corpus sentences in both directions, and name preservation, European spelling and number formats still need work before the wording is called validated. Details in `docs/BENCHMARKS.md`.
-2. **`r-efi` is LGPL-2.1-or-later**, reachable only through the UEFI target of `getrandom`. It is not in any shipped binary today; the position needs a lawyer if a UEFI build is ever published.
+2. **`r-efi` is LGPL-2.1-or-later**, reachable only through the UEFI target of `getrandom`. It is not in any graph this project builds, and that is no longer a note: the gate asks cargo for the dependency graph of each release target and fails when the crate appears in one. A UEFI build would fail the build, not slip through.
 3. **The process boundary with Piper** needs a legal view before the repository claims that the two are separate works, not before.
 
 Nothing on this page is legal advice.

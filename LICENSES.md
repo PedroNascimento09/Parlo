@@ -586,7 +586,7 @@ component and refused in the core by `python tools/licenses.py check`.
 | Component | Location | Code licence | Weights, voices or data | Holder | Required | Confirmed | Obligations | Licence text |
 |---|---|---|---|---|---|---|---|---|
 | Piper adapter | `engines/tts-piper` | GPL-3.0-or-later | none | OHF-voice | Optional | Confirmed | Offer the corresponding source under the GPL | [GPL-3.0](licenses/GPL-3.0-or-later.txt) |
-| r-efi | dependency of `getrandom`, UEFI target only | LGPL-2.1-or-later | none | Rust UEFI project | Target only | Tracked, not in a shipped binary | Offer the library source and allow relinking | https://github.com/rust-osdev/r-efi |
+| r-efi | dependency of `getrandom`, UEFI target only | LGPL-2.1-or-later | none | Rust UEFI project | Not shipped | Absent from every release target, and the gate fails if it appears in one | Offer the library source and allow relinking | https://github.com/rust-osdev/r-efi |
 
 ## What this means in practice
 

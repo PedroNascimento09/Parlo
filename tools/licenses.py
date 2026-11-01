@@ -236,13 +236,17 @@ def rust_components() -> list[Component]:
     return sorted(components, key=lambda component: component.name.lower())
 
 
-def licence_problems(components: list[Component], rules: dict) -> tuple[list[str], list[str]]:
+def licence_problems(
+    components: list[Component], rules: dict
+) -> tuple[list[str], list[str], list[str]]:
     allowed = {scope: set(values) for scope, values in rules["allowed"].items()}
     denied = set(rules.get("denied", []))
     overrides = {canonical(name): value for name, value in rules.get("overrides", {}).items()}
     known_issues = {canonical(name): value for name, value in rules.get("known_issues", {}).items()}
+    not_shipped = {canonical(name): value for name, value in rules.get("not_shipped", {}).items()}
     problems: list[str] = []
     known: list[str] = []
+    exempted: list[str] = []
     for component in components:
         expression = overrides.get(canonical(component.name), component.license)
         found = tokens(expression)
@@ -250,7 +254,11 @@ def licence_problems(components: list[Component], rules: dict) -> tuple[list[str
             problems.append(f"{component.name} {component.version}: no licence metadata")
             continue
         reason = known_issues.get(canonical(component.name))
+        exemption = not_shipped.get(canonical(component.name))
         for token in found:
+            if exemption and token.split("-")[0] in ("AGPL", "LGPL", "GPL", "SSPL", "BUSL", "Elastic"):
+                exempted.append(f"{component.name} {component.version}: {token}, {exemption}")
+                continue
             if reason and token.split("-")[0] in ("AGPL", "LGPL", "GPL", "SSPL", "BUSL", "Elastic"):
                 known.append(f"{component.name} {component.version}: {token}, {reason}")
                 continue
@@ -260,7 +268,34 @@ def licence_problems(components: list[Component], rules: dict) -> tuple[list[str
                 problems.append(
                     f"{component.name} {component.version}: {token} is not allowed for {component.scope}"
                 )
-    return problems, known
+    return problems, known, exempted
+
+
+def target_graph(target: str) -> set[str]:
+    completed = subprocess.run(
+        ["cargo", "metadata", "--format-version", "1", "--locked", "--filter-platform", target],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+    )
+    if completed.returncode != 0:
+        raise SystemExit(f"cargo metadata for {target} failed:\n{completed.stderr.strip()}")
+    data = json.loads(completed.stdout)
+    selected = {node["id"] for node in data["resolve"]["nodes"]}
+    return {package["name"] for package in data["packages"] if package["id"] in selected}
+
+
+def not_shipped_problems(exempt: dict, graphs: dict) -> list[str]:
+    problems = []
+    for target, names in sorted(graphs.items()):
+        for name in sorted(exempt):
+            if canonical(name) in names:
+                problems.append(
+                    f"{name} reaches {target}: the not shipped exemption is no longer true"
+                )
+    return problems
 
 
 def pin_problems(components: list[Component]) -> list[str]:
@@ -318,8 +353,12 @@ def run_check(verify_installed: bool, strict_models: bool, strict: bool) -> int:
     rules = policy()
     python, skipped = python_components()
     components = python + rust_components()
-    problems, known = licence_problems(components, rules)
+    problems, known, exempted = licence_problems(components, rules)
     problems += pin_problems(components)
+    graphs = {
+        target: target_graph(target) for target in rules.get("release_targets", [])
+    }
+    problems += not_shipped_problems(rules.get("not_shipped", {}), graphs)
     if verify_installed:
         problems += installed_problems(python)
     data = catalog()
@@ -331,6 +370,8 @@ def run_check(verify_installed: bool, strict_models: bool, strict: bool) -> int:
         print(f"FAIL {problem}")
     for entry in known:
         print(f"KNOWN {entry}")
+    for entry in exempted:
+        print(f"NOT SHIPPED {entry}")
     if strict and known:
         problems.append("known issues still open: " + str(len(known)))
     if unverified:
@@ -427,8 +468,8 @@ COPYLEFT = (
         "LGPL-2.1-or-later",
         "none",
         "Rust UEFI project",
-        "Target only",
-        "Tracked, not in a shipped binary",
+        "Not shipped",
+        "Absent from every release target, and the gate fails if it appears in one",
         "Offer the library source and allow relinking",
         "https://github.com/rust-osdev/r-efi",
     ),
