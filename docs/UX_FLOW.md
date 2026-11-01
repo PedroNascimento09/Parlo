@@ -16,7 +16,7 @@ Parlo Presence (tray)
 | State | Surface | What the user sees | How they leave it |
 |---|---|---|---|
 | Presence idle | tray only | One icon, no window, no panel | click, Live, Open Parlo |
-| Dictate listening | island 560 × 96 | dot, `LISTENING`, level, timer | click tray again, `Ctrl+Alt+D`, `Esc` |
+| Dictate listening | island 560 × 96 | dot, `LISTENING`, level, timer | click tray again, the dictation shortcut (`Ctrl+Alt+D` by default), `Esc` |
 | Dictate writing | island | `WRITING` | automatic |
 | Dictate delivered | island | `INSERTED` or `COPIED`, one line of text | hides after 4 s |
 | Dictate failed | island | `FAILED` and the reason | click tray to retry |

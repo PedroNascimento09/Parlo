@@ -66,6 +66,16 @@ The same choice from a terminal, without opening the page:
 parlo config --from en --to pt --stt whisper
 ```
 
+## The dictation shortcut
+
+The island opens and closes on **Ctrl+Alt+D**. To use other keys, write them once and restart Parlo:
+
+```
+parlo config --shortcut "Ctrl+Alt+Shift+D"
+```
+
+The same shortcut can be typed in the settings row of the page, which validates it and stores it. Ctrl, Alt, Shift or Win plus a letter, a digit, a function key or Space is accepted, and a bare key is refused because a global shortcut without a modifier would swallow typing everywhere. The new keys are registered the next time the window starts; until then the old ones still work, and the window log names whatever it registered, including the case where another program already owns the combination.
+
 ## Dub a file
 
 The dub panel is for recordings, not for a call: drop a video or an audio file on the page, choose the target language, and press the dubbing control. The request goes to the local server on `127.0.0.1`, which runs the same offline pipeline as `parlo dub`, so the file never leaves the machine. It takes minutes on a long file, the panel keeps counting while it works, and the finished media and its `.srt` download from the page when it ends.

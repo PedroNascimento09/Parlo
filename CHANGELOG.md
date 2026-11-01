@@ -10,6 +10,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- The dictation shortcut is a setting instead of a constant: `parlo config --shortcut "Ctrl+Alt+Shift+D"` writes it, the window registers whatever the file names and reports a shortcut another program owns, the island shows the same keys in its hint, and the settings page validates and stores it. A restart is what makes the new shortcut live, and Parlo says so rather than pretending the change took effect.
 - **Meetings**, the first layer of it: a transcript can be brought in as plain text with a speaker at the start of each line and an optional `[00:12]` timestamp, and Parlo keeps it in `meetings/` beside the configuration, split by speaker. A speaker can be named once and the name applies to every line that speaker had said, while the original marker is kept underneath for audit; an empty name goes back to the marker, and a name without the sentence that supports it is refused. Deleting a meeting removes its file.
 - Dictating in another language now shows both sides on the island: the inserted line is the translation, and the hint keeps the sentence that was actually heard, so a mistranslation is visible instead of silent.
 - The Hub now shows the **model library** the build actually ships with: every component with its identifier, version, function, licence and whether that licence was checked, served by `GET /catalog` from the catalogue embedded in the binary. It is read only, and the panel says so — installing from there is not in this build.
