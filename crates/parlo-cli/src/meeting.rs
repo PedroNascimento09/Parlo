@@ -1,6 +1,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+static NEXT: AtomicU64 = AtomicU64::new(0);
 
 use serde::{Deserialize, Serialize};
 
@@ -61,6 +64,11 @@ fn now() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|elapsed| elapsed.as_millis() as u64)
         .unwrap_or_default()
+}
+
+fn new_id() -> String {
+    let counter = NEXT.fetch_add(1, Ordering::Relaxed);
+    format!("m{}-{}-{counter}", now(), std::process::id())
 }
 
 fn path_for(folder: &Path, id: &str) -> Result<PathBuf, String> {
@@ -141,7 +149,7 @@ pub fn import(title: &str, text: &str) -> Result<Meeting, String> {
     }
     let started_at = now();
     Ok(Meeting {
-        id: format!("m{started_at}"),
+        id: new_id(),
         title: title.trim().to_string(),
         started_at,
         segments,
@@ -265,8 +273,7 @@ mod tests {
     use super::*;
 
     fn scratch(name: &str) -> PathBuf {
-        let nanos = now();
-        let folder = std::env::temp_dir().join(format!("parlo-meeting-{name}-{nanos}"));
+        let folder = std::env::temp_dir().join(format!("parlo-meeting-{name}-{}", new_id()));
         fs::create_dir_all(&folder).unwrap();
         folder
     }
@@ -280,6 +287,13 @@ mod tests {
              sem marcador nenhum",
         )
         .unwrap()
+    }
+
+    #[test]
+    fn two_imports_never_share_an_id() {
+        let first = sample();
+        let second = sample();
+        assert_ne!(first.id, second.id);
     }
 
     #[test]
