@@ -253,10 +253,22 @@ class LiveTests(unittest.TestCase):
         catalogue = [
             model(id="mt-en", task="mt", languages={"declared": ["en"], "validated": ["en"]}),
             model(id="clone-en", task="clone", languages={"declared": ["en"], "validated": ["en"]}),
+            model(id="mt-pt", task="mt", languages={"declared": ["pt-PT"], "validated": ["pt-PT"]}),
+            model(id="clone-pt", task="clone", languages={"declared": ["pt-PT"], "validated": ["pt-PT"]}),
         ]
-        result = session.live(catalogue, device(), self.speakers())
-        self.assertEqual(result["directions"][0]["identity"], "unmeasured")
+        speakers = [
+            {"id": "a", "locale": "pt-PT", "profile": True, "authorised": True},
+            {"id": "b", "locale": "en", "profile": True, "authorised": True},
+        ]
+        result = session.live(catalogue, device(), speakers)
+        self.assertEqual([direction["identity"] for direction in result["directions"]], ["unmeasured", "unmeasured"])
         self.assertIn("not measured", result["notice"])
+
+    def test_missing_profile_in_reverse_direction_takes_priority(self):
+        result = session.live(self.catalogue(), device(), self.speakers())
+        self.assertEqual(result["directions"][0]["identity"], "measured")
+        self.assertEqual(result["directions"][1]["identity"], "unavailable")
+        self.assertIn("cannot be promised", result["notice"])
 
     def test_one_speaker_is_rejected(self):
         with self.assertRaises(session.LiveError):
