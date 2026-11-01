@@ -2,11 +2,11 @@ import re
 import sys
 from pathlib import Path
 
-SOURCES = "docs/plan/v12_3"
-DOCX_OUT = "Parlo_Plano_Mestre_v12_3_FINAL.docx"
-PDF_OUT = "Parlo_Plano_Mestre_v12_3_FINAL.pdf"
+SOURCES = "docs/plan/v12_4"
+DOCX_OUT = "Parlo_Plano_Mestre_v12_4_FINAL.docx"
+PDF_OUT = "Parlo_Plano_Mestre_v12_4_FINAL.pdf"
 TITLE = "PARLO"
-HEADER = "Parlo · Plano Mestre v12.3"
+HEADER = "Parlo · Plano Mestre v12.4"
 
 ACCENT = (0x1F, 0x3A, 0x4D)
 MUTED = (0x5B, 0x6B, 0x77)
@@ -31,9 +31,20 @@ def split_bold(text):
 
 def parse(paths):
     blocks = []
+    code = None
     for path in paths:
         for raw in Path(path).read_text(encoding="utf-8").splitlines():
             line = raw.rstrip()
+            if code is not None:
+                if line.strip().startswith("```"):
+                    blocks.append(("code", code))
+                    code = None
+                else:
+                    code.append(raw)
+                continue
+            if line.strip().startswith("```"):
+                code = []
+                continue
             if line.startswith("|"):
                 cells = [cell.strip() for cell in line.strip("|").split("|")]
                 if all(re.fullmatch(r":?-{2,}:?", cell) for cell in cells if cell):
@@ -72,6 +83,9 @@ def parse(paths):
                 blocks.append(("bullet", stripped[2:]))
             else:
                 blocks.append(("para", stripped))
+        if code is not None:
+            blocks.append(("code", code))
+            code = None
     return blocks
 
 
@@ -230,6 +244,22 @@ def build_docx(blocks):
             paragraph.paragraph_format.space_after = Pt(3)
             paragraph.paragraph_format.keep_with_next = True
             add_runs(paragraph, payload, 10.5, MUTED)
+        elif kind == "code":
+            table = document.add_table(rows=1, cols=1)
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            table.autofit = True
+            cell = table.rows[0].cells[0]
+            shade(cell, "F7F2E9")
+            for index, line in enumerate(payload):
+                paragraph = cell.paragraphs[0] if index == 0 else cell.add_paragraph()
+                paragraph.paragraph_format.space_before = Pt(0)
+                paragraph.paragraph_format.space_after = Pt(0)
+                paragraph.paragraph_format.line_spacing = 1.0
+                run = paragraph.add_run(line)
+                run.font.name = "Courier New"
+                run.font.size = Pt(7)
+                run.element.rPr.rFonts.set(qn("w:eastAsia"), "Courier New")
+            document.add_paragraph().paragraph_format.space_after = Pt(2)
         elif kind == "para":
             paragraph = document.add_paragraph()
             paragraph.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
@@ -290,6 +320,7 @@ def build_pdf(blocks):
         KeepTogether,
         PageTemplate,
         Paragraph,
+        Preformatted,
         Spacer,
         Table,
         TableStyle,
@@ -327,6 +358,7 @@ def build_pdf(blocks):
         "body": ParagraphStyle("body", fontName="Parlo", fontSize=10, leading=14.4, alignment=TA_JUSTIFY, spaceAfter=6),
         "bullet": ParagraphStyle("bullet", fontName="Parlo", fontSize=10, leading=14, alignment=TA_LEFT, leftIndent=14, bulletIndent=4, spaceAfter=2.5),
         "callout": ParagraphStyle("callout", fontName="Parlo", fontSize=9.6, leading=13.6, textColor=accent),
+        "code": ParagraphStyle("code", fontName="Courier", fontSize=6.9, leading=8.3, textColor=accent),
         "cell": ParagraphStyle("cell", fontName="Parlo", fontSize=8, leading=10.6, alignment=TA_LEFT),
         "cell_head": ParagraphStyle("cell_head", fontName="Parlo-Bold", fontSize=8, leading=10.6, textColor=accent),
     }
@@ -354,7 +386,7 @@ def build_pdf(blocks):
         rightMargin=2.3 * cm,
         topMargin=2.3 * cm,
         bottomMargin=2.0 * cm,
-        title="Parlo — Plano Mestre v12.3",
+        title="Parlo — Plano Mestre v12.4",
         author="Pedro Nascimento",
         subject="Plano mestre técnico, produto e open source do Parlo",
     )
@@ -388,6 +420,9 @@ def build_pdf(blocks):
             story.append(Paragraph(markup(payload), styles["h2"]))
         elif kind == "h3":
             story.append(Paragraph(markup(payload), styles["h3"]))
+        elif kind == "code":
+            story.append(Preformatted("\n".join(payload), styles["code"]))
+            story.append(Spacer(1, 7))
         elif kind == "para":
             story.append(Paragraph(markup(payload), styles["body"]))
         elif kind == "bullet":
