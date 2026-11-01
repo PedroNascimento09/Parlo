@@ -26,6 +26,8 @@ Cada release é instalável, útil por si só e medida. Os números de versão s
 
 Regra: as releases só avançam quando os gates fecham. Não há calendário neste documento, e uma release pode demorar o tempo que o gate exigir.
 
+O consentimento e a transparência não são uma fase final. Entram com a primeira capacidade de voz: um perfil só existe com registo de consentimento, e uma exportação só sai com identificação de conteúdo sintético. Antes disso, a funcionalidade de voz não é publicada, mesmo que o motor já sintetize.
+
 ## 69. Fases de execução e critérios de conclusão
 
 | Fase | Trabalho | Critério de conclusão |
@@ -42,6 +44,8 @@ Regra: as releases só avançam quando os gates fecham. Não há calendário nes
 | 10 | Documentação e transparência | Privacidade, licenças, voz, modelos e limitações publicados e coerentes com o código |
 
 As fases 1 a 3 têm precedência. A clonagem antes da voz neutra é ordem de produto, não preferência: sem perfil de voz e sem tradução fiável, a clonagem amplifica um erro em vez de criar valor.
+
+Acresce uma fase própria, anterior à integração de clonadores: fluxo de consentimento completo, registo por perfil, avisos contextuais, etiqueta de síntese na interface, metadados de exportação e revogação com eliminação verificada. Critério de conclusão: criar, ouvir, exportar, revogar e apagar um perfil, com o ficheiro exportado a identificar a origem sintética e sem qualquer escrita fora da pasta de dados.
 
 ## 70. Definição de concluída e regras de corte
 
@@ -121,6 +125,10 @@ Uma área chamada «Licenças e código aberto» apresenta, por componente: nome
 
 Regra de equilíbrio: a informação está a dois cliques e nunca interrompe o fluxo normal. Avisos jurídicos longos ficam na documentação; a aplicação diz o essencial numa frase.
 
+Além das licenças, a área de transparência mostra os perfis de voz existentes, a origem declarada de cada um, a finalidade autorizada, a data do consentimento e a versão do aviso aceite. A revogação e a eliminação estão no mesmo lugar, porque um direito que exige procurar noutro ecrã não é um direito.
+
+Antes de exportar áudio sintetizado, a aplicação mostra o que vai no ficheiro: marca de síntese, metadados de proveniência e um lembrete de que a divulgação pode ser exigida a quem publica.
+
 ## 76. Governação
 
 Decisões de arquitetura e de licenciamento são registadas com data, contexto e consequências. Alterações que afetem licenças, privacidade ou direitos de voz exigem revisão explícita e não entram por rotina. O projeto mantém um registo de decisões abertas na secção 80 e um registo de alterações por versão do plano.
@@ -164,6 +172,10 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 - Quando invalidar um resultado de cache e repetir a validação técnica.
 - Quando promover um modelo de compatível a recomendado, depois de validação no dispositivo.
 
+- Quando repetir um aviso de voz sintética e quando já existe consentimento válido para a mesma finalidade.
+- Que motor usar quando o preferido não suporta a marcação exigida, com a limitação declarada.
+- Que informação de proveniência acompanha cada formato de exportação.
+
 ## 79. Decisões pendentes de teste interno
 
 | # | Pendente | Como fecha |
@@ -175,6 +187,9 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 | 5 | Diarização utilizável em reuniões | Taxa de erro de segmentação em gravações reais |
 | 6 | Viabilidade de marcador de conteúdo sintético | Prova técnica por formato de exportação |
 | 7 | Custo de memória de clonagem em 16 GB | Medição de RSS e VRAM por motor |
+| 8 | Marca de água viável em cada motor candidato | Verificar suporte real e formato, sem presumir |
+| 9 | Metadados de proveniência por formato de exportação | Prova técnica em WAV, FLAC e MP4 |
+| 10 | Deteção de voz sintética como aviso ao utilizador | Avaliar utilidade e falsos positivos antes de prometer |
 
 ## 80. Questões que exigem decisão humana ou validação jurídica
 
@@ -192,6 +207,8 @@ O Parlo é um projeto pessoal, gratuito, open-source e público, sem venda, subs
 Três pontos ficam explicitamente como interpretação jurídica, sem bloquear o trabalho: a qualificação de obra combinada ao distribuir um adaptador GPL ao lado do núcleo; a forma de divulgação de conteúdo sintético que satisfaça o Artigo 50; e o tratamento de representações vocais como dado biométrico em cada finalidade concreta.
 
 Consulta jurídica só se justifica quando existir dúvida material e concreta que não se resolva com documentação oficial, licença aplicável ou análise técnica razoável — por exemplo, uma distribuição que combine binários copyleft com o núcleo, ou um pedido de utilização comercial que dependa dessa qualificação. O acompanhamento fica numa checklist interna de conformidade, revista a cada release.
+
+A forma exata de divulgação de conteúdo sintético em cada meio continua a ser interpretação, e o Parlo resolve-a de forma conservadora: etiqueta na interface, metadados no ficheiro e aviso antes da partilha. Se o Artigo 50 exigir mais num caso concreto, a limitação é declarada em vez de improvisada.
 
 ## 81. Riscos por severidade
 
@@ -235,4 +252,11 @@ Consulta jurídica só se justifica quando existir dúvida material e concreta q
 - Instalador sem pesos; biblioteca a crescer sem alterar o tamanho da instalação.
 - Catálogo atualizável sem reinstalar a aplicação, com descoberta que não descarrega.
 - Instalar, substituir e remover modelos individualmente, sem tocar em perfis de voz nem em preferências.
+
+- Consentimento obrigatório antes de qualquer perfil, com origem declarada e versão do aviso registada.
+- Avisos contextuais nos sete momentos definidos e sem repetição desnecessária.
+- Etiqueta de voz sintética na interface e metadados de proveniência no ficheiro exportado.
+- Revogação e eliminação verificadas, incluindo caches e representações derivadas.
+- Manifesto de cada clonador com capacidades de transparência declaradas.
+- Nenhuma afirmação de marca de água ou de identificação sem verificação no motor usado.
 - Remoção de um modelo a proteger dependências partilhadas e a oferecer alternativa quando está em uso.

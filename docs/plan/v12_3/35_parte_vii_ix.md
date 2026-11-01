@@ -93,16 +93,28 @@ Medidas que o Parlo adota independentemente da qualificação: base legal assent
 
 ## 63. Regulamento Europeu da IA e Artigo 50
 
-O Parlo é um projeto open-source, gratuito e local. Isso reduz exposição, mas não elimina automaticamente obrigações: a isenção para sistemas de código aberto não cobre todos os casos, e as obrigações de transparência do Artigo 50 aplicam-se a partir de 2 de agosto de 2026. As datas e a interpretação devem ser confirmadas com aconselhamento jurídico antes de qualquer declaração pública de conformidade.
+O Parlo é um projeto open-source, gratuito e local. Isso reduz exposição, mas não elimina automaticamente obrigações: a isenção para sistemas de código aberto não cobre todos os casos, e as obrigações de transparência do Artigo 50 aplicam-se a partir de 2 de agosto de 2026. Datas e interpretação devem ser confirmadas antes de qualquer declaração pública de conformidade.
 
-| Obrigação | A quem se aplica | O que o Parlo faz |
+| Obrigação | A quem se aplica | O que o Parlo faz | Estado |
+|---|---|---|---|
+| Informar que se interage com um sistema de IA | Fornecedor que coloca o sistema no mercado | Interface diz que a voz é sintetizada | Planeado, depende de síntese integrada |
+| Marcar conteúdo sintético de forma legível por máquina | Fornecedor de sistemas generativos | Metadados de proveniência no ficheiro exportado, com motor e data | Planeado por formato |
+| Divulgar deepfakes | Responsável pela utilização que publica | Aviso antes da partilha e lembrete de responsabilidade | Planeado |
+| Transparência sobre limitações | Fornecedor | Limitações por modo, idioma e motor | Parcial, documentado no plano |
+
+### 63.1 Como a transparência é implementada
+
+| Camada | Mecanismo | Regra |
 |---|---|---|
-| Informar que se interage com um sistema de IA | Fornecedor que coloca o sistema no mercado | A aplicação diz que a voz é sintetizada, sempre que o for |
-| Marcar conteúdo sintético de forma legível por máquina | Fornecedor de sistemas generativos | Metadados de origem e marca de água quando tecnicamente viável; documentado o que falta |
-| Divulgar deepfakes | Responsável pela utilização que publica o conteúdo | O produto avisa e regista; a divulgação é responsabilidade de quem publica |
-| Transparência sobre limitações | Fornecedor | Documentação de limitações por modo e por idioma |
+| Interface | Etiqueta de voz sintética em cada reprodução e exportação | Sempre visível, sem depender de metadados |
+| Ficheiro | Metadados de proveniência com motor, versão, data e Parlo | Legíveis por ferramentas, não por olho humano |
+| Marca de água | Só quando o motor a oferece de forma verificada | Nunca simulada nem anunciada sem verificação |
+| Registo | Histórico local da geração: perfil, motor, data | Apoia auditoria do próprio utilizador |
+| Partilha | Aviso com o que a lei pode exigir a quem publica | Uma vez por sessão e por destinatário |
 
-Regras de produto: a saída sintetizada é sempre identificada na interface e nos ficheiros exportados; o utilizador recebe um aviso claro de que a divulgação de conteúdo que imita uma pessoa pode ser exigida por lei; e nenhuma funcionalidade de voz é apresentada como indistinguível de uma gravação real. Não se afirma que toda a tradução de voz é um deepfake: a classificação depende do contexto e da forma como o conteúdo é apresentado.
+O Parlo não depende exclusivamente de marcas de água e não afirma que um áudio está identificado quando o motor não oferece esse mecanismo. Se o motor não marca, o produto diz que não marca e continua a identificar a origem na interface e nos metadados.
+
+Não se afirma que toda a tradução de voz é um deepfake: a classificação depende do contexto e da forma como o conteúdo é apresentado. Traduzir a própria fala para outra língua e publicá-la identificada não é o mesmo que fazer alguém dizer o que não disse.
 
 ## 64. Segurança e cadeia de fornecimento
 

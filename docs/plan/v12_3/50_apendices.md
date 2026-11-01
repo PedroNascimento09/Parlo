@@ -91,6 +91,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | Estrutura | Doze partes com secções 1 a 58, algumas fora de ordem e um subtítulo de interface dentro da secção errada | Treze partes, secções 1 a 82 em ordem, sem duplicações; a voz, a orquestração e a biblioteca ganham partes próprias |
 | Biblioteca | Modelos descritos apenas como entradas de catálogo, sem ciclo de vida próprio | Parte VII: duas camadas, contratos, catálogo evolutivo, compatibilidade, instalar e remover, armazenamento, curadoria, novidades, importação, distribuição segura, ciclos independentes e dois modos |
 | Orientações do autor | Dezasseis pontos em aberto sobre tamanho, catálogo, assinatura, Piper, Argos, corpus e jurídico | Fixados na Parte VII e nas secções 77 a 82: orçamento de 100 MB, `parlo-models`, Ed25519, Piper fora do instalador, Argos fora do núcleo, corpus CC0-1.0, sem parecer jurídico nesta fase |
+| Consentimento e transparência | Política de voz sem fluxo de consentimento detalhado e Artigo 50 tratado de forma genérica | Secções 5, 25, 63 e 75: ecrãs de consentimento, registo por perfil, avisos contextuais, etiqueta de síntese, proveniência no ficheiro e revogação com eliminação |
 | Orquestração | Model Hub e Auto Select em cinco secções, sem ciclo de avaliação nem monitorização | Parte VI com PIMO: manifesto e níveis de evidência, filtragem, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback, ciclo de vida, cache, testes, critérios de aceitação e fases |
 | Voz | Clonagem descrita dentro da estratégia de TTS | Parte II completa: política, perfil, consentimento, compatibilidade, identidade, papéis da voz neutra |
 | Modelos de clonagem | CustomVoice apresentado como clonagem; Kokoro apresentado como fallback PT-PT | Base 0.6B e 1.7B são clonagem; CustomVoice usa vozes predefinidas; VoiceDesign desenha voz; Kokoro deixa de ser fallback PT-PT |
@@ -132,6 +133,9 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 23. Sem certificado Windows nesta fase, publicam-se hashes e instruções, sem os apresentar como assinatura.
 24. O corpus de avaliação é original, sob CC0-1.0, e cobre PT-PT, PT-BR e EN nos dois sentidos.
 25. A conformidade é acompanhada numa checklist interna, revista por release, sem parecer jurídico contratado.
+26. Nenhum perfil de voz existe sem declaração de origem e registo de consentimento com versão do aviso.
+27. Toda a exportação de áudio sintetizado identifica a origem em metadados e na interface, mesmo sem marca de água.
+28. A declaração do utilizador é registada como declaração, nunca apresentada como prova de autorização.
 
 ### D.3 Questões por resolver
 
@@ -152,6 +156,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 - O roadmap da secção 68 não contradiz as fases da secção 69 nem os gates da secção 32.
 - Os critérios de aceitação da secção 42 cobrem as garantias das secções 29 a 40.
 - As decisões finais do autor aparecem nas secções 44, 46, 53, 58, 70, 77 e 80 e não contradizem o PIMO nem a biblioteca.
+- O consentimento não é apenas política: a secção 5 descreve os ecrãs, o registo e a revogação, e a secção 63 a marcação por formato.
 - A Parte VII não duplica o Model Hub nem o PIMO: nomeia módulos com fronteiras e diz qual decide o quê.
 
 ## E. Mapa das versões
@@ -167,6 +172,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | v12.3 (revisão) | Integração do PIMO: manifesto e evidência, filtragem, perfil de dispositivo, três níveis de avaliação, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback com proteção de voz, ciclo de vida, cache, testes e fases |
 | v12.3 (revisão 2) | Biblioteca modular: separação aplicação e biblioteca, contratos entre módulos, catálogo evolutivo, compatibilidade entre versões, gestão por modelo, armazenamento, curadoria, avaliação de novidades, importação externa, distribuição assinada e ciclos de atualização independentes |
 | v12.3 (revisão 3) | Decisões finais do autor: orçamento de 100 MB, catálogo em `parlo-models` com Ed25519, Piper e Argos fora do núcleo, corpus CC0-1.0, latência em P50 e P95 por perfil, checklist interna de conformidade em vez de parecer jurídico |
+| v12.3 (revisão 4) | Sistema de consentimento, avisos e transparência: ecrãs antes do perfil, origem declarada, registo por perfil, sete momentos de aviso, usos proibidos, etiqueta de síntese, proveniência no ficheiro, marca de água só quando verificada e revogação com eliminação |
 
 Versões do produto e versões do plano são coisas diferentes. A versão do produto avança a partir da última tag publicada; a do plano avança quando este documento é revisto.
 

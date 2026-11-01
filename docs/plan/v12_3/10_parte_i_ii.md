@@ -129,7 +129,74 @@ A ordem é aplicada pelo Auto Select, não pelo utilizador. A troca nunca é sil
 
 ## 5. Voice Profile, consentimento e ciclo de vida
 
-Um Voice Profile é um recurso local que representa a voz de uma pessoa autorizada. Não é um ficheiro solto no disco: tem identidade, finalidade, consentimento, artefactos derivados e uma operação de eliminação que remove tudo.
+Um Voice Profile é um recurso local que representa a voz de uma pessoa autorizada. Não é um ficheiro solto no disco: tem origem declarada, finalidade, consentimento, artefactos derivados e uma operação de eliminação que remove tudo.
+
+### 5.1 Antes de criar um perfil
+
+A criação começa por uma explicação curta, não por um pedido de gravação. O utilizador tem de perceber o que vai acontecer antes de acontecer.
+
+| Ecrã de abertura | O que diz |
+|---|---|
+| O que é clonagem | Uma amostra de voz serve de referência para gerar fala nova com a mesma identidade |
+| O que é guardado | Amostra de referência, transcrição, representações por motor e caches |
+| Onde fica | Só no dispositivo, numa pasta de dados do utilizador |
+| Para que serve | A finalidade escolhida: ditado, legendas, reuniões ou dobragem |
+| O que pode ser apagado | Tudo, a qualquer momento, com uma operação explícita |
+| Responsabilidade | O utilizador responde pela autorização da voz que declara usar |
+
+### 5.2 Declaração de origem e autorização
+
+A primeira pergunta é objetiva: a voz da amostra é do próprio ou de outra pessoa. A resposta fica registada no perfil.
+
+| Origem declarada | Exigência | Proibição associada |
+|---|---|---|
+| Própria voz | Declaração de que a voz é do utilizador | — |
+| Voz de terceiro | Declaração explícita de autorização legítima, com finalidade e âmbito | Clonagem sem autorização, impersonação, conteúdo enganoso |
+| Voz de ator, dataset ou voz comercial | Autorização e licença compatíveis | Uso como exemplo no repositório |
+| Sem declaração | Nada é criado | O botão de avançar fica inativo |
+
+A declaração não é prova. O Parlo regista o que o utilizador afirma, não certifica identidade nem verifica poderes de representação, e diz isso no próprio ecrã. As medidas são proporcionais ao risco: registo local, aviso no momento de exportar, proibição explícita de usos enganosos e eliminação imediata quando o utilizador revoga.
+
+### 5.3 Criação
+
+| Passo | O que acontece | Regra |
+|---|---|---|
+| 1. Método | Gravar agora ou importar áudio | Importação exige a mesma declaração de origem |
+| 2. Recolha | 10 a 30 s de fala contínua, ou mais quando o motor exigir | O mínimo é o do motor escolhido, não um número universal |
+| 3. Controlo de qualidade | Nível, ruído, eco, presença de uma só voz, fala suficiente | Rejeita ou pede nova amostra com razão concreta |
+| 4. Texto de referência | Transcrição automática, corrigível | Obrigatório quando o motor precisa de texto alinhado |
+| 5. Consentimento | Confirmação explícita com finalidade e âmbito | Sem confirmação não há perfil |
+| 6. Pré-visualização | Frase curta sintetizada com o perfil | O utilizador ouve antes de ativar |
+| 7. Ativação | Perfil guardado e disponível nos motores compatíveis | Nome, origem declarada e data visíveis |
+
+### 5.4 Registo de consentimento
+
+Cada perfil tem um registo local com: identificador do perfil; origem declarada da gravação; finalidade autorizada; âmbito de utilização; data e hora; versão do aviso apresentado; e a confirmação explícita. Gravações não são guardadas como prova de consentimento por omissão, e nada é transmitido para fora do dispositivo. Uma mudança substancial de finalidade ou de âmbito pede nova confirmação antes de continuar.
+
+### 5.5 Avisos contextuais
+
+| Momento | Aviso | Intensidade |
+|---|---|---|
+| Criação do perfil | Consentimento completo, uma vez | Alta |
+| Importação de gravação | De onde vem a voz e quem autorizou | Alta |
+| Primeira síntese com o perfil | Confirmação de que a voz sintetizada é identificada | Média |
+| Tradução com preservação de voz | Aviso de que a saída é sintética | Baixa, uma vez por sessão |
+| Exportação | Marca e metadados de conteúdo sintético | Alta |
+| Partilha | Lembrete de divulgação e responsabilidade | Média |
+| Importação de modelo com clonagem | O modelo permite clonagem; capacidades de marcação | Alta |
+
+Avisos são curtos e proporcionais. Com consentimento válido para a mesma finalidade, o mesmo aviso não volta a aparecer em cada operação: repete-se quando muda a finalidade, o motor, o destinatário ou o formato de saída.
+
+### 5.6 Proteção e armazenamento
+
+- Amostras, embeddings, prompts e caches vivem numa pasta de dados do utilizador, fora do repositório e dos arquivos de release.
+- Encriptação opcional com chave do sistema operativo, documentada.
+- Perfis de terceiros pré-instalados não existem.
+- Nenhum áudio, registo de consentimento ou representação é enviado para fora da máquina.
+
+### 5.7 Revogação e eliminação
+
+O utilizador consulta os perfis, o registo de consentimento de cada um, revoga a autorização e elimina o perfil. A eliminação remove amostra, transcrição de referência, embeddings, prompts, caches, pré-visualizações e registos de consentimento associados, e invalida caches de síntese dependentes. A confirmação lista o que foi apagado e o que fica fora do controlo do Parlo, como cópias de segurança do sistema operativo, com a limitação explicada.
 
 ### 5.1. Criação
 

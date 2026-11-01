@@ -66,18 +66,32 @@ Estado do Argos: sai do núcleo e das dependências obrigatórias. Fica document
 
 ## 25. Direitos de voz e uso aceitável
 
-O Parlo exige o mínimo necessário para ser um projeto responsável, sem transformar a utilização normal num formulário.
+O Parlo exige o mínimo necessário para ser um projeto responsável, sem transformar a utilização normal num formulário. A regra de fundo: clonagem autorizada para tradução, acessibilidade e criação própria é o caso normal; utilização enganosa não é.
+
+| Utilização | Estado |
+|---|---|
+| Falar na própria voz, em qualquer língua | Permitida |
+| Voz de outra pessoa com autorização declarada | Permitida, com registo |
+| Tradução e acessibilidade com voz autorizada | Permitida |
+| Dobragem de conteúdo próprio ou licenciado | Permitida |
+| Clonagem sem autorização | Proibida |
+| Fraude, burla ou vantagem obtida por impostura | Proibida |
+| Impersonação enganosa de pessoa ou organização | Proibida |
+| Assédio, intimidação ou humilhação com a voz de alguém | Proibida |
+| Declarações falsas atribuídas a terceiros | Proibida |
 
 | Situação | Exigência |
 |---|---|
 | A própria voz | Declaração de que a voz é do utilizador |
 | Voz de outra pessoa | Declaração de autorização, com finalidade e âmbito, registada localmente |
-| Voz de ator, dataset ou voz comercial | Proibida como exemplo ou demonstração no repositório |
+| Voz de ator, dataset ou voz comercial | Autorização e licença compatíveis; nunca como exemplo no repositório |
 | Vozes de exemplo na documentação | Só sintéticas neutras ou do próprio autor do exemplo |
 | Vozes pré-instaladas | Não existem |
-| Cópia do repositório | Não contém amostras de voz privadas, nem perfis, nem caches |
+| Cópia do repositório | Não contém amostras privadas, perfis ou caches |
 
-O registo é uma declaração local, não uma certificação de identidade. O projeto não promete verificar quem é quem; promete não clonar sem declaração, permitir revogar e apagar, e recusar conteúdo que se apresente como outra pessoa para enganar. O âmbito completo está em `ACCEPTABLE_USE.md` e na política de voz publicada no repositório.
+A declaração é uma afirmação do utilizador, não uma prova de autorização, e o produto di-lo sem rodeios. O Parlo não verifica identidade, não certifica mandatos e não apresenta o registo local como garantia jurídica. O que faz é não criar perfil sem declaração, permitir revogar e apagar, identificar a saída sintética e recusar funcionalidades que existam apenas para enganar.
+
+O âmbito completo está em `ACCEPTABLE_USE.md` e na política de voz publicada no repositório.
 
 ## 26. Conformidade automática em cada release
 
@@ -133,6 +147,8 @@ O **Parlo Intelligent Model Orchestrator** é o componente que decide, em cada m
 ## 28. Manifesto por modelo e níveis de evidência
 
 Cada entrada do catálogo declara, no mínimo: identificador e versão; tarefa; projeto de origem; URL oficial; hash SHA-256; licença do código, dos pesos e de dados ou vozes; idiomas e variantes efetivamente validadas; funcionalidades; arquitetura; runtime; sistemas operativos; CPU, GPU e aceleradores; RAM e VRAM mínimas e recomendadas; armazenamento; formatos e quantizações; compatibilidade com outros componentes; resultados de benchmark; limitações conhecidas; estado de manutenção; proveniência e versão do manifesto.
+
+Capacidades de transparência fazem parte do manifesto de qualquer modelo que sintetize ou clone voz: se suporta metadados de proveniência, se aplica marca de água verificável, qual o formato dessa marca, se permite desativá-la e que informação o ficheiro transporta. Um modelo sem essa declaração não é admitido como clonador recomendado.
 
 ### 28.1. Níveis de evidência
 
@@ -243,6 +259,8 @@ Incerteza: quando não há dados suficientes para comparar dois candidatos, o PI
 
 A explicação tem duas camadas: uma frase na interface — «Escolhi este modelo porque cobre PT-PT, cabe em 3,1 GB livres e tem a menor latência medida nesta máquina» — e um registo técnico com os sinais, os pesos e os candidatos eliminados.
 
+Transparência é critério eliminatório, não desempate. Se a política em vigor exigir marcação ou metadados e o candidato não os suportar, o PIMO não o escolhe para essa finalidade e apresenta a alternativa com a limitação explícita. A seleção automática nunca remove um mecanismo de transparência aplicável para ganhar qualidade ou latência.
+
 ## 34. Composição de pipeline
 
 O melhor sistema raramente é um só fornecedor. O PIMO escolhe por etapa — reconhecimento, tradução, clonagem, processamento auxiliar — e avalia o conjunto.
@@ -286,6 +304,8 @@ Antes de mudar de motor, o PIMO confirma compatibilidade funcional, linguística
 | Nenhum motor com qualidade mínima | Declara a limitação e mantém o texto |
 
 Regras de voz que o PIMO nunca viola: não assume embeddings compatíveis entre motores; não usa voz genérica como substituição silenciosa; não promete preservação de identidade sem medição naquele motor; e não decide sozinho apagar ou substituir um perfil.
+
+A transparência sobrevive ao fallback. Um motor alternativo que não marque conteúdo sintético não substitui silenciosamente um que marcava: a troca é declarada, a etiqueta na interface mantém-se e o ficheiro exportado diz que a marcação não está disponível naquele motor.
 
 ## 37. Model Hub e ciclo de vida
 

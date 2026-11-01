@@ -23,7 +23,11 @@ Status legend: **verified** means the evidence exists in the repository; **pendi
 
 | Item | Requirement | Evidence | Status |
 |---|---|---|---|
-| Consent before profile creation | Explicit declaration with purpose and scope | plan section 5 | pending: not implemented |
+| Consent screens before creation | Explanation of cloning, storage, purpose, deletion | plan section 5.1 | verified as design, pending as code |
+| Consent before profile creation | Explicit declaration with purpose and scope | plan section 5.2 to 5.4 | pending: not implemented |
+| Declared origin | Own voice or authorised third-party voice, recorded per profile | plan section 5.2 | pending: not implemented |
+| Contextual notices | Seven defined moments, no needless repetition | plan section 5.5 | pending: not implemented |
+| Revocation | Future use revoked and profile deleted with derived data | plan section 5.7 | pending: not implemented |
 | Consent record | Local, dated, tied to profile and notice version | plan section 5.2 | pending: not implemented |
 | Third-party voices | Authorisation required, deception forbidden | `ACCEPTABLE_USE.md`, plan section 25 | verified as policy, pending as UI |
 | Deletion | Sample, embeddings, prompts and caches removed together | plan section 5.4 | pending: not implemented |
@@ -50,6 +54,8 @@ Transparency duties apply from 2 August 2026. The project documents them and doe
 | Inform that output is synthetic | Provider | Interface labels synthesised speech | pending: no synthesis path shipped yet |
 | Machine-readable marking | Provider of generative systems | Metadata plan per export format | pending: format work not done |
 | Deepfake disclosure | Deployer who publishes the content | Warning and reminder at export | interpretation: exact form for each medium |
+| Watermarking | Provider, where technically available | Only when the engine offers it, verified, never simulated | pending: engine survey |
+| Provenance metadata | Provider of generative systems | Engine, version and date written into exported files | pending: format work |
 | Limitations disclosure | Provider | Documented per mode and language | verified |
 
 ## 5. Distribution
@@ -71,6 +77,9 @@ Transparency duties apply from 2 August 2026. The project documents them and doe
 - Confirm the catalogue is signed and the client rejects an unsigned manifest.
 - Confirm every model listed as installable has licence, hash and state.
 - Confirm privacy documentation matches the behaviour actually shipped.
+- Confirm no voice profile can be created without a recorded consent and a declared origin.
+- Confirm every exported synthetic audio carries provenance metadata, or says why it does not.
+- Confirm no document claims watermarking or detection that the shipped engines do not provide.
 - Record new risks or interpretation questions here instead of in a release note.
 
 ## 7. When to seek advice
