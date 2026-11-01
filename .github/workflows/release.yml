@@ -41,16 +41,18 @@ jobs:
       - name: Check licences, models and pinned versions
         run: python tools/licenses.py check --verify-installed --strict --strict-models
 
-      - name: Regenerate the notices and the SBOM
+      - name: Regenerate the notices, the index and the SBOM
         run: |
           python tools/licenses.py notices --out THIRD_PARTY_NOTICES.md
+          python tools/licenses.py index --out LICENSES.md
           python tools/licenses.py sbom --out sbom.cdx.json
-          git diff --exit-code THIRD_PARTY_NOTICES.md
+          git diff --exit-code THIRD_PARTY_NOTICES.md LICENSES.md
 
       - uses: actions/upload-artifact@v4
         with:
           name: licence-documents
           path: |
+            LICENSES.md
             THIRD_PARTY_NOTICES.md
             sbom.cdx.json
 
@@ -126,10 +128,10 @@ jobs:
           cp target/${{ matrix.target }}/release/parlo-app release/
           cp -r engines/cascade/dist/parlo-engine release/
           cp assets/parlo.ico assets/parlo.png release/
-          cp README.md LICENSE NOTICE THIRD_PARTY_NOTICES.md sbom.cdx.json release/
+          cp README.md LICENSE NOTICE LICENSES.md THIRD_PARTY_NOTICES.md sbom.cdx.json release/
           tar -czf ${{ matrix.archive }} -C release \
             parlo parlo-app parlo-engine parlo.png parlo.ico \
-            README.md LICENSE NOTICE THIRD_PARTY_NOTICES.md sbom.cdx.json
+            README.md LICENSE NOTICE LICENSES.md THIRD_PARTY_NOTICES.md sbom.cdx.json
 
       - name: Package windows
         if: runner.os == 'Windows'
@@ -140,8 +142,8 @@ jobs:
           Copy-Item target/${{ matrix.target }}/release/parlo-app.exe release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
           Copy-Item assets/parlo.ico, assets/parlo.png release/
-          Copy-Item README.md, LICENSE, NOTICE, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
-          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
+          Copy-Item README.md, LICENSE, NOTICE, LICENSES.md, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
+          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2

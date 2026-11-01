@@ -117,10 +117,11 @@ jobs:
       - name: Check every component against the policy
         run: python tools/licenses.py check --verify-installed
 
-      - name: Check the notices are current
+      - name: Check the notices and the licence index are current
         run: |
           python tools/licenses.py notices --out THIRD_PARTY_NOTICES.md
-          git diff --exit-code THIRD_PARTY_NOTICES.md
+          python tools/licenses.py index --out LICENSES.md
+          git diff --exit-code THIRD_PARTY_NOTICES.md LICENSES.md
 
   signoff:
     name: Sign-off
