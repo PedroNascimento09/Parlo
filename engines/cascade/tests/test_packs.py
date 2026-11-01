@@ -74,6 +74,31 @@ class ExtractTests(unittest.TestCase):
                 packs.extract(archive, target)
             self.assertFalse((root / "evil.txt").exists())
 
+    def test_an_archive_with_one_top_folder_unpacks_at_the_root(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            archive = root / "nested.argosmodel"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                bundle.writestr("translate-en_de-1_3/model/model.bin", b"x")
+                bundle.writestr("translate-en_de-1_3/sentencepiece.model", b"x")
+            target = root / "out"
+            target.mkdir()
+            packs.extract(archive, target)
+            self.assertTrue((target / "model" / "model.bin").is_file())
+            self.assertTrue((target / "sentencepiece.model").is_file())
+
+    def test_a_nested_archive_cannot_escape_either(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            archive = root / "bad.argosmodel"
+            with zipfile.ZipFile(archive, "w") as bundle:
+                bundle.writestr("nested/../../evil.txt", b"x")
+            target = root / "out"
+            target.mkdir()
+            with self.assertRaises(packs.PackError):
+                packs.extract(archive, target)
+            self.assertFalse((root / "evil.txt").exists())
+
     def test_an_archive_without_the_model_is_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -82,6 +107,35 @@ class ExtractTests(unittest.TestCase):
             target.mkdir()
             with self.assertRaises(packs.PackError):
                 packs.extract(archive, target)
+
+
+class DownloadTests(unittest.TestCase):
+    def test_every_request_names_a_client(self):
+        seen = []
+
+        class Answer:
+            def __init__(self, payload):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self, _=0):
+                payload, self.payload = self.payload, b""
+                return payload
+
+        def opener(url, timeout=0):
+            seen.append(url)
+            return Answer(b"abc")
+
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "file.bin"
+            packs.download("https://example.invalid/file", target, opener=opener)
+            self.assertEqual(target.read_bytes(), b"abc")
+        self.assertEqual(seen[0].get_header("User-agent"), packs.USER_AGENT)
 
 
 class InstallTests(unittest.TestCase):

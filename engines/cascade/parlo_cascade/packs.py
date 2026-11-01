@@ -1,15 +1,17 @@
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 from .models import models_dir
 
 INDEX_URL = "https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json"
+USER_AGENT = "parlo (+https://github.com/PedroNascimento09/parlo)"
 CHUNK = 1024 * 1024
 MAX_BYTES = 512 * 1024 * 1024
 REQUIRED_FILES = ("model/model.bin", "sentencepiece.model")
@@ -23,8 +25,12 @@ def packs_dir():
     return models_dir() / "mt"
 
 
+def fetch(url):
+    return Request(url, headers={"User-Agent": USER_AGENT})
+
+
 def index_entries(index_url=INDEX_URL, opener=urlopen, timeout=30):
-    with opener(index_url, timeout=timeout) as response:
+    with opener(fetch(index_url), timeout=timeout) as response:
         data = json.load(response)
     if not isinstance(data, list):
         raise PackError(f"{index_url} is not a list of packages")
@@ -49,7 +55,7 @@ def download(url, destination, opener=urlopen, timeout=60):
     digest = hashlib.sha256()
     written = 0
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with opener(url, timeout=timeout) as response, destination.open("wb") as sink:
+    with opener(fetch(url), timeout=timeout) as response, destination.open("wb") as sink:
         while True:
             block = response.read(CHUNK)
             if not block:
@@ -64,14 +70,31 @@ def download(url, destination, opener=urlopen, timeout=60):
     return digest.hexdigest(), written
 
 
+def inner_prefix(members):
+    names = [member.filename for member in members if member.filename.strip("/")]
+    if not names:
+        return ""
+    first = names[0].split("/", 1)[0] + "/"
+    return first if all(name.startswith(first) for name in names) else ""
+
+
 def extract(archive, destination):
     root = destination.resolve()
     with zipfile.ZipFile(archive) as bundle:
-        for member in bundle.infolist():
-            target = (destination / member.filename).resolve()
+        members = bundle.infolist()
+        prefix = inner_prefix(members)
+        for member in members:
+            if member.is_dir():
+                continue
+            relative = member.filename[len(prefix) :] if prefix else member.filename
+            if not relative:
+                continue
+            target = (destination / relative).resolve()
             if target != root and root not in target.parents:
                 raise PackError(f"the archive contains {member.filename}, which escapes the folder")
-        bundle.extractall(destination)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with bundle.open(member) as source, target.open("wb") as sink:
+                shutil.copyfileobj(source, sink)
     missing = [name for name in REQUIRED_FILES if not (destination / name).is_file()]
     if missing:
         raise PackError(f"the archive does not carry {missing}")
