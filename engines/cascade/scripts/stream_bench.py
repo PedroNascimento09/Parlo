@@ -58,6 +58,32 @@ def run(
     return events
 
 
+def growth(values: list[float]) -> float | None:
+    if len(values) < 3:
+        return None
+    share = max(len(values) // 3, 1)
+    start = statistics.mean(values[:share])
+    end = statistics.mean(values[-share:])
+    return round(end / start, 3) if start else None
+
+
+def drift(rows: list[dict]) -> dict:
+    decodes = [row["decode_ms"] for row in rows if row["decode_ms"]]
+    factors = [
+        row["process_ms"] / max(row["audio_seconds"] * 1000, 1)
+        for row in rows
+        if row["process_ms"]
+    ]
+    finals = [row["final_ms"] for row in rows if row["final_ms"]]
+    return {
+        "decode_growth": growth(decodes),
+        "realtime_growth": growth(factors),
+        "realtime_mean": round(statistics.mean(factors), 3) if factors else None,
+        "first_final_ms": finals[0] if finals else None,
+        "last_final_ms": finals[-1] if finals else None,
+    }
+
+
 def summarise(reference: str, events: list[tuple[float, object]]) -> dict:
     partials = [(wall, event) for wall, event in events if event.state == "partial"]
     stables = [(wall, event) for wall, event in events if event.state == "stable"]
@@ -193,13 +219,20 @@ def main() -> int:
         "mean_final_wer": round(statistics.mean(row["final_wer"] for row in rows), 3),
         "corrections": sum(row["corrections"] for row in rows),
     }
+    summary["drift"] = drift(rows)
     print("\n" + json.dumps(summary, indent=2))
+    print(
+        "drift: decode x{decode_growth} | realtime x{realtime_growth}"
+        " | final {first_final_ms} to {last_final_ms} ms".format(**summary["drift"])
+    )
     if args.out:
         Path(args.out).write_text(
             json.dumps({"summary": summary, "rows": rows}, indent=2), encoding="utf-8"
         )
         print(f"written {args.out}")
-    return 1 if summary["mean_final_wer"] > 0.35 else 0
+    growing = summary["drift"]["realtime_growth"]
+    falls_behind = growing is not None and growing > 1.25
+    return 1 if summary["mean_final_wer"] > 0.35 or falls_behind else 0
 
 
 if __name__ == "__main__":

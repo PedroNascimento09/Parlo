@@ -28,6 +28,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- `stream_bench.py` answers the half of G0 that can be answered on synthetic audio: it reports whether decode time and the real time factor grow from the first third of a run to the last, and fails when the factor grows past 1.25. On 20 PT-PT sentences with the European voice both ratios came out below one (x0.988 and x0.971), so the reprocessing pipeline does not accumulate delay on this machine.
 - On the 100 sentence gate both directions pass every criterion: numbers, clocks, negations, names and completeness. PT→EN used to lose the half of the day on afternoon times; the backend now restores the marker when the source states a 24 hour time, which is a rule with tests rather than a better model. Four PT→EN rows still translate a name, so the pair is not declared validated.
 
 

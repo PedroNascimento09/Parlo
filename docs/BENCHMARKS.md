@@ -157,6 +157,25 @@ python engines/cascade/scripts/stream_bench.py --voice pt_PT-tugão-medium.onnx 
 
 Limits: synthetic speech from one voice, no noise, no accents, no real speakers. G0 asks for streaming recognition of real PT-PT speech without accumulating delay; what is measured here is a windowed reprocessing pipeline on synthetic audio. Nemotron 3.5 ASR and Qwen3-ASR are untested, so the plan's streaming-native candidate is still open.
 
+### Latency across a whole stream
+
+The G0 criterion is not one sentence's latency but that it does not grow. `stream_bench.py` now reports the drift: the mean of the first third of the run against the last third, for the decode time and for the real time factor, and it exits non-zero when the real time factor grows past 1.25 over the run.
+
+20 sentences, Parakeet TDT 0.6B v3 int8, `pt_PT-tugão-medium`, Windows 11, 4 threads, decode every 0.4 s, 12 s segment:
+
+| Measure | Value |
+|---|---|
+| Decode time, last third against first third | **x0.988** |
+| Real time factor, last third against first third | **x0.971** |
+| Real time factor, mean over the run | 1.222 |
+| Final, first sentence then last | 3164 ms then 3763 ms |
+| First partial, final and p95 final | 958.8 ms, 3601.5 ms, 4165 ms |
+| Final WER, stable coverage, corrections | 0.222, 72%, 3 |
+
+Reading: both ratios sit below one, so the work per second of audio did not grow as the run went on and nothing accumulated. The first and last final differ by about 600 ms because the sentences are not the same length; that is why the comparison is between the thirds of the run and not between two samples.
+
+Limits: this is audio replayed as fast as the harness can feed it, not a live microphone, so it proves the pipeline does not grow its own backlog and says nothing about a device that drops frames. The audio is still synthetic; the real-speaker part of G0 remains open.
+
 ### A segment on the current backend
 
 `python engines/cascade/scripts/soak.py out/voice/01.wav --minutes 2 --threads 4`, Windows 11 laptop, no GPU, 5.99 s of Portuguese synthetic speech at 48 kHz resampled to 16 kHz, recognition and voice synthesis included, 29 passes over the clip:
