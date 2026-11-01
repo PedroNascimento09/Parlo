@@ -195,7 +195,7 @@ Verify it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 - The dictation shortcut is Windows-only; on macOS and Linux the text goes to the clipboard.
 - Two languages ship today, English and Portuguese, in both directions. Any other pair is roadmap, not a promise; the third one is published as **not validated** by a native speaker.
 - Dictation is tested, not yet validated with real recordings by people other than the author.
-- The archives are unsigned: SmartScreen asks once, and there is no installer.
+- The archives are unsigned: SmartScreen asks once, and there is no signed `.msi` or `.dmg`. The installers above are small scripts that download and unpack the archive for you, not a system package.
 - Meetings capture the microphone, not the sound of another application.
 - **No meeting summary and no questions over past meetings yet.** The transcript, its speakers and its timings exist and can be renamed and deleted; a summary of the conversation, decisions and tasks is planned and not built. Nothing in the app pretends otherwise.
 - Speakers are labelled by the recogniser, not by a model trained to separate voices, so two similar voices can share a label.
