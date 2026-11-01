@@ -26,7 +26,7 @@ PARLO_INTELLIGENCE_PROVIDER=openai
 PARLO_CASCADE_CLEAN=light
 ```
 
-The settings page for this is not in the interface yet; the variables above are what the engine reads today.
+The interface has the same choices in **How dictation is cleaned up**, and writes them to the config file, where the engine reads them on the next dictation; nothing has to be reloaded. From a terminal the same file is read and the variables above override it, so a person testing a provider can do it without touching the app.
 
 ## Deterministic first
 
@@ -77,13 +77,17 @@ An estimate of what a request costs requires the provider's current prices, whic
 
 ## What is not built yet
 
-- The **Dictate → Intelligence** settings screen: mode, provider, key entry, test connection, allow-cloud switch and removal are all reachable only through variables and files today.
-- **Cost control**: usage estimates, spending caps and a cheaper-model preference.
+- **Cost control**: usage estimates, spending caps and a cheaper-model preference. The screen shows no price, because Parlo has measured none.
+- **A validated provider call**: the screen can save a key and send a test sentence, but no real provider has been exercised from this machine yet, so the panel is tested, not validated.
 - **Personal vocabulary**: the profile store, abbreviations and style preferences. Planned in Part XIX of the master plan.
 - **A comparison with Wispr Flow.** None has been run, and no claim of equivalence is made.
 
 ## Tests
 
-`engines/cascade/tests/test_intelligence.py` covers routing (off, local, cloud, auto, an unauthorised cloud, a missing key), the transport rule, the validation rules, fallback on a refused key, fallback on an invented fact, and the loopback-only local model. `test_credentials.py` covers the OS store round trip and checks that the Windows file does not carry the secret in clear. The transport is injected, so the tests never touch the network.
+`engines/cascade/tests/test_intelligence.py` covers routing (off, local, cloud, auto, an unauthorised cloud, a missing key), the transport rule, the validation rules, fallback on a refused key, fallback on an invented fact, and the loopback-only local model. `test_admin.py` covers the settings the engine reads from the config file, the environment winning over it, a hand-edited value falling back instead of breaking dictation, and the refusals of the key entry. `test_credentials.py` covers the OS store round trip and checks that the Windows file does not carry the secret in clear. The transport is injected, so the tests never touch the network. On the Rust side, `intelligence.rs` tests the settings that reach the engine: modes, provider names, model names, and which plain `http://` addresses are refused.
 
 That is **tested**, not **validated**: no real provider call was made with a real key from this machine, and no person has compared `original`, `light` and `intelligent` on their own dictation.
+
+## Where the key never goes
+
+The screen accepts a key, hands it to the engine once, and clears the field; the server never writes it to the config file, never logs it and never sends it back. Removing a key deletes it from the operating system's store, and the next dictation falls back to the rules with a reason.
