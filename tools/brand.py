@@ -328,7 +328,10 @@ def live_frame(kept, current_words, closed, phase, progress, blink):
         x = 48 + index * 22.5
         lit = index / 48 <= progress
         draw.rounded_rectangle((x, baseline - level, x + 6, baseline + level), radius=3, fill=ACCENT if lit else RULE)
-    micro(draw, (48, 362), "WORDS APPEAR BEFORE THE SENTENCE CLOSES · 849 MS TO THE FIRST PARTIAL", FAINT, 10, 1.8)
+    caption = "WORDS APPEAR BEFORE THE SENTENCE CLOSES · 849 MS TO THE FIRST PARTIAL"
+    if closed:
+        caption = "SENTENCE CLOSED · CLEANED, PUNCTUATED AND KEPT"
+    micro(draw, (48, 362), caption, FAINT, 10, 1.8)
     rail(draw, 400, width, progress, "CLEANED AND PUNCTUATED WHEN THE SENTENCE CLOSES")
     return image.convert("RGB")
 
@@ -363,7 +366,7 @@ def meetings_frame(rows, frame_in_row, progress, pulse):
     micro(draw, (48, 30), "PARLO MEETINGS", ACCENT, 11, 2.2)
     chip(draw, (760, 22), "THURSDAY REVIEW · 42 MIN", TEAL)
     draw.ellipse((1110, 32, 1122, 44), fill=ACCENT if pulse else RULE)
-    micro(draw, (48, 62), "ONE LINE PER SPEAKER, AS IT IS SAID", FAINT, 10, 1.8)
+    micro(draw, (48, 62), "SPEAKERS DETECTED, EVERY LINE TIMED · NOTHING UPLOADED", FAINT, 10, 1.8)
 
     box = (48, 96, 1152, 412)
     card(draw, box)
