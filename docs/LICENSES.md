@@ -61,7 +61,13 @@ The gate reads the Rust closure from `cargo metadata`, the Python closures from 
 
 ## Open questions
 
-1. **`minisbd` is AGPL-3.0-only** and reaches the engine through `argostranslate`. The gate tracks it and release builds refuse to pass while it is there. The choice is to pin an Argos version without it, to replace Argos, or to accept an AGPL engine; it is a product decision and it is not taken here.
+1. **`minisbd` is AGPL-3.0-only** and reaches the engine through `argostranslate`, so the gate tracks it and no release passes while it is there. The replacement named in the master plan is OPUS-MT on CTranslate2. The attempt on 1 November 2026 did not produce a shippable model and nothing was published:
+
+   - `Helsinki-NLP/opus-mt-pt-en` and `Helsinki-NLP/opus-mt-en-pt` answer 401 and cannot be downloaded.
+   - `Helsinki-NLP/opus-mt-ROMANCE-en` works português→inglês with the `>>por<<` source prefix, beam 4, `no_repeat_ngram_size=3` and `repetition_penalty=1.2`: 69 to 130 ms per sentence on four threads, correct output on three of three samples.
+   - `Helsinki-NLP/opus-mt-tc-big-en-pt` and `Helsinki-NLP/opus-mt-en-ROMANCE` degenerate into repeated fragments inglês→português with every target prefix tried (`>>por<<`, `>>pt<<`, none).
+
+   The engine still calls Argos, so `G-LIC-MT` stays open and releases stay blocked until a working permissive pair is chosen and measured with the same sentences.
 2. **`r-efi` is LGPL-2.1-or-later**, reachable only through the UEFI target of `getrandom`. It is not in any shipped binary today; the position needs a lawyer if a UEFI build is ever published.
 3. **The process boundary with Piper** needs a legal view before the repository claims that the two are separate works, not before.
 
