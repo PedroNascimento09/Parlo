@@ -337,17 +337,37 @@ Windows 11 laptop, no GPU, 4 threads, beam 4, warm process, the installed `1.9` 
 
 | Direction | Numbers | Clock | Negation | Names | Complete | Gate |
 |---|---|---|---|---|---|---|
-| PT→EN | 1.000 | 1.000 | 1.000 | 0.920 | 1.000 | passes |
+| PT→EN | 1.000 | 1.000 | 1.000 | 0.980 | 1.000 | passes |
 | EN→PT | 1.000 | 0.980 | 1.000 | 0.980 | 1.000 | passes |
 
 Numbers, negations and completeness are clean in both directions. Two things are not:
 
 - **PT→EN used to lose the half of the day.** `15h30` → `3:30`, `18h` → `6:00`, `17h` → `5:00` (pt-en-001, 016, 043). The hour was right and the reader could not recover the rest. The backend now restores the marker when the source states a 24 hour afternoon time and the translation carries the same clock without one; that is a rule in `parlo_cascade/mt.py` with six tests behind it, not a change in the model. The table above is measured after it.
-- **Names get translated.** `O João` → `John`, plus three more rows that drop or translate a name (pt-en-003, 017, 019, 044).
+- **Names get translated.** `O João` → `John` and `a Maria` → `Mary` in pt-en-003, the only row that still loses a name. An earlier run counted four, and three of them (017, 019, 044) were a defect in the gate, not in the model: it ignored the first word of every sentence, so an output that opened with the name was scored as if the name had vanished. The gate now reads the names found in the source as context, and `engines/cascade/tests/test_mt_gate.py` covers the case.
 
 The check reads value, not typography: `four hours`, `3.000 euros` and `7.05` → `7h05` all count as preserved, because the same quantity arrives. `8.30` → `20h30` (en-pt-035) is a real error and is counted as one. Thresholds were set before the run and left alone: numbers 0.95, clock 0.95, negation 0.90, names 0.80, complete 1.00.
 
-**The gate passes on both sides, and the pair is still not declared validated.** Five automatic properties are not a reading: four PT→EN rows still translate a name (`O João` → `John`), and an idiom can pass every count while being wrong. Declaring the pair approved is the competent-speaker step the plan asks for, and it has not been done.
+**The gate passes on both sides, and the pair is still not declared validated.** Five automatic properties are not a reading: one PT→EN row still translates a name (`O João` → `John`), and an idiom can pass every count while being wrong. Declaring the pair approved is the competent-speaker step the plan asks for, and it has not been done.
+
+### Portuguese to German, through English
+
+The plan makes PT→DE the central gate of v0.5, and the index Parlo installs from carries no `pt` to `de` package at all (100 entries, zero for that pair). What can be measured today is the pivot the plan allows but requires to be declared: PT→EN, then EN→DE, which `--pivot` prints as part of the route.
+
+20 Portuguese business e-mail sentences, `translate-pt_en-1_9` then `translate-en_de-1_3`, Windows 11, 4 threads, beam 4:
+
+| Numbers | Clock | Negation | Names | Complete | Gate |
+|---|---|---|---|---|---|
+| 1.000 | 1.000 | 1.000 | 0.950 | 1.000 | passes |
+
+That table is not a verdict and the pair is **not** declared working:
+
+- The German references were written by the project and have not been read by a native speaker, so the corpus is unverified material checked by unverified material.
+- The output is visibly wrong where the counts cannot see it: pt-de-016 turns *esteve em baixo durante 2 horas* into `Der Server ist seit zwei Stunden ausgefallen` (since, not for), and pt-de-018 turns *o escritório do Porto tem 5* into `Das Büro in Porto ist 5`, which is not German.
+- pt-de-003 loses both names, the defect PT→EN shows on its own row.
+
+```bash
+python engines/cascade/scripts/mt_gate.py --pack --direction pt-de --pivot
+```
 
 ## What gets measured
 
