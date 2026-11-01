@@ -218,6 +218,16 @@ class CascadeEngine:
         elapsed = int((time.perf_counter() - started) * 1000)
         return Translation(pcm16=audio, text=translated, latency_ms=elapsed)
 
+    def transcribe(self, pcm16: bytes) -> str:
+        if not self._ready:
+            raise EngineUnavailable(
+                "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
+            )
+        samples = pcm16_to_float(pcm16)
+        if not samples:
+            return ""
+        return self._transcribe(samples)
+
     def stream(self, pcm16: bytes) -> list[TextEvent]:
         if not self._ready:
             raise EngineUnavailable(

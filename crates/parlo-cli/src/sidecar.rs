@@ -183,6 +183,23 @@ impl SidecarEngine {
         self.exchange("stream_close", None)
     }
 
+    pub fn dictate(&mut self, pcm16: &[u8]) -> Result<String, EngineError> {
+        self.seq += 1;
+        let response = self.request(&Request {
+            op: "dictate",
+            seq: Some(self.seq),
+            pcm16: Some(BASE64.encode(pcm16)),
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+        Ok(response.text.unwrap_or_default())
+    }
+
     pub fn stream_mode(&self) -> &str {
         &self.stream_mode
     }

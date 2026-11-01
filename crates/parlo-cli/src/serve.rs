@@ -13,6 +13,7 @@ use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
 use crate::dub;
 use crate::models;
+use crate::sidecar::SidecarEngine;
 use crate::update;
 
 #[derive(PartialEq, Eq)]
@@ -57,6 +58,7 @@ pub struct Session {
     stt: String,
     from: String,
     to: String,
+    dictation: Option<SidecarEngine>,
 }
 
 fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
@@ -82,6 +84,7 @@ impl Session {
             stt,
             from,
             to,
+            dictation: None,
         })
     }
 
@@ -94,10 +97,37 @@ impl Session {
     ) -> Result<(), String> {
         let pipeline = build(&from, &to, &engine, &stt)?;
         self.pipeline = pipeline;
+        self.dictation = None;
         self.engine = engine;
         self.stt = stt;
         self.from = from;
         self.to = to;
+        Ok(())
+    }
+
+    fn dictate(&mut self, pcm16: &[u8]) -> Result<String, String> {
+        if self.dictation.is_none() {
+            self.start_dictation()?;
+        }
+        self.dictation
+            .as_mut()
+            .ok_or_else(|| "dictation engine is not running".to_string())?
+            .dictate(pcm16)
+            .map_err(|error| error.to_string())
+    }
+
+    fn start_dictation(&mut self) -> Result<(), String> {
+        std::env::set_var("PARLO_CASCADE_DICTATE", "1");
+        std::env::set_var("PARLO_CASCADE_SOURCE", &self.from);
+        std::env::set_var("PARLO_CASCADE_TARGET", &self.from);
+        std::env::set_var("PARLO_CASCADE_STT", &self.stt);
+        let directory = std::env::var("PARLO_CASCADE_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|_| PathBuf::from("engines/cascade"));
+        let spawned = SidecarEngine::spawn(&directory);
+        std::env::remove_var("PARLO_CASCADE_DICTATE");
+        std::env::set_var("PARLO_CASCADE_TARGET", &self.to);
+        self.dictation = Some(spawned.map_err(|error| error.to_string())?);
         Ok(())
     }
 
@@ -712,6 +742,70 @@ fn handle(
             json_string(&session.stt),
             json_string(&session.from),
             json_string(&session.to)
+        );
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/dictate" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let wav = match read_pcm16(&body) {
+            Ok(wav) => wav,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"bad wav: {error}\"}}"),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        if wav.format.channels() != 1 || wav.format.sample_rate() != 16_000 {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"input must be 16 kHz mono pcm16\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if wav.samples.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"the file is empty\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+
+        let seconds = wav.samples.len() as f32 / 16_000.0;
+        let mut pcm16 = Vec::with_capacity(wav.samples.len() * 2);
+        for sample in &wav.samples {
+            pcm16.extend_from_slice(&sample.to_le_bytes());
+        }
+        let started = Instant::now();
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
+        let text = match session.dictate(&pcm16) {
+            Ok(text) => text,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        println!(
+            "dictated {seconds:.1} s in {} ms",
+            started.elapsed().as_millis()
+        );
+        let body = format!(
+            "{{\"text\":\"{}\",\"seconds\":{seconds:.3},\"latency_ms\":{}}}",
+            json_string(&text),
+            started.elapsed().as_millis()
         );
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }

@@ -76,6 +76,49 @@ class ProtocolTest(unittest.TestCase):
         self.assertIn("torch is not installed", response["error"])
 
 
+class FakeDictationEngine(FakeEngine):
+    def __init__(self):
+        self.received = None
+
+    def transcribe(self, pcm16):
+        self.received = pcm16
+        return "bom dia"
+
+
+class DictationProtocolTest(unittest.TestCase):
+    def test_dictate_returns_text_without_audio(self):
+        payload = base64.b64encode(b"\x01\x00" * 160).decode()
+        engine = FakeDictationEngine()
+        response = handle_line(f'{{"op": "dictate", "seq": 9, "pcm16": "{payload}"}}', engine)
+        self.assertEqual(response["op"], "dictated")
+        self.assertEqual(response["seq"], 9)
+        self.assertEqual(response["text"], "bom dia")
+        self.assertNotIn("pcm16", response)
+        self.assertEqual(engine.received, b"\x01\x00" * 160)
+
+    def test_engine_that_cannot_transcribe_is_reported(self):
+        response = handle_line('{"op": "dictate", "pcm16": ""}', FakeEngine())
+        self.assertEqual(response["op"], "error")
+        self.assertIn("cannot transcribe", response["error"])
+
+    def test_dictate_rejects_a_missing_payload(self):
+        response = handle_line('{"op": "dictate"}', FakeDictationEngine())
+        self.assertEqual(response["error"], "pcm16 must be base64 text")
+
+    def test_dictate_reports_an_unavailable_engine(self):
+        payload = base64.b64encode(b"\x00\x00" * 160).decode()
+        response = handle_line(
+            f'{{"op": "dictate", "pcm16": "{payload}"}}', BrokenDictationEngine()
+        )
+        self.assertEqual(response["op"], "error")
+        self.assertIn("model missing", response["error"])
+
+
+class BrokenDictationEngine(FakeDictationEngine):
+    def transcribe(self, pcm16):
+        raise EngineUnavailable("model missing")
+
+
 class FakeEvent:
     def __init__(self, state, text):
         self.state = state

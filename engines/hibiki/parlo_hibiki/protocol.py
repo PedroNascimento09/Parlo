@@ -29,6 +29,8 @@ def handle_line(line: str, engine) -> dict:
         return hello(engine)
     if op == "translate":
         return translate(request, engine)
+    if op == "dictate":
+        return dictate(request, engine)
     if op == "stream":
         return stream(request, engine)
     if op == "stream_close":
@@ -70,6 +72,20 @@ def translate(request: dict, engine) -> dict:
         "text": result.text,
         "latency_ms": result.latency_ms,
     }
+
+
+def dictate(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    if not hasattr(engine, "transcribe"):
+        return {"op": "error", "seq": seq, "error": "engine cannot transcribe on its own"}
+    pcm16, error = decode_audio(request)
+    if error is not None:
+        return error
+    try:
+        text = engine.transcribe(pcm16)
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return {"op": "dictated", "seq": seq, "text": text}
 
 
 def stream(request: dict, engine) -> dict:
