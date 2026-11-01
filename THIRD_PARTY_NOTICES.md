@@ -551,4 +551,5 @@ from the original source and each one keeps its own licence.
 | qwen3-asr-0.6b | asr | Apache-2.0 | verified | https://huggingface.co/Qwen/Qwen3-ASR-0.6B |
 | kokoro-82m | tts | Apache-2.0 | verified | https://huggingface.co/hexgrad/Kokoro-82M |
 | whisper-large-v3 | asr | MIT | verified | https://huggingface.co/openai/whisper-large-v3 |
-| argos-translate-pack | mt | unverified | unverified | https://github.com/argosopentech/argospm-index |
+| opus-mt-pt-en | mt | CC-BY-4.0 | verified | https://github.com/argosopentech/argospm-index |
+| opus-mt-en-pt | mt | CC-BY-4.0 | verified | https://github.com/argosopentech/argospm-index |
