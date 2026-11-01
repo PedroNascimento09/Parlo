@@ -413,6 +413,18 @@ Design targets, measured before publishing. The reference machine for the projec
 
 Detection happens on first run. The current prototype reads CPU cores only, and says so in `parlo profile`; GPU and memory detection arrive with v0.2. Reporting a high profile on basic hardware is the fastest way to lose trust.
 
+## Dictation cleanup, rules only
+
+The deterministic layer in `corrections.py` runs before any model and in every mode, so it has to be invisible in the latency budget. Ten sentences in European Portuguese and English, 8 to 18 words each, every one carrying at least one self-correction, hesitation or repetition:
+
+| Metric | Value |
+|---|---|
+| Mean per sentence | **61.9 µs** |
+| Median | 55.6 µs |
+| p95 | 102.1 µs |
+
+10 000 runs of `clean(text, "light", "pt")`, Windows 11 laptop, Python 3.12, 4 threads, no GPU, warm process. At 62 µs a sentence the layer is four orders of magnitude below the 420 ms a segment already costs, which is why it is never traded away for speed. The cloud route is not measured here and has no published latency: no request to a real provider was made.
+
 ## Reproduce the pipeline benchmark
 
 The echo engine needs no model and no microphone:
