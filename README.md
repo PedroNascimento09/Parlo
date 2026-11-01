@@ -42,6 +42,13 @@ One shortcut from anywhere on the desktop. The island listens, the sentence is w
 
 Text while you speak: partial words appear as they are recognised, the sentence is kept once it closes, and a translation can follow in the second column when a language pair is installed.
 
+<details>
+<summary>Text of the Live animation</summary>
+
+Two sentences are spoken in turn. Words appear one by one as they are recognised; when a sentence closes it is cleaned, punctuated and kept, and the counter at the top goes from `KEPT 0` to `KEPT 2`. Nothing is uploaded.
+
+</details>
+
 ### Parlo Meetings
 
 <p align="center">
@@ -49,6 +56,13 @@ Text while you speak: partial words appear as they are recognised, the sentence 
 </p>
 
 A recording becomes a transcript with a speaker and a time on every line. A transcript from a file you already have goes through the same view, and nothing leaves the machine either way.
+
+<details>
+<summary>Text of the Meetings animation</summary>
+
+Six lines of a recorded meeting arrive in order, each with a timecode and a speaker label, `SPEAKER 1` or `SPEAKER 2`. The newest line is highlighted, the rest of the transcript is already outlined, and the progress rail at the bottom grows with the recording. The transcript is saved in your folder.
+
+</details>
 
 ### Parlo Translate
 
@@ -60,19 +74,40 @@ A recording comes back dubbed, with subtitles timed to the source written beside
 
 ## What it does
 
-- **The sentence you meant.** Self-corrections, false starts, hesitations and accidental repetitions are fixed on rules alone: **61.9 µs** per sentence, no model, no network. Your words are kept beside the result.
-- **A choice of engine.** Rules only, a model on this machine, your cloud provider, or automatic. Cloud is never reached without an explicit switch and a key you stored.
-- **Your key stays yours.** OpenAI, Anthropic, Gemini and any OpenAI-compatible server; keys go to DPAPI, the macOS keychain or the Linux secret service — never a config file, a log or an error message.
-- **Words you actually use.** Names and short forms the recogniser keeps missing, applied before any model reads the sentence, kept in a local file.
-- **Nothing held longer than needed.** Loaded models are released after 10 minutes to 4 hours of silence — or never, your choice.
+| In the window | What it gives you |
+|---|---|
+| **Dictate** | One shortcut, anywhere: the island listens, and the cleaned sentence is typed into the window you were in. **61.9 µs** of rules, no model, no network. |
+| **Live** | Keeps listening in windows of about 2.5 s, translates each one and speaks it in order, without overlapping. |
+| **Translate a file** | Drop a recording and get it back dubbed, with subtitles timed to the source beside it. |
+| **Meetings** | Records the room or imports a transcript; every line keeps its time and its speaker, speakers can be renamed, and the whole transcript stays in your folder. |
+| **Your words** | A local vocabulary fixes the names the recogniser keeps missing, before any model reads the sentence. |
+| **Engines and keys** | Rules only, a model on this machine, or your own cloud key — kept in DPAPI, the macOS keychain or the Linux secret service, never in a config file, a log or an error message. |
+| **Memory** | Loaded models are released after 10 minutes to 4 hours of silence, or never, your choice. |
+| **Updates** | The latest release is offered with its notes and one button; the running copy is replaced, never uninstalled first. |
 
 ## Install
 
-**From a release — no Python, no Rust.** Download the archive for your platform, unpack it, double-click `parlo-app`, and let it fetch about 800 MB of models once. After that it is offline for good.
+**Windows.** Press Start, type `PowerShell`, press Enter, paste this line and press Enter again:
+
+```powershell
+irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex
+```
+
+Parlo appears in the Start menu. **macOS and Linux**, in any terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
+```
+
+**Without a terminal.** Download the archive for your platform from [Releases](https://github.com/PedroNascimento09/Parlo/releases/latest), right-click it, **Extract All**, and double-click `parlo-app`. Windows shows *Windows protected your PC* once because the build is unsigned: **More info**, **Run anyway**. Nothing needs an administrator password, and nothing else is installed.
 
 ```text
 parlo-windows-x86_64.zip      parlo-macos-aarch64.tar.gz      parlo-linux-x86_64.tar.gz
 ```
+
+The first run opens the window with no models: the Models panel has one **Download models** button and fetches about 800 MB once. After that the machine can stay offline for good.
+
+**Updating is not reinstalling.** Parlo checks the latest release when it starts, shows its notes in a slim banner and offers one **Install update** button. Nothing installs without that click, and no version is ever installed by uninstalling the old one. Step-by-step, with what each error means: [docs/INSTALL.md](docs/INSTALL.md).
 
 **From source** — Rust 1.85 or newer, nothing else.
 
@@ -80,8 +115,6 @@ parlo-windows-x86_64.zip      parlo-macos-aarch64.tar.gz      parlo-linux-x86_64
 cargo build --release -p parlo-cli -p parlo-app
 target/release/parlo-app
 ```
-
-`parlo install` copies it into your user folder with a menu entry. `parlo update` replaces the running copy in place, and the window offers every new release with its notes and an **Install update** button — no version is ever installed by uninstalling the old one.
 
 ## The path
 
@@ -149,6 +182,14 @@ The model side is a Python sidecar behind a newline-delimited JSON protocol, so 
 
 Verify it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 
+## Accessibility
+
+- Every animation on this page has a text transcript, and every image has a description for a screen reader.
+- The app announces what changes — version, progress, result — through live regions, so a screen reader follows a dictation without needing the mouse.
+- Dictation starts from the keyboard anywhere, and the shortcut can be changed in Settings, which checks it and says when a restart will register it.
+- The interface is a single column with real labels for every control, keyboard focus rings, and no colour-only state: every colour has a word next to it.
+- Type is set in the system interface font, and the page follows the system light or dark preference.
+
 ## What is not there yet
 
 - The dictation shortcut is Windows-only; on macOS and Linux the text goes to the clipboard.
@@ -156,6 +197,8 @@ Verify it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 - Dictation is tested, not yet validated with real recordings by people other than the author.
 - The archives are unsigned: SmartScreen asks once, and there is no installer.
 - Meetings capture the microphone, not the sound of another application.
+- **No meeting summary and no questions over past meetings yet.** The transcript, its speakers and its timings exist and can be renamed and deleted; a summary of the conversation, decisions and tasks is planned and not built. Nothing in the app pretends otherwise.
+- Speakers are labelled by the recogniser, not by a model trained to separate voices, so two similar voices can share a label.
 
 ## Build and test
 
