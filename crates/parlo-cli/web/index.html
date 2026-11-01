@@ -105,6 +105,44 @@
     </div>
   </section>
 
+  <section class="voice" id="voice" aria-labelledby="voice-title">
+    <div class="voice-head">
+      <h2 id="voice-title">My voice</h2>
+      <p class="voice-note">A voice profile is how Parlo speaks a translation in your own voice instead of a neutral one. The profile, the sample and anything made from it stay in a folder on this computer, and you can revoke or delete them here at any time. The voice engine that records the sample is not in this build yet, so a profile can be created but not yet used.</p>
+    </div>
+    <form id="voice-form" class="voice-form">
+      <label class="field" for="voice-label">
+        <span class="field-label">Name for this voice</span>
+        <input id="voice-label" class="field-input" type="text" maxlength="48" required autocomplete="off">
+      </label>
+      <label class="field" for="voice-language">
+        <span class="field-label">Speech language</span>
+        <select id="voice-language" class="field-input">
+          <option value="pt-PT">Portuguese (Portugal)</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <label class="field field-wide" for="voice-purpose">
+        <span class="field-label">What you will use it for</span>
+        <input id="voice-purpose" class="field-input" type="text" value="translating my own speech" required>
+      </label>
+      <label class="field" for="voice-origin">
+        <span class="field-label">Whose voice is this</span>
+        <select id="voice-origin" class="field-input">
+          <option value="own-voice">My own voice</option>
+          <option value="third-party">Someone else, with their permission</option>
+        </select>
+      </label>
+      <label class="check" id="voice-authorisation-row" for="voice-authorisation" hidden>
+        <input id="voice-authorisation" type="checkbox">
+        <span>I have this person's permission to use their voice for this purpose.</span>
+      </label>
+      <button id="voice-create" class="install" type="submit">Create voice profile</button>
+    </form>
+    <p class="voice-note" id="voice-status" aria-live="polite"></p>
+    <ul class="voice-list" id="voice-list"></ul>
+  </section>
+
   <section class="models" id="models" aria-labelledby="models-title" hidden>
     <div class="models-head">
       <h2 id="models-title">Models</h2>

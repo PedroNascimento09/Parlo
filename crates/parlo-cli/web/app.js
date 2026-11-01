@@ -1255,3 +1255,153 @@ checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
 loadModels();
 loadSettings();
 describeLive();
+
+const voiceForm = document.getElementById("voice-form");
+const voiceList = document.getElementById("voice-list");
+const voiceStatus = document.getElementById("voice-status");
+const voiceOrigin = document.getElementById("voice-origin");
+const voiceAuthorisationRow = document.getElementById("voice-authorisation-row");
+const voiceAuthorisation = document.getElementById("voice-authorisation");
+
+function voiceHeaders() {
+  return { "Content-Type": "application/json", Authorization: "Bearer " + token };
+}
+
+function describeVoice(profile) {
+  const source =
+    profile.consent.origin === "third-party"
+      ? "someone else's voice, with permission"
+      : "your own voice";
+  const state = profile.consent.revoked_at ? "authorisation revoked" : "authorised";
+  return profile.language + " · " + source + " · " + state;
+}
+
+function voiceButton(text, handler) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "voice-action";
+  button.textContent = text;
+  button.addEventListener("click", handler);
+  return button;
+}
+
+function renderVoices(profiles) {
+  voiceList.replaceChildren();
+  if (!profiles.length) {
+    voiceStatus.textContent = "No voice profiles on this computer yet.";
+    return;
+  }
+  voiceStatus.textContent =
+    profiles.length +
+    (profiles.length === 1 ? " voice profile on this computer." : " voice profiles on this computer.");
+  for (const profile of profiles) {
+    const item = document.createElement("li");
+    item.className = "voice-item";
+    const title = document.createElement("p");
+    title.className = "voice-item-title";
+    title.textContent = profile.label;
+    const meta = document.createElement("p");
+    meta.className = "voice-item-meta";
+    meta.textContent = describeVoice(profile) + " · since " + new Date(profile.created_at * 1000).toLocaleDateString();
+    const actions = document.createElement("div");
+    actions.className = "voice-item-actions";
+    if (!profile.consent.revoked_at) {
+      actions.append(
+        voiceButton("Revoke", () =>
+          voiceCall("/voice/revoke", profile, "Revoked. This voice will not be used again until you create and authorise a new profile.")
+        )
+      );
+    }
+    actions.append(
+      voiceButton("Delete", () => {
+        if (!window.confirm("Delete " + profile.label + " and everything made from it? This cannot be undone.")) {
+          return;
+        }
+        voiceCall("/voice/delete", profile, "Deleted, with the sample and anything made from it.");
+      })
+    );
+    item.append(title, meta, actions);
+    voiceList.append(item);
+  }
+}
+
+async function voiceCall(path, profile, done) {
+  clearError();
+  try {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: voiceHeaders(),
+      body: JSON.stringify({ id: profile.id }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "The request failed.");
+    }
+    voiceStatus.textContent = done;
+    await loadVoices();
+  } catch (failure) {
+    showError(failure.message);
+  }
+}
+
+async function loadVoices() {
+  try {
+    const response = await fetch("/voice", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const payload = await response.json();
+    renderVoices(payload.profiles || []);
+  } catch (failure) {
+    voiceStatus.textContent = "The voice list is not available right now.";
+  }
+}
+
+voiceOrigin.addEventListener("change", () => {
+  const thirdParty = voiceOrigin.value === "third-party";
+  voiceAuthorisationRow.hidden = !thirdParty;
+  voiceAuthorisation.required = thirdParty;
+  if (!thirdParty) {
+    voiceAuthorisation.checked = false;
+  }
+});
+
+voiceForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (voiceOrigin.value === "third-party" && !voiceAuthorisation.checked) {
+    showError("Tick the permission box before creating a profile for someone else's voice.");
+    return;
+  }
+  clearError();
+  const button = document.getElementById("voice-create");
+  button.disabled = true;
+  try {
+    const response = await fetch("/voice", {
+      method: "POST",
+      headers: voiceHeaders(),
+      body: JSON.stringify({
+        label: document.getElementById("voice-label").value.trim(),
+        language: document.getElementById("voice-language").value,
+        purpose: document.getElementById("voice-purpose").value.trim(),
+        scope: "translation and playback on this computer",
+        origin: voiceOrigin.value,
+        declared_authorisation: voiceAuthorisation.checked,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "The profile could not be created.");
+    }
+    voiceStatus.textContent =
+      "Created " + payload.label + ". The sample is recorded when the voice engine ships, and this profile is stored on this computer only.";
+    voiceForm.reset();
+    voiceAuthorisationRow.hidden = true;
+    await loadVoices();
+  } catch (failure) {
+    showError(failure.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+loadVoices();

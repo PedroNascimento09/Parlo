@@ -9,7 +9,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 use parlo_core::wav::{read_pcm16, write_pcm16};
-use parlo_core::{AudioFormat, Pipeline, PipelineConfig, Wav};
+use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
 use crate::dub;
 use crate::models;
@@ -360,6 +360,113 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/voice" {
+        return match voice_store().list() {
+            Ok(profiles) => {
+                let listed = serde_json::to_string(&profiles).unwrap_or_else(|_| "[]".to_string());
+                respond_json(stream, "200 OK", &format!("{{\"profiles\":{listed}}}"))
+                    .map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/voice" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: VoiceRequest = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let consent = match consent_for(
+            request.origin.as_deref(),
+            request.declared_authorisation,
+            request.purpose,
+            request.scope,
+            now_seconds(),
+        ) {
+            Ok(consent) => consent,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let language = request.language.unwrap_or_else(|| "pt-PT".to_string());
+        return match voice_store().create(&request.label, &language, consent) {
+            Ok(profile) => {
+                let body = serde_json::to_string(&profile).unwrap_or_else(|_| "{}".to_string());
+                respond_json(stream, "201 Created", &body).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && (path == "/voice/revoke" || path == "/voice/delete") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let target: VoiceTarget = match serde_json::from_slice(&body) {
+            Ok(target) => target,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let store = voice_store();
+        let outcome = if path == "/voice/revoke" {
+            store
+                .revoke(&target.id, now_seconds())
+                .map(|profile| serde_json::to_string(&profile).unwrap_or_else(|_| "{}".to_string()))
+        } else {
+            store
+                .delete(&target.id)
+                .map(|()| "{\"deleted\":true}".to_string())
+        };
+        return match outcome {
+            Ok(body) => respond_json(stream, "200 OK", &body).map(|()| Flow::Serve),
+            Err(error) => {
+                let status = match error {
+                    parlo_core::VoiceError::NotFound(_) => "404 Not Found",
+                    _ => "400 Bad Request",
+                };
+                respond_json(
+                    stream,
+                    status,
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "POST" && path == "/dub" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -667,6 +774,53 @@ fn handle(
         samples,
     };
     respond_audio(stream, &write_pcm16(&translated), &transcript).map(|()| Flow::Serve)
+}
+
+#[derive(serde::Deserialize)]
+struct VoiceRequest {
+    label: String,
+    #[serde(default)]
+    language: Option<String>,
+    purpose: String,
+    scope: String,
+    #[serde(default)]
+    origin: Option<String>,
+    #[serde(default)]
+    declared_authorisation: bool,
+}
+
+#[derive(serde::Deserialize)]
+struct VoiceTarget {
+    id: String,
+}
+
+fn voice_store() -> Store {
+    Store::new(crate::config::data_root().join("voices"))
+}
+
+fn now_seconds() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or_default()
+}
+
+fn consent_for(
+    origin: Option<&str>,
+    declared_authorisation: bool,
+    purpose: String,
+    scope: String,
+    accepted_at: u64,
+) -> Result<Consent, String> {
+    if origin == Some("third-party") {
+        if !declared_authorisation {
+            return Err(
+                "a third party voice profile requires a declared authorisation".to_string(),
+            );
+        }
+        return Ok(Consent::third_party(purpose, scope, accepted_at));
+    }
+    Ok(Consent::own_voice(purpose, scope, accepted_at))
 }
 
 fn header(headers: &[(String, String)], name: &str) -> Option<String> {
@@ -1026,6 +1180,29 @@ mod tests {
         assert_eq!(content_type("a.en.mp4"), "video/mp4");
         assert_eq!(content_type("a.en.srt"), "text/plain; charset=utf-8");
         assert_eq!(content_type("a.en.weird"), "application/octet-stream");
+    }
+
+    #[test]
+    fn a_third_party_profile_cannot_skip_the_authorisation() {
+        let refused = consent_for(
+            Some("third-party"),
+            false,
+            "translation".into(),
+            "local".into(),
+            1,
+        );
+        assert!(refused.is_err());
+        let allowed = consent_for(
+            Some("third-party"),
+            true,
+            "translation".into(),
+            "local".into(),
+            1,
+        )
+        .unwrap();
+        assert_eq!(allowed.origin.as_str(), "third-party");
+        let own = consent_for(None, false, "translation".into(), "local".into(), 1).unwrap();
+        assert_eq!(own.origin.as_str(), "own-voice");
     }
 
     #[test]
