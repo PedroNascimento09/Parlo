@@ -72,7 +72,16 @@ target/release/parlo-app
   <sub>Animated by <code>tools/brand.py</code>: a diagram of the real path, not a screen recording.</sub>
 </p>
 
-Each engine owns one responsibility, and the names are fixed in the [glossary](PARLO_GLOSSARY.md): **PAVE** the audio, **PSTE** recognition, **PIE** the text, **PTE** translation, **PIMO** which model runs and when it leaves memory, **PME** what is remembered.
+In words: the microphone captures **audio**, a model turns it into **text**, the rules clean up what you said into **the sentence you meant**, and that sentence is typed into the **window you were in**. None of those steps touches the network.
+
+<details>
+<summary>Text of the animation, for screen readers</summary>
+
+Spoken: “Book a table for Friday, I mean, for Monday.” Written: “Book a table for Monday.” Audio in, transcription, cleanup by rules, and the sentence typed into the field you were in.
+
+</details>
+
+Those four steps have internal names — **PAVE** the audio, **PSTE** recognition, **PIE** the text, **PTE** translation, **PIMO** which model runs and when it leaves memory, **PME** what is remembered — fixed in the [glossary](PARLO_GLOSSARY.md). The interface never asks you to learn one.
 
 ## Measured
 
@@ -140,7 +149,7 @@ cargo test --workspace
 cd engines/cascade && PYTHONPATH=. python -m unittest discover -s tests
 ```
 
-CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps every artefact's terms in [LICENSES.md](LICENSES.md). The visuals are generated, not hand-exported: `python tools/brand.py`.
+CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps every artefact's terms in [LICENSES.md](LICENSES.md). The visuals are generated, not hand-exported: `python tools/brand.py` rebuilds the banner, the surface sheet, the island, the animation, the mark and the social card in `assets/`.
 
 ## Roadmap
 
@@ -148,7 +157,7 @@ The next release is **v0.2.0**: cloud cost control, per-model unload rules in th
 
 ## Docs and contributing
 
-[App guide](docs/APP.md) · [Architecture](docs/ARCHITECTURE.md) · [Engines](docs/ENGINES.md) · [Benchmarks](docs/BENCHMARKS.md) · [Intelligence engine](docs/INTELLIGENCE.md) · [Glossary](PARLO_GLOSSARY.md) · [Privacy](docs/PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Licences](docs/LICENSES.md)
+[App guide](docs/APP.md) · [Architecture](docs/ARCHITECTURE.md) · [Engines](docs/ENGINES.md) · [Benchmarks](docs/BENCHMARKS.md) · [Intelligence engine](docs/INTELLIGENCE.md) · [Glossary](PARLO_GLOSSARY.md) · [Privacy](docs/PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Changelog](CHANGELOG.md) · [Security](SECURITY.md) · [Support](SUPPORT.md) · [Governance](GOVERNANCE.md) · [Licences](docs/LICENSES.md)
 
 Issues and pull requests are welcome. The three smallest useful things right now: a hardware report from your own machine, a recording in your accent, or a translation of this page into a language you speak. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and look for `good first issue`.
 

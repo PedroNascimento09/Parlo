@@ -23,16 +23,10 @@ ASSETS = Path("assets")
 SPOKEN = "«Book a table for Friday, I mean, for Monday.»"
 WRITTEN = "Book a table for Monday."
 STEPS = (
-    ("PAVE", "audio in"),
-    ("PSTE", "speech to text"),
-    ("PIE", "the sentence you meant"),
-    ("FIELD", "where you were writing"),
-)
-CAPTIONS = (
-    "Listening on your microphone.",
-    "Turning speech into text, on this machine.",
-    SPOKEN,
-    WRITTEN,
+    ("AUDIO", "PAVE", "microphone in"),
+    ("TRANSCRIBE", "PSTE", "speech becomes text"),
+    ("CLEAN UP", "PIE", "the sentence you meant"),
+    ("WRITE", "YOUR APP", "typed where you were"),
 )
 SURFACES = (
     ("PARLO DICTATE", "Speak once and the sentence is typed into the window you were in.", "AVAILABLE"),
@@ -107,16 +101,15 @@ def banner():
         fill=MUTED,
     )
 
-    panel = (1000, 150, 1492, 486)
-    draw.rectangle(panel, fill=CARD, outline=RULE, width=1)
-    micro(draw, (1032, 182), "INPUT", MUTED, 12)
+    draw.rectangle((1000, 150, 1492, 486), fill=CARD, outline=RULE, width=1)
+    micro(draw, (1032, 182), "YOU SAY", MUTED, 12)
     draw.text((1032, 206), "Book a table for Friday,", font=font(MONO, 17), fill=INK)
     draw.text((1032, 232), "I mean, for Monday.", font=font(MONO, 17), fill=INK)
     rule(draw, 268, 1032, 1460)
-    micro(draw, (1032, 290), "ENGINE", MUTED, 12)
-    draw.text((1032, 314), "PIE · rules only · 61.9 µs", font=font(MONO, 17), fill=INK)
+    micro(draw, (1032, 290), "CLEANUP", MUTED, 12)
+    draw.text((1032, 314), "rules only · 61.9 µs · offline", font=font(MONO, 17), fill=INK)
     rule(draw, 350, 1032, 1460)
-    micro(draw, (1032, 372), "OUTPUT", MUTED, 12)
+    micro(draw, (1032, 372), "PARLO WRITES", MUTED, 12)
     draw.text((1032, 396), WRITTEN, font=font(MONO, 20), fill=ACCENT)
     micro(draw, (1032, 446), "NOWHERE BUT HERE", MUTED, 12)
 
@@ -178,52 +171,94 @@ def island():
 
 
 def layout(draw, active):
-    for index, (title, caption) in enumerate(STEPS):
+    for index, (label, engine, caption) in enumerate(STEPS):
         x = 60 + index * 286
         lit = index == active
-        draw.rectangle(
-            (x, 78, x + 246, 198),
-            fill=CARD if lit else PAPER,
-            outline=ACCENT if lit else RULE,
-            width=1,
-        )
-        micro(draw, (x + 22, 100), title, ACCENT if lit else INK, 13)
-        draw.text((x + 22, 134), caption, font=font(BODY, 17), fill=MUTED)
+        draw.rectangle((x, 74, x + 246, 206), fill=CARD if lit else PAPER, outline=ACCENT if lit else RULE, width=1)
+        micro(draw, (x + 22, 96), label, ACCENT if lit else INK, 14)
+        micro(draw, (x + 22, 124), engine, MUTED, 10, 2.0)
+        draw.text((x + 22, 152), caption, font=font(BODY, 16), fill=MUTED)
         if index < len(STEPS) - 1:
-            draw.line((x + 256, 138, x + 276, 138), fill=RULE, width=1)
-            draw.line((x + 270, 133, x + 277, 138), fill=RULE, width=1)
-            draw.line((x + 270, 143, x + 277, 138), fill=RULE, width=1)
+            draw.line((x + 256, 140, x + 276, 140), fill=RULE, width=1)
+            draw.line((x + 270, 135, x + 277, 140), fill=RULE, width=1)
+            draw.line((x + 270, 145, x + 277, 140), fill=RULE, width=1)
 
 
 def flow():
-    width, height = 1200, 330
+    width, height = 1200, 360
     frames = []
-    for phase in range(len(STEPS)):
-        for tick in range(6):
+    durations = []
+    plan = ((0, 6), (1, 6), (2, 14), (3, 12))
+    total = 38
+    counter = 0
+    for phase, ticks in plan:
+        for tick in range(ticks):
+            counter += 1
             image = canvas(width, height)
             draw = ImageDraw.Draw(image)
             draw.rectangle((0, 0, width, 4), fill=ACCENT)
             layout(draw, phase)
-            total = len(STEPS) * 6
-            filled = int(1140 * (phase * 6 + tick + 1) / total)
-            draw.line((60, 218, 1140, 218), fill=RULE, width=2)
+            filled = int(1140 * counter / total)
+            draw.line((60, 226, 1140, 226), fill=RULE, width=2)
             if filled > 4:
-                draw.line((60, 218, 60 + filled, 218), fill=ACCENT, width=2)
-            text = CAPTIONS[phase]
-            if phase == len(STEPS) - 1:
-                visible = max(1, round(len(text) * (tick + 1) / 6))
-                text = text[:visible] + ("▌" if tick < 5 else "")
-            draw.text((60, 246), text, font=font(BODY, 24), fill=INK)
-            micro(draw, (60, 292), "RULES IN MICROSECONDS · A MODEL ONLY IF YOU ALLOWED ONE", SOFT, 10, 1.8)
+                draw.line((60, 226, 60 + filled, 226), fill=ACCENT, width=2)
+            if phase == 0:
+                draw.text((60, 256), "Listening. Audio never leaves this machine.", font=font(BODY, 24), fill=INK)
+            elif phase == 1:
+                draw.text((60, 256), "Recognising the words on the device.", font=font(BODY, 24), fill=INK)
+            elif phase == 2:
+                draw.text((60, 252), SPOKEN, font=font(BODY, 24), fill=MUTED)
+                if tick >= 6:
+                    draw.text((60, 292), "→ " + WRITTEN, font=font(BODY, 26), fill=ACCENT)
+                else:
+                    micro(draw, (60, 296), "FIXING THE SELF-CORRECTION", SOFT, 11, 1.8)
+            else:
+                visible = max(1, round(len(WRITTEN) * (tick + 1) / ticks))
+                draw.text((60, 256), WRITTEN[:visible] + ("▌" if tick < ticks - 1 else ""), font=font(BODY, 26), fill=INK)
+                micro(draw, (60, 300), "TYPED INTO THE WINDOW YOU WERE IN", SOFT, 11, 1.8)
             frames.append(image)
+            durations.append(150 if phase < 2 else 160)
+    for tick in range(10):
+        image = canvas(width, height)
+        draw = ImageDraw.Draw(image)
+        draw.rectangle((0, 0, width, 4), fill=ACCENT)
+        layout(draw, 3)
+        draw.line((60, 226, 1140, 226), fill=RULE, width=2)
+        draw.line((60, 226, 1140, 226), fill=ACCENT, width=2)
+        draw.text((60, 256), WRITTEN + ("▌" if tick % 2 == 0 else ""), font=font(BODY, 26), fill=INK)
+        micro(draw, (60, 300), "RULES IN MICROSECONDS · NO MODEL, NO NETWORK, NOTHING UPLOADED", SOFT, 11, 1.8)
+        frames.append(image)
+        durations.append(260)
     frames[0].save(
         ASSETS / "flow.gif",
         save_all=True,
         append_images=frames[1:],
-        duration=140,
+        duration=durations,
         loop=0,
         optimize=True,
     )
+
+
+def social():
+    width, height = 1280, 640
+    image = canvas(width, height)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((0, 0, width, 6), fill=ACCENT)
+    mark(draw, 88, 84, 34)
+    micro(draw, (140, 96), "PARLO", INK, 15, 3.4)
+    draw.text((86, 214), "Type with your voice,", font=font(SERIF, 62), fill=INK)
+    draw.text((86, 288), "without leaving", font=font(SERIF, 62), fill=INK)
+    draw.text((86, 362), "your computer.", font=font(SERIF, 62), fill=ACCENT)
+    draw.text(
+        (90, 470),
+        "Offline dictation and translation for Windows, macOS and Linux.",
+        font=font(BODY, 22),
+        fill=MUTED,
+    )
+    draw.text((90, 508), "No account. No telemetry. No subscription.", font=font(BODY, 22), fill=MUTED)
+    rule(draw, 574, 88, 1192)
+    micro(draw, (88, 594), "PARLO DICTATE · PARLO LIVE · PARLO MEETINGS · PARLO TRANSLATE", MUTED, 11, 2.0)
+    image.save(ASSETS / "social.png")
 
 
 def mark_file():
@@ -240,8 +275,9 @@ def main():
     surfaces()
     island()
     flow()
+    social()
     mark_file()
-    print("wrote banner, surfaces, island, flow.gif and mark")
+    print("wrote banner, surfaces, island, flow.gif, social and mark")
 
 
 if __name__ == "__main__":
