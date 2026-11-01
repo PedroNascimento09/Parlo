@@ -1308,6 +1308,29 @@ talk.addEventListener("pointerdown", (event) => {
 window.addEventListener("pointerup", () => finish());
 window.addEventListener("pointercancel", () => finish());
 
+function openSection() {
+  const fragment = (location.hash || "").replace("#", "");
+  if (fragment === "live") {
+    startLive();
+    return;
+  }
+  if (fragment === "settings") {
+    const section = document.getElementById("settings");
+    if (!section) {
+      return;
+    }
+    section.scrollIntoView({ block: "center" });
+    settingsFrom.focus();
+  }
+}
+
+window.addEventListener("hashchange", openSection);
+window.addEventListener("load", () => {
+  if (location.hash) {
+    openSection();
+  }
+});
+
 talk.addEventListener("contextmenu", (event) => event.preventDefault());
 
 talk.addEventListener("keydown", (event) => {

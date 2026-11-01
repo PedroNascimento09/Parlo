@@ -34,7 +34,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 |---|---|---|---|
 | v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
 | v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current**, two of three parts met |
-| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** one presence — a tray menu with Dictate, Live, Open Parlo, Settings and Quit — a floating island on **Ctrl+Alt+D** or a tray click, and insertion into the window that had the focus, with the clipboard as fallback. Missing: the Live surface of its own, a shortcut the user can change, and macOS or Linux insertion |
+| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** one presence — a tray menu with Dictate, Live, Open Parlo, Settings and Quit — a floating island on **Ctrl+Alt+D** or a tray click, and insertion into the window that had the focus, with the clipboard as fallback. Missing: the Live surface of its own (the tray Live item currently opens the window and starts live there), a shortcut the user can change, dictation that writes in another language, and macOS or Linux insertion |
 | v0.5 Escrever noutra língua | Speak Portuguese, write English, German, Spanish or French in the active field | G1 + G2 | Planned, not complete; the MT stage exists, the dictation surfaces do not |
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead; system audio not |
 | v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks and a model panel, no catalogue, no rollback |
