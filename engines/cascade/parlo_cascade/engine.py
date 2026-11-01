@@ -6,6 +6,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from .corrections import CLEAN_MODES, clean
 from .models import models_dir
 from .streaming import StreamingSession, TextEvent
 from .tts import PiperVoice, VoiceUnavailable
@@ -120,6 +121,12 @@ class CascadeEngine:
         self.threads = int(threads) if threads else DEFAULT_THREADS
         self.captions = os.environ.get("PARLO_CASCADE_CAPTIONS") == "1"
         self.dictate = os.environ.get("PARLO_CASCADE_DICTATE") == "1"
+        self.clean_mode = os.environ.get("PARLO_CASCADE_CLEAN", "light").lower()
+        if self.clean_mode not in CLEAN_MODES:
+            raise ValueError(
+                f"unknown cleanup mode {self.clean_mode}, expected {CLEAN_MODES}"
+            )
+        self.last_original = ""
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
@@ -206,8 +213,10 @@ class CascadeEngine:
         if not text:
             return Translation(b"", None, 0)
         if self.dictate:
+            cleaned = clean(text, self.clean_mode, self.source)
+            self.last_original = cleaned.original
             elapsed = int((time.perf_counter() - started) * 1000)
-            return Translation(pcm16=b"", text=text, latency_ms=elapsed)
+            return Translation(pcm16=b"", text=cleaned.cleaned, latency_ms=elapsed)
         translated = self._translate(text)
         if self.captions:
             elapsed = int((time.perf_counter() - started) * 1000)

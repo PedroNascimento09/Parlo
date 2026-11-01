@@ -164,6 +164,19 @@ class EngineTest(unittest.TestCase):
         finally:
             os.environ.pop("PARLO_CASCADE_DICTATE", None)
 
+    def test_cleanup_mode_defaults_to_light(self):
+        self.assertEqual(CascadeEngine().clean_mode, "light")
+
+    def test_an_unknown_cleanup_mode_is_refused(self):
+        import os
+
+        os.environ["PARLO_CASCADE_CLEAN"] = "clever"
+        try:
+            with self.assertRaises(ValueError):
+                CascadeEngine()
+        finally:
+            os.environ.pop("PARLO_CASCADE_CLEAN", None)
+
 
 if __name__ == "__main__":
     unittest.main()
