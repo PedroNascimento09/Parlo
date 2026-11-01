@@ -223,6 +223,35 @@ What this corrects, in the plan and in `docs/LICENSES.md`: EN→PT was recorded 
 
 The leaked `>>by<<` on the PT→EN probe is the language prefix coming out the other side, which says the prefix placement is also still wrong.
 
+### The same corpus on the original weights
+
+`engines/cascade/scripts/mt_hf_bench.py` runs the same 24 sentences through the checkpoints with transformers, beam 4, 4 threads, Windows 11. This measures the models, not the conversion.
+
+| Direction | Checkpoint | Prefix | Median | p95 | Complete sentences | Correct meaning, PT-PT wording |
+|---|---|---|---|---|---|---|
+| EN→PT | `opus-mt-tc-big-en-pt` | none | 1025 ms | 1130 ms | **12 of 12** | 9 of 12 |
+| PT→EN | `opus-mt-ROMANCE-en` | `>>por<<` | 878 ms | 1185 ms | **12 of 12** | 12 of 12 |
+
+This is the first time EN→PT produces a finished Portuguese sentence on every row of this corpus:
+
+```
+src  We don't have the budget for that.        →  Não temos orçamento para isso.
+src  She said she would call back later.       →  Ela disse que ligaria mais tarde.
+src  It costs 249.90 euros, VAT included.      →  Custa 249,90 euros, IVA incluído.
+src  Can you confirm the meeting on Thursday?  →  Pode confirmar a reunião na quinta-feira?
+```
+
+Four things it gets wrong, all of them worth writing down:
+
+- **Brazilian words and literal idioms.** `The train` becomes `O trem` where European Portuguese says `O comboio`, and `The lift is out of order` becomes `O elevador está fora de ordem`, which is the words in order rather than the Portuguese phrase `está avariado`.
+- **`ship` as a verb becomes `navio`.** `Let's keep it simple and ship today` came back as `Vamos mantê-lo simples e navio hoje`: the core problem of a pair that is not curated, and the reason a human read is still part of every gate.
+- **Names are translated.** `O João e a Maria` became `John and Mary`, which loses the only part of a sentence a person cannot guess.
+- **The language prefix leaks on PT→EN.** Five of twelve outputs end in `>>by<<`, `>>per<<` or `>>for<<` after a correct sentence. Stripping the trailing prefix is a fix in the adapter, not in the model.
+
+Reading: the checkpoint is good enough to be the EN→PT candidate and not good enough to be published as a validated pair. Nine of twelve idiomatic on twelve sentences written by the person who built the corpus is a direction, not a grade, and the three defects above are exactly what the plan's gates ask for: European vocabulary, preserved names, and no prefix left in the output.
+
+Latency sets the other limit: about a second per sentence, four threads, beam 4. That is fine for dictation and too slow for Live, where the target is 2.5 seconds for the whole first utterance including recognition and voice. Beam 1 was not measured here and will be, because a third of that latency is the search, not the model.
+
 Rule that survives this: a number from a broken build is worse than no number, because it closes a question that is still open.
 
 ## What gets measured
