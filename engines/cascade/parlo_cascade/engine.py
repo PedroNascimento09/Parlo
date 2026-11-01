@@ -125,6 +125,7 @@ class CascadeEngine:
         self._ready = available()
         self._stt = None
         self._tts = None
+        self._translator = None
         self._stream: StreamingSession | None = None
         self._silent_seconds = 0.0
 
@@ -255,6 +256,13 @@ class CascadeEngine:
         return apply_glossary(text, self.glossary)
 
     def _translate(self, text: str) -> str:
+        from . import mt
+
+        if self._translator is None:
+            self._translator = mt.from_environment()
+        if self._translator is not None:
+            return self._translator(text)
+
         import argostranslate.translate
 
         return argostranslate.translate.translate(text, self.source, self.target)
