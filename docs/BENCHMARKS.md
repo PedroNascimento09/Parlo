@@ -305,6 +305,31 @@ What it still gets wrong, four rows out of twenty four:
 
 Reading: about 110 ms per sentence, model alone, is the first translation figure this project has that fits Live, where the whole first utterance with recognition and voice targets 2.5 s. It is not a pipeline number and it says nothing about a cold process. The package licence is CC BY 4.0 with the authors named in `catalog/models.json`; the runtime that ships it is not needed and not used.
 
+### The 100 sentence gate
+
+`benchmarks/corpus/translation.jsonl` holds 100 original sentences, 50 in each direction, written for this project with numbers, negations, names, dates and times throughout. `engines/cascade/scripts/mt_gate.py` runs a package over the corpus and fails below a threshold:
+
+```bash
+python engines/cascade/scripts/mt_gate.py --pack --direction pt-en
+python engines/cascade/scripts/mt_gate.py --pack --direction en-pt
+```
+
+Windows 11 laptop, no GPU, 4 threads, beam 4, warm process, the installed `1.9` packages:
+
+| Direction | Numbers | Clock | Negation | Names | Complete | Gate |
+|---|---|---|---|---|---|---|
+| PT→EN | 1.000 | **0.940** | 1.000 | 0.920 | 1.000 | **fails** |
+| EN→PT | 1.000 | 0.980 | 1.000 | 0.980 | 1.000 | passes |
+
+Numbers, negations and completeness are clean in both directions. Two things are not:
+
+- **PT→EN loses the am/pm on afternoon times.** `15h30` → `3:30`, `18h` → `6:00`, `17h` → `5:00` (pt-en-001, 016, 043). The hour is right; the half of the day, which a reader cannot recover from context, is gone.
+- **Names get translated.** `O João` → `John`, plus three more rows that drop or translate a name (pt-en-003, 017, 019, 044).
+
+The check reads value, not typography: `four hours`, `3.000 euros` and `7.05` → `7h05` all count as preserved, because the same quantity arrives. `8.30` → `20h30` (en-pt-035) is a real error and is counted as one. Thresholds were set before the run and left alone: numbers 0.95, clock 0.95, negation 0.90, names 0.80, complete 1.00.
+
+**The pair is not declared validated.** EN→PT clears the gate and PT→EN does not, and a pair is approved as a pair, not as the good half of one.
+
 ## What gets measured
 
 | Metric | Method |

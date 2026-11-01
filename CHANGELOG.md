@@ -22,6 +22,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `engines/cascade/scripts/stream_bench.py` and a 20 sentence European Portuguese corpus measure the first partial, the first stable words, the final text and the word error rate of each stage.
 - `setup_models.py --voice pt_pt` fetches the Piper `pt_PT-tugão-medium` voice.
 - `parlo_cascade/mt.py`, a translator that runs an OPUS-MT model through CTranslate2 with its own SentencePiece vocabulary, so a model translates without the Argos runtime; it uses the folder in `PARLO_CASCADE_MT_DIR` when set, otherwise the package installed for the pair, and reports a missing model instead of guessing.
+- The translation corpus grew to 100 original sentences, 50 in each direction, with numbers, negations, names, dates and times; the first 24 are unchanged.
+- `engines/cascade/scripts/mt_gate.py` checks a package against that corpus for numbers, clocks, negations, names and completeness, and exits non-zero below its thresholds.
 - The model catalogue carries the two OPUS-MT packages as CC BY 4.0 with their authors named, read from the licence line the package itself ships.
 - `parlo_cascade/packs.py`, a downloader for those packages: it reads the published index, streams the archive with a 512 MB ceiling, refuses entries that escape the folder, checks the files a model needs, writes the SHA-256 and the index it came from next to the copy, and leaves an existing install untouched.
 - **Voice profiles in the app.** Create a profile for your own voice, or for someone
@@ -36,6 +38,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - The engine log is written to `parlo-engine.log` in the temporary folder when the window starts it, because a double-clicked app has no console.
 - The minimum Rust version is 1.85.
 - `scripts/parlo-app.cmd` and `scripts/parlo-app.sh` build both programs and open the window.
+- On the 100 sentence gate EN→PT passes every criterion and PT→EN fails the clock one at 0.940: `15h30`, `18h` and `17h` come back as `3:30`, `6:00` and `5:00`, losing the half of the day, and four rows translate or drop a name. The pair is not declared validated on either side.
 - Captions reach the screen about 1.6 s after speech starts at a 1.2 s window, 444 ms of processing over 20 sentences, inside the two second target the earlier 2.2 s run missed; the translation stage is the part that changed.
 - A two minute soak of the current program turns a segment around in 699 ms mean, p95 940 ms, 66 segments and no errors, voice synthesis included; the run and its conditions are in `docs/BENCHMARKS.md`.
 - The cascade translates through that backend and nothing else: `argostranslate` left the engine, the requirements, the PyInstaller spec and the licence closure, taking the AGPL `minisbd` sentence splitter with it. The SentencePiece word marker is cleaned out of the output.

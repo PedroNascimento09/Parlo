@@ -10,6 +10,44 @@
 {"id":"pt-en-010","source":"pt-PT","target":"en","text":"O prazo termina a 31 de dezembro de 2026.","reference":"The deadline ends on 31 December 2026.","tags":["date"]}
 {"id":"pt-en-011","source":"pt-PT","target":"en","text":"Ele disse que não podia comparecer.","reference":"He said he couldn't attend.","tags":["reported-speech","negation"]}
 {"id":"pt-en-012","source":"pt-PT","target":"en","text":"A casa de banho fica ao fundo do corredor.","reference":"The bathroom is at the end of the corridor.","tags":["vocabulary"]}
+{"id":"pt-en-013","source":"pt-PT","target":"en","text":"O contrato foi assinado a 3 de março de 2027, não a 30 de fevereiro.","reference":"The contract was signed on 3 March 2027, not 30 February.","tags":["dates","negation"]}
+{"id":"pt-en-014","source":"pt-PT","target":"en","text":"Temos 12 reuniões esta semana e nenhuma sala livre.","reference":"We have 12 meetings this week and no free room.","tags":["numbers","negation"]}
+{"id":"pt-en-015","source":"pt-PT","target":"en","text":"A encomenda 4471 chegou com duas peças em falta.","reference":"Order 4471 arrived with two parts missing.","tags":["numbers"]}
+{"id":"pt-en-016","source":"pt-PT","target":"en","text":"Não vou conseguir terminar o relatório até às 18h.","reference":"I won't be able to finish the report by 6 pm.","tags":["negation","time"]}
+{"id":"pt-en-017","source":"pt-PT","target":"en","text":"O Pedro disse que ligava às 9h15, mas nunca ligou.","reference":"Pedro said he would call at 9.15, but he never did.","tags":["names","negation","time"]}
+{"id":"pt-en-018","source":"pt-PT","target":"en","text":"Custou 1 250,50 euros, sem IVA.","reference":"It cost 1,250.50 euros, without VAT.","tags":["numbers","money"]}
+{"id":"pt-en-019","source":"pt-PT","target":"en","text":"A Ana e o Rui mudaram-se para o Porto em 2024.","reference":"Ana and Rui moved to Porto in 2024.","tags":["names","dates"]}
+{"id":"pt-en-020","source":"pt-PT","target":"en","text":"Não há vagas para a formação de quinta-feira.","reference":"There are no places left in Thursday's training.","tags":["negation"]}
+{"id":"pt-en-021","source":"pt-PT","target":"en","text":"Enviei três propostas e recebi apenas uma resposta.","reference":"I sent three proposals and got only one reply.","tags":["numbers"]}
+{"id":"pt-en-022","source":"pt-PT","target":"en","text":"O projeto atrasou 15 dias por causa da greve dos transportes.","reference":"The project slipped 15 days because of the transport strike.","tags":["numbers"]}
+{"id":"pt-en-023","source":"pt-PT","target":"en","text":"Não me parece que o prazo seja realista.","reference":"I don't think the deadline is realistic.","tags":["negation"]}
+{"id":"pt-en-024","source":"pt-PT","target":"en","text":"Prefiro trabalhar de manhã, quando ninguém me interrompe.","reference":"I prefer working in the morning, when nobody interrupts me.","tags":["negation"]}
+{"id":"pt-en-025","source":"pt-PT","target":"en","text":"O servidor esteve em baixo durante 4 horas e 20 minutos.","reference":"The server was down for 4 hours and 20 minutes.","tags":["numbers"]}
+{"id":"pt-en-026","source":"pt-PT","target":"en","text":"Ficámos com 0,75% de desconto, o que é ridículo.","reference":"We ended up with 0.75% off, which is ridiculous.","tags":["numbers"]}
+{"id":"pt-en-027","source":"pt-PT","target":"en","text":"A reunião foi adiada para segunda-feira às 11h.","reference":"The meeting was moved to Monday at 11.","tags":["time"]}
+{"id":"pt-en-028","source":"pt-PT","target":"en","text":"Não sei se o Miguel vem à apresentação.","reference":"I don't know whether Miguel is coming to the presentation.","tags":["names","negation"]}
+{"id":"pt-en-029","source":"pt-PT","target":"en","text":"São 3 000 quilómetros de estrada, sem paragens.","reference":"It is 3,000 kilometres of road, without stops.","tags":["numbers","negation"]}
+{"id":"pt-en-030","source":"pt-PT","target":"en","text":"A fatura 2026/118 foi paga em duas prestações.","reference":"Invoice 2026/118 was paid in two instalments.","tags":["numbers"]}
+{"id":"pt-en-031","source":"pt-PT","target":"en","text":"Nenhum dos fornecedores respondeu ao pedido de cotação.","reference":"None of the suppliers answered the quote request.","tags":["negation"]}
+{"id":"pt-en-032","source":"pt-PT","target":"en","text":"Manda-me o ficheiro outra vez, por favor.","reference":"Send me the file again, please.","tags":["imperative"]}
+{"id":"pt-en-033","source":"pt-PT","target":"en","text":"O prazo é 15 de janeiro, e não 15 de fevereiro.","reference":"The deadline is 15 January, not 15 February.","tags":["dates","negation"]}
+{"id":"pt-en-034","source":"pt-PT","target":"en","text":"Trabalho aqui desde 2019, sempre no mesmo departamento.","reference":"I have worked here since 2019, always in the same department.","tags":["dates"]}
+{"id":"pt-en-035","source":"pt-PT","target":"en","text":"Não vale a pena insistir nessa abordagem.","reference":"There is no point in pushing that approach.","tags":["idiom","negation"]}
+{"id":"pt-en-036","source":"pt-PT","target":"en","text":"A equipa cresceu de 6 para 18 pessoas em dois anos.","reference":"The team grew from 6 to 18 people in two years.","tags":["numbers"]}
+{"id":"pt-en-037","source":"pt-PT","target":"en","text":"O cliente cancelou a reunião das 8h30.","reference":"The client cancelled the 8.30 meeting.","tags":["time"]}
+{"id":"pt-en-038","source":"pt-PT","target":"en","text":"Peço desculpa pelo atraso, o trânsito estava impossível.","reference":"Sorry for the delay, the traffic was impossible.","tags":["register"]}
+{"id":"pt-en-039","source":"pt-PT","target":"en","text":"O empréstimo tem 5 anos de carência e 2,4% de juros.","reference":"The loan has 5 years of grace and 2.4% interest.","tags":["numbers"]}
+{"id":"pt-en-040","source":"pt-PT","target":"en","text":"Não mandei nada porque o email não saiu.","reference":"I didn't send anything because the email never left.","tags":["negation"]}
+{"id":"pt-en-041","source":"pt-PT","target":"en","text":"As obras começam a 2 de setembro e duram 90 dias.","reference":"The works start on 2 September and last 90 days.","tags":["dates","numbers"]}
+{"id":"pt-en-042","source":"pt-PT","target":"en","text":"O relatório ocupa 47 páginas, com 12 anexos.","reference":"The report runs to 47 pages, with 12 annexes.","tags":["numbers"]}
+{"id":"pt-en-043","source":"pt-PT","target":"en","text":"Ninguém sabia do cancelamento até às 17h.","reference":"Nobody knew about the cancellation until 5 pm.","tags":["negation","time"]}
+{"id":"pt-en-044","source":"pt-PT","target":"en","text":"A Joana apresentou os resultados em 8 minutos.","reference":"Joana presented the results in 8 minutes.","tags":["names","numbers"]}
+{"id":"pt-en-045","source":"pt-PT","target":"en","text":"Precisamos de 3 revisores e não temos nenhum.","reference":"We need 3 reviewers and we have none.","tags":["numbers","negation"]}
+{"id":"pt-en-046","source":"pt-PT","target":"en","text":"O desconto de 15% só se aplica a 20 unidades.","reference":"The 15% discount only applies to 20 units.","tags":["numbers"]}
+{"id":"pt-en-047","source":"pt-PT","target":"en","text":"Cheguei às 7h05 e a loja ainda estava fechada.","reference":"I arrived at 7.05 and the shop was still closed.","tags":["time"]}
+{"id":"pt-en-048","source":"pt-PT","target":"en","text":"Isso não faz sentido nenhum, e tu sabes.","reference":"That makes no sense at all, and you know it.","tags":["negation","informal"]}
+{"id":"pt-en-049","source":"pt-PT","target":"en","text":"A reunião de 30 minutos transformou-se em 2 horas.","reference":"The 30 minute meeting turned into 2 hours.","tags":["numbers"]}
+{"id":"pt-en-050","source":"pt-PT","target":"en","text":"Fico à espera da tua resposta até sexta.","reference":"I will wait for your reply until Friday.","tags":["informal","time"]}
 {"id":"en-pt-001","source":"en","target":"pt-PT","text":"I'll send the invoice by Friday.","reference":"Envio a fatura até sexta-feira.","tags":["future"]}
 {"id":"en-pt-002","source":"en","target":"pt-PT","text":"We don't have the budget for that.","reference":"Não temos orçamento para isso.","tags":["negation"]}
 {"id":"en-pt-003","source":"en","target":"pt-PT","text":"The train leaves at 7.45 am.","reference":"O comboio parte às 7h45.","tags":["time","numbers"]}
@@ -22,3 +60,41 @@
 {"id":"en-pt-010","source":"en","target":"pt-PT","text":"The lift is out of order until Monday.","reference":"O elevador está avariado até segunda-feira.","tags":["vocabulary"]}
 {"id":"en-pt-011","source":"en","target":"pt-PT","text":"Let's keep it simple and ship today.","reference":"Vamos manter isto simples e lançar hoje.","tags":["idiom"]}
 {"id":"en-pt-012","source":"en","target":"pt-PT","text":"He hasn't replied to my email yet.","reference":"Ele ainda não respondeu ao meu correio eletrónico.","tags":["negation","tense"]}
+{"id":"en-pt-013","source":"en","target":"pt-PT","text":"The invoice for 1,250.50 euros is not paid yet.","reference":"A fatura de 1 250,50 euros ainda não está paga.","tags":["numbers","negation"]}
+{"id":"en-pt-014","source":"en","target":"pt-PT","text":"We shipped 14 pallets on 3 March 2027.","reference":"Enviámos 14 paletes a 3 de março de 2027.","tags":["numbers","dates"]}
+{"id":"en-pt-015","source":"en","target":"pt-PT","text":"Nobody answered the phone before 9.15 am.","reference":"Ninguém atendeu o telefone antes das 9h15.","tags":["negation","time"]}
+{"id":"en-pt-016","source":"en","target":"pt-PT","text":"The deadline is 15 January, not 15 February.","reference":"O prazo é 15 de janeiro, não 15 de fevereiro.","tags":["dates","negation"]}
+{"id":"en-pt-017","source":"en","target":"pt-PT","text":"Maria and Tom moved to Lisbon in 2024.","reference":"A Maria e o Tom mudaram-se para Lisboa em 2024.","tags":["names","dates"]}
+{"id":"en-pt-018","source":"en","target":"pt-PT","text":"I don't think the budget covers two more people.","reference":"Não me parece que o orçamento cubra mais duas pessoas.","tags":["negation"]}
+{"id":"en-pt-019","source":"en","target":"pt-PT","text":"There are only 3 seats left in the 10 am session.","reference":"Só restam 3 lugares na sessão das 10h.","tags":["numbers","time"]}
+{"id":"en-pt-020","source":"en","target":"pt-PT","text":"The server was down for 4 hours and 20 minutes.","reference":"O servidor esteve em baixo durante 4 horas e 20 minutos.","tags":["numbers"]}
+{"id":"en-pt-021","source":"en","target":"pt-PT","text":"Please send the contract by Friday at the latest.","reference":"Envie o contrato até sexta-feira, no máximo.","tags":["formal"]}
+{"id":"en-pt-022","source":"en","target":"pt-PT","text":"He never replied to the second email.","reference":"Ele nunca respondeu ao segundo email.","tags":["negation"]}
+{"id":"en-pt-023","source":"en","target":"pt-PT","text":"We have 0.75% of the market, which is nothing.","reference":"Temos 0,75% do mercado, o que não é nada.","tags":["numbers"]}
+{"id":"en-pt-024","source":"en","target":"pt-PT","text":"The order arrived with two missing parts.","reference":"A encomenda chegou com duas peças em falta.","tags":["numbers"]}
+{"id":"en-pt-025","source":"en","target":"pt-PT","text":"I'd rather meet in the morning, when nobody interrupts us.","reference":"Prefiro encontrar-me de manhã, quando ninguém nos interrompe.","tags":["idiom","negation"]}
+{"id":"en-pt-026","source":"en","target":"pt-PT","text":"The project slipped 15 days because of the strike.","reference":"O projeto atrasou 15 dias por causa da greve.","tags":["numbers"]}
+{"id":"en-pt-027","source":"en","target":"pt-PT","text":"Can you confirm the meeting at 11 am on Monday?","reference":"Pode confirmar a reunião de segunda-feira às 11h?","tags":["time","formal"]}
+{"id":"en-pt-028","source":"en","target":"pt-PT","text":"No supplier sent a quote.","reference":"Nenhum fornecedor enviou uma cotação.","tags":["negation"]}
+{"id":"en-pt-029","source":"en","target":"pt-PT","text":"She said she would call at 9.15, but she never did.","reference":"Disse que ligava às 9h15, mas nunca ligou.","tags":["negation","time"]}
+{"id":"en-pt-030","source":"en","target":"pt-PT","text":"It costs 3,000 euros, without VAT.","reference":"Custa 3 000 euros, sem IVA.","tags":["numbers","negation"]}
+{"id":"en-pt-031","source":"en","target":"pt-PT","text":"Send me the file again, please.","reference":"Manda-me o ficheiro outra vez, por favor.","tags":["imperative"]}
+{"id":"en-pt-032","source":"en","target":"pt-PT","text":"I've worked here since 2019, always in the same department.","reference":"Trabalho aqui desde 2019, sempre no mesmo departamento.","tags":["dates"]}
+{"id":"en-pt-033","source":"en","target":"pt-PT","text":"There's no point arguing about it again.","reference":"Não vale a pena discutir isso outra vez.","tags":["idiom","negation"]}
+{"id":"en-pt-034","source":"en","target":"pt-PT","text":"The team grew from 6 to 18 people in two years.","reference":"A equipa cresceu de 6 para 18 pessoas em dois anos.","tags":["numbers"]}
+{"id":"en-pt-035","source":"en","target":"pt-PT","text":"The client cancelled the 8.30 meeting.","reference":"O cliente cancelou a reunião das 8h30.","tags":["time"]}
+{"id":"en-pt-036","source":"en","target":"pt-PT","text":"Sorry for the delay, the traffic was impossible.","reference":"Peço desculpa pelo atraso, o trânsito estava impossível.","tags":["register"]}
+{"id":"en-pt-037","source":"en","target":"pt-PT","text":"Half of the 40 reports are still missing.","reference":"Metade dos 40 relatórios ainda falta.","tags":["numbers"]}
+{"id":"en-pt-038","source":"en","target":"pt-PT","text":"We can't sign anything before the lawyer reads it.","reference":"Não podemos assinar nada antes de o advogado o ler.","tags":["negation"]}
+{"id":"en-pt-039","source":"en","target":"pt-PT","text":"The loan has 5 years of grace and 2.4% interest.","reference":"O empréstimo tem 5 anos de carência e 2,4% de juros.","tags":["numbers"]}
+{"id":"en-pt-040","source":"en","target":"pt-PT","text":"I didn't send anything because the email never left.","reference":"Não mandei nada porque o email não saiu.","tags":["negation"]}
+{"id":"en-pt-041","source":"en","target":"pt-PT","text":"The works start on 2 September and last 90 days.","reference":"As obras começam a 2 de setembro e duram 90 dias.","tags":["dates","numbers"]}
+{"id":"en-pt-042","source":"en","target":"pt-PT","text":"The report runs to 47 pages, with 12 annexes.","reference":"O relatório ocupa 47 páginas, com 12 anexos.","tags":["numbers"]}
+{"id":"en-pt-043","source":"en","target":"pt-PT","text":"Nobody knew about the cancellation until 5 pm.","reference":"Ninguém sabia do cancelamento até às 17h.","tags":["negation","time"]}
+{"id":"en-pt-044","source":"en","target":"pt-PT","text":"Joana presented the results in 8 minutes.","reference":"A Joana apresentou os resultados em 8 minutos.","tags":["names","numbers"]}
+{"id":"en-pt-045","source":"en","target":"pt-PT","text":"We need 3 reviewers and we have none.","reference":"Precisamos de 3 revisores e não temos nenhum.","tags":["numbers","negation"]}
+{"id":"en-pt-046","source":"en","target":"pt-PT","text":"The 15% discount only applies to 20 units.","reference":"O desconto de 15% só se aplica a 20 unidades.","tags":["numbers"]}
+{"id":"en-pt-047","source":"en","target":"pt-PT","text":"I arrived at 7.05 and the shop was still closed.","reference":"Cheguei às 7h05 e a loja ainda estava fechada.","tags":["time"]}
+{"id":"en-pt-048","source":"en","target":"pt-PT","text":"That makes no sense at all, and you know it.","reference":"Isso não faz sentido nenhum, e tu sabes.","tags":["negation","informal"]}
+{"id":"en-pt-049","source":"en","target":"pt-PT","text":"The 30 minute meeting turned into 2 hours.","reference":"A reunião de 30 minutos transformou-se em 2 horas.","tags":["numbers"]}
+{"id":"en-pt-050","source":"en","target":"pt-PT","text":"I'll wait for your reply until Friday.","reference":"Fico à espera da tua resposta até sexta.","tags":["time"]}
