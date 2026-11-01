@@ -57,6 +57,10 @@ When none of these exists, Parlo refuses to store the key and says so instead of
 
 Requests go from the machine directly to the provider. There is no Parlo proxy and no server in the middle.
 
+## Personal vocabulary
+
+**Words Parlo should know** keeps two lists in `vocabulary.json` beside the configuration: names and terms the recogniser keeps getting wrong, and short forms that should expand. The engine applies them to the cleaned sentence with word boundaries only, before any model is called, and records each substitution in the changes. Nothing about the list leaves the machine, no account is involved, and an empty or unreadable file means the feature does nothing rather than breaking a dictation. A pattern such as `a.b` is matched literally, never as an expression.
+
 ## What protects the text
 
 A model is an editor, not an author, and the answer is checked before it can be used:
@@ -79,7 +83,7 @@ An estimate of what a request costs requires the provider's current prices, whic
 
 - **Cost control**: usage estimates, spending caps and a cheaper-model preference. The screen shows no price, because Parlo has measured none.
 - **A validated provider call**: the screen can save a key and send a test sentence, but no real provider has been exercised from this machine yet, so the panel is tested, not validated.
-- **Personal vocabulary**: the profile store, abbreviations and style preferences. Planned in Part XIX of the master plan.
+- **Style preferences and context profiles**: the vocabulary list exists, the rest of Personal Intelligence does not.
 - **A comparison with Wispr Flow.** None has been run, and no claim of equivalence is made.
 
 ## Tests
