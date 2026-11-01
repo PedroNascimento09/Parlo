@@ -15,6 +15,7 @@ mod engines;
 mod history;
 mod insert;
 mod install;
+mod meeting;
 mod mic;
 mod models;
 mod playback;

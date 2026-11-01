@@ -121,6 +121,25 @@
     </div>
   </section>
 
+  <section class="settings" id="meetings" aria-labelledby="meetings-title">
+    <div class="settings-head">
+      <h2 id="meetings-title">Meetings</h2>
+      <p class="settings-note" id="meetings-note" aria-live="polite"></p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="meeting-title">
+        <span class="field-label">Title</span>
+        <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Product Sync" autocomplete="off">
+      </label>
+      <label class="field field-wide" for="meeting-text">
+        <span class="field-label">Transcript</span>
+        <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: Olá, tudo bem?&#10;Speaker 2: Sim, tudo bem."></textarea>
+      </label>
+      <button id="meeting-import" class="install" type="button">Import transcript</button>
+    </div>
+    <dl class="status" id="meeting-list"></dl>
+  </section>
+
   <section class="settings" id="catalog" aria-labelledby="catalog-title">
     <div class="settings-head">
       <h2 id="catalog-title">Model library</h2>

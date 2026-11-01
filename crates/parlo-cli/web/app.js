@@ -964,6 +964,11 @@ welcomeInstall.addEventListener("click", () => downloadModels());
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 const settingsWrite = document.getElementById("settings-write");
+const meetingTitle = document.getElementById("meeting-title");
+const meetingText = document.getElementById("meeting-text");
+const meetingImport = document.getElementById("meeting-import");
+const meetingList = document.getElementById("meeting-list");
+const meetingNote = document.getElementById("meetings-note");
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
@@ -1345,6 +1350,133 @@ function openSection() {
   }
 }
 
+async function loadMeetings() {
+  try {
+    const response = await fetch("/meetings", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      return;
+    }
+    renderMeetings(await response.json());
+  } catch (failure) {
+    meetingNote.textContent = "The meetings could not be read.";
+  }
+}
+
+function renderMeetings(meetings) {
+  meetingList.replaceChildren();
+  if (!meetings.length) {
+    meetingNote.textContent =
+      "No transcript on this computer yet. Paste one above, with a speaker at the start of each line.";
+    return;
+  }
+  for (const meeting of meetings) {
+    const term = document.createElement("dt");
+    const day = new Date((meeting.started_at || 0) * 1000);
+    term.textContent =
+      (meeting.title || "Untitled") +
+      " · " +
+      day.toLocaleDateString() +
+      " · " +
+      meeting.segments.length +
+      " lines";
+    const detail = document.createElement("dd");
+    for (const speaker of meeting.speakers) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "swap";
+      chip.textContent = speaker;
+      chip.title = "Name this speaker everywhere in this meeting";
+      chip.addEventListener("click", () => nameSpeaker(meeting, speaker));
+      detail.append(chip);
+    }
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "swap";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", () => deleteMeeting(meeting.id));
+    detail.append(remove);
+    meetingList.append(term, detail);
+  }
+  meetingNote.textContent =
+    meetings.length === 1
+      ? "1 meeting kept on this computer."
+      : meetings.length + " meetings kept on this computer.";
+}
+
+async function importMeeting() {
+  const text = meetingText.value.trim();
+  if (!text) {
+    meetingNote.textContent = "Paste a transcript first.";
+    return;
+  }
+  try {
+    const response = await fetch("/meeting/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ title: meetingTitle.value, text }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The transcript was refused.");
+    }
+    meetingText.value = "";
+    await loadMeetings();
+  } catch (failure) {
+    meetingNote.textContent = failure.message || "The transcript could not be imported.";
+  }
+}
+
+async function nameSpeaker(meeting, speaker) {
+  const chosen = window.prompt(
+    "Name for " + speaker + "? Leave it empty to go back to the marker.",
+    /^Speaker \d+$/.test(speaker) ? "" : speaker,
+  );
+  if (chosen === null) {
+    return;
+  }
+  const line = meeting.segments.find((segment) => segment.speaker === speaker);
+  try {
+    const response = await fetch("/meeting/name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        id: meeting.id,
+        speaker,
+        name: chosen,
+        evidence: (line && line.text) || "",
+      }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The speaker could not be named.");
+    }
+    await loadMeetings();
+  } catch (failure) {
+    meetingNote.textContent = failure.message || "The speaker could not be named.";
+  }
+}
+
+async function deleteMeeting(id) {
+  try {
+    const response = await fetch("/meeting/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ id }),
+    });
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    await loadMeetings();
+  } catch (failure) {
+    meetingNote.textContent = "The meeting could not be deleted. Try again.";
+  }
+}
+
+meetingImport.addEventListener("click", () => importMeeting());
+
 const CATALOG_KINDS = {
   asr: "Speech recognition",
   mt: "Translation",
@@ -1460,6 +1592,7 @@ historyClear.addEventListener("click", () => clearHistory());
 
 window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {
+  loadMeetings();
   loadCatalog();
   loadHistory();
   if (location.hash) {

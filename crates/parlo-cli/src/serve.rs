@@ -321,6 +321,114 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/meetings" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let meetings: Vec<serde_json::Value> = crate::meeting::list()
+            .into_iter()
+            .map(meeting_json)
+            .collect();
+        return respond_json(stream, "200 OK", &serde_json::json!(meetings).to_string())
+            .map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/meetings/clear" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match crate::meeting::clear() {
+            Ok(()) => respond_json(stream, "200 OK", "{\"cleared\":true}").map(|()| Flow::Serve),
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST"
+        && (path == "/meeting/import" || path == "/meeting/name" || path == "/meeting/delete")
+    {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let field = |name: &str| {
+            request
+                .get(name)
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string()
+        };
+
+        if path == "/meeting/import" {
+            let meeting = match crate::meeting::import(&field("title"), &field("text")) {
+                Ok(meeting) => meeting,
+                Err(error) => {
+                    return respond_json(stream, "400 Bad Request", &error_json(&error))
+                        .map(|()| Flow::Serve);
+                }
+            };
+            if let Err(error) = crate::meeting::save(&meeting) {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+            return respond_json(stream, "200 OK", &meeting_json(meeting).to_string())
+                .map(|()| Flow::Serve);
+        }
+
+        if path == "/meeting/delete" {
+            return match crate::meeting::delete(&field("id")) {
+                Ok(()) => {
+                    respond_json(stream, "200 OK", "{\"deleted\":true}").map(|()| Flow::Serve)
+                }
+                Err(error) => respond_json(stream, "400 Bad Request", &error_json(&error))
+                    .map(|()| Flow::Serve),
+            };
+        }
+
+        let mut meeting = match crate::meeting::load(&field("id")) {
+            Ok(meeting) => meeting,
+            Err(error) => {
+                return respond_json(stream, "404 Not Found", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let name = field("name");
+        let label = if name.is_empty() {
+            None
+        } else {
+            Some(name.as_str())
+        };
+        let outcome = crate::meeting::name_speaker(
+            &mut meeting,
+            &field("speaker"),
+            label,
+            &field("evidence"),
+        );
+        return match outcome {
+            Ok(_) => match crate::meeting::save(&meeting) {
+                Ok(()) => respond_json(stream, "200 OK", &meeting_json(meeting).to_string())
+                    .map(|()| Flow::Serve),
+                Err(error) => {
+                    respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                        .map(|()| Flow::Serve)
+                }
+            },
+            Err(error) => {
+                respond_json(stream, "400 Bad Request", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "GET" && path == "/catalog" {
         return respond_json(stream, "200 OK", &crate::catalog::as_json()).map(|()| Flow::Serve);
     }
@@ -1074,6 +1182,33 @@ fn consent_for(
         return Ok(Consent::third_party(purpose, scope, accepted_at));
     }
     Ok(Consent::own_voice(purpose, scope, accepted_at))
+}
+
+fn error_json(message: &str) -> String {
+    serde_json::json!({ "error": message }).to_string()
+}
+
+fn meeting_json(meeting: crate::meeting::Meeting) -> serde_json::Value {
+    let segments: Vec<serde_json::Value> = meeting
+        .segments
+        .iter()
+        .map(|segment| {
+            serde_json::json!({
+                "at_ms": segment.at_ms,
+                "speaker": segment.speaker,
+                "spoken_by": segment.spoken_by(),
+                "text": segment.text,
+                "named": segment.name.is_some(),
+            })
+        })
+        .collect();
+    serde_json::json!({
+        "id": meeting.id,
+        "title": meeting.title,
+        "started_at": meeting.started_at,
+        "speakers": meeting.speakers(),
+        "segments": segments,
+    })
 }
 
 fn header(headers: &[(String, String)], name: &str) -> Option<String> {
