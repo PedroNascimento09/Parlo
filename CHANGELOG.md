@@ -6,6 +6,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Documentation
 
+- The master plan gains **Part XVI**, sections 114 to 122: model memory and lifecycle. Four states (`Not installed`, `Installed · Unloaded`, `Loaded`, `In use`), an unload policy measured from the last real use with `Never`, 10 and 15 minutes, 30 minutes, 1, 2 and 4 hours and `Automatically`, a global setting with 30 minutes as the recommendation, a per-model policy that overrides it, a rule that a running task suspends the unload, the Resource Manager as the only component that loads and unloads, the Model Hub states and actions, and the separation of `Unload` from `Remove`. The principle is stated once: Parlo manages, the user decides.
 - The master plan moves to **v12.5** with a new Part XV: model selection that recommends without blocking, Parlo Meetings as a pillar with transcript, speakers and retroactive naming, a post-meeting surface with decisions kept distinct from proposals, Ask Parlo with citations, meeting memory between sessions, privacy per stored item, four support states per call platform, and three implementation layers. The appendices now come after Part XIV, where the index always said they were.
 
 ### Added
