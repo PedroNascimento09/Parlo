@@ -52,6 +52,11 @@ STOPWORDS = {
 
 CORRECTION_OVERLAP = 0.2
 TERMINAL = (".", "!", "?")
+CONNECTORS = {
+    "a", "ao", "à", "às", "aos", "o", "os", "as", "um", "uma",
+    "de", "do", "da", "dos", "das", "em", "no", "na", "nos", "nas",
+    "para", "por", "com",
+}
 
 SENTENCE = re.compile(r"[^.!?…]+[.!?…]*")
 TOKEN = re.compile(r"[\wÀ-ÿ'-]+|[^\wÀ-ÿ\s]+")
@@ -190,9 +195,28 @@ def _replace_tail(previous: str, fragment: str) -> str:
     for position, word in enumerate(words):
         if word.strip(".,!?").lower() == first:
             index = position
-    if index is None:
+    if index is not None:
+        return " ".join(words[:index] + fresh)
+    shared = _shared_suffix(words, fresh)
+    if not shared:
         return fragment
-    return " ".join(words[:index] + fresh)
+    cut = len(words) - shared - 1
+    while cut > 0 and _bare(words[cut - 1]) in CONNECTORS and _bare(fresh[0]) in CONNECTORS:
+        cut -= 1
+    return " ".join(words[:cut] + fresh)
+
+
+def _bare(word: str) -> str:
+    return word.strip(".,!?").lower()
+
+
+def _shared_suffix(words: list[str], fresh: list[str]) -> int:
+    count = 0
+    while count < len(words) and count < len(fresh):
+        if words[-1 - count].strip(".,!?").lower() != fresh[-1 - count].strip(".,!?").lower():
+            break
+        count += 1
+    return count
 
 
 def _drop_false_starts(text: str) -> tuple[str, list[str]]:

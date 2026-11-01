@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .corrections import CLEAN_MODES, clean
+from .intelligence import Intelligence, settings_from_environment
 from .models import models_dir
 from .streaming import StreamingSession, TextEvent
 from .tts import PiperVoice, VoiceUnavailable
@@ -127,6 +128,8 @@ class CascadeEngine:
                 f"unknown cleanup mode {self.clean_mode}, expected {CLEAN_MODES}"
             )
         self.last_original = ""
+        self.last_engine = ""
+        self.intelligence = Intelligence(settings_from_environment(self.clean_mode), source)
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
@@ -213,10 +216,11 @@ class CascadeEngine:
         if not text:
             return Translation(b"", None, 0)
         if self.dictate:
-            cleaned = clean(text, self.clean_mode, self.source)
-            self.last_original = cleaned.original
+            edit = self.intelligence.edit(text)
+            self.last_original = edit.original
+            self.last_engine = edit.engine
             elapsed = int((time.perf_counter() - started) * 1000)
-            return Translation(pcm16=b"", text=cleaned.cleaned, latency_ms=elapsed)
+            return Translation(pcm16=b"", text=edit.text, latency_ms=elapsed)
         translated = self._translate(text)
         if self.captions:
             elapsed = int((time.perf_counter() - started) * 1000)

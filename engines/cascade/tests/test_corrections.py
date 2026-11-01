@@ -28,7 +28,7 @@ class ModeTests(unittest.TestCase):
 class CorrectionTests(unittest.TestCase):
     def test_a_number_is_corrected(self):
         text = "Quero comprar 2 bilhetes para o cinema, quer dizer, 3 bilhetes para o cinema."
-        self.assertEqual(clean(text).cleaned, "3 bilhetes para o cinema.")
+        self.assertEqual(clean(text).cleaned, "Quero comprar 3 bilhetes para o cinema.")
 
     def test_a_week_day_is_corrected_across_sentences(self):
         text = "Marca a reunião para terça-feira. Não, espera, para quarta-feira."
@@ -40,7 +40,7 @@ class CorrectionTests(unittest.TestCase):
 
     def test_a_destination_is_corrected(self):
         text = "Vou a Lisboa amanhã, ou melhor, ao Porto amanhã."
-        self.assertEqual(clean(text).cleaned, "ao Porto amanhã.")
+        self.assertEqual(clean(text).cleaned, "Vou ao Porto amanhã.")
 
     def test_a_correction_is_recorded_as_a_change(self):
         result = clean("Marca para terça. Não, espera, para quarta.")
