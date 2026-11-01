@@ -5,6 +5,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 
 from . import credentials
 from .corrections import CLEAN_MODES, clean
@@ -91,6 +92,7 @@ class Settings:
     allow_cloud: bool = False
     provider: str = ""
     model: str = ""
+    base_url: str = ""
     local_url: str = ""
     local_model: str = ""
     timeout: float = 20.0
@@ -139,8 +141,58 @@ def settings_from_environment(clean: str = "light") -> Settings:
         allow_cloud=os.environ.get("PARLO_INTELLIGENCE_CLOUD") == "1",
         provider=provider,
         model=os.environ.get("PARLO_INTELLIGENCE_MODEL", "").strip(),
+        base_url=os.environ.get("PARLO_INTELLIGENCE_BASE_URL", "").strip(),
         local_url=os.environ.get("PARLO_INTELLIGENCE_LOCAL_URL", "").strip(),
         local_model=os.environ.get("PARLO_INTELLIGENCE_LOCAL_MODEL", "").strip(),
+    )
+
+
+def config_path() -> Path:
+    if configured := os.environ.get("PARLO_CONFIG"):
+        return Path(configured)
+    from .models import data_root
+
+    return data_root() / "config.json"
+
+
+def stored_settings() -> dict:
+    try:
+        payload = json.loads(config_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    section = payload.get("intelligence") if isinstance(payload, dict) else None
+    return section if isinstance(section, dict) else {}
+
+
+def _value(stored: dict, key: str, variable: str, default: str) -> str:
+    from_environment = os.environ.get(variable, "").strip()
+    if from_environment:
+        return from_environment
+    saved = stored.get(key)
+    return saved.strip() if isinstance(saved, str) and saved.strip() else default
+
+
+def settings_from_config(default_clean: str = "light") -> Settings:
+    stored = stored_settings()
+    mode = _value(stored, "mode", "PARLO_INTELLIGENCE_MODE", "auto").lower()
+    if mode not in MODES:
+        mode = "auto"
+    clean_mode = _value(stored, "clean", "PARLO_CASCADE_CLEAN", default_clean).lower()
+    if clean_mode not in CLEAN_MODES:
+        clean_mode = default_clean if default_clean in CLEAN_MODES else "light"
+    provider = _value(stored, "provider", "PARLO_INTELLIGENCE_PROVIDER", "").lower()
+    if provider not in PROVIDERS:
+        provider = ""
+    return Settings(
+        mode=mode,
+        clean=clean_mode,
+        allow_cloud=stored.get("allow_cloud") is True
+        or os.environ.get("PARLO_INTELLIGENCE_CLOUD") == "1",
+        provider=provider,
+        model=_value(stored, "model", "PARLO_INTELLIGENCE_MODEL", ""),
+        base_url=_value(stored, "base_url", "PARLO_INTELLIGENCE_BASE_URL", ""),
+        local_url=_value(stored, "local_url", "PARLO_INTELLIGENCE_LOCAL_URL", ""),
+        local_model=_value(stored, "local_model", "PARLO_INTELLIGENCE_LOCAL_MODEL", ""),
     )
 
 
@@ -169,6 +221,8 @@ def choose(settings: Settings, key_present: bool) -> Route:
             return Route(DETERMINISTIC, reason="cloud processing is not allowed")
         if not settings.provider:
             return Route(DETERMINISTIC, reason="no cloud provider is configured")
+        if settings.provider == "compatible" and not settings.base_url:
+            return Route(DETERMINISTIC, reason="the compatible provider needs a base URL")
         if not key_present:
             return Route(DETERMINISTIC, reason=f"no API key stored for {settings.provider}")
         model = settings.model or PROVIDERS[settings.provider].models[0]
@@ -298,7 +352,7 @@ class Intelligence:
 
 
 def url_from_settings(settings: Settings) -> str:
-    base = settings.local_url.rstrip("/")
+    base = settings.base_url.rstrip("/")
     if not base:
         raise IntelligenceError("the compatible provider needs a base URL")
     return f"{base}/chat/completions"

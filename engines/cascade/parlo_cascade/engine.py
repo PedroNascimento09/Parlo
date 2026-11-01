@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .corrections import CLEAN_MODES, clean
-from .intelligence import Intelligence, settings_from_environment
+from .intelligence import Intelligence, settings_from_config
 from .models import models_dir
 from .streaming import StreamingSession, TextEvent
 from .tts import PiperVoice, VoiceUnavailable
@@ -129,7 +129,7 @@ class CascadeEngine:
             )
         self.last_original = ""
         self.last_engine = ""
-        self.intelligence = Intelligence(settings_from_environment(self.clean_mode), source)
+        self.intelligence = Intelligence(settings_from_config(self.clean_mode), source)
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
@@ -216,6 +216,9 @@ class CascadeEngine:
         if not text:
             return Translation(b"", None, 0)
         if self.dictate:
+            self.intelligence = Intelligence(
+                settings_from_config(self.clean_mode), self.source
+            )
             edit = self.intelligence.edit(text)
             self.last_original = edit.original
             self.last_engine = edit.engine

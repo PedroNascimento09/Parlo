@@ -16,9 +16,17 @@ def download_models() -> int:
     return module.main([])
 
 
+def intelligence_admin() -> int:
+    from parlo_cascade import admin
+
+    return admin.main()
+
+
 def main() -> int:
     if "--download-models" in sys.argv:
         return download_models()
+    if "--intelligence" in sys.argv:
+        return intelligence_admin()
     import serve
 
     return serve.main()
