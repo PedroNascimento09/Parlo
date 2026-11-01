@@ -11,8 +11,8 @@
 <p align="center">
   <a href="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml/badge.svg"></a>
   <img alt="Latest release" src="https://img.shields.io/github/v/release/PedroNascimento09/Parlo?style=flat-square&color=b03c1e">
-  <img alt="Downloads" src="https://img.shields.io/github/downloads/PedroNascimento09/Parlo/total?style=flat-square">
   <img alt="Licence" src="https://img.shields.io/badge/licence-Apache--2.0-1e4f4a?style=flat-square">
+  <img alt="Platforms" src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-15120f?style=flat-square">
 </p>
 
 You press one shortcut, speak, and the sentence appears in the field you were already in — typed, not pasted, because Parlo remembers which window had the focus. What gets written is what you meant, not what you said: a correction after "I mean" replaces the words it corrects, hesitations and false starts disappear, and the sentence you actually spoke is kept beside the result.
