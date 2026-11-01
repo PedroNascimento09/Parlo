@@ -21,8 +21,12 @@ Cada release é instalável, útil por si só e medida. Os números de versão s
 | Seguinte | Modelos | Instalar, trocar e remover modelos com licença e hash visíveis | G-Models |
 | Seguinte | Automático | Auto Select e fallback a funcionar em todas as tarefas | G-Select |
 | Seguinte | Reuniões Lite | Importar gravação e obter transcrição com falantes | G-Meeting-Lite |
-| Depois | Live | Conversa bidirecional com voz | G-Live |
+| Depois | Live | Conversa bidirecional traduzida na voz de cada participante, dentro das aplicações de comunicação que o utilizador já usa | G-Live |
 | Depois | Plataforma | API estável, SDK e plugins | G-Platform |
+
+O Live é o objetivo central do produto e, por isso, não cabe numa única release. Entra em três passos com gates separados: legendas traduzidas durante a chamada; voz traduzida num sentido, na voz autorizada de quem falou; e conversa bidirecional entre duas pessoas, cada uma a ouvir a voz da outra na sua língua. O primeiro passo não depende de clonagem e por isso não fica preso a ela; os outros dois dependem das fases 3, 4 e 8.
+
+G-Live exige: duas pessoas em chamadas reais, uma delas em português europeu; identidade vocal medida e publicada por par; encaminhamento de áudio verificado na aplicação usada, com a combinação de aplicação, sistema operativo e dispositivo virtual registada; P50 e P95 por sentido; sessão de 30 minutos sem degradação; e recusa explícita de troca silenciosa de voz.
 
 Regra: as releases só avançam quando os gates fecham. Não há calendário neste documento, e uma release pode demorar o tempo que o gate exigir.
 
@@ -42,6 +46,9 @@ O consentimento e a transparência não são uma fase final. Entram com a primei
 | 8 | Auto Select e fallback | Cadeias da secção 36 aplicadas, com aviso e registo |
 | 9 | Benchmarks internos | Corpus versionado, execução reproduzível e resultados publicados com condições |
 | 10 | Documentação e transparência | Privacidade, licenças, voz, modelos e limitações publicados e coerentes com o código |
+| 11 | Live com legendas | Participantes leem a tradução na língua de destino durante a chamada, sem síntese | Duas pessoas em chamada real, latência de legenda com P95 medido e falante atribuído |
+| 12 | Live com voz num sentido | Um participante ouve a tradução na voz autorizada do outro | Identidade medida no par, encaminhamento verificado na aplicação usada e registado, sem troca silenciosa de voz |
+| 13 | Live bidirecional | Dois participantes conversam, cada um na sua língua e com a voz do outro | Sessão de 30 minutos sem degradação, interrupções tratadas, P50 e P95 publicados por sentido e por hardware |
 
 As fases 1 a 3 têm precedência. A clonagem antes da voz neutra é ordem de produto, não preferência: sem perfil de voz e sem tradução fiável, a clonagem amplifica um erro em vez de criar valor.
 

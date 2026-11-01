@@ -139,7 +139,74 @@ Três entregas distintas, com dependências próprias. Durante uma reunião, o P
 | Entrega | O que faz | Dependências | Estado |
 |---|---|---|---|
 | Meeting Lite | Importar gravação e produzir transcrição com timestamps, falantes corrigíveis e exportação | Reconhecimento, diarização offline, modelo de dados | Planeado |
-| Meeting Live | Transcrever em direto com microfone e áudio do sistema | Captura multifonte, diarização, avisos, estabilidade | Planeado |
+| Meeting Live | Transcrever em direto com microfone e áudio do sistema, e traduzir a conversa na voz de cada participante (66.1 a 66.3) | Captura multifonte, encaminhamento de áudio, clonagem, diarização, avisos, estabilidade | Planeado |
 | Meeting Chat | Perguntar a reuniões autorizadas com citações e timestamps | Indexação local, abstenção, proveniência | Planeado |
 
 Requisitos transversais: diarização sem identificação nominal automática; associação falante-pessoa apenas manual; resumo e tarefas derivados da transcrição com citação; exportação em Markdown, SRT, VTT e JSON; e eliminação que remove áudio, transcrição, índices e caches. Nenhuma análise pós-reunião pode bloquear a transcrição em direto.
+
+### 66.1 Parlo Live: conversa entre duas línguas, com a voz de quem falou
+
+O Parlo Live não é tradução com voz de locutor. É uma conversa. Duas pessoas falam línguas diferentes, cada uma ouve a outra na sua própria língua, e o áudio que ouve mantém as características vocais de quem falou. O ciclo corre nos dois sentidos, sem que nenhum dos participantes mude de aplicação, de hábitos ou de vocabulário técnico.
+
+| Passo | O que acontece | Falha possível | O que o utilizador vê |
+|---|---|---|---|
+| 1 | A pessoa A fala português europeu | — | «A ouvir», com o nome do falante |
+| 2 | O áudio entra pelo microfone e, quando a chamada é numa aplicação externa, também pelo áudio dessa aplicação | Dispositivo ausente ou ocupado | «Microfone indisponível» e o que falta |
+| 3 | Reconhecimento incremental, com texto parcial e texto estável | Motor lento ou a saturar | «A reconhecer», com o atraso real |
+| 4 | Tradução de PT para a língua de B | Par não validado | Aviso de par não validado, antes de falar |
+| 5 | Síntese na voz de A, a partir do perfil autorizado | Identidade não medida ou perfil incompatível com o motor | Diz que a voz se perde e oferece voz neutra identificada |
+| 6 | O áudio traduzido chega a B pelo dispositivo de saída ou pelo microfone virtual que a aplicação de chamada usa | Encaminhamento não configurado | Instrução de configuração e legendas como alternativa |
+| 7 | B responde na língua dele e o ciclo repete-se em sentido inverso | — | Duas vozes, dois idiomas, um só registo de sessão |
+
+Requisitos que esta secção fixa:
+
+- A preservação da identidade vocal é requisito funcional do Live, não um extra decorativo. Timbre e características individuais primeiro; naturalidade, entoação e ritmo a seguir; pronúncia natural na língua de destino como condição de inteligibilidade, não de parecença.
+- Cada participante tem idioma, perfil e autorização próprios. Uma sessão com duas pessoas mantém dois perfis, dois sentidos de tradução e duas seleções de modelos. Não existe «o modelo do Live»: existe uma decisão por sentido, tarefa e dispositivo, tomada pelo PIMO.
+- A autorização pertence à pessoa cuja voz é usada. O participante que ouve não autoriza a voz do outro, do mesmo modo que não pode criar o perfil por ele.
+- Se a identidade não puder ser mantida com qualidade suficiente, o Parlo diz isso antes de emitir e apresenta a alternativa como voz neutra, nunca como se fosse a voz original. Não há substituição silenciosa, nem no meio de uma conversa, nem no fim de uma sessão.
+- A conversa é simétrica por omissão: A→B e B→A correm com o mesmo desenho, ainda que com motores e estados de validação diferentes.
+- Nenhuma promessa de conversa fluida sobrevive à custa de inteligibilidade: quando o atraso acumula, o Live encurta unidades, passa a legendas ou cala a voz, e di-lo.
+
+### 66.2 Aplicações de comunicação e encaminhamento de áudio
+
+O objetivo é que cada pessoa continue a usar a aplicação que já usa. O Parlo não pede que se mude de aplicação para falar, e por isso o áudio traduzido tem de aparecer à aplicação de chamada como se fosse um microfone.
+
+| Aplicação | O que o Parlo tem de captar | Como o áudio traduzido entra | Estado |
+|---|---|---|---|
+| Zoom | Voz dos participantes, separada da voz sintetizada | Microfone virtual escolhido nas definições da aplicação | Não testado |
+| Microsoft Teams | Idem | Idem | Não testado |
+| Google Meet | Idem, com a limitação de correr no navegador | Idem, quando o navegador aceitar o dispositivo virtual | Não testado |
+| Discord | Idem | Idem | Não testado |
+| WhatsApp para computador | Idem | Idem | Não testado |
+| Qualquer aplicação com microfone de entrada | Áudio do sistema | Mesmo mecanismo | Objetivo de compatibilidade, não garantia |
+
+O mesmo mecanismo, três sistemas operativos com dificuldades diferentes:
+
+| Sistema | Captura do áudio de outra aplicação | Injeção no microfone da aplicação | Observação |
+|---|---|---|---|
+| Windows | Captura do áudio do sistema; captura por processo nas versões que a expõem | Requer dispositivo de áudio virtual | Um driver de kernel altera o sistema; instala-se só com consentimento explícito |
+| macOS | Captura do áudio do sistema, dependente da versão e de permissão de gravação de ecrã ou equivalente | Requer extensão de áudio de terceiros | A extensão tem licença e instalador próprios, fora do Parlo |
+| Linux | Nativa em PipeWire, com sink virtual sem driver | Nativa em PipeWire | O caminho mais simples dos três |
+
+Regras de encaminhamento:
+
+- Nenhuma aplicação é declarada compatível sem teste registado, com versão da aplicação, do sistema operativo e do dispositivo virtual. Enquanto não houver teste, a interface diz «não testado com esta aplicação» e nunca «funciona com o Zoom».
+- Capturar áudio de outra aplicação exige que o sistema o permita. Quando a permissão é recusada, o Live continua com microfone e diz o que perdeu.
+- Instalar um driver ou uma extensão de áudio é uma alteração ao sistema, não uma preferência da aplicação: exige consentimento explícito, mostra o que vai ser instalado e a licença, e a recusa não impede o resto do Parlo de funcionar.
+- Sem encaminhamento disponível, o Live degrada para legendas traduzidas, que não precisam de dispositivo virtual e continuam a resolver o essencial de uma reunião.
+- A voz do próprio utilizador é a primeira a ser filtrada da captura, para que o Parlo não se traduza a si mesmo em ciclo.
+
+### 66.3 Duas vozes na mesma sessão
+
+| Elemento | Regra |
+|---|---|
+| Perfil por participante | O perfil de A nunca é usado para falar como B |
+| Sentido | Cada direção tem o seu par de línguas e o seu estado de validação, anunciado antes de falar |
+| Modelos | Os dois sentidos podem usar motores diferentes; o que não pode é um sentido usar um par não validado sem o dizer |
+| Troca de motor | Só em fronteira de segmento, nunca a meio de uma frase |
+| Perfil incompatível com o motor novo | Mantém o motor atual ou deriva nova representação a partir da amostra autorizada; nunca reutiliza a representação de outro motor |
+| Sobreposição de vozes | Meia-duplex por omissão; quando os dois falam, a tradução entra em fila e a mais antiga é descartada em vez de emitida tarde |
+| Atraso | Medido por sentido, com P50 e P95 publicados; um sentido lento não se esconde na média do outro |
+| Fim da sessão | Perfis, amostras e representações ficam como estavam; a sessão não cria dados novos sem pedido |
+
+É esta funcionalidade que dá sentido à política Voice Clone First. Sem voz própria, o Live seria uma chamada com um intérprete automático anónimo: útil, e ainda assim outra pessoa a falar por si.

@@ -75,7 +75,7 @@ A voz é parte do argumento, não um detalhe de acabamento. Uma tradução falad
 | Parlo Dictate | Ditado local com escrita noutra língua | Parcial: motor e CLI existem, experiência de overlay por fechar |
 | Parlo Captions | Legendas do microfone e do áudio do sistema | Parcial: existe modo de legendas na cascata, sem captura de sistema |
 | Parlo Voice | Leitura de texto e de traduções | Parcial: Piper externo opcional; clonagem não existe |
-| Parlo Live | Interpretação bidirecional falada | Planeado |
+| Parlo Live | Interpretação bidirecional falada na voz de cada participante | Planeado, objetivo central |
 | Parlo Meeting | Reuniões com transcrição e chat | Planeado |
 | Parlo Dub | Dobragem de conteúdo autorizado | Experimental, fora do caminho crítico |
 | Parlo CLI e API | Integração local | CLI implementada; API local estável planeada |

@@ -2,7 +2,7 @@
 
 No dates. A phase ends when its exit criterion is met, not when the code is written. If a criterion fails, the phase does not happen.
 
-The milestones below come from `Parlo_Plano_Mestre_v10.docx`: section 15 for the sequence, section 14.4 for what each gate measures, and sections 39 to 48 for the reported state, the committed scope, the hardware profiles, the revised model catalogue and the decisions still open. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries. Section 46 of the plan states the same rule, so plan and repository no longer disagree about numbering.
+The milestones below come from `Parlo_Plano_Mestre_v12_3_FINAL.docx`: section 68 for the sequence, section 69 for the phases and the exit criteria, sections 66.1 to 66.3 for Parlo Live, and sections 15 to 20 for the reported state, the model catalogue and the decisions still open. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries. Section 46 of the plan states the same rule, so plan and repository no longer disagree about numbering.
 
 ## The committed scope
 
@@ -10,7 +10,9 @@ The plan narrows what is promised to what one person can carry: **dictating and 
 
 - P0, in order: v0.3 Ouvir, v0.4 Ditar, v0.5 Escrever noutra língua.
 - P1, re-evaluated after the v0.5 gate from real use: captions, voice, the remaining surfaces.
-- Exploratory, with no calendar: full Meeting with diarisation and search, Live with a driver, advanced dubbing, team features.
+- Exploratory, with no calendar: full Meeting with diarisation and search, advanced dubbing, team features.
+
+Parlo Live is not on that list. It is the objective the plan is organised around (sections 66.1 to 66.3): two people in different languages, each hearing the other translated in the speaker's own voice, inside the call application they already use. It arrives in three steps and only the first is close: translated captions (v0.6), then one-way voice through a virtual microphone (v0.9), then two-way conversation (v1.0). Forward engineering decisions follow that order, and no other feature is allowed to crowd it out.
 
 Dubbing is published and is not removed for being early. It is an anticipated capability with its own support, limits and maintenance, and it does not widen the main product now.
 
@@ -35,7 +37,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead; system audio not |
 | v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks and a model panel, no catalogue, no rollback |
 | v0.8 Voz | Read text in a neutral voice, read translations aloud | — | Partial: a voice in the cascade, no picker, no blind MOS; not an immediate commitment |
-| v0.9 Live | Spoken two-way conversation through a virtual microphone | G1 + G3 | Not started; no virtual microphone, no echo cancellation; not an immediate commitment |
+| v0.9 Live | Spoken two-way conversation through a virtual microphone, in the speaker's own voice | G1 + G3 | Not started; no virtual microphone, no echo cancellation. The objective the plan is built towards, sequenced after captions and voice |
 | v1.0 Estável | Dictate, Captions, Live and Models stable, PT↔EN validated, signed installers | G4 | Not started |
 | v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Not started |
 | v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Not started |

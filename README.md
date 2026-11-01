@@ -16,6 +16,8 @@
 
 > **Status: v0.1.6, early prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, installed separately as an optional adapter and never shipped in a release archive, so the engine program itself stays permissive; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. The interface opens in its own window (`parlo-app`, a thin native shell around the page the binary serves on loopback), and voice cloning and a virtual microphone do not exist yet. The cascade is chosen with `--engine cascade` on the command line or is the default in the app.
 
+**Where this is going.** The objective is Parlo Live: two people talking in their own languages, each hearing the other translated, in the speaker's own voice, inside the call application they already use. Translated captions, dubbing and the neutral voice are the steps that exist today, and none of them replaces that objective. See `docs/plan/v12_3/35_parte_vii_ix.md`, sections 66.1 to 66.3, for what it requires and what is still unknown.
+
 Milestones in [ROADMAP.md](ROADMAP.md) are roadmap labels, not version numbers: the version advances one step from the last published tag, so a milestone can close inside any of them. Only tagged releases reach users, **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
 
 ---

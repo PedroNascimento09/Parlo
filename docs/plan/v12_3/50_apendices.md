@@ -105,6 +105,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | Licenças | Sugestão de que a separação resolve a GPL | Fronteira técnica declarada e questão jurídica isolada |
 | Roadmap | Versões nomeadas com marcos e datas implícitas | Gates e fases por dependência, sem calendário |
 | Benchmarks | Dispersos | Secção única com métricas, gates e regra de publicação |
+| Parlo Live | Uma entrega de reunião entre três, sem requisito de voz | Objetivo central do produto, com legendas, voz num sentido e voz bidirecional como etapas; encaminhamento de áudio por aplicação declarado não testado |
 
 ### D.2 Decisões técnicas corrigidas pela auditoria
 
@@ -158,6 +159,10 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 - As decisões finais do autor aparecem nas secções 44, 46, 53, 58, 70, 77 e 80 e não contradizem o PIMO nem a biblioteca.
 - O consentimento não é apenas política: a secção 5 descreve os ecrãs, o registo e a revogação, e a secção 63 a marcação por formato.
 - A Parte VII não duplica o Model Hub nem o PIMO: nomeia módulos com fronteiras e diz qual decide o quê.
+
+### D.5 Revisão de 1 de novembro de 2026: Parlo Live como objetivo central
+
+O Live deixou de ser a última linha do roadmap para passar a ser a razão de ser da política de voz. As secções 66.1 a 66.3 fixam o ciclo bidirecional com preservação de identidade, o encaminhamento de áudio por aplicação de comunicação e as regras de uma sessão com dois perfis. O roadmap da secção 68 ganha a descrição dos três passos e o conteúdo de G-Live; a tabela de fases ganha as fases 11 a 13, sem datas. Nenhuma aplicação de comunicação é declarada compatível: todas entram como não testadas até existir medição registada, e a instalação de um driver ou extensão de áudio passa a exigir consentimento explícito.
 
 ## E. Mapa das versões
 
