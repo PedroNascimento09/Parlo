@@ -964,6 +964,8 @@ welcomeInstall.addEventListener("click", () => downloadModels());
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 const settingsWrite = document.getElementById("settings-write");
+const settingsShortcut = document.getElementById("settings-shortcut");
+const settingsShortcutSave = document.getElementById("settings-shortcut-save");
 const meetingTitle = document.getElementById("meeting-title");
 const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
@@ -997,6 +999,7 @@ function reflectSettings(values) {
   settingsTo.value = values.to || "en";
   settingsStt.value = values.stt || "parakeet";
   settingsWrite.value = values.write || "";
+  settingsShortcut.value = values.shortcut || "Ctrl+Alt+D";
   savedSettings = {
     from: settingsFrom.value,
     to: settingsTo.value,
@@ -1009,6 +1012,28 @@ function reflectSettings(values) {
     : pair + ", dictation keeps the language spoken";
   refreshApply();
 }
+
+async function saveShortcut() {
+  const wanted = settingsShortcut.value.trim();
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ shortcut: wanted }),
+    });
+    const answer = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      settingsNote.textContent = answer.error || "That shortcut cannot be used.";
+      return;
+    }
+    settingsShortcut.value = answer.shortcut || wanted;
+    settingsNote.textContent = "Saved. Restart Parlo so the new shortcut is registered.";
+  } catch (failure) {
+    settingsNote.textContent = "The shortcut could not be saved.";
+  }
+}
+
+settingsShortcutSave.addEventListener("click", () => saveShortcut());
 
 async function loadSettings() {
   try {

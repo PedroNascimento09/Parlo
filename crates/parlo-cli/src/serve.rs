@@ -54,6 +54,8 @@ struct Settings {
     to: Option<String>,
     #[serde(default)]
     write: Option<String>,
+    #[serde(default)]
+    shortcut: Option<String>,
 }
 
 pub struct Session {
@@ -481,6 +483,39 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
+        if let Some(text) = requested.shortcut.as_deref() {
+            let canonical = match parlo_core::Shortcut::parse(text) {
+                Ok(shortcut) => shortcut.text(),
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+            };
+            let mut config = crate::config::load();
+            config.shortcut = canonical.clone();
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+            session.shortcut = canonical;
+            let only_shortcut = requested.engine.is_none()
+                && requested.stt.is_none()
+                && requested.from.is_none()
+                && requested.to.is_none()
+                && requested.write.is_none();
+            if only_shortcut {
+                return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
+            }
+        }
+
         let engine = requested.engine.unwrap_or_else(|| session.engine.clone());
         let stt = requested.stt.unwrap_or_else(|| session.stt.clone());
         let from = requested
