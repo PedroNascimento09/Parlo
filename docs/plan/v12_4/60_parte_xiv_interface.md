@@ -603,3 +603,56 @@ Regra de honestidade por plataforma: um ecrã que não funciona numa plataforma 
 8. Nenhum ecrã mostra uma métrica que não ajude a decisão imediata.
 9. Nenhum estado fica sem saída: erro tem sempre uma ação e um caminho alternativo identificado.
 10. O que está por validar aparece marcado como tal na interface, com a palavra `candidate` ou `experimental`, e nunca com um selo de qualidade.
+
+## 102. Presença única e hierarquia de superfícies
+
+O Parlo é **uma experiência contextual, não um conjunto de ferramentas independentes**. Internamente há componentes separados; para o utilizador existe uma presença, uma superfície por tarefa e um centro de gestão. Nenhum ecrã pode apresentar-se como um produto autónomo com marca própria.
+
+### 102.1. As cinco camadas
+
+| Camada | Superfície | O que mostra | O que nunca mostra |
+|---|---|---|---|
+| Presença | Ícone na área de notificação e respetivo menu | Dictate, Live, Open Parlo, Settings, Quit | Modelos, estado técnico, percentagens |
+| Superfície contextual | Ilha de 560 × 96 | Estado, nível, texto reconhecido | Configuração, escolha de modelo, micro­fone |
+| Superfície Live | Painel arrastável | Direção, quem fala, duas línguas, identidade vocal, latência | Parâmetros de inferência, downloads, caminhos |
+| Hub | Janela principal, cinco grupos | Configuração, perfis, histórico, biblioteca, privacidade | Nada de gestão de modelos em primeiro plano |
+| Avançado / Model Hub | Área dentro do Hub, entrada explícita | Manifestos, licenças, versões, espaço, importação | Acesso por omissão, sugestões automáticas |
+
+### 102.2. Presença
+
+O ícone vive na área de notificação, com uma dica «Parlo» e um ponto de estado na própria imagem quando há uma sessão activa. O clique esquerdo alterna a ilha de ditado; o menu contém uma entrada por camada, para que nenhuma ação dependa de memória de atalhos. O atalho global continua a existir como acelerador: é configurável, pode ser desligado sem retirar capacidade ao produto, e o conflito com o sistema é detetado ao gravar.
+
+Regra: **click first, shortcut later.** Qualquer ação do menu tem de estar também alcançável por clique, e qualquer atalho tem de estar escrito ao lado da ação que acelera.
+
+### 102.3. Superfície contextual
+
+A ilha não tem botões, não abre janelas e não pede decisões. Reutiliza a configuração conhecida: idioma falado, reconhecedor, destino e perfil de voz são os que estiverem definidos, sem nova pergunta. No início da escuta pede ao núcleo o **destino**: a janela que tem o foco naquele instante. No fim, escreve nessa janela apenas se for a mesma que ainda está à frente; caso contrário, deixa o texto no clipboard e diz por palavras a razão. Nunca substitui a voz por outra sem o dizer.
+
+### 102.4. Escada de estados
+
+| Situação | Superfície | Saída |
+|---|---|---|
+| Nada a fazer | só o ícone | clique, menu |
+| A ditar | ilha, `LISTENING` | clique, atalho, `Esc` |
+| A escrever | ilha, `WRITING` | automática |
+| Entregue | ilha, `INSERTED` ou `COPIED`, texto numa linha | fecha em 4 s |
+| Falhou | ilha, `FAILED` com a razão | novo clique, menu |
+| Em chamada | superfície Live | Pause, Stop |
+| A gerir | Hub | fechar |
+
+### 102.5. O que o Hub conserva
+
+O Hub mantém tudo o que a experiência diária não mostra: configuração inicial, definições por grupo, perfis de voz e consentimento, histórico, integrações, diagnóstico, gestão de modelos e licenças. Mover uma capacidade para fora do fluxo diário não pode torná-la inalcançável; a regra inversa também vale — o Hub nunca é um passo obrigatório de uma tarefa.
+
+### 102.6. Critério de sucesso da experiência
+
+A experiência considera-se correta quando, depois de uma configuração inicial única, estes quatro percursos não exigem qualquer dúvida:
+
+| Objetivo | Percurso | Não pode acontecer |
+|---|---|---|
+| Escrever | encontrar Parlo → ditar → texto no campo | perguntar onde inserir, abrir o Hub, pedir modelo |
+| Falar com alguém noutra língua | abrir Parlo → Live → conversar | configurar de novo o que já era conhecido |
+| Alterar alguma coisa | abrir o Hub → grupo → alterar | procurar em menus técnicos |
+| Mexer nos modelos | entrar conscientemente em Advanced | ver modelos no fluxo normal |
+
+Se o utilizador tiver de perguntar «qual era o atalho?», «qual das aplicações do Parlo abro?» ou «onde está esta configuração?», a interface falhou, mesmo que todos os ecrãs existam.

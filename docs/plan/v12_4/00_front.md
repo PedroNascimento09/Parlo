@@ -13,7 +13,7 @@ A Parte XIV é a especificação de interface. As Partes I a XIII não perdem va
 
 O documento separa três coisas que a versão anterior misturava em alguns pontos: o que está implementado e medido, o que está planeado com critérios de conclusão, e o que está em avaliação sem resultado. Uma capacidade descrita neste plano não é uma capacidade existente; o estado de cada uma está na secção 1, na matriz da secção 20 e no mapa de versões do Apêndice E.
 
-A numeração é contínua de 1 a 101, agrupada em catorze partes, sem títulos duplicados e sem capítulos órfãos. A Parte XIV, nova nesta versão, é a especificação de interface: identidade, tokens, componentes, estados, navegação, ecrã a ecrã, wireframes, onboarding, responsividade e acessibilidade. A Parte VI é a especificação do orquestrador de modelos e a Parte VII a da biblioteca modular, que mantém a aplicação leve enquanto o catálogo cresce. Cada parte pode ser lida isoladamente, mas as decisões das Partes XII, XIII e XIV prevalecem sobre descrições genéricas das partes anteriores.
+A numeração é contínua de 1 a 102, agrupada em catorze partes, sem títulos duplicados e sem capítulos órfãos. A Parte XIV, nova nesta versão, é a especificação de interface: identidade, tokens, componentes, estados, navegação, ecrã a ecrã, wireframes, onboarding, responsividade, acessibilidade e a presença única que organiza todas as superfícies. A Parte VI é a especificação do orquestrador de modelos e a Parte VII a da biblioteca modular, que mantém a aplicação leve enquanto o catálogo cresce. Cada parte pode ser lida isoladamente, mas as decisões das Partes XII, XIII e XIV prevalecem sobre descrições genéricas das partes anteriores.
 
 ## Regra de evidência
 
@@ -37,6 +37,7 @@ A numeração é contínua de 1 a 101, agrupada em catorze partes, sem títulos 
 - **Onboarding em cinco passos**, com um caminho de saída em cada um e sem conta, email ou telefone.
 - **Regras por resolução, escala de sistema, vários monitores e plataforma**, com o que não está prometido declarado em vez de escondido.
 - **Acessibilidade com números:** contrastes mínimos, foco visível, ordem de tabulação, leitores de ecrã, movimento reduzido e alto contraste.
+- **Princípio de presença única, secção 102:** Parlo é uma experiência contextual e não um conjunto de ferramentas; a hierarquia é Presença (área de notificação) → superfície contextual → superfície Live → Hub → Avançado, com o atalho como acelerador e o clique como caminho principal.
 - **Estado honesto do que já existe:** a janela nativa com a página local, o cartão de gravação, as legendas, a ilha de ditado com atalho global em Windows, o painel de voz e o painel de modelos estão implementados; a navegação por barra lateral, o Home, o Live expandido, o Meeting e o Model Hub como biblioteca ficam especificados e não são apresentados como existentes.
 
 ## O que muda na v12.3
@@ -182,6 +183,7 @@ PARTE XIV · INTERFACE, IDENTIDADE VISUAL E EXPERIÊNCIA
 99. Responsividade, monitores e plataformas
 100. Acessibilidade visual e de teclado
 101. Regras de produto que a interface não pode violar
+102. Presença única e hierarquia de superfícies
 
 APÊNDICES
 A. Factos por componente

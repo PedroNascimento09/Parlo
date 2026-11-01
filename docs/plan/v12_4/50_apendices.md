@@ -184,9 +184,14 @@ A v12.4 acrescenta a Parte XIV (secções 83 a 101) e não altera nenhum requisi
 
 O que fica por fechar e não foi inventado nesta revisão: medição de usabilidade com pessoas reais, o comportamento do encaminhamento de áudio por aplicação de chamada, o atalho global em macOS e Linux, a inserção no campo activo, e a verificação de contraste por ferramenta automatizada em vez de cálculo manual.
 
+### D.6.1 Presença única acrescentada à Parte XIV
+
+Uma revisão da mesma data acrescentou a secção 102: as cinco camadas (Presença, contexto, Live, Hub, avançado), o papel do ícone na área de notificação, a regra «click first, shortcut later», a escada de estados, o que o Hub conserva e o critério de sucesso em quatro percursos. A especificação deixa de tratar a janela principal como entrada e passa a tratá-la como centro de gestão, sem retirar nenhuma capacidade a nenhum ecrã das secções 89 a 97.
+
 ### D.7 Verificação de coerência desta edição
 
-- Numeração contínua de 1 a 101, em catorze partes, sem títulos repetidos e sem capítulos órfãos.
+- Numeração contínua de 1 a 102, em catorze partes, sem títulos repetidos e sem capítulos órfãos.
+- A secção 102 não contradiz as secções 88 a 97: a navegação por grupos mantém-se no Hub, e nenhuma capacidade foi movida de um ecrã para outro sem o nomear.
 - A Parte XIV não contradiz as Partes II, V, IX e XII: a voz, as licenças, a privacidade e a transparência mantêm a mesma redação de fundo.
 - A secção 12 aponta para a Parte XIV e a Parte XIV remete para a secção 12, sem duplicar a tabela de superfícies.
 - A fase 14 da secção 69 exige os ecrãs das secções 89 a 97 e os tokens da secção 85, e não cria um gate concorrente com G0, G1 ou G4.
@@ -208,6 +213,7 @@ O que fica por fechar e não foi inventado nesta revisão: medição de usabilid
 | v12.3 (revisão 3) | Decisões finais do autor: orçamento de 100 MB, catálogo no repositório principal com Ed25519, Piper e Argos fora do núcleo, corpus CC0-1.0, latência em P50 e P95 por perfil, checklist interna de conformidade em vez de parecer jurídico |
 | v12.3 (revisão 4) | Sistema de consentimento, avisos e transparência: ecrãs antes do perfil, origem declarada, registo por perfil, sete momentos de aviso, usos proibidos, etiqueta de síntese, proveniência no ficheiro, marca de água só quando verificada e revogação com eliminação |
 | v12.4 | Parte XIV: identidade visual, marca, design tokens com HEX e contrastes, dezasseis componentes, dez estados globais, navegação por cinco grupos, especificação de nove ecrãs, onze wireframes, mapa de fluxos, onboarding em cinco passos, responsividade, acessibilidade e fase 14 no roadmap |
+| v12.4 (revisão) | Presença única e hierarquia de superfícies na secção 102: ícone na área de notificação, clique antes de atalho, escada de estados, Hub como centro de gestão e critério de sucesso em quatro percursos |
 
 Versões do produto e versões do plano são coisas diferentes. A versão do produto avança a partir da última tag publicada; a do plano avança quando este documento é revisto.
 
