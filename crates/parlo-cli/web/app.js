@@ -1375,7 +1375,13 @@ function renderHistory(entries) {
       " → " +
       (LANGUAGE_NAMES[entry.to] || entry.to);
     const detail = document.createElement("dd");
-    detail.textContent = entry.translation || entry.text;
+    const reuse = document.createElement("button");
+    reuse.type = "button";
+    reuse.className = "swap";
+    reuse.textContent = entry.translation || entry.text;
+    reuse.title = "Copy this text again";
+    reuse.addEventListener("click", () => copyHistory(reuse.textContent));
+    detail.append(reuse);
     historyList.append(term, detail);
   }
   historyNote.textContent =
@@ -1383,6 +1389,15 @@ function renderHistory(entries) {
       ? "1 dictation kept on this computer."
       : entries.length + " dictations kept on this computer.";
   historyClear.hidden = false;
+}
+
+async function copyHistory(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    historyNote.textContent = "Copied to the clipboard. Paste it where you need it.";
+  } catch (failure) {
+    historyNote.textContent = "The clipboard refused the text. Select it here and copy by hand.";
+  }
 }
 
 async function clearHistory() {
