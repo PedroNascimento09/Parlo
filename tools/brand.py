@@ -138,6 +138,11 @@ def flow():
             draw = ImageDraw.Draw(image)
             draw.rectangle((0, 0, width, 6), fill=ACCENT)
             layout(draw, phase)
+            total = len(STEPS) * 6
+            filled = int(1140 * (phase * 6 + tick + 1) / total)
+            draw.rounded_rectangle((60, 228, 1200, 234), radius=3, fill=(236, 228, 218))
+            if filled > 8:
+                draw.rounded_rectangle((60, 228, 60 + filled, 234), radius=3, fill=ACCENT)
             text = CAPTIONS[phase]
             if phase == len(STEPS) - 1:
                 visible = max(1, round(len(text) * (tick + 1) / 6))

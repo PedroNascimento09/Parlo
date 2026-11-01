@@ -29,7 +29,7 @@ Ctrl+Alt+D  →  "Book a table for Friday, I mean, for Monday."
 
 | | |
 |---|---|
-| **Dictation anywhere** | `Ctrl+Alt+D` shows the island and starts listening; the text is typed into the window you came from, or copied when that window is gone. Windows today; macOS and Linux copy. |
+| **Dictation anywhere** | `Ctrl+Alt+D` shows the island and starts listening; the text is typed into the window you came from, or copied when that window is gone. Working on Windows; macOS and Linux build and translate, but the global shortcut is not there yet and the text goes to the clipboard. |
 | **The sentence you meant** | Self-corrections, hesitations, false starts and repetitions fixed on rules alone: **61.9 µs** per sentence, no model, no network, and the original kept beside it. |
 | **Cleanup your way** | *Rules only*, *a model on this machine*, *your cloud provider*, or *Automatic*. Cloud is never reached without an explicit switch and a stored key. |
 | **Your key, your vault** | OpenAI, Anthropic, Gemini and any OpenAI-compatible server. Keys go to DPAPI, the macOS keychain or the Linux secret service — never a config file, a log or an error message. |
