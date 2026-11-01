@@ -6,6 +6,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- A licence gate, `tools/licenses.py`, that reads the Rust closure from `cargo metadata`, the Python closure from the pinned requirements and the model catalogue, and fails when a licence is missing, denied, outside the allow list for that scope, or attached to an unpinned requirement.
+- `THIRD_PARTY_NOTICES.md` and a CycloneDX SBOM generated from the same inventory, both included in every release archive next to `LICENSE` and `NOTICE`.
+- `docs/MODEL_LICENSES.md`, `SUPPORT.md`, `GOVERNANCE.md` and a model catalogue at `catalog/models.json`, so each downloadable artefact carries its own licence instead of inheriting the one of the code.
 - Text states for streaming recognition: `partial`, `stable`, `final` and `corrected`, with stable words confirmed by local agreement between the last two hypotheses, a segment that closes after 0.45 s of silence, and the mode reported as `reprocess` rather than native streaming.
 - `parlo stream <file.wav>` prints those states as they arrive, over a new `stream` operation on the sidecar protocol.
 - `engines/cascade/scripts/stream_bench.py` and a 20 sentence European Portuguese corpus measure the first partial, the first stable words, the final text and the word error rate of each stage.
@@ -13,6 +16,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- Piper left the engine program: `parlo-engine` no longer bundles `piper`, `piper_phonemize` or the espeak-ng data, so the packaged engine carries no GPL code. The synthesiser is an optional adapter in `engines/tts-piper`, installed separately by the user and driven over JSON lines on a pipe; without it Parlo translates and recognises as before and says the voice is unavailable.
+- Engine requirements are pinned to exact versions, every commit in a pull request must carry a DCO sign-off, and the release workflow refuses to build while the licence gate reports an open issue.
 - On the European Portuguese voice the cascade reaches the first partial at 849 ms and the final text at 3.36 s, with 0.231 final word error rate for Parakeet and 0.279 for Whisper base, and 81% of the sentence confirmed before the segment closes. The Brazilian voice reading the same European sentences scored about 0.66 for both, so the corpus now uses the PT-PT voice.
 
 ## [0.1.7] - 2026-10-31

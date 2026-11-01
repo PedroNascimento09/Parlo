@@ -40,7 +40,7 @@ impl fmt::Display for Fidelity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum License {
     Mit,
-    MitGpl3,
+    MitOptionalGpl,
     CcByNcSa4,
     Proprietary,
 }
@@ -49,7 +49,7 @@ impl License {
     pub fn label(self) -> &'static str {
         match self {
             Self::Mit => "MIT",
-            Self::MitGpl3 => "MIT + GPL-3.0 + CC-BY",
+            Self::MitOptionalGpl => "MIT, optional GPL voice",
             Self::CcByNcSa4 => "CC BY-NC-SA 4.0",
             Self::Proprietary => "vendor terms",
         }
@@ -58,7 +58,7 @@ impl License {
     pub fn commercial_note(self) -> &'static str {
         match self {
             Self::Mit => "commercial use ok",
-            Self::MitGpl3 => "GPL TTS, CC-BY model",
+            Self::MitOptionalGpl => "MIT engine, GPL voice optional",
             Self::CcByNcSa4 => "non commercial",
             Self::Proprietary => "check vendor terms",
         }
@@ -87,7 +87,7 @@ pub const ENGINES: &[EngineInfo] = &[
             Fidelity::Approximate,
             Fidelity::Cloned,
         ],
-        license: License::MitGpl3,
+        license: License::MitOptionalGpl,
         hardware: "any recent CPU",
         requires_gpu: false,
         available: true,
@@ -269,8 +269,11 @@ mod tests {
         assert_eq!(License::Mit.commercial_note(), "commercial use ok");
         assert_eq!(License::CcByNcSa4.commercial_note(), "non commercial");
         assert_eq!(License::Proprietary.commercial_note(), "check vendor terms");
-        assert_eq!(License::MitGpl3.commercial_note(), "GPL TTS, CC-BY model");
-        assert_eq!(License::MitGpl3.label(), "MIT + GPL-3.0 + CC-BY");
+        assert_eq!(
+            License::MitOptionalGpl.commercial_note(),
+            "MIT engine, GPL voice optional"
+        );
+        assert_eq!(License::MitOptionalGpl.label(), "MIT, optional GPL voice");
     }
 
     #[test]

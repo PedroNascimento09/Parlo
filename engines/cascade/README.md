@@ -9,7 +9,7 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
 | Speech synthesis | Piper (`pt_BR-faber-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
 
-Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code stays MIT, and the command line program `parlo` is MIT on its own. The packaged engine, `parlo-engine`, contains Piper and the espeak-ng data and is therefore distributed under the GPL-3.0-or-later, with this repository as its corresponding source. [docs/LICENSES.md](../../docs/LICENSES.md) states the split.
+Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code stays MIT. The engine imports no Piper: synthesis is the optional adapter in [engines/tts-piper](../tts-piper), started as a separate process and driven over JSON lines, so `parlo-engine` contains no GPL code and the adapter is where the GPL applies. [docs/LICENSES.md](../../docs/LICENSES.md) states the split and its limits.
 
 A permissive synthesiser would let the whole distribution stay MIT. Kokoro (Apache-2.0) is the first candidate to evaluate.
 

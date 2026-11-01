@@ -26,7 +26,7 @@ Rules an adapter must follow:
 
 | Id | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| `cascade` | Voice, captions | Any modern CPU, GPU optional | MIT + GPL-3.0 TTS | Default, working for Portuguese and English |
+| `cascade` | Voice, captions | Any modern CPU, GPU optional | MIT, optional GPL voice | Default, working for Portuguese and English |
 | `echo` | Development only | Any | MIT | Tests and demos |
 | `hibiki` | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | `cloud` | Voice | Any | Vendor terms | Opt-in, off by default |
@@ -69,7 +69,7 @@ Two policies are enforced by tests:
 - The default engine requires no GPU and contains no non-commercial model.
 - A non-commercial or GPU-bound engine is never the default and is never bundled in the release archive.
 
-One honest exception, and it changed with the packaging: the default cascade uses Piper for speech synthesis, and `piper-tts` is GPL-3.0-or-later. `parlo-engine` bundles the `piper` package, its phonemiser bindings and the espeak-ng data they load, so that program is one combined work and is distributed under **GPL-3.0-or-later**; this repository is its corresponding source and [`parlo-engine.spec`](../engines/cascade/parlo-engine.spec) is the build. The `parlo` command line program stays MIT. Before the bundle existed, Piper was invoked as a separate user-installed program, which is what kept the two apart, and that is no longer the case.
+Speech synthesis is the one optional piece with a different licence. Piper is GPL-3.0-or-later and lives in [`engines/tts-piper`](../engines/tts-piper), outside the engine program: it is not in [`parlo-engine.spec`](../engines/cascade/parlo-engine.spec), not in `requirements.txt` and not in any release archive, and the user installs it with its own command. The engine talks to it over JSON lines on a pipe and reports synthesis as unavailable when the adapter is absent. A process boundary is not by itself a legal conclusion, which is why [docs/LICENSES.md](LICENSES.md) states the arrangement and no more than that.
 
 The consequence is the reason the project wants to replace Piper with a permissive synthesiser (Kokoro, Apache-2.0, to verify): that would let the whole distribution stay MIT. It is a decision about measured quality, not a date. The component by component table is in [LICENSES.md](LICENSES.md), and `parlo engines` prints the same policy from the registry.
 

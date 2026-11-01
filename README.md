@@ -14,7 +14,7 @@
   <a href="ROADMAP.md"><img alt="Status" src="https://img.shields.io/badge/status-v0.1.6-f0b429?style=flat-square"></a>
 </p>
 
-> **Status: v0.1.6, early prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, which now ships inside the `parlo-engine` program. That bundle is therefore distributed under the GPL while the `parlo` binary stays MIT; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. The interface opens in its own window (`parlo-app`, a thin native shell around the page the binary serves on loopback), and voice cloning and a virtual microphone do not exist yet. The cascade is chosen with `--engine cascade` on the command line or is the default in the app.
+> **Status: v0.1.6, early prototype.** The CPU cascade translates between Portuguese and English end to end, offline. Recognition is NVIDIA Parakeet TDT 0.6B v3 through sherpa-onnx (CC-BY-4.0 model, Apache-2.0 runtime, European Portuguese included), translation is Argos (MIT), and the neutral voice is Piper, GPL-3.0-or-later, installed separately as an optional adapter and never shipped in a release archive, so the engine program itself stays permissive; [docs/LICENSES.md](docs/LICENSES.md) explains the split and `parlo engines` prints the table. Measured at **0.11 real time factor on 4 threads** with a 2.5 second window, well inside a conversation. The interface opens in its own window (`parlo-app`, a thin native shell around the page the binary serves on loopback), and voice cloning and a virtual microphone do not exist yet. The cascade is chosen with `--engine cascade` on the command line or is the default in the app.
 
 Milestones in [ROADMAP.md](ROADMAP.md) are roadmap labels, not version numbers: the version advances one step from the last published tag, so a milestone can close inside any of them. Only tagged releases reach users, **v0.1.0** was the first, and every release publishes its own notes under [docs/releases](docs/releases).
 
@@ -112,7 +112,7 @@ hardware profile
 
 ```text
 engines
-  cascade  available MIT + GPL-3.0 + CC-BY any recent CPU           cpu ok   GPL TTS, CC-BY model
+  cascade  available MIT, optional GPL voice any recent CPU    cpu ok   MIT engine, GPL voice optional
            Universal cascade | 0 captions, 1 neutral voice, 2 approximate voice, 3 cloned voice
   echo     available MIT                   any                      cpu ok   commercial use ok
            Echo for development | 1 neutral voice
@@ -206,14 +206,14 @@ One product, several engines, one quality ladder. The default must stay usable f
 
 | Engine | Mode | Hardware | License | Role |
 |---|---|---|---|---|
-| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | MIT program, GPL-3.0 engine bundle | **Default** |
-| B. Captions | Text overlay | Any CPU | MIT program, GPL-3.0 engine bundle | Weak hardware |
+| A. Universal cascade | Voice, captions | Any modern CPU, GPU optional | MIT, voice optional and GPL | **Default** |
+| B. Captions | Text overlay | Any CPU | MIT | Weak hardware |
 | C. Hibiki-Zero | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | D. Cloud with your key | Voice | Any | Vendor terms | Opt-in, off by default |
 
 **Hibiki-Zero is non-commercial.** Its weights are CC BY-NC-SA 4.0, which is why it is a downloadable option with a visible licence warning, never the default engine and never inside the archive.
 
-**The default path is not permissive end to end, and saying otherwise would be wrong.** Piper is GPL-3.0-or-later and it is compiled into `parlo-engine`, so that program is distributed under the GPL while the `parlo` binary stays MIT. The recogniser weights are CC-BY-4.0 and the Argos translation models are MIT. The full table, and what it asks of you, is in [docs/LICENSES.md](docs/LICENSES.md).
+**The core is permissive and the voice is optional.** The engine, the CLI, the window and the cascade are MIT today, with Apache-2.0 prepared for the next release once the copyright holders are confirmed. Piper is GPL-3.0-or-later and lives in `engines/tts-piper`, which is not in any archive and is installed by its own command, so no Parlo download distributes a GPL work. The recogniser weights are CC-BY-4.0 and the Argos translation models are MIT. The full table, and what each licence asks of you, is in [docs/LICENSES.md](docs/LICENSES.md).
 
 ## Hardware profiles
 
@@ -268,6 +268,9 @@ How to verify all of it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 crates/parlo-core       audio format, resampler, ring buffer, voice gate, pipeline, wav
 crates/parlo-cli        the parlo binary, engine registry, sidecar client, mic and dub commands
 engines/hibiki          reference sidecar adapter and protocol tests
+engines/tts-piper       optional Piper synthesiser adapter, GPL-3.0-or-later
+catalog                 model catalogue with the licence of every artefact
+tools                   licence gate, third party notices and SBOM generator
 docs                    architecture, engines, languages, privacy, troubleshooting
 ```
 
@@ -299,4 +302,8 @@ The speech-to-speech approach builds on [Hibiki-Zero](https://github.com/kyutai-
 
 ## License
 
-The `parlo` command line program is MIT, see [LICENSE](LICENSE). The `parlo-engine` bundle that ships beside it in a release archive is **GPL-3.0-or-later**, because it contains Piper and the espeak-ng data Piper loads, and this repository is its corresponding source. Model weights keep their own licences, listed by `parlo engines`. The component by component table, and what each licence asks of you, is [docs/LICENSES.md](docs/LICENSES.md).
+Parlo is **open source**. The original code, the three Rust crates, the page, the cascade engine and the scripts, is MIT and is moving to Apache-2.0 once the copyright holders are confirmed, see [LICENSE](LICENSE). Commercial use, modification, redistribution and use inside proprietary products are allowed today.
+
+`parlo-engine`, the packaged engine inside a release archive, now contains no GPL code: Piper left the bundle. Piper is GPL-3.0-or-later and remains available as the optional adapter in [engines/tts-piper](engines/tts-piper), installed by the user with its own command and its own licence. Model weights and voices are downloaded from their publishers and keep their own licences; `parlo engines` prints them and [catalog/models.json](catalog/models.json) records each one.
+
+The component by component table, the notices and the open questions are in [docs/LICENSES.md](docs/LICENSES.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [docs/MODEL_LICENSES.md](docs/MODEL_LICENSES.md).
