@@ -1,7 +1,7 @@
 import json
 import sys
 
-from . import credentials
+from . import credentials, vocabulary
 from .intelligence import PROVIDERS, Intelligence, settings_from_config
 
 SAMPLE = (
@@ -54,6 +54,18 @@ def _test(request: dict) -> dict:
     }
 
 
+def _vocabulary(request: dict) -> dict:
+    return vocabulary.load()
+
+
+def _vocabulary_add(request: dict) -> dict:
+    return vocabulary.add(request.get("kind"), request.get("wrong"), request.get("right"))
+
+
+def _vocabulary_delete(request: dict) -> dict:
+    return vocabulary.discard(request.get("kind"), request.get("wrong"))
+
+
 def _provider(request: dict) -> str:
     provider = request.get("provider")
     if not isinstance(provider, str) or provider not in PROVIDERS:
@@ -61,7 +73,15 @@ def _provider(request: dict) -> str:
     return provider
 
 
-ACTIONS = {"status": _status, "store": _store, "delete": _delete, "test": _test}
+ACTIONS = {
+    "status": _status,
+    "store": _store,
+    "delete": _delete,
+    "test": _test,
+    "vocabulary": _vocabulary,
+    "vocabulary/add": _vocabulary_add,
+    "vocabulary/delete": _vocabulary_delete,
+}
 
 
 def answer(request: dict) -> dict:

@@ -492,6 +492,60 @@ fn handle(
         };
     }
 
+    if method == "GET" && path == "/vocabulary" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match crate::intelligence::run(&serde_json::json!({ "action": "vocabulary" })) {
+            Ok(reply) => respond_json(stream, "200 OK", &reply.to_string()).map(|()| Flow::Serve),
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && (path == "/vocabulary" || path == "/vocabulary/delete") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let field = |name: &str| {
+            request
+                .get(name)
+                .and_then(|value| value.as_str())
+                .unwrap_or("")
+                .trim()
+                .to_string()
+        };
+        let action = if path == "/vocabulary" {
+            "vocabulary/add"
+        } else {
+            "vocabulary/delete"
+        };
+        let payload = serde_json::json!({
+            "action": action,
+            "kind": field("kind"),
+            "wrong": field("wrong"),
+            "right": field("right"),
+        });
+        return match crate::intelligence::run(&payload) {
+            Ok(reply) => match reply.get("error").and_then(serde_json::Value::as_str) {
+                Some(error) => respond_json(stream, "400 Bad Request", &error_json(error))
+                    .map(|()| Flow::Serve),
+                None => respond_json(stream, "200 OK", &reply.to_string()).map(|()| Flow::Serve),
+            },
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path == "/catalog" {
         return respond_json(stream, "200 OK", &crate::catalog::as_json()).map(|()| Flow::Serve);
     }

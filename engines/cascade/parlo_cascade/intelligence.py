@@ -7,7 +7,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import credentials
+from . import credentials, vocabulary
 from .corrections import CLEAN_MODES, clean
 
 MODES = ("off", "auto", "local", "cloud")
@@ -281,44 +281,48 @@ class Intelligence:
     def edit(self, text: str) -> Edit:
         started = time.perf_counter()
         base = clean(text, self.settings.clean, self.language)
+        edited, personal = vocabulary.apply(base.cleaned)
         route = self.route()
         self.last_reason = route.reason
         if route.engine == DETERMINISTIC:
             return Edit(
-                text=base.cleaned,
+                text=edited,
                 original=base.original,
                 engine=DETERMINISTIC,
-                changes=base.changes,
+                changes=personal + base.changes,
                 latency_ms=_elapsed(started),
                 reason=route.reason,
             )
         try:
-            candidate = self._ask(base.cleaned, route)
+            candidate = self._ask(edited, route)
         except (IntelligenceError, OSError, ValueError, KeyError, IndexError) as error:
             verdict = Verdict(False, str(error))
-            return self._fallback(base, route, verdict, started)
-        verdict = validate(base.cleaned, candidate)
+            return self._fallback(base, route, verdict, started, personal)
+        verdict = validate(edited, candidate)
         if not verdict.ok:
-            return self._fallback(base, route, verdict, started)
+            return self._fallback(base, route, verdict, started, personal)
         return Edit(
             text=candidate,
             original=base.original,
             engine=route.engine,
             provider=route.provider,
             model=route.model,
-            changes=base.changes + (f"{route.engine} edit: {route.model}",),
+            changes=personal + base.changes + (f"{route.engine} edit: {route.model}",),
             latency_ms=_elapsed(started),
         )
 
-    def _fallback(self, base, route: Route, verdict: Verdict, started: float) -> Edit:
+    def _fallback(self, base, route: Route, verdict: Verdict, started: float, personal) -> Edit:
         self.last_reason = verdict.reason
+        edited, _ = vocabulary.apply(base.cleaned)
         return Edit(
-            text=base.cleaned,
+            text=edited,
             original=base.original,
             engine=DETERMINISTIC,
             provider=route.provider,
             model=route.model,
-            changes=base.changes + (f"kept the deterministic text: {verdict.reason}",),
+            changes=personal
+            + base.changes
+            + (f"kept the deterministic text: {verdict.reason}",),
             latency_ms=_elapsed(started),
             fallback=True,
             reason=verdict.reason,

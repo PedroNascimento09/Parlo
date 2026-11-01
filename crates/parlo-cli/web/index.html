@@ -195,6 +195,32 @@
     </div>
   </section>
 
+  <section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
+    <div class="settings-head">
+      <h2 id="vocabulary-title">Words Parlo should know</h2>
+      <p class="settings-note" id="vocabulary-note" aria-live="polite">Names and short forms stay on this computer and are applied before any model reads the sentence.</p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="vocabulary-kind">
+        <span class="field-label">Kind</span>
+        <select id="vocabulary-kind" class="field-input">
+          <option value="term">A name or a term</option>
+          <option value="abbreviation">A short form I say</option>
+        </select>
+      </label>
+      <label class="field" for="vocabulary-wrong">
+        <span class="field-label">What Parlo hears</span>
+        <input id="vocabulary-wrong" class="field-input" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="parlo">
+      </label>
+      <label class="field" for="vocabulary-right">
+        <span class="field-label">What it should write</span>
+        <input id="vocabulary-right" class="field-input" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Parlo">
+      </label>
+      <button id="vocabulary-add" class="install" type="button">Add</button>
+    </div>
+    <dl class="status" id="vocabulary-list"></dl>
+  </section>
+
   <section class="settings" id="meetings" aria-labelledby="meetings-title">
     <div class="settings-head">
       <h2 id="meetings-title">Meetings</h2>

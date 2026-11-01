@@ -6,6 +6,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- Parlo learns the words a person actually uses. **Words Parlo should know** keeps two local lists — names and terms the recogniser keeps getting wrong, and short forms that should expand — and the intelligence engine applies them to the cleaned sentence, on whole words only, before any model is asked and before anything leaves the machine. Each substitution is recorded in the changes beside the cleanup ones, a regular expression never matches, and the words live in `vocabulary.json` in the data folder: no account, no server, nothing sent. The two sides are refused when empty, longer than 64 characters, or of a kind Parlo does not know.
 - A meeting can be recorded instead of only imported: **Record a meeting** takes the name from the same field, keeps the transcript in `meetings/` with the moment each line was said, and appends line by line as the recogniser closes them, so a crash costs the last window and not the hour. The microphone is what Parlo hears, so the sound of another application is not captured yet and every line is filed under `Me`; naming a speaker still works on top of that. `POST /meeting/start` and `POST /meeting/segment` are the two routes behind it, and a meeting with no title is called `Meeting`.
 
 ## [0.1.9] - 2026-11-01

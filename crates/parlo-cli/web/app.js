@@ -988,6 +988,12 @@ const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
 const meetingList = document.getElementById("meeting-list");
 const meetingNote = document.getElementById("meetings-note");
+const vocabularyKind = document.getElementById("vocabulary-kind");
+const vocabularyWrong = document.getElementById("vocabulary-wrong");
+const vocabularyRight = document.getElementById("vocabulary-right");
+const vocabularyAdd = document.getElementById("vocabulary-add");
+const vocabularyList = document.getElementById("vocabulary-list");
+const vocabularyNote = document.getElementById("vocabulary-note");
 const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
 const catalogList = document.getElementById("catalog-list");
@@ -1727,6 +1733,108 @@ async function deleteMeeting(id) {
   }
 }
 
+function vocabularyHeaders() {
+  return { "Content-Type": "application/json", Authorization: "Bearer " + token };
+}
+
+function renderVocabulary(profile) {
+  vocabularyList.replaceChildren();
+  const rows = [];
+  for (const [wrong, right] of Object.entries(profile.terms || {})) {
+    rows.push({ kind: "term", wrong, right });
+  }
+  for (const [wrong, right] of Object.entries(profile.abbreviations || {})) {
+    rows.push({ kind: "abbreviation", wrong, right });
+  }
+  if (!rows.length) {
+    vocabularyNote.textContent =
+      "Nothing here yet. A name the recogniser keeps getting wrong is the first thing worth adding.";
+    return;
+  }
+  for (const row of rows) {
+    const term = document.createElement("dt");
+    term.textContent = (row.kind === "term" ? "Name: " : "Short form: ") + row.wrong;
+    const detail = document.createElement("dd");
+    const written = document.createElement("span");
+    written.textContent = "becomes " + row.right;
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "swap";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () => removeVocabulary(row));
+    detail.append(written, remove);
+    vocabularyList.append(term, detail);
+  }
+  const count = rows.length === 1 ? "1 word kept" : rows.length + " words kept";
+  vocabularyNote.textContent = count + " on this computer.";
+}
+
+async function loadVocabulary() {
+  try {
+    const response = await fetch("/vocabulary", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      vocabularyNote.textContent = "The words could not be read.";
+      return;
+    }
+    renderVocabulary(await response.json());
+  } catch (failure) {
+    vocabularyNote.textContent = "The words could not be read.";
+  }
+}
+
+async function addVocabulary() {
+  const wrong = vocabularyWrong.value.trim();
+  const right = vocabularyRight.value.trim();
+  if (!wrong || !right) {
+    vocabularyNote.textContent = "Both sides are needed: what Parlo hears and what it should write.";
+    return;
+  }
+  try {
+    const response = await fetch("/vocabulary", {
+      method: "POST",
+      headers: vocabularyHeaders(),
+      body: JSON.stringify({ kind: vocabularyKind.value, wrong, right }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That word could not be saved.");
+    }
+    vocabularyWrong.value = "";
+    vocabularyRight.value = "";
+    renderVocabulary(detail);
+  } catch (failure) {
+    vocabularyNote.textContent = failure.message || "That word could not be saved.";
+  }
+}
+
+async function removeVocabulary(row) {
+  try {
+    const response = await fetch("/vocabulary/delete", {
+      method: "POST",
+      headers: vocabularyHeaders(),
+      body: JSON.stringify({ kind: row.kind, wrong: row.wrong }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That word could not be removed.");
+    }
+    renderVocabulary(detail);
+  } catch (failure) {
+    vocabularyNote.textContent = failure.message || "That word could not be removed.";
+  }
+}
+
+vocabularyAdd.addEventListener("click", () => addVocabulary());
+vocabularyRight.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    addVocabulary();
+  }
+});
+
 const MEETING_SECONDS = 5;
 
 let meetingRecording = false;
@@ -2051,6 +2159,7 @@ checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
 loadModels();
 loadSettings();
 loadIntelligence();
+loadVocabulary();
 describeLive();
 
 const voiceForm = document.getElementById("voice-form");
