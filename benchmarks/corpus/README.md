@@ -1,6 +1,6 @@
 # Evaluation corpus
 
-Original test text written for Parlo, released under CC0-1.0. It measures translation between European Portuguese and English in both directions, with material that automated metrics alone would miss: numbers, times, dates, names, negation, clitics, reported speech and idioms.
+Original test text written for Parlo, released under CC0-1.0. It measures translation between European Portuguese and English in both directions, with material that automated metrics alone would miss: numbers, times, dates, names, negation, clitics, reported speech and idioms. It also carries a first block of Portuguese to German business e-mail sentences, which the plan makes the central gate of v0.5.
 
 ## What it contains
 
@@ -8,7 +8,7 @@ Original test text written for Parlo, released under CC0-1.0. It measures transl
 
 | Field | Meaning |
 |---|---|
-| `id` | Stable identifier, `source-target-NNN` |
+| `id` | Stable identifier, `source-target-NNN`: `pt-en-`, `en-pt-` or `pt-de-` |
 | `source` | Source language: `pt-PT` or `en` |
 | `target` | Target language: `en` or `pt-PT` |
 | `text` | Source sentence as written |
@@ -16,6 +16,12 @@ Original test text written for Parlo, released under CC0-1.0. It measures transl
 | `tags` | What the sentence stresses: `negation`, `numbers`, `date`, `idiom`, `clitic`, and so on |
 
 Portuguese European forms are deliberate: *telemóvel*, *casa de banho*, *comboio*, *correio eletrónico*, *está avariado*, the `a fazer` construction and the `15h30` time format. A model that only handles Brazilian Portuguese will visibly fail here, which is the point.
+
+## Portuguese to German
+
+`pt-de-001` to `pt-de-020` are business e-mail sentences: appointments, deadlines, invoices, quantities, refusals and one complaint. They exist because PT→DE is the central quality gate of v0.5 and a gate needs a corpus before it needs a model.
+
+**State of the pair, stated plainly:** the German references were written by the project and have not been read by a native speaker, and no PT→DE model is installed, because the package index Parlo installs from carries no `pt` to `de` entry. The gate therefore checks the corpus, not a translation: `mt_gate.py --direction pt-de --pack` stops with `no package installed for pt-de`. The pair is not validated and must not be described as working.
 
 ## What it does not measure
 
