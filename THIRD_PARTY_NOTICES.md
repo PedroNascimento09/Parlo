@@ -544,11 +544,11 @@ from the original source and each one keeps its own licence.
 
 | Artifact | Kind | Licence | Status | Source |
 |---|---|---|---|---|
-| piper-voice-pt-pt-tugao | voice | unverified | unverified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
-| piper-voice-pt-br-faber | voice | unverified | unverified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
-| piper-voice-en-us-lessac | voice | unverified | unverified | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium |
+| piper-voice-pt-pt-tugao | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
+| piper-voice-pt-br-faber | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
+| piper-voice-en-us-lessac | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium |
 | parakeet-tdt-0.6b-v3 | asr | CC-BY-4.0 | verified | https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 |
+| qwen3-asr-0.6b | asr | Apache-2.0 | verified | https://huggingface.co/Qwen/Qwen3-ASR-0.6B |
 | kokoro-82m | tts | Apache-2.0 | verified | https://huggingface.co/hexgrad/Kokoro-82M |
 | whisper-large-v3 | asr | MIT | verified | https://huggingface.co/openai/whisper-large-v3 |
 | argos-translate-pack | mt | unverified | unverified | https://github.com/argosopentech/argospm-index |
-| qwen3-asr | asr | unverified | unverified | https://huggingface.co/Qwen |

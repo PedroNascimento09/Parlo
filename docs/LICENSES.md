@@ -40,9 +40,9 @@ Weights and voices keep their own licences, which never follow the licence of th
 | Parakeet TDT 0.6B v3 | CC-BY-4.0 | Verified, attribution required |
 | Whisper large-v3 | MIT | Verified |
 | Kokoro-82M | Apache-2.0 | Verified |
-| Piper voices | Per voice, not yet confirmed | **Unverified** |
+| Piper voices | MIT, as declared by `rhasspy/piper-voices` | Verified |
 | Argos language packages | Per package, not yet confirmed | **Unverified** |
-| Qwen3-ASR | Not confirmed | **Unverified** |
+| Qwen3-ASR 0.6B | Apache-2.0 | Verified, experimental |
 | Hibiki-Zero | CC BY-NC-SA 4.0 | Verified, non commercial, never the default |
 
 Details per artefact and the rules the code follows: [MODEL_LICENSES.md](MODEL_LICENSES.md).

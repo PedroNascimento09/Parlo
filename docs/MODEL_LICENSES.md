@@ -25,9 +25,9 @@ The single source of truth is [`catalog/models.json`](../catalog/models.json). T
 | Parakeet TDT 0.6B v3 | asr | CC-BY-4.0 | Verified | Required: NVIDIA Parakeet TDT 0.6B v3, CC BY 4.0 |
 | Whisper large-v3 | asr | MIT | Verified | Not required |
 | Kokoro-82M | tts | Apache-2.0 | Verified | Notices only |
-| Piper voices (`pt_PT-tugão`, `pt_BR-faber`, `en_US-lessac`) | voice | Not confirmed per voice | **Unverified** | Unknown |
+| Piper voices (`pt_PT-tugão`, `pt_BR-faber`, `en_US-lessac`) | voice | MIT, as declared by the `rhasspy/piper-voices` repository | Verified | Voice from `rhasspy/piper-voices`, repository declared MIT |
 | Argos language packages | mt | Not confirmed per package | **Unverified** | Unknown |
-| Qwen3-ASR | asr | Not confirmed | **Unverified** | Unknown |
+| Qwen3-ASR 0.6B | asr | Apache-2.0 | Verified, experimental in Parlo | Notices only |
 | Hibiki-Zero | tts | CC BY-NC-SA 4.0 | Verified, non commercial | Required, and never the default |
 
 ## Rules the code follows
@@ -39,9 +39,8 @@ The single source of truth is [`catalog/models.json`](../catalog/models.json). T
 
 ## What is still open
 
-- The licence of each Piper voice, per voice. The project page does not state one for each voice file, and the voice cards do not agree. Until this is read voice by voice, the entries stay `unverified`.
-- The licence of each Argos language package. `argostranslate` publishes the index without a licence field per package; the packages themselves carry one that must be read.
-- Qwen3-ASR weights.
+- The licence of each Argos language package. `argostranslate` publishes the index without a licence field per package; the packages themselves carry one that must be read. Until the translation stage moves off Argos, this entry stays `unverified`.
+- The per-voice cards of `rhasspy/piper-voices`. The repository declares MIT and the three voices used here are recorded against that declaration; if one of them ever becomes a shipped default, its own card is read first.
 - The training data licences for Parakeet and Whisper are documented by their publishers, not audited here. Redistributing the weights is allowed by the weight licence; the data is a separate question only if the weights are retrained or redistributed as a dataset.
 
 This page is not legal advice.

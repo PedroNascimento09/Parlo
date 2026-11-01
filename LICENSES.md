@@ -580,10 +580,10 @@ as if its terms were known.
 | Component | Location | Code licence | Weights, voices or data | Holder | Required | Confirmed | Obligations | Licence text |
 |---|---|---|---|---|---|---|---|---|
 | parakeet-tdt-0.6b-v3 | Downloaded, never shipped | See the runtime dependencies | CC-BY-4.0 | NVIDIA Parakeet TDT 0.6B v3, licensed CC BY 4.0 | External | Confirmed | Credit the author | https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3 |
+| qwen3-asr-0.6b | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Qwen3-ASR 0.6B, licensed Apache 2.0, experimental in Parlo | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Qwen/Qwen3-ASR-0.6B |
 | kokoro-82m | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Kokoro-82M, licensed Apache 2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/hexgrad/Kokoro-82M |
 | whisper-large-v3 | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper large-v3, licensed MIT | External | Confirmed | See the licence text | https://huggingface.co/openai/whisper-large-v3 |
 | argos-translate-pack | Downloaded, never shipped | See the runtime dependencies | unverified | See the source | External | Not verified | See the licence text | https://github.com/argosopentech/argospm-index |
-| qwen3-asr | Downloaded, never shipped | See the runtime dependencies | unverified | See the source | External | Not verified | See the licence text | https://huggingface.co/Qwen |
 
 ## 5. Voices and datasets
 
@@ -592,9 +592,9 @@ of the synthesizer that reads it. No dataset is redistributed by Parlo.
 
 | Component | Location | Code licence | Weights, voices or data | Holder | Required | Confirmed | Obligations | Licence text |
 |---|---|---|---|---|---|---|---|---|
-| piper-voice-pt-pt-tugao | Downloaded, never shipped | See the runtime dependencies | unverified | See the source | External | Not verified | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
-| piper-voice-pt-br-faber | Downloaded, never shipped | See the runtime dependencies | unverified | See the source | External | Not verified | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
-| piper-voice-en-us-lessac | Downloaded, never shipped | See the runtime dependencies | unverified | See the source | External | Not verified | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium |
+| piper-voice-pt-pt-tugao | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
+| piper-voice-pt-br-faber | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
+| piper-voice-en-us-lessac | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium |
 
 ## 6. Optional components under copyleft
 
