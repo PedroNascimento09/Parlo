@@ -19,8 +19,8 @@
 Parlo listens to you speak, writes down the sentence you meant instead of every word you said, and translates it when you want the other language. It runs on an ordinary laptop CPU, keeps every model on your disk, and only touches the network to check for a new version — or to reach a cloud provider **you** configured with **your** key.
 
 ```
-Ctrl+Alt+D → speak → «Quero marcar para sexta, quer dizer, segunda.» → written as:
-Vou ao Porto na segunda-feira.
+Ctrl+Alt+D → speak → «Quero marcar para sexta, quer dizer, para segunda.» → written as:
+Quero marcar para segunda.
 ```
 
 ## What you can do today
@@ -127,7 +127,7 @@ CI runs those on Linux, macOS and Windows, plus the licence gate that keeps ever
 
 ## Roadmap
 
-The next release is **v0.2.0**: cloud cost control, per-model unload rules in the interface, and Ask Parlo over past meetings. After that, **v0.3 Ouir** decides with data before adding features, and the plan stops at **v0.5 Escrever noutra língua** — spoken Portuguese written as English, German, Spanish or French in the active field. Milestones in [ROADMAP.md](ROADMAP.md) are labels; releases come from [docs/releases](docs/releases) and are announced inside the app.
+The next release is **v0.2.0**: cloud cost control, per-model unload rules in the interface, and Ask Parlo over past meetings. After that, **v0.3 Ouvir** decides with data before adding features, and the plan stops at **v0.5 Escrever noutra língua** — spoken Portuguese written as English, German, Spanish or French in the active field. Milestones in [ROADMAP.md](ROADMAP.md) are labels; releases come from [docs/releases](docs/releases) and are announced inside the app.
 
 ## Docs
 
