@@ -4,7 +4,7 @@
 
 O Parlo começa a capturar e a processar áudio quando deteta fala. Não espera pelo fim da frase para iniciar reconhecimento, tradução ou preparação de síntese. O resultado pode ser provisório e ser corrigido antes de ficar confirmado.
 
-### 9.1 Estados de texto
+### 9.1. Estados de texto
 
 | Estado | Significado | Comportamento na interface |
 |---|---|---|
@@ -14,7 +14,7 @@ O Parlo começa a capturar e a processar áudio quando deteta fala. Não espera 
 | Corrigido | Texto provisório que mudou | Atualiza o texto e, se ainda não emitido, a tradução |
 | Emissão bloqueada | Contexto insuficiente ou confiança baixa | Espera mais áudio; não inventa palavras |
 
-### 9.2 Ciclo incremental
+### 9.2. Ciclo incremental
 
 - Captura contínua em blocos pequenos, com timestamps monotónicos e identificador de sessão.
 - Deteção de atividade de voz sem usar o silêncio como condição obrigatória para iniciar inferência.
@@ -24,7 +24,7 @@ O Parlo começa a capturar e a processar áudio quando deteta fala. Não espera 
 - Síntese preparada por unidades semânticas curtas, emitida quando a probabilidade de revisão for baixa.
 - Fecho do segmento por pausa, pontuação, limite de contexto ou comando, sem perder o contexto da sessão.
 
-### 9.3 Políticas de streaming
+### 9.3. Políticas de streaming
 
 | Política | Vantagem | Custo |
 |---|---|---|
@@ -35,7 +35,7 @@ O Parlo começa a capturar e a processar áudio quando deteta fala. Não espera 
 
 O modo atual do motor é reportado como reprocessamento, e não como streaming nativo, porque é isso que a implementação faz. Uma capacidade futura de streaming nativo passa a ser declarada quando existir, com medição própria.
 
-### 9.4 Emissão de voz
+### 9.4. Emissão de voz
 
 Transcrever continuamente não é o mesmo que falar cada palavra reconhecida. Se a síntese emitir cedo demais, pode dizer algo que a frase seguinte desmente. O Parlo mostra texto parcial de imediato, traduz quando há contexto suficiente e usa um atraso de emissão ajustável. Em conversa, uma pequena espera inteligente é melhor do que falar depressa e dizer disparates.
 
@@ -43,7 +43,7 @@ Transcrever continuamente não é o mesmo que falar cada palavra reconhecida. Se
 
 Caso de uso que motiva a funcionalidade: «preciso de escrever um e-mail em alemão, mas sou português». O utilizador escolhe a língua de escrita, carrega no atalho e fala em português; o Parlo escreve no campo ativo o texto em alemão.
 
-### 10.1 Dois idiomas independentes
+### 10.1. Dois idiomas independentes
 
 | Conceito | Regra |
 |---|---|
@@ -53,7 +53,7 @@ Caso de uso que motiva a funcionalidade: «preciso de escrever um e-mail em alem
 | Registo | Formal, neutro ou informal, com predefinição por língua e por aplicação |
 | Estilo | Verbatim, limpo, traduzido fiel ou traduzido profissional |
 
-### 10.2 Barra flutuante
+### 10.2. Barra flutuante
 
 Uma barra compacta junto à parte inferior do ecrã, sem roubar o foco da aplicação de destino, porque o overlay com foco impede a colagem no campo ativo.
 
@@ -66,7 +66,7 @@ Enter inserir   ·   Esc cancelar   ·   Tab formal/informal   ·   Alt+L trocar
 
 O chip mostra origem e destino. O texto parcial aparece na língua falada. Ao largar a tecla, a barra mostra que está a traduzir e depois o texto final. Rever antes de inserir é a predefinição nas primeiras utilizações e em pares ainda não validados; inserir automaticamente pode ser ativado por par de línguas.
 
-### 10.3 Garantias de fidelidade
+### 10.3. Garantias de fidelidade
 
 - Retro-tradução opcional na pré-visualização, que expõe erros grosseiros sem provar correção.
 - Verificador determinístico de números, datas, valores, e-mails, URLs e nomes próprios, com alerta quando algo desaparece ou muda.
@@ -76,7 +76,7 @@ O chip mostra origem e destino. O texto parcial aparece na língua falada. Ao la
 - Aviso de pivô quando a tradução passa por inglês.
 - Falha nunca silenciosa: se a tradução vier vazia ou truncada, a barra diz isso e oferece inserir o original.
 
-### 10.4 Níveis de suporte por par
+### 10.4. Níveis de suporte por par
 
 | Nível | Pares | Condição para subir |
 |---|---|---|
@@ -91,7 +91,7 @@ Nenhum par é anunciado como suportado porque um checkpoint lista o idioma. O es
 
 O Parlo privilegia a ação mais provável no contexto e esconde a complexidade até ser necessária. O utilizador não deve abrir a janela principal para ditar, traduzir, ver o estado de uma sessão ou marcar um momento. A janela principal é o centro de configuração e gestão; as ações frequentes acontecem em overlays compactos, atalhos e controlos junto ao contexto.
 
-### 11.1 Elementos da janela principal
+### 11.1. Elementos da janela principal
 
 | Elemento | Comportamento |
 |---|---|
@@ -103,7 +103,7 @@ O Parlo privilegia a ação mais provável no contexto e esconde a complexidade 
 | Privacidade | Pausa, silenciar microfone, terminar sessão, apagar transcrição, estado de captura sempre visível |
 | Fallback | Alternar para legendas ou voz neutra sem perder a sessão |
 
-### 11.2 Primeira execução
+### 11.2. Primeira execução
 
 - Explicar em linguagem simples o que é processado localmente e que permissões são necessárias.
 - Perguntar o idioma falado e os idiomas de escrita favoritos.
@@ -113,7 +113,7 @@ O Parlo privilegia a ação mais provável no contexto e esconde a complexidade 
 - Testar microfone, idioma e latência com uma frase de demonstração, e no Dictate ditar uma frase e vê-la traduzida.
 - Guiar a configuração do microfone virtual por aplicação, sem instalar drivers sem consentimento.
 
-### 11.3 Preferências sem sobrecarga
+### 11.3. Preferências sem sobrecarga
 
 Preferências agrupadas por tarefa, com valores por omissão que funcionam sem serem tocados. O utilizador avançado consegue escolher motor e quantização; o utilizador normal nunca é obrigado a ver essa lista para ditar uma frase. Alterar um default do Auto Select é um override explícito, com aviso de que o Parlo deixa de escolher por si.
 
@@ -139,7 +139,7 @@ Regras visuais: um só acento de cor por ecrã; estados com texto além de cor; 
 - Idioma da interface independente do idioma falado e do idioma de escrita.
 - Diagnóstico de microfone que não exige enviar gravações para lado nenhum.
 
-Acessibilidade é requisito de lançamento, não trabalho posterior: uma release que quebre a navegação por teclado nos fluxos principais não passa o gate da secção 46.
+Acessibilidade é requisito de lançamento, não trabalho posterior: uma release que quebre a navegação por teclado nos fluxos principais não passa o gate da secção 58.
 
 ## 14. Fluxos completos e recuperação
 
@@ -163,11 +163,11 @@ Não existe um único melhor modelo para todas as etapas. O Parlo escolhe o mode
 
 O que a auditoria obriga a corrigir na versão anterior:
 
-- Nenhum modelo é declarado vencedor por leitura de model card. Um modelo só se torna default depois de passar os gates da secção 31.
+- Nenhum modelo é declarado vencedor por leitura de model card. Um modelo só se torna default depois de passar os gates da secção 32.
 - Nenhuma regra simplista do tipo «quatro núcleos e 8 GB de RAM equivale ao modelo X» entra no produto. A seleção usa memória disponível, quantização, sistema operativo, backend, latência medida e qualidade medida.
 - Candidato e recomendado são estados diferentes. Misturá-los foi o erro que colocou na matriz anterior um modelo de clonagem a passar por modelo de vozes predefinidas.
 
-### 15.1 Regra de decisão por tarefa
+### 15.1. Regra de decisão por tarefa
 
 | Tarefa | O que decide | O que nunca decide |
 |---|---|---|
@@ -194,7 +194,7 @@ O reconhecimento em produção hoje é Parakeet por omissão e Whisper como alte
 
 A tradução é a área com maior dívida técnica do projeto. A conclusão anterior de que a substituição do Argos estava resolvida não se sustenta: o caminho foi implementado e medido, mas só metade dos pares funciona.
 
-### 17.1 Estado por caminho
+### 17.1. Estado por caminho
 
 | Caminho | Estado | Factos |
 |---|---|---|
@@ -206,11 +206,11 @@ A tradução é a área com maior dívida técnica do projeto. A conclusão ante
 | NLLB-200 | Excluído | Pesos CC-BY-NC-4.0 |
 | SeamlessM4T v2 | Excluído do catálogo normal | Pesos CC-BY-NC-4.0; 29,9 GB |
 
-### 17.2 Decisão
+### 17.2. Decisão
 
 - O caminho principal é NMT por par, com checkpoint aprovado individualmente e executado por CTranslate2.
 - Três amostras corretas não validam um par. PT→EN só sobe a candidato prioritário com um conjunto representativo, avaliação por falante nativo e estabilidade em sessão longa.
-- EN→PT continua por resolver. O critério de saída é objetivo: um checkpoint redistribuível, com licença confirmada, que produza traduções corretas num conjunto de pelo menos 100 frases com números, negações e nomes próprios, acima do limiar de fidelidade definido na secção 31.
+- EN→PT continua por resolver. O critério de saída é objetivo: um checkpoint redistribuível, com licença confirmada, que produza traduções corretas num conjunto de pelo menos 100 frases com números, negações e nomes próprios, acima do limiar de fidelidade definido na secção 32.
 - O Argos sai do núcleo enquanto a cadeia AGPL não tiver conclusão técnica e de licenciamento. Se voltar, volta como integração externa opcional, com a sua licença visível.
 - Um modelo de linguagem grande pode existir para polimento de tom, nunca como tradutor por defeito.
 
@@ -233,7 +233,7 @@ A matriz anterior confundia quatro coisas: clonagem a partir de amostra, vozes p
 | F5-TTS | 1,35 GB | Código MIT, pesos CC-BY-NC | Sim | Por medir | Excluído |
 | XTTS-v2 | 1,86 GB | Coqui Public Model License, não comercial | Sim | Sim | Excluído |
 
-### 18.1 Regras derivadas
+### 18.1. Regras derivadas
 
 - Qwen3-TTS Base 0.6B é o candidato de clonagem para máquinas sem GPU; 1.7B Base é o candidato de qualidade em GPU. Nenhum dos dois é default antes de medir identidade vocal em português europeu.
 - CustomVoice e VoiceDesign não preenchem o lugar de um clonador na cadeia da secção 4.1. Apresentá-los como clonagem era o erro corrigido nesta versão.

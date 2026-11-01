@@ -51,6 +51,11 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 - **Pivô** — tradução por uma língua intermédia, sempre assinalada.
 - **Declaração de consentimento** — registo local com finalidade, âmbito, versão do aviso e data.
 - **Fronteira de licença** — separação técnica entre núcleo permissivo e componentes com outra licença; não é, por si só, conclusão jurídica.
+- **PIMO** — orquestrador que filtra, avalia, seleciona, compõe e monitoriza modelos com regras determinísticas.
+- **Níveis A, B e C** — avaliação estática por manifesto, validação técnica no dispositivo e avaliação aprofundada de qualidade.
+- **Histerese** — exigência de que a alternativa seja claramente melhor para justificar troca de motor.
+- **Circuit breaker** — retirada temporária de um motor da seleção após falhas repetidas.
+- **Chave de cache** — combinação de modelo, hash, runtime, quantização, hardware e versão do benchmark que valida um resultado.
 
 ## C. Fontes primárias
 
@@ -83,7 +88,8 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 
 | Área | v12.2 | v12.3 |
 |---|---|---|
-| Estrutura | Doze partes com secções 1 a 58, algumas fora de ordem e um subtítulo de interface dentro da secção errada | Doze partes, secções 1 a 58 em ordem, sem duplicações; a voz ganha parte própria |
+| Estrutura | Doze partes com secções 1 a 58, algumas fora de ordem e um subtítulo de interface dentro da secção errada | Doze partes, secções 1 a 70 em ordem, sem duplicações; a voz e a orquestração ganham partes próprias |
+| Orquestração | Model Hub e Auto Select em cinco secções, sem ciclo de avaliação nem monitorização | Parte VI com PIMO: manifesto e níveis de evidência, filtragem, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback, ciclo de vida, cache, testes, critérios de aceitação e fases |
 | Voz | Clonagem descrita dentro da estratégia de TTS | Parte II completa: política, perfil, consentimento, compatibilidade, identidade, papéis da voz neutra |
 | Modelos de clonagem | CustomVoice apresentado como clonagem; Kokoro apresentado como fallback PT-PT | Base 0.6B e 1.7B são clonagem; CustomVoice usa vozes predefinidas; VoiceDesign desenha voz; Kokoro deixa de ser fallback PT-PT |
 | Chatterbox | Tratado como um só candidato | PT-PT como candidato prioritário e PT-BR separado |
@@ -111,6 +117,10 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 10. A seleção por hardware deixa de usar regras simplistas e passa a depender de benchmarks.
 11. A remoção do Argos do núcleo depende de um par aprovado, não de uma intenção.
 12. Um scanner de licenças sem alertas deixa de ser descrito como conformidade.
+13. A orquestração é determinística: regras, manifestos e medições, sem um modelo de aprendizado a escolher modelos.
+14. A avaliação é progressiva em três níveis, e o nível C nunca corre na máquina do utilizador.
+15. A troca de motor obedece a permanência mínima, histerese, circuit breaker e limite de tentativas.
+16. Nenhum resultado de benchmark é reutilizado fora do ambiente que o produziu.
 
 ### D.3 Questões por resolver
 
@@ -123,11 +133,13 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 
 ### D.4 Verificação de coerência desta edição
 
-- Numeração contínua de 1 a 58, sem títulos repetidos e com hierarquia de partes correta.
+- Numeração contínua de 1 a 70, sem títulos repetidos e com hierarquia de partes correta.
+- A Parte VI define o orquestrador sem duplicar o Model Hub, o Auto Select ou o gestor de perfis de voz.
 - A prioridade Voice Clone First aparece nas Partes I, II, IV, V, VI, X e XII.
 - Nenhuma funcionalidade planeada é descrita como implementada; o estado está na secção 1, na secção 20 e no Apêndice E.
 - Licenças, modelos e dependências usam as mesmas decisões nas Partes V, XI e XII.
-- O roadmap da secção 44 não contradiz as fases da secção 45 nem os gates da secção 31.
+- O roadmap da secção 56 não contradiz as fases da secção 57 nem os gates da secção 32.
+- Os critérios de aceitação da secção 42 cobrem as garantias das secções 29 a 40.
 
 ## E. Mapa das versões
 
@@ -138,7 +150,8 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | v12.0 | Model Hub, Auto Select, decisão sobre Argos, Piper externo, memorando jurídico |
 | v12.1 | Política Voice Clone First e arquitetura de perfil de voz |
 | v12.2 | Hierarquia corrigida e verificação documental de Qwen3-TTS Base |
-| v12.3 | Parte própria para a voz, matriz de modelos corrigida, tradução por resolver, privacidade e Artigo 50, roadmap por gates |
+| v12.3 | Parte própria para a voz, matriz de modelos corrigida, tradução por resolver, privacidade e Artigo 50, roadmap por gates; Parte VI com o Parlo Intelligent Model Orchestrator |
+| v12.3 (revisão) | Integração do PIMO: manifesto e evidência, filtragem, perfil de dispositivo, três níveis de avaliação, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback com proteção de voz, ciclo de vida, cache, testes e fases |
 
 Versões do produto e versões do plano são coisas diferentes. A versão do produto avança a partir da última tag publicada; a do plano avança quando este documento é revisto.
 

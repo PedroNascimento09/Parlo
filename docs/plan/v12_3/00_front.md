@@ -11,7 +11,7 @@ Esta versão 12.3 substitui a v12.2 como fonte principal de verdade do Parlo. Ma
 
 O documento separa três coisas que a versão anterior misturava em alguns pontos: o que está implementado e medido, o que está planeado com critérios de conclusão, e o que está em avaliação sem resultado. Uma capacidade descrita neste plano não é uma capacidade existente; o estado de cada uma está na secção 1, na matriz da secção 20 e no mapa de versões do Apêndice E.
 
-A numeração é contínua de 1 a 58, agrupada em doze partes, sem títulos duplicados e sem capítulos órfãos. Cada parte pode ser lida isoladamente, mas as decisões das Partes XI e XII prevalecem sobre descrições genéricas das partes anteriores.
+A numeração é contínua de 1 a 70, agrupada em doze partes, sem títulos duplicados e sem capítulos órfãos. A Parte VI é a especificação do orquestrador de modelos. Cada parte pode ser lida isoladamente, mas as decisões das Partes XI e XII prevalecem sobre descrições genéricas das partes anteriores.
 
 ## Regra de evidência
 
@@ -33,6 +33,7 @@ A numeração é contínua de 1 a 58, agrupada em doze partes, sem títulos dupl
 - Acrescentam-se secções próprias para privacidade e dados biométricos, Regulamento Europeu da IA com o Artigo 50, segurança da cadeia de fornecimento e direitos de voz.
 - O capítulo das licenças deixa de sugerir que a separação por processos resolve sozinha a questão GPL, e mantém Argos fora do núcleo enquanto a cadeia AGPL não estiver fechada.
 - Roadmap e fases passam a ser definidos por dependências e critérios de conclusão, sem datas nem estimativas.
+- A orquestração de modelos ganha especificação própria na Parte VI: PIMO, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição de pipeline, monitorização com histerese, recuperação, ciclo de vida e protetor da identidade vocal.
 
 ## Índice
 
@@ -72,51 +73,63 @@ PARTE V · LICENÇAS E DIREITOS
 25. Direitos de voz e uso aceitável
 26. Conformidade automática em cada release
 
-PARTE VI · MODEL HUB, AUTO SELECT E QUALIDADE
-27. Model Hub
-28. Manifesto por modelo
-29. Auto Select
-30. Fallback
-31. Benchmarks internos e gates
+PARTE VI · ORQUESTRAÇÃO INTELIGENTE, MODEL HUB E AUTO SELECT
+27. Arquitetura de orquestração: PIMO e fronteiras
+28. Manifesto por modelo e níveis de evidência
+29. Descoberta e filtragem eliminatória
+30. Perfil automático do dispositivo
+31. Avaliação em três níveis
+32. Benchmarks com evidência por tarefa
+33. Seleção multicritério
+34. Composição de pipeline
+35. Monitorização de runtime e adaptação
+36. Fallback e proteção da identidade vocal
+37. Model Hub e ciclo de vida
+38. Cache de resultados e reutilização
+39. Privacidade e segurança da orquestração
+40. Experiência do utilizador e transparência
+41. Testes automáticos da orquestração
+42. Critérios de aceitação do PIMO
+43. Fases de implementação do PIMO
 
 PARTE VII · ARQUITETURA E PLATAFORMA
-32. Camadas, núcleo e isolamento
-33. Protocolo entre núcleo e motores
-34. Pipeline de áudio, latência e adaptação
-35. Hardware, backends e perfis
-36. Extensibilidade: CLI, API, SDK e plugins
+44. Camadas, núcleo e isolamento
+45. Protocolo entre núcleo e motores
+46. Pipeline de áudio, latência e adaptação
+47. Hardware, backends e perfis
+48. Extensibilidade: CLI, API, SDK e plugins
 
 PARTE VIII · PRIVACIDADE, SEGURANÇA E LEGISLAÇÃO
-37. Privacidade local-first
-38. Dados pessoais e biométricos
-39. Regulamento Europeu da IA e Artigo 50
-40. Segurança e cadeia de fornecimento
-41. Reuniões: consentimento e contexto
+49. Privacidade local-first
+50. Dados pessoais e biométricos
+51. Regulamento Europeu da IA e Artigo 50
+52. Segurança e cadeia de fornecimento
+53. Reuniões: consentimento e contexto
 
 PARTE IX · REUNIÕES
-42. Parlo Meeting: Lite, Live e Chat
+54. Parlo Meeting: Lite, Live e Chat
 
 PARTE X · QUALIDADE, ROADMAP E FASES
-43. Lições de Handy, VoiceStudio e Wispr Flow
-44. Roadmap incremental
-45. Fases de execução e critérios de conclusão
-46. Definição de concluída e regras de corte
-47. Barra competitiva
+55. Lições de Handy, VoiceStudio e Wispr Flow
+56. Roadmap incremental
+57. Fases de execução e critérios de conclusão
+58. Definição de concluída e regras de corte
+59. Barra competitiva
 
 PARTE XI · OPEN SOURCE, DISTRIBUIÇÃO E GOVERNANÇA
-48. Repositório e ficheiros obrigatórios
-49. Licença do código, DCO e contribuições
-50. Releases, artefactos e avisos
-51. Transparência na aplicação
-52. Governação
+60. Repositório e ficheiros obrigatórios
+61. Licença do código, DCO e contribuições
+62. Releases, artefactos e avisos
+63. Transparência na aplicação
+64. Governação
 
 PARTE XII · DECISÕES E RISCOS
-53. Decisões fechadas
-54. Decisões que o Parlo toma automaticamente
-55. Decisões pendentes de teste interno
-56. Questões que exigem decisão humana ou validação jurídica
-57. Riscos por severidade
-58. Checklist final antes da primeira release
+65. Decisões fechadas
+66. Decisões que o Parlo toma automaticamente
+67. Decisões pendentes de teste interno
+68. Questões que exigem decisão humana ou validação jurídica
+69. Riscos por severidade
+70. Checklist final antes da primeira release
 
 APÊNDICES
 A. Factos por componente

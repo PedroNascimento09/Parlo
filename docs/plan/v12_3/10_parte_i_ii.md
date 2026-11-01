@@ -4,7 +4,7 @@
 
 O Parlo tem hoje um núcleo funcional pequeno e verificável: reconhecimento local, tradução local e síntese opcional, ligados por um protocolo local, mais uma aplicação de janela própria. Tem também uma política de licenciamento implementada e automatizada. Não tem clonagem de voz, não tem Model Hub, não tem seleção automática e não tem a tradução EN→PT resolvida. Esta secção diz exatamente onde está cada coisa, porque um plano que confunde protótipo com produto leva a decisões erradas nas partes seguintes.
 
-### 1.1 Estado verificado nesta revisão
+### 1.1. Estado verificado nesta revisão
 
 | Área | Estado | Evidência |
 |---|---|---|
@@ -21,7 +21,7 @@ O Parlo tem hoje um núcleo funcional pequeno e verificável: reconhecimento loc
 | Licenciamento | Implementado | Apache-2.0 no código original, MIT preservado para releases antigas, avisos e SBOM gerados |
 | Gate de licenças | Implementado | `tools/licenses.py` lê a cadeia Rust, a cadeia Python e o catálogo de modelos |
 
-### 1.2 Números medidos, com condições
+### 1.2. Números medidos, com condições
 
 | Medição | Valor | Condições |
 |---|---|---|
@@ -32,9 +32,9 @@ O Parlo tem hoje um núcleo funcional pequeno e verificável: reconhecimento loc
 | Tradução PT→EN por OPUS-MT | 69 a 130 ms por frase | CTranslate2 int8, 4 threads, beam 4, penalização de repetição |
 | Cobertura de licenças | 523 componentes, zero problemas | `tools/licenses.py check --verify-installed` |
 
-Estes números não são promessas de produto. São o ponto de partida dos gates da secção 31 e mudam quando o corpus, o modelo ou o hardware mudarem.
+Estes números não são promessas de produto. São o ponto de partida dos gates da secção 32 e mudam quando o corpus, o modelo ou o hardware mudarem.
 
-### 1.3 Decisões executivas
+### 1.3. Decisões executivas
 
 | Tema | Decisão |
 |---|---|
@@ -49,7 +49,7 @@ Estes números não são promessas de produto. São o ponto de partida dos gates
 | Plataforma inicial | Windows primeiro; macOS e Linux por marcos próprios |
 | Privacidade | Áudio, perfis, transcrições e traduções ficam no dispositivo; nenhuma telemetria obrigatória |
 
-> Regra de leitura do estado: enquanto a secção 55 tiver itens abertos, o Parlo não anuncia a capacidade correspondente. Uma capacidade em avaliação não aparece no README, nas notas de release nem na interface como se existisse.
+> Regra de leitura do estado: enquanto a secção 67 tiver itens abertos, o Parlo não anuncia a capacidade correspondente. Uma capacidade em avaliação não aparece no README, nas notas de release nem na interface como se existisse.
 
 ## 2. Visão, público e família de produtos
 
@@ -57,7 +57,7 @@ Estes números não são promessas de produto. São o ponto de partida dos gates
 
 A voz é parte do argumento, não um detalhe de acabamento. Uma tradução falada numa voz genérica faz o interlocutor ouvir outra pessoa. O Parlo persegue a identidade vocal autorizada e diz com clareza quando não a consegue garantir.
 
-### 2.1 Público
+### 2.1. Público
 
 | Público | Necessidade | Superfície |
 |---|---|---|
@@ -68,7 +68,7 @@ A voz é parte do argumento, não um detalhe de acabamento. Uma tradução falad
 | Criadores de conteúdo | Dobrar conteúdo autorizado na própria voz | Dub |
 | Programadores e integradores | Contratos estáveis, CLI e API | CLI, API local, SDK |
 
-### 2.2 Família de produtos sobre o mesmo núcleo
+### 2.2. Família de produtos sobre o mesmo núcleo
 
 | Produto | Utilidade | Estado |
 |---|---|---|
@@ -101,7 +101,7 @@ A voz é parte do argumento, não um detalhe de acabamento. Uma tradução falad
 
 A síntese deixou de ser um módulo de leitura em voz alta para se tornar o centro do produto. Esta política define o que o Parlo tenta primeiro, o que faz quando não consegue, e o que diz ao utilizador.
 
-### 4.1 Ordem de tentativa
+### 4.1. Ordem de tentativa
 
 | Ordem | Caminho | Quando é usado | O que o utilizador vê |
 |---|---|---|---|
@@ -112,7 +112,7 @@ A síntese deixou de ser um módulo de leitura em voz alta para se tornar o cent
 
 A ordem é aplicada pelo Auto Select, não pelo utilizador. A troca nunca é silenciosa: os estados 3 e 4 exigem aviso visível e registo no histórico da sessão.
 
-### 4.2 O que a política proíbe
+### 4.2. O que a política proíbe
 
 - Substituir a voz da pessoa por uma voz genérica sem o dizer, mesmo quando a qualidade sobe.
 - Anunciar «voz preservada» quando o motor mudou e a identidade não foi medida nesse motor.
@@ -120,18 +120,18 @@ A ordem é aplicada pelo Auto Select, não pelo utilizador. A troca nunca é sil
 - Clonar voz de terceiros sem autorização declarada, ou manter perfis de voz de terceiros pré-instalados.
 - Usar amostras de voz para treino, telemetria ou melhoria de modelos. Não existe recolha de dados para treino.
 
-### 4.3 Consequências para o resto do plano
+### 4.3. Consequências para o resto do plano
 
 - A matriz de modelos da secção 20 distingue quem clona, quem só sintetiza e quem desenha voz.
-- O Model Hub da secção 27 tem a clonagem como tarefa de primeira classe, com requisitos de memória e latência próprios.
-- O gate de qualidade da secção 31 inclui identidade vocal, não apenas inteligibilidade.
+- O Model Hub da secção 37 tem a clonagem como tarefa de primeira classe, com requisitos de memória e latência próprios.
+- O gate de qualidade da secção 32 inclui identidade vocal, não apenas inteligibilidade.
 - A interface da secção 11 distingue três estados de voz e nunca os confunde.
 
 ## 5. Voice Profile, consentimento e ciclo de vida
 
 Um Voice Profile é um recurso local que representa a voz de uma pessoa autorizada. Não é um ficheiro solto no disco: tem identidade, finalidade, consentimento, artefactos derivados e uma operação de eliminação que remove tudo.
 
-### 5.1 Criação
+### 5.1. Criação
 
 | Passo | O que acontece | Regra |
 |---|---|---|
@@ -143,18 +143,18 @@ Um Voice Profile é um recurso local que representa a voz de uma pessoa autoriza
 | 6. Pré-visualização | Frase curta sintetizada com o perfil | O utilizador ouve antes de ativar |
 | 7. Ativação | Perfil guardado e disponível para os motores compatíveis | Nome, idioma de referência e data visíveis |
 
-### 5.2 Registo de consentimento
+### 5.2. Registo de consentimento
 
 O registo é local e contém, no mínimo: identificador do perfil; declaração de que a voz é do próprio ou de pessoa que autorizou; finalidade (ditado, legendas, reuniões, dobragem); versão do texto de informação apresentado; data e hora; e o âmbito autorizado. Não se inventa verificação de identidade que o projeto não consegue garantir: o Parlo registra uma declaração, não certifica uma pessoa.
 
-### 5.3 Proteção e armazenamento
+### 5.3. Proteção e armazenamento
 
 - Amostras, embeddings, prompts de voz e cache vivem numa pasta de dados do utilizador, fora do repositório e fora dos arquivos de release.
 - Encriptação opcional com chave do sistema operativo (DPAPI no Windows, Keychain no macOS, Secret Service no Linux), ativada por pedido do utilizador e documentada.
 - Nada é enviado para fora da máquina, nem para verificação, nem para melhoria de qualidade.
 - Perfis de terceiros pré-instalados não existem, em nenhuma circunstância.
 
-### 5.4 Eliminação
+### 5.4. Eliminação
 
 A eliminação de um perfil remove amostra de referência, transcrição de referência, embeddings, prompts, caches, previews e registos de consentimento associados, e invalida qualquer cache de síntese que dependa dele. A operação termina com uma confirmação que lista o que foi apagado. Exportar e importar perfis é permitido, mas o ficheiro exportado é marcado como sensível e não é incluído em cópias automáticas.
 
@@ -162,7 +162,7 @@ A eliminação de um perfil remove amostra de referência, transcrição de refe
 
 Um perfil criado para um motor não é um perfil universal. Motores diferentes usam representações diferentes: alguns guardam embeddings, outros precisam de áudio de referência com transcrição, outros de um prompt acústico com duração fixa. Assumir compatibilidade é a forma mais rápida de quebrar a promessa de identidade vocal.
 
-### 6.1 Modelo de dados
+### 6.1. Modelo de dados
 
 | Camada | Conteúdo | Partilhada? |
 |---|---|---|
@@ -171,7 +171,7 @@ Um perfil criado para um motor não é um perfil universal. Motores diferentes u
 | Representação por motor | Embedding, prompt ou cache específico do motor e da versão | Não: é derivada e versionada |
 | Cache de síntese | Áudio gerado, por texto e motor | Não: descartável |
 
-### 6.2 Regras de mudança de motor
+### 6.2. Regras de mudança de motor
 
 - O Parlo verifica se existe representação válida para o motor de destino. Se existir, usa-a; se não, deriva-a a partir da amostra de referência.
 - Se a amostra de referência foi apagada por opção do utilizador, a derivação é impossível. O Parlo diz isso antes da troca, não depois, e oferece uma de duas saídas: manter o motor atual ou criar um novo perfil com nova gravação.
@@ -182,7 +182,7 @@ Um perfil criado para um motor não é um perfil universal. Motores diferentes u
 
 Preservar a voz entre idiomas não significa preservar o sotaque. O objetivo é manter o timbre, a qualidade da voz e traços prosódicos reconhecíveis, aceitando que a pronúncia de uma língua estrangeira pode ser marcada pela língua de origem. A interface deve dizer isto de forma simples, porque é a expectativa mais comum e a mais fácil de desiludir.
 
-### 7.1 O que é medido
+### 7.1. O que é medido
 
 | Dimensão | Método | Uso |
 |---|---|---|
@@ -195,7 +195,7 @@ Preservar a voz entre idiomas não significa preservar o sotaque. O objetivo é 
 
 Os limiares numéricos são internos e publicados apenas com o método e o hardware ao lado. Um valor sem condições não entra em notas de release.
 
-### 7.2 Limites assumidos
+### 7.2. Limites assumidos
 
 - A identidade mantém-se tanto melhor quanto mais próxima for a língua de destino da língua da amostra. Pares distantes exigem amostras maiores e produzem resultados mais frágeis.
 - Nenhum motor é declarado bom em todos os pares. O estado é por combinação: motor, par de línguas, variante regional e hardware.
