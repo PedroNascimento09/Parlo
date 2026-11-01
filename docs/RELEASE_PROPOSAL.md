@@ -67,7 +67,8 @@ Everything below is on `main` since `v0.1.7`, 48 commits, and is reachable from 
 ## 5. Test state
 
 - Python engine: `163 tests, OK` (`engines/cascade`, this batch).
-- The Rust workspace is unaffected by this batch and its checks were run before it; run them again as part of any release build.
+- Rust workspace: `cargo test --workspace` green (4 test binaries, 0 failures) on this batch.
+- `cargo clippy --workspace --all-targets -- -D warnings` and `cargo fmt --all --check` belong to the publication checklist below and were not run for this proposal.
 - The translation gate is a script, not a test suite: it is evidence, and its numbers are in `docs/BENCHMARKS.md`.
 - No regression was observed. Nothing was validated with people outside this machine.
 
