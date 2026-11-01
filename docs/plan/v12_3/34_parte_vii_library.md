@@ -39,7 +39,7 @@ O catálogo é metadado, não peso. Atualiza-se de forma independente da aplica�
 
 | Elemento | Onde vive | Regra |
 |---|---|---|
-| Catálogo, manifestos e hashes | Repositório público dedicado, `parlo-models` | Versionado, assinado e independente da aplicação |
+| Catálogo, manifestos e hashes | Repositório principal do Parlo, pasta `catalog/` | Versionado, assinado e independente do instalador |
 | Pesos e vozes | Fontes oficiais e armazenamento próprio de artefactos | Não entram no Git nem no instalador |
 | Cliente de catálogo | Aplicação | Lê um esquema versionado de uma origem fixa |
 | Origem alternativa | Qualquer hospedagem estática ou CDN | Mudar de origem não exige alterar a aplicação |
@@ -53,6 +53,10 @@ O catálogo é metadado, não peso. Atualiza-se de forma independente da aplica�
 7. Só os modelos escolhidos são descarregados.
 
 Regras: descobrir não descarrega; atualizar o catálogo não substitui modelos instalados nem altera preferências; uma entrada nova entra como não instalada, mesmo que seja claramente melhor para aquele dispositivo. Se o catálogo não puder ser atualizado, a aplicação funciona com a cópia local e diz há quanto tempo não é atualizada. A consulta ao catálogo é a única chamada externa permitida e não transporta áudio, conteúdo, perfis nem identificadores de utilizador: envia a versão da aplicação e do esquema.
+
+Os pesos nunca passam pelo repositório do Parlo. São obtidos na fonte oficial indicada no manifesto, ou num distribuidor autorizado, com licença verificada e hash confirmado. Os modelos instalados ficam numa pasta de dados do utilizador, separada dos ficheiros da aplicação e do catálogo, pelo que atualizar a aplicação não os toca.
+
+Separar o catálogo num repositório próprio é uma opção futura, não uma decisão tomada. Só se justifica quando existir uma razão técnica concreta: catálogo grande ao ponto de tornar o repositório principal desconfortável, necessidade de publicar metadados em cadência diferente da aplicação, ou um segundo consumidor do mesmo catálogo. Até lá, um catálogo versionado no repositório principal é mais simples, auditável e não cria infraestrutura a manter.
 
 ## 47. Compatibilidade entre versões
 

@@ -152,7 +152,7 @@ Decisões de arquitetura e de licenciamento são registadas com data, contexto e
 | 11 | Orquestração determinística, sem meta-modelo | Regras, manifestos e medições explicam cada escolha |
 | 12 | Sem benchmarks pesados na máquina do utilizador | Níveis A, B e C separados |
 | 13 | Aplicação sem pesos, com orçamento próprio | Objetivo de 100 MB, limite de referência de 150 MB |
-| 14 | Biblioteca independente em `parlo-models` | Catálogo e pesos evoluem sem reinstalar a aplicação |
+| 14 | Biblioteca independente do instalador, catálogo no repositório principal | Pesos fora do Git; separação do catálogo só com justificação técnica |
 | 15 | Manifestos assinados com Ed25519 | Chave pública na aplicação; privada fora do repositório |
 | 16 | Sem Authenticode nesta fase | Hashes e instruções, sem os apresentar como assinatura |
 | 17 | Clonagem da própria voz e de terceiros autorizados | Declaração obrigatória; engano proibido |

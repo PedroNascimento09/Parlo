@@ -90,7 +90,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 |---|---|---|
 | Estrutura | Doze partes com secções 1 a 58, algumas fora de ordem e um subtítulo de interface dentro da secção errada | Treze partes, secções 1 a 82 em ordem, sem duplicações; a voz, a orquestração e a biblioteca ganham partes próprias |
 | Biblioteca | Modelos descritos apenas como entradas de catálogo, sem ciclo de vida próprio | Parte VII: duas camadas, contratos, catálogo evolutivo, compatibilidade, instalar e remover, armazenamento, curadoria, novidades, importação, distribuição segura, ciclos independentes e dois modos |
-| Orientações do autor | Dezasseis pontos em aberto sobre tamanho, catálogo, assinatura, Piper, Argos, corpus e jurídico | Fixados na Parte VII e nas secções 77 a 82: orçamento de 100 MB, `parlo-models`, Ed25519, Piper fora do instalador, Argos fora do núcleo, corpus CC0-1.0, sem parecer jurídico nesta fase |
+| Orientações do autor | Dezasseis pontos em aberto sobre tamanho, catálogo, assinatura, Piper, Argos, corpus e jurídico | Fixados na Parte VII e nas secções 77 a 82: orçamento de 100 MB, catálogo no repositório principal, Ed25519, Piper fora do instalador, Argos fora do núcleo, corpus CC0-1.0, sem parecer jurídico nesta fase |
 | Consentimento e transparência | Política de voz sem fluxo de consentimento detalhado e Artigo 50 tratado de forma genérica | Secções 5, 25, 63 e 75: ecrãs de consentimento, registo por perfil, avisos contextuais, etiqueta de síntese, proveniência no ficheiro e revogação com eliminação |
 | Orquestração | Model Hub e Auto Select em cinco secções, sem ciclo de avaliação nem monitorização | Parte VI com PIMO: manifesto e níveis de evidência, filtragem, perfil de dispositivo, avaliação em três níveis, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback, ciclo de vida, cache, testes, critérios de aceitação e fases |
 | Voz | Clonagem descrita dentro da estratégia de TTS | Parte II completa: política, perfil, consentimento, compatibilidade, identidade, papéis da voz neutra |
@@ -129,7 +129,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 19. A compatibilidade entre aplicação, catálogo, runtime e modelo é calculada, não prometida.
 20. Importar um modelo externo nunca executa código do pacote e nunca o promove a validado.
 21. O instalador tem objetivo de 100 MB e limite de referência de 150 MB, sem pesos dentro.
-22. O catálogo vive em `parlo-models` e os manifestos são assinados em Ed25519, com a chave pública na aplicação.
+22. O catálogo vive no repositório principal e os manifestos são assinados em Ed25519, com a chave pública na aplicação.
 23. Sem certificado Windows nesta fase, publicam-se hashes e instruções, sem os apresentar como assinatura.
 24. O corpus de avaliação é original, sob CC0-1.0, e cobre PT-PT, PT-BR e EN nos dois sentidos.
 25. A conformidade é acompanhada numa checklist interna, revista por release, sem parecer jurídico contratado.
@@ -171,7 +171,7 @@ Verificação documental realizada em 1 de novembro de 2026. Cartões e reposit�
 | v12.3 | Parte própria para a voz, matriz de modelos corrigida, tradução por resolver, privacidade e Artigo 50, roadmap por gates; Parte VI com o Parlo Intelligent Model Orchestrator |
 | v12.3 (revisão) | Integração do PIMO: manifesto e evidência, filtragem, perfil de dispositivo, três níveis de avaliação, benchmarks por tarefa, seleção multicritério, composição, monitorização, fallback com proteção de voz, ciclo de vida, cache, testes e fases |
 | v12.3 (revisão 2) | Biblioteca modular: separação aplicação e biblioteca, contratos entre módulos, catálogo evolutivo, compatibilidade entre versões, gestão por modelo, armazenamento, curadoria, avaliação de novidades, importação externa, distribuição assinada e ciclos de atualização independentes |
-| v12.3 (revisão 3) | Decisões finais do autor: orçamento de 100 MB, catálogo em `parlo-models` com Ed25519, Piper e Argos fora do núcleo, corpus CC0-1.0, latência em P50 e P95 por perfil, checklist interna de conformidade em vez de parecer jurídico |
+| v12.3 (revisão 3) | Decisões finais do autor: orçamento de 100 MB, catálogo no repositório principal com Ed25519, Piper e Argos fora do núcleo, corpus CC0-1.0, latência em P50 e P95 por perfil, checklist interna de conformidade em vez de parecer jurídico |
 | v12.3 (revisão 4) | Sistema de consentimento, avisos e transparência: ecrãs antes do perfil, origem declarada, registo por perfil, sete momentos de aviso, usos proibidos, etiqueta de síntese, proveniência no ficheiro, marca de água só quando verificada e revogação com eliminação |
 
 Versões do produto e versões do plano são coisas diferentes. A versão do produto avança a partir da última tag publicada; a do plano avança quando este documento é revisto.
