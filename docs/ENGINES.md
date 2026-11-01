@@ -31,7 +31,7 @@ Rules an adapter must follow:
 | `hibiki` | Voice preserved | NVIDIA 8 to 12 GB VRAM | CC BY-NC-SA 4.0 | Optional premium |
 | `cloud` | Voice | Any | Vendor terms | Opt-in, off by default |
 
-The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today in both directions: Parakeet TDT 0.6B v3 int8 through sherpa-onnx, Argos, and a Piper neutral voice in the target language. The recogniser is CC-BY-4.0, the runtime Apache-2.0. Measured at 0.113 real time factor on 4 threads with a 2.5 second window; Whisper base remains available with `PARLO_CASCADE_STT=whisper` at 0.309. The first start after a boot costs about 18 s here, sidecar and every model included, while a warmed process turns a segment around in 420.7 ms.
+The cascade adapter lives in [../engines/cascade](../engines/cascade) and runs end to end today in both directions: Parakeet TDT 0.6B v3 int8 through sherpa-onnx, an OPUS-MT package read through CTranslate2, and a Piper neutral voice in the target language. The recogniser is CC-BY-4.0, the runtime Apache-2.0. Measured at 0.113 real time factor on 4 threads with a 2.5 second window; Whisper base remains available with `PARLO_CASCADE_STT=whisper` at 0.309. The first start after a boot costs about 18 s here, sidecar and every model included, while a warmed process turns a segment around in 420.7 ms.
 
 ## Recogniser models
 
@@ -53,7 +53,7 @@ python engines/cascade/scripts/setup_models.py --stt both --whisper small
 python engines/cascade/scripts/setup_models.py --stt whisper --whisper medium
 ```
 
-The first command installs Parakeet and caches Whisper `small`, so both can be compared; the second caches only `medium`. Voices and the Argos packages are always installed.
+The first command installs Parakeet and caches Whisper `small`, so both can be compared; the second caches only `medium`. Voices and the two OPUS-MT packages are installed as well; each package is fetched from the published index, checked before it is unpacked, and kept outside the program.
 
 Two measurements that must not be read against each other, because they count different work:
 

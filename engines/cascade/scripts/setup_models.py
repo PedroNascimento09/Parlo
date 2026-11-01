@@ -116,22 +116,14 @@ def install_parakeet() -> None:
         download(f"{PARAKEET_BASE}/{name}", target, digest, size)
 
 
-def install_argos(source: str, target: str) -> None:
-    import argostranslate.package as package
+def install_pack(source: str, target: str) -> None:
+    from parlo_cascade import packs
 
-    package.update_package_index()
-    match = next(
-        (
-            candidate
-            for candidate in package.get_available_packages()
-            if candidate.from_code == source and candidate.to_code == target
-        ),
-        None,
-    )
-    if match is None:
-        raise SystemExit(f"argos has no package for {source}->{target}")
-    package.install_from_path(match.download())
-    print(f"installed argos {source}->{target}")
+    try:
+        installed = packs.install(source, target)
+    except packs.PackError as error:
+        raise SystemExit(f"cannot install the {source}->{target} package: {error}")
+    print(f"installed {source}->{target} in {installed}")
 
 
 def warm_whisper(size: str) -> None:
@@ -142,12 +134,12 @@ def warm_whisper(size: str) -> None:
 
 
 def warm_translation(source: str, target: str) -> None:
-    import truststore
+    from parlo_cascade import mt
 
-    truststore.inject_into_ssl()
-    import argostranslate.translate
-
-    argostranslate.translate.translate("Hello, this is a test.", source, target)
+    translator = mt.from_environment(source, target)
+    if translator is None:
+        raise SystemExit(f"no translation package installed for {source}->{target}")
+    translator("Hello, this is a test.")
     print(f"cached    sentence model for {source}->{target}")
 
 
@@ -168,7 +160,7 @@ def main(argv=None) -> int:
     if args.stt in ("whisper", "both"):
         warm_whisper(args.whisper)
     for source, target in DIRECTIONS:
-        install_argos(source, target)
+        install_pack(source, target)
     for source, target in DIRECTIONS:
         warm_translation(source, target)
     print("models ready")

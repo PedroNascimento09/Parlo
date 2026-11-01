@@ -60,7 +60,6 @@
     "torch": "BSD-3-Clause"
   },
   "known_issues": {
-    "minisbd": "AGPL-3.0-only, pulled in by argostranslate, blocks a release until the Argos decision is made",
     "r-efi": "LGPL-2.1-or-later, reachable only through the UEFI target of getrandom"
   }
 }

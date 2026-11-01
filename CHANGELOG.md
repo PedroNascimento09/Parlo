@@ -24,6 +24,7 @@ Blocked by the licence gate: the Argos translation packs in `catalog/models.json
 - `setup_models.py --voice pt_pt` fetches the Piper `pt_PT-tugão-medium` voice.
 - `parlo_cascade/mt.py`, a translator that runs an OPUS-MT model through CTranslate2 with its own SentencePiece vocabulary, so a model translates without the Argos runtime; it uses the folder in `PARLO_CASCADE_MT_DIR` when set, otherwise the package installed for the pair, and reports a missing model instead of guessing.
 - The model catalogue carries the two OPUS-MT packages as CC BY 4.0 with their authors named, read from the licence line the package itself ships.
+- `parlo_cascade/packs.py`, a downloader for those packages: it reads the published index, streams the archive with a 512 MB ceiling, refuses entries that escape the folder, checks the files a model needs, writes the SHA-256 and the index it came from next to the copy, and leaves an existing install untouched.
 - **Voice profiles in the app.** Create a profile for your own voice, or for someone
   else's with their permission, and Parlo records the consent locally with the purpose,
   the notice version and the time. Revoke or delete it from the same panel; deleting
@@ -36,7 +37,8 @@ Blocked by the licence gate: the Argos translation packs in `catalog/models.json
 - The engine log is written to `parlo-engine.log` in the temporary folder when the window starts it, because a double-clicked app has no console.
 - The minimum Rust version is 1.85.
 - `scripts/parlo-app.cmd` and `scripts/parlo-app.sh` build both programs and open the window.
-- The cascade translates through that backend when a package exists and keeps `argostranslate` as the fallback, with the SentencePiece word marker cleaned out of the output.
+- The cascade translates through that backend and nothing else: `argostranslate` left the engine, the requirements, the PyInstaller spec and the licence closure, taking the AGPL `minisbd` sentence splitter with it. The SentencePiece word marker is cleaned out of the output.
+- `setup_models.py` installs the packages itself instead of calling the Argos tooling, and warms the pair through the same backend the engine uses.
 - Piper left the engine program: `parlo-engine` no longer bundles `piper`, `piper_phonemize` or the espeak-ng data, so the packaged engine carries no GPL code. The synthesiser is an optional adapter in `engines/tts-piper`, installed separately by the user and driven over JSON lines on a pipe; without it Parlo translates and recognises as before and says the voice is unavailable.
 - Engine requirements are pinned to exact versions, every commit in a pull request must carry a DCO sign-off, and the release workflow refuses to build while the licence gate reports an open issue.
 - The original code moved to the Apache License 2.0 once the copyright holders confirmed the whole history; releases up to v0.1.7 keep the MIT text they were published with, in `licenses/MIT-Parlo-0.1.x.txt`.

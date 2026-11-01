@@ -23,7 +23,6 @@ hiddenimports = [
 
 for package in (
     "sherpa_onnx",
-    "argostranslate",
     "onnxruntime",
     "faster_whisper",
     "ctranslate2",

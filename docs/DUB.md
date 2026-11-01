@@ -44,7 +44,7 @@ The recognition backend is the same one the live path uses: Parakeet by default,
 
 1. ffmpeg decodes the file to 16 kHz mono, the only format the cascade accepts.
 2. The audio is split into sentences on pauses of about 0.28 s, with a 15 s ceiling so a long monologue still fits one recognition call.
-3. Each segment is recognised, translated with Argos, and synthesised with the Piper voice of the target language.
+3. Each segment is recognised, translated with the OPUS-MT package of the pair, and synthesised with the Piper voice of the target language.
 4. Every line is placed at the moment the original sentence started. If the translation does not fit its slot, it is synthesised again up to about 18 percent faster.
 5. With `--keep-background` the original audio is mixed under the new track, following a ducking envelope built from the line times: 0.55 while nobody speaks, about 0.10 under a translated line, with a 0.15 s fade on each side.
 6. ffmpeg copies the video stream unchanged, replaces the audio with the new track, and the translated lines are written as `.srt`.

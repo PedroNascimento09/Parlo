@@ -2,6 +2,8 @@ import os
 import re
 from pathlib import Path
 
+from . import packs
+
 LANGUAGE_TOKEN = re.compile(r"\s*>>[A-Za-z_]{2,8}<<\s*$")
 TRAILING_SEPARATOR = re.compile(r"\s+[,.;:]+$")
 
@@ -25,23 +27,20 @@ def strip_language_token(text):
     return cleaned.strip(" .,") if cleaned.endswith("<<") else cleaned
 
 
-def packages_root():
+def pack_roots():
     override = os.environ.get("PARLO_MT_PACKS_DIR")
     if override:
-        return Path(override)
-    candidates = []
+        return [Path(override)]
+    root = []
     appdata = os.environ.get("APPDATA")
     if appdata:
-        candidates.append(Path(appdata) / "argos-translate" / "packages")
-    candidates.append(Path.home() / ".local" / "share" / "argos-translate" / "packages")
-    for candidate in candidates:
-        if candidate.is_dir():
-            return candidate
-    return candidates[-1]
+        root.append(Path(appdata) / "argos-translate" / "packages")
+    root.append(Path.home() / ".local" / "share" / "argos-translate" / "packages")
+    root.append(packs.packs_dir())
+    return root
 
 
-def find_pack(source, target, root=None):
-    folder = Path(root) if root else packages_root()
+def _find_in(folder, source, target):
     prefix = f"translate-{source}_{target}"
     if not folder.is_dir():
         return None
@@ -51,6 +50,16 @@ def find_pack(source, target, root=None):
         if entry.is_dir() and (entry.name == prefix or entry.name.startswith(prefix + "-"))
     ]
     return matches[-1] if matches else None
+
+
+def find_pack(source, target, root=None):
+    if root is not None:
+        return _find_in(Path(root), source, target)
+    for folder in pack_roots():
+        found = _find_in(folder, source, target)
+        if found is not None:
+            return found
+    return None
 
 
 def find_vocabulary(folder):

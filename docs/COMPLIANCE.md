@@ -15,7 +15,7 @@ Status legend: **verified** means the evidence exists in the repository; **pendi
 | Licence gate | Build fails on missing, denied or unpinned licence | `tools/licenses.py`, `tools/license-policy.json` | verified |
 | Per-module index | Code, weights and voice licences separated | `LICENSES.md`, `docs/MODEL_LICENSES.md` | verified |
 | Model artefacts | Licence, hash and state per checkpoint | `catalog/models.json` | verified, one artefact pending |
-| Argos pack | Licence of the packaged translation data | catalogue entry | pending: removed from core, not catalogued as installable |
+| OPUS-MT packages | Licence of the packaged translation data | `catalog/models.json` and `parlo.json` in each install | verified: CC BY 4.0 declared by the package, attribution recorded |
 | Copyleft boundary | No GPL or AGPL code inside the core | `engines/tts-piper` external adapter only | verified |
 | Combined-work question | Whether shipping a GPL adapter beside the core creates a combined work | analysis in plan section 80 | interpretation |
 

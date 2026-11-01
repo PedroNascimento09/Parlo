@@ -4,7 +4,7 @@ Published numbers are the difference between a project people trust and a demo p
 
 ## Published results
 
-Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: Parakeet TDT 0.6B v3 int8 via sherpa-onnx, Argos Portuguese to English, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
+Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: Parakeet TDT 0.6B v3 int8 via sherpa-onnx, the OPUS-MT Portuguese to English package, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
 
 ### Recogniser choice on modest hardware
 

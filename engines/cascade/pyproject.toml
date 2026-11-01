@@ -11,7 +11,6 @@ requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 dependencies = [
     "faster-whisper==1.2.1",
-    "argostranslate==1.11.0",
     "sherpa-onnx==2.0.1",
     "numpy==2.5.4",
     "truststore==0.10.5",

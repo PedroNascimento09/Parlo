@@ -422,17 +422,6 @@ COPYLEFT = (
         "[GPL-3.0](licenses/GPL-3.0-or-later.txt)",
     ),
     (
-        "minisbd",
-        "dependency of `argostranslate`",
-        "AGPL-3.0-only",
-        "none",
-        "LibreTranslate",
-        "Required by Argos",
-        "Tracked, blocks a release",
-        "Offer the source, including to network users",
-        "https://github.com/LibreTranslate/MiniSBD",
-    ),
-    (
         "r-efi",
         "dependency of `getrandom`, UEFI target only",
         "LGPL-2.1-or-later",

@@ -47,29 +47,20 @@ SBOM attached to each release.
 | annotated-doc | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/fastapi/annotated-doc |
 | annotated-types | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/annotated-types/annotated-types |
 | anyio | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
-| argostranslate | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://www.argosopentech.com |
 | av | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://pyav.basswood.io |
-| blis | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/explosion/cython-blis |
-| catalogue | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/catalogue |
 | certifi | `parlo-engine` | MPL-2.0 | None | See the project | Required | Confirmed | Publish changes to the covered files | https://github.com/certifi/python-certifi |
 | charset-normalizer | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
 | click | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | - |
-| cloudpathlib | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
 | cloudpickle | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/cloudpipe/cloudpickle |
 | colorama | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/tartley/colorama |
-| confection | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/confection |
 | ctranslate2 | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://opennmt.net |
-| cymem | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/cymem |
-| emoji | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/carpedm20/emoji/ |
 | faster-whisper | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/SYSTRAN/faster-whisper |
 | filelock | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tox-dev/filelock |
 | flatbuffers | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://google.github.io/flatbuffers/ |
 | fsspec | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/fsspec/filesystem_spec |
 | h11 | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/python-hyper/h11 |
 | hf-xet | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/huggingface/xet-core |
-| httpcore | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://www.encode.io/httpcore/ |
 | httpcore2 | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/pydantic/httpx2 |
-| httpx | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/encode/httpx |
 | httpx2 | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/pydantic/httpx2 |
 | huggingface_hub | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/huggingface/huggingface_hub |
 | idna | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | - |
@@ -78,16 +69,12 @@ SBOM attached to each release.
 | markdown-it-py | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/executablebooks/markdown-it-py |
 | MarkupSafe | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | - |
 | mdurl | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/executablebooks/mdurl |
-| minisbd | `parlo-engine` | AGPL-3.0-only | None | See the project | Required | Confirmed | Offer the source, including to network users | https://github.com/LibreTranslate/MiniSBD |
 | mpmath | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | http://mpmath.org/ |
-| murmurhash | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/murmurhash |
-| networkx | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://networkx.org/ |
 | numpy | `parlo-engine` | BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0 | None | See the project | Required | Confirmed | See the licence text | https://numpy.org |
 | onnxruntime | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://onnxruntime.ai |
 | packaging | `parlo-engine` | Apache-2.0 OR BSD-2-Clause | None | See the project | Required | Confirmed | See the licence text | - |
 | pillow | `parlo-engine` | MIT-CMU | None | See the project | Required | Confirmed | See the licence text | https://python-pillow.org |
 | pip | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://pip.pypa.io/ |
-| preshed | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/preshed |
 | protobuf | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://developers.google.com/protocol-buffers/ |
 | psutil | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/giampaolo/psutil |
 | pydantic | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/pydantic/pydantic |
@@ -98,30 +85,22 @@ SBOM attached to each release.
 | requests | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | - |
 | rich | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/Textualize/rich |
 | sacremoses | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/hplt-project/sacremoses |
+| safetensors | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/huggingface/safetensors |
 | sentencepiece | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/google/sentencepiece |
 | setuptools | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
 | shellingham | `parlo-engine` | ISC | None | See the project | Required | Confirmed | Reproduce the notice | https://github.com/sarugaku/shellingham |
 | sherpa-onnx-core | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/k2-fsa/sherpa-onnx |
 | sherpa_onnx | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/k2-fsa/sherpa-onnx |
-| smart_open | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
-| spacy | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://spacy.io |
-| spacy-legacy | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://spacy.io |
-| spacy-loggers | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/spacy-loggers |
-| srsly | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/srsly |
-| stanza | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/stanfordnlp/stanza |
 | sympy | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://sympy.org |
-| thinc | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/thinc |
-| tokenizers | `parlo-engine` | Apache Software | None | See the project | Required | Confirmed | See the licence text | https://github.com/huggingface/tokenizers |
+| tokenizers | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/huggingface/tokenizers |
 | torch | `parlo-engine` | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://pytorch.org |
 | tqdm | `parlo-engine` | MPL-2.0 AND MIT | None | See the project | Required | Confirmed | See the licence text | https://tqdm.github.io |
+| transformers | `parlo-engine` | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/huggingface/transformers |
 | truststore | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
 | typer | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/fastapi/typer |
 | typing-inspection | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/pydantic/typing-inspection |
 | typing_extensions | `parlo-engine` | PSF-2.0 | None | See the project | Required | Confirmed | Reproduce the notice | - |
 | urllib3 | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
-| wasabi | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/wasabi |
-| weasel | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/explosion/weasel/ |
-| wrapt | `parlo-engine` | BSD-2-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/GrahamDumpleton/wrapt |
 | adler2 | Rust programs | 0BSD OR MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/oyvindln/adler2 |
 | aho-corasick | Rust programs | Unlicense OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/BurntSushi/aho-corasick |
 | alloc-no-stdlib | Rust programs | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/dropbox/rust-alloc-no-stdlib |
@@ -568,6 +547,8 @@ SBOM attached to each release.
 
 | Component | Location | Code licence | Weights, voices or data | Holder | Required | Confirmed | Obligations | Licence text |
 |---|---|---|---|---|---|---|---|---|
+| lxml | `engines/tts-piper` | BSD-3-Clause | None | See the project | Optional | Confirmed | Reproduce the notice, no endorsement | https://lxml.de/ |
+| networkx | `engines/tts-piper` | BSD-3-Clause | None | See the project | Optional | Confirmed | Reproduce the notice, no endorsement | https://networkx.org/ |
 | pathvalidate | `engines/tts-piper` | MIT | None | See the project | Optional | Confirmed | See the licence text | https://github.com/thombashi/pathvalidate |
 | piper-tts | `engines/tts-piper` | GPL-3.0-or-later | None | See the project | Optional | Confirmed | Offer the corresponding source under the GPL | http://github.com/OHF-voice/piper1-gpl |
 
@@ -605,7 +586,6 @@ component and refused in the core by `python tools/licenses.py check`.
 | Component | Location | Code licence | Weights, voices or data | Holder | Required | Confirmed | Obligations | Licence text |
 |---|---|---|---|---|---|---|---|---|
 | Piper adapter | `engines/tts-piper` | GPL-3.0-or-later | none | OHF-voice | Optional | Confirmed | Offer the corresponding source under the GPL | [GPL-3.0](licenses/GPL-3.0-or-later.txt) |
-| minisbd | dependency of `argostranslate` | AGPL-3.0-only | none | LibreTranslate | Required by Argos | Tracked, blocks a release | Offer the source, including to network users | https://github.com/LibreTranslate/MiniSBD |
 | r-efi | dependency of `getrandom`, UEFI target only | LGPL-2.1-or-later | none | Rust UEFI project | Target only | Tracked, not in a shipped binary | Offer the library source and allow relinking | https://github.com/rust-osdev/r-efi |
 
 ## What this means in practice

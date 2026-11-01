@@ -15,7 +15,7 @@ MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
 SILENCE_HOLD_SECONDS = 0.45
 MODEL_DIR = models_dir()
-REQUIRED_MODULES = ("argostranslate", "numpy", "sherpa_onnx")
+REQUIRED_MODULES = ("numpy", "sherpa_onnx")
 DEFAULT_THREADS = 4
 STT_BACKENDS = ("parakeet", "whisper")
 WHISPER_SIZES = ("tiny", "base", "small", "medium", "large-v3")
@@ -260,12 +260,12 @@ class CascadeEngine:
 
         if self._translator is None:
             self._translator = mt.from_environment(self.source, self.target)
-        if self._translator is not None:
-            return self._translator(text)
-
-        import argostranslate.translate
-
-        return argostranslate.translate.translate(text, self.source, self.target)
+            if self._translator is None:
+                raise EngineUnavailable(
+                    f"no translation model for {self.source}->{self.target}; "
+                    "run engines/cascade/scripts/setup_models.py"
+                )
+        return self._translator(text)
 
     def _synthesize(self, text: str) -> bytes:
         if self._tts is None:

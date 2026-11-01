@@ -26,20 +26,20 @@ The single source of truth is [`catalog/models.json`](../catalog/models.json). T
 | Whisper large-v3 | asr | MIT | Verified | Not required |
 | Kokoro-82M | tts | Apache-2.0 | Verified | Notices only |
 | Piper voices (`pt_PT-tugão`, `pt_BR-faber`, `en_US-lessac`) | voice | MIT, as declared by the `rhasspy/piper-voices` repository | Verified | Voice from `rhasspy/piper-voices`, repository declared MIT |
-| Argos language packages | mt | Not confirmed per package | **Unverified** | Unknown |
+| OPUS-MT `translate-pt_en-1_9` and `translate-en_pt-1_9` | mt | CC-BY-4.0, as the package declares | Verified | Required: Jörg Tiedemann and Santhosh Thottingal, OPUS-MT, CC BY 4.0 |
 | Qwen3-ASR 0.6B | asr | Apache-2.0 | Verified, experimental in Parlo | Notices only |
 | Hibiki-Zero | tts | CC BY-NC-SA 4.0 | Verified, non commercial | Required, and never the default |
 
 ## Rules the code follows
 
 1. No weights, voices or language packages are inside a release archive.
-2. Every download comes from the official source and is checked against the digest the source publishes before it is used.
+2. Every download comes from the official source and is checked before it is used: against the digest the source publishes when there is one, and otherwise against a structure check plus a SHA-256 recorded beside the installed copy, with the index it came from written into `parlo.json`.
 3. An artefact whose licence is not confirmed is not installed silently: the setup script needs an explicit opt in and prints what is unknown.
 4. A model that forbids commercial use is never the default engine and is described as such wherever it is offered.
 
 ## What is still open
 
-- The licence of each Argos language package. `argostranslate` publishes the index without a licence field per package; the packages themselves carry one that must be read. Until the translation stage moves off Argos, this entry stays `unverified`.
+- Packages beyond the two this project installs. The index carries no licence field, so each package's own README is read before it is added to the catalogue; the two here declare CC BY 4.0 and are recorded with their authors.
 - The per-voice cards of `rhasspy/piper-voices`. The repository declares MIT and the three voices used here are recorded against that declaration; if one of them ever becomes a shipped default, its own card is read first.
 - The training data licences for Parakeet and Whisper are documented by their publishers, not audited here. Redistributing the weights is allowed by the weight licence; the data is a separate question only if the weights are retrained or redistributed as a dataset.
 
