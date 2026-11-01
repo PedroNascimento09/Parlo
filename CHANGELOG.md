@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-01
+
 ### Added
 
 - Models install and leave one at a time. Every row of the list names the feature it serves, its size on disk and its own **Download** or **Remove** button, so a machine can carry the recogniser alone and nothing else; removing frees the space at once, refuses while a download is running, and leaves history, meetings, vocabulary and settings untouched. `POST /models/download/<id>` and `POST /models/remove/<id>` are the routes, and the engine accepts `--only parakeet` so the same split works without the window.

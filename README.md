@@ -88,7 +88,9 @@ A recording comes back dubbed, with subtitles timed to the source written beside
 
 ## Install
 
-**Windows.** Press Start, type `PowerShell`, press Enter, paste this line and press Enter again:
+**Windows, one click.** Download `Parlo-Setup.exe` from [Releases](https://github.com/PedroNascimento09/Parlo/releases/latest) and double click it. Parlo is installed in your user folder, appears in the Start menu and opens by itself. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**: the build is unsigned, and that warning appears once.
+
+**Windows, one line**, if you would rather not download a file: press Start, type `PowerShell`, press Enter, paste this line and press Enter again:
 
 ```powershell
 irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex

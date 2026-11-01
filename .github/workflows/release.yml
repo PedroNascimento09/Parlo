@@ -145,6 +145,40 @@ jobs:
           Copy-Item README.md, LICENSE, NOTICE, LICENSES.md, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
           Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
 
+      - name: Build the one click installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $sevenZip = @(
+            "$env:ProgramFiles\7-Zip\7z.exe",
+            "${env:ProgramFiles(x86)}\7-Zip\7z.exe"
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $sevenZip) {
+            choco install 7zip.install -y --no-progress
+            $sevenZip = "$env:ProgramFiles\7-Zip\7z.exe"
+          }
+          if (-not (Test-Path $sevenZip)) { throw "7-Zip is missing, so the one click installer cannot be built" }
+          $sfxModule = @("$(Split-Path $sevenZip)\7z.sfx", "$(Split-Path $sevenZip)\7zCon.sfx") |
+            Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $sfxModule) { throw "The 7-Zip self extracting module is missing" }
+          New-Item -ItemType Directory -Force sfx | Out-Null
+          Copy-Item scripts/install.ps1 sfx/install.ps1
+          Copy-Item scripts/setup.ps1 sfx/setup.ps1
+          & $sevenZip a -t7z -mx=1 sfx/payload.7z ${{ matrix.archive }} sfx/install.ps1 sfx/setup.ps1 | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "7-Zip could not build the payload" }
+          $config = @(
+            ';!@Install@!UTF-8!'
+            'Title="Parlo"'
+            'BeginPrompt=""'
+            'RunProgram="powershell -NoProfile -ExecutionPolicy Bypass -File setup.ps1"'
+            'GUIMode="1"'
+            ';!@InstallEnd@!'
+          )
+          Set-Content -Path sfx/config.txt -Value $config -Encoding utf8
+          cmd /c copy /b "$sfxModule" + sfx\config.txt + sfx\payload.7z Parlo-Setup.exe
+          if (-not (Test-Path Parlo-Setup.exe)) { throw "The one click installer was not produced" }
+          Get-Item Parlo-Setup.exe | Select-Object Name, Length
+
       - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
@@ -152,4 +186,5 @@ jobs:
           files: |
             ${{ matrix.archive }}
             sbom.cdx.json
+            Parlo-Setup.exe
           generate_release_notes: false

@@ -2,6 +2,15 @@
 
 Parlo is one folder and one program. Nothing is installed system-wide, no administrator password is needed, and no account exists to create.
 
+## Windows, one click
+
+1. Open the [latest release](https://github.com/PedroNascimento09/Parlo/releases/latest).
+2. Download `Parlo-Setup.exe` and double click it.
+3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The build is unsigned, so this appears once.
+4. Parlo is installed in `%LOCALAPPDATA%\Programs\Parlo`, appears in the Start menu and opens by itself.
+
+The installer carries the same files as the archive, extracts them for you and creates the shortcut. Nothing is installed system-wide, no administrator password is asked, and nothing stays open in a console.
+
 ## Windows, the short way
 
 1. Press **Start**, type `PowerShell`, press **Enter**.
