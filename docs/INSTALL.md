@@ -24,7 +24,7 @@ irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/insta
 
 That is the whole installation. The script downloads the Windows archive straight from the latest release with `curl`, unpacks it into `%LOCALAPPDATA%\Programs\Parlo` and adds the Start menu entry. To read it before running it, open [scripts/install.ps1](../scripts/install.ps1); it downloads and unpacks, nothing else.
 
-Measured on the reference machine (Windows 11, no administrator rights): the installer is **5 MB** and downloads the **72 MB** program once, which installs **187 MB**. The earlier **37 seconds** figure was measured when the package was 220 MB and had to be fetched before anything could start, so the first file is now a fifteenth of the bytes. No terminal stays open, nothing is installed system-wide, and **Apps and Features** removes it.
+Measured on the reference machine (Windows 11, no administrator rights): the installer is **44.8 MB** and installs **175 MB**; a silent install took **19 seconds**, and the window does the same work with a progress bar. The earlier **37 seconds** figure was measured when the package was 220 MB, so it is now a fifth of the bytes. No terminal stays open, nothing is installed system-wide, and **Apps and Features** removes it.
 
 The wait people notice is afterwards, on the first start: about **800 MB of models**, once, from the Models panel.
 
