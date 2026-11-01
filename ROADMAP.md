@@ -2,17 +2,27 @@
 
 No dates. A phase ends when its exit criterion is met, not when the code is written. If a criterion fails, the phase does not happen.
 
-The milestones below come from `Parlo_Plano_Mestre_v9.docx`, section 15, which is the authority on product direction. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries.
+The milestones below come from `Parlo_Plano_Mestre_v10.docx`: section 15 for the sequence, section 14.4 for what each gate measures, and sections 39 to 48 for the reported state, the committed scope, the hardware profiles, the revised model catalogue and the decisions still open. A milestone is a roadmap label and never a version number: the version advances one step from the last published tag, so the next release is `v0.1.8` whatever milestone it carries. Section 46 of the plan states the same rule, so plan and repository no longer disagree about numbering.
+
+## The committed scope
+
+The plan narrows what is promised to what one person can carry: **dictating and writing in another language, locally, on an ordinary computer** (section 40). Everything after that stays documented as vision and research and must not compete with these gates.
+
+- P0, in order: v0.3 Ouvir, v0.4 Ditar, v0.5 Escrever noutra língua.
+- P1, re-evaluated after the v0.5 gate from real use: captions, voice, the remaining surfaces.
+- Exploratory, with no calendar: full Meeting with diarisation and search, Live with a driver, advanced dubbing, team features.
+
+Dubbing is published and is not removed for being early. It is an anticipated capability with its own support, limits and maintenance, and it does not widen the main product now.
 
 ## Where the work stands (1 November 2026)
 
 Published: **v0.1.6**. In the tree and ready to tag: **v0.1.7**, the native window.
 
-The plan calls **v0.2 Foundation** complete, and it is: the CPU cascade translates Portuguese and English offline, the local API answers only with a token on loopback, thirty minutes of audio ran at 420.7 ms mean with no drift, and cold start is measured at 18.1 s.
+The plan calls **v0.2 Foundation** complete, and it is: the CPU cascade translates Portuguese and English offline, the local API answers only with a token on loopback, thirty minutes of audio ran at 420.7 ms mean with no drift, and cold start is measured at 18.1 s. The plan keeps those numbers as reported measurements and asks for hardware, method and commit to be attached before they are used in public.
 
-The plan's next milestone, **v0.3 Ouvir**, is not complete, and it is what comes next. Recognition still cuts the audio into 2.5 second windows and commits each one whole, so there is no partial, stable and final text; there is no common audio harness with timestamps, no Portuguese corpus built for streaming, and neither Nemotron nor Qwen3-ASR has been tried. G0 is met on two of its three parts: capture is stable and measured, the licence of the recogniser in use is verified, the streaming behaviour is not there.
+The plan's next milestone, **v0.3 Ouvir**, is not complete, and it is what comes next. Recognition still cuts the audio into 2.5 second windows and commits each one whole, so there is no partial, stable and final text; there is no common audio harness with timestamps, no Portuguese corpus built for streaming, and neither Nemotron 3.5 ASR nor Qwen3-ASR has been tried. G0 is met on two of its three parts: capture is stable and measured, the licence of the recogniser in use is verified, the streaming behaviour is not there.
 
-Three capabilities were built ahead of where the plan schedules them: **dubbing** (plan v1.5), the **interface** in its own window with install and uninstall (plan v0.4 to v0.9), and **captions** with translation (plan v0.6). They are shipped, measured and documented. The plan's order is not being rearranged to fit them, and the next work is still the plan's next work.
+Four capabilities exist ahead of where the plan schedules them: **dubbing** (plan v1.5), the **interface** in its own window with install and uninstall (plan v0.4 to v0.9), **captions** with translation (plan v0.6, half of it), and a **model panel** with integrity checks (plan v0.7, partial). They are shipped, measured and documented. The plan's order is not rearranged to fit them, and the next work is still the plan's next work.
 
 ## Milestones
 
@@ -20,12 +30,12 @@ Three capabilities were built ahead of where the plan schedules them: **dubbing*
 |---|---|---|---|
 | v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
 | v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current**, two of three parts met |
-| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | Not started |
-| v0.5 Escrever noutra língua | Speak Portuguese, write English, German, Spanish or French in the active field | G1 + G2 | Not started |
+| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | Not started; no dictation flow, no insertion, no global shortcut |
+| v0.5 Escrever noutra língua | Speak Portuguese, write English, German, Spanish or French in the active field | G1 + G2 | Planned, not complete; the MT stage exists, the dictation surfaces do not |
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead; system audio not |
-| v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks and a model panel, no catalogue |
-| v0.8 Voz | Read text in a neutral voice, read translations aloud | — | Partial: Piper voice in the cascade, no voice picker, no blind MOS |
-| v0.9 Live | Spoken two-way conversation through a virtual microphone | G1 + G3 | Not started |
+| v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks and a model panel, no catalogue, no rollback |
+| v0.8 Voz | Read text in a neutral voice, read translations aloud | — | Partial: a voice in the cascade, no picker, no blind MOS; not an immediate commitment |
+| v0.9 Live | Spoken two-way conversation through a virtual microphone | G1 + G3 | Not started; no virtual microphone, no echo cancellation; not an immediate commitment |
 | v1.0 Estável | Dictate, Captions, Live and Models stable, PT↔EN validated, signed installers | G4 | Not started |
 | v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Not started |
 | v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Not started |
@@ -48,24 +58,47 @@ A release declares the gate it has to pass. If the gate fails the release does n
 | G3 · Beta | 2 hours without a crash; no sustained queue growth; zero critical bugs; local network audit | v0.9 |
 | G4 · Release | Signed installers, SBOM, licences, documentation, rollback and a compatibility matrix | v1.0 onward |
 
+Section 48 of the plan lists a second, differently numbered set of gates, reusing G1 and G2 for dictation and translation and adding two that the table above does not carry:
+
+- **Hardware.** At least one CPU-only path measured on an 8 GB corporate PC and one balanced 16 GB path, plus a modern machine, with what is not supported written down.
+- **Release alignment.** `README.md`, `ROADMAP.md`, `PROGRESS.md`, `AGENTS.md`, the changelog, the cover, the index and the change log of the plan updated together, with the tag following the policy in force.
+
+Both are treated as requirements here; the numbering of section 14.4 stays the one releases declare.
+
+## Hardware, as the plan defines it
+
+CPU-only is a first class platform, not a fallback, and a machine is classified by what it can actually do rather than by the marketing name of its processor.
+
+| Profile | Typical machine | Model policy | Expected experience |
+|---|---|---|---|
+| Leve | Older x86-64, 8 GB RAM or less, no dedicated GPU | Small quantised models, one heavy task at a time, block recognition | Dictation and text translation at higher latency; no promise of Live or real time speech |
+| Equilibrado | Recent or mid range x86-64, 16 GB, Intel or AMD iGPU or none | Optimised CPU, quantisation, Parakeet or Whisper as candidates | Dictation usable every day, sequential tasks |
+| Alto | 32 GB, multicore CPU, entry or mid range GPU | More options per stage, acceleration only where a backend is validated | Lower latency and more quality |
+| Ultra | 64 GB or more and a large dedicated GPU | Larger models and a simultaneous pipeline | Best quality; never the minimum requirement |
+
+Detection reads the operating system, architecture, CPU and SIMD extensions, total and free RAM, GPUs and VRAM, supported backend, free disk, install permissions and power state. It collects no personal identifiers and sends nothing anywhere. Accelerators are a matrix tested per model, version, runtime, operating system and hardware; Vulkan, OpenVINO, DirectML, ROCm, Metal and CUDA are options, and none of them is assumed. Corporate machines need a per-user and a silent managed install, an offline package or internal mirror, configurable model directories, no administrator rights for ordinary work, proxy and firewall behaviour that is tested, and hashes, notices and rollback.
+
 ## v0.3 Ouvir, what it takes
 
+- Confirm the reference tool and the exact mode used for comparison, record a demonstration, and measure when partials and finals appear.
 - A common audio harness with timestamps, a Portuguese corpus and metrics, so a recognition change shows up as a number.
-- Streaming adapters for Parakeet and Whisper, and a first proof of Nemotron 3.5 ASR and Qwen3-ASR on the same hardware.
+- Streaming adapters for Parakeet and Whisper, and a first proof of Nemotron 3.5 ASR and Qwen3-ASR on the same hardware, without assuming a CPU path or an NVIDIA card.
 - A partial, stable and final protocol, written down and versioned, with a simple diagnostic view of what each stage is doing.
-- A side by side run against the reference tool, measuring when partials and finals appear.
-- A licence check on every candidate before it is wired in.
+- A side by side run against the reference tool on the same recordings and the same machine.
+- A licence check on every candidate, weights and runtime judged separately, before it is wired in.
 
 Out of scope for this milestone: translation changes, voice, system audio, a public installer.
 
 ## Open decisions
 
-- **The neutral voice.** The plan keeps Piper out of the distributable core while GPL compatibility is unresolved, and makes Kokoro the baseline with Piper as a reference point. The shipped engine bundles Piper and is therefore GPL-3.0-or-later as a whole, which `docs/LICENSES.md` states. Whether to keep that split or move to a permissively licensed voice is undecided.
+- **Piper and the licence of the package.** The plan records the published state as GPL-3.0-or-later for `parlo-engine`, because Piper and the espeak-ng data ship inside it, and asks for the documentation and the artefacts to keep reflecting the licence actually published. Keeping a permissive core means separating Piper into an optional component with technical and legal boundaries reviewed first. No licence changes by assumption.
+- **The neutral Portuguese voice.** The plan drops Kokoro as a PT-PT voice, because the official voice list covers Brazilian Portuguese, and treats the Chatterbox pt-PT fine-tune as an experimental candidate rather than a default. Without a validated PT-PT voice, the product offers text and captions instead of a synthetic voice presented as natural in Portugal.
+- **Translation quality by pair.** Pairs are approved one at a time and **PT→DE is the central gate of v0.5**: names, dates, amounts, negations, register and business phrasing are checked by competent speakers, not only by an automatic score. Pivoting through English is allowed but never hidden.
 - **Where dubbing belongs.** It works and is measured, and the plan places it at v1.5. Nothing is being removed; the question is only how it is presented until then.
 
 ## Definition of done, for any release
 
-Installer tested on a clean machine and as an upgrade, with rollback proven; the corpus benchmark updated and published with hardware and versions; licence matrix reviewed for everything the release contains, with notices updated; local network audit showing no external connection during use; changelog, known limitations and the state of each language pair; feedback from at least five external users before the next one is announced.
+Installer tested on a clean machine and as an upgrade, with rollback proven; the corpus benchmark updated and published with hardware and versions; licence matrix reviewed for everything the release contains, with third party notices updated; local network audit showing no external connection during use; changelog, known limitations and the state of each language pair; feedback from at least five external users before the next one is announced.
 
 ## Deliberately out of scope
 
