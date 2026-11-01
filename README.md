@@ -37,23 +37,23 @@ One shortcut from anywhere on the desktop. The island listens, the sentence is w
 ### Parlo Live
 
 <p align="center">
-  <img src="assets/live.gif" alt="Portuguese sentences on the left and their English translation appearing on the right" width="100%">
+  <img src="assets/live.gif" alt="A sentence being recognised word by word on the left and the cleaned sentence kept on the right" width="100%">
 </p>
 
-Translation while you speak: the words land on the left, the other language follows a beat later on the right, and either side can be read aloud in the other voice.
+Text while you speak: partial words appear as they are recognised, the sentence is kept once it closes, and a translation can follow in the second column when a language pair is installed.
 
 ### Parlo Meetings
 
 <p align="center">
-  <img src="assets/meetings.gif" alt="A transcript filling in, with a time and a speaker on every line" width="100%">
+  <img src="assets/meetings.gif" alt="A transcript filling in, with a speaker and a time on every line" width="100%">
 </p>
 
-A recording becomes a transcript with a name and a time on every line. A transcript from a file you already have goes through the same view, and nothing leaves the machine either way.
+A recording becomes a transcript with a speaker and a time on every line. A transcript from a file you already have goes through the same view, and nothing leaves the machine either way.
 
 ### Parlo Translate
 
 <p align="center">
-  <img src="assets/translate.png" alt="A dubbed recording with its progress, the language pair and the subtitles it generated" width="100%">
+  <img src="assets/translate.png" alt="A dubbed recording with its progress and the subtitles it generated" width="100%">
 </p>
 
 A recording comes back dubbed, with subtitles timed to the source written beside it. One sentence goes through the same engine without a file.
@@ -152,7 +152,7 @@ Verify it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 ## What is not there yet
 
 - The dictation shortcut is Windows-only; on macOS and Linux the text goes to the clipboard.
-- Two languages, Portuguese and English. German is published as **not validated** by a native speaker.
+- Two languages ship today, English and Portuguese, in both directions. Any other pair is roadmap, not a promise; the third one is published as **not validated** by a native speaker.
 - Dictation is tested, not yet validated with real recordings by people other than the author.
 - The archives are unsigned: SmartScreen asks once, and there is no installer.
 - Meetings capture the microphone, not the sound of another application.
