@@ -22,6 +22,14 @@ Ctrl+Alt+D  →  "Book a table for Friday, I mean, for Monday."
             →  Book a table for Monday.
 ```
 
+## What it looks like
+
+<p align="center">
+  <img src="assets/app.png" alt="The Parlo window: the state in one sentence, the shortcut, the language pair, and three facts about the machine" width="100%">
+</p>
+
+One screen, one sentence about what Parlo is doing, the shortcut that starts it, and the three facts that can change your next step. Everything else lives in Settings, and nothing in the window moves on its own.
+
 ## Introducing Parlo
 
 Four surfaces, one engine underneath, all four in the current release.

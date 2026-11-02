@@ -1112,6 +1112,7 @@ const historyClear = document.getElementById("history-clear");
 const historyFilters = document.getElementById("history-filters");
 const recentList = document.getElementById("recent-list");
 const recentEmpty = document.getElementById("recent-empty");
+const recentSection = document.getElementById("recent");
 
 function describePair(from, to) {
   return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
@@ -2350,6 +2351,7 @@ function renderRecent() {
   recentList.replaceChildren();
   const shown = historyEntries.slice(0, 3);
   recentEmpty.hidden = shown.length > 0;
+  recentSection.hidden = shown.length === 0;
   for (const entry of shown) {
     const item = document.createElement("li");
     const text = document.createElement("p");
