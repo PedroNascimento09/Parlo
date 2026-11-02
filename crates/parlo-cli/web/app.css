@@ -377,11 +377,9 @@ footer {
 }
 
 .settings-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px 18px;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
 }
 
 .settings h2,
@@ -1496,4 +1494,48 @@ kbd {
   color: var(--canvas);
   font-weight: 600;
   opacity: 1;
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease, background-color 120ms ease;
+}
+
+.live:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+
+.live[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: var(--accent-wash);
+  color: var(--accent-deep);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.live[aria-pressed="true"] .live-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+#history-list:empty {
+  display: none;
 }
