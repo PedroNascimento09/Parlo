@@ -3,8 +3,9 @@
 </p>
 
 <p align="center">
-  <img src="assets/parlo-wordmark.png" width="140" alt="Parlo"><br>
+  <img src="assets/parlo-wordmark.png" width="140" alt="Parlo, the word drawn as a sound wave"><br>
   <b>Parlo turns speech into clean text, and text into another language, on your own computer.</b><br>
+  The mark is the name itself, drawn as a sound wave.<br>
   Windows, macOS and Linux. No account, no telemetry, no subscription.
 </p>
 
