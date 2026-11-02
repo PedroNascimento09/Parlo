@@ -38,17 +38,52 @@
 <main>
 
   <section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
-    <p class="onboarding-step" id="onboarding-step">Step 1 of 3</p>
-    <h1 id="onboarding-title">Press the shortcut and speak</h1>
+    <p class="onboarding-step" id="onboarding-step">Step 1 of 5</p>
+    <h1 id="onboarding-title">Two languages</h1>
     <p class="onboarding-note" id="onboarding-note">
-      Hold <strong id="onboarding-key">Ctrl+Alt+D</strong>, say a sentence, then let go.
-      Escape throws the sentence away.
+      Parlo hears one language and speaks the other.
     </p>
     <ol class="onboarding-list" id="onboarding-list">
-      <li data-step="1">Press the shortcut</li>
-      <li data-step="2">Say one sentence</li>
-      <li data-step="3">Read what landed</li>
+      <li data-step="1">Choose the two languages</li>
+      <li data-step="2">Allow the microphone</li>
+      <li data-step="3">Keep the shortcut</li>
+      <li data-step="4">Say one sentence</li>
+      <li data-step="5">Done</li>
     </ol>
+
+    <div class="settings-row" id="onboarding-pair">
+      <label class="field" for="onboarding-from">
+        <span class="field-label">I speak</span>
+        <select id="onboarding-from" class="field-input">
+          <option value="pt">Portuguese</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button id="onboarding-swap" class="swap" type="button">Swap</button>
+      <label class="field" for="onboarding-to">
+        <span class="field-label">They hear</span>
+        <select id="onboarding-to" class="field-input">
+          <option value="pt">Portuguese</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button id="onboarding-pair-save" class="install" type="button">Use these</button>
+    </div>
+
+    <div class="settings-row" id="onboarding-mic" hidden>
+      <button id="onboarding-mic-allow" class="install" type="button">Allow the microphone</button>
+      <p class="settings-note field-wide" id="onboarding-mic-note" aria-live="polite">Windows asks once. Nothing is recorded until you hold the shortcut.</p>
+    </div>
+
+    <div class="settings-row" id="onboarding-keys" hidden>
+      <label class="field field-wide" for="onboarding-shortcut">
+        <span class="field-label">Press the combination you want</span>
+        <input id="onboarding-shortcut" class="field-input" type="text" readonly autocomplete="off" spellcheck="false" />
+      </label>
+      <button id="onboarding-key-save" class="install" type="button">Save the shortcut</button>
+      <p class="settings-note field-wide" id="onboarding-key-note" aria-live="polite">A key on its own is refused: it would swallow typing everywhere.</p>
+    </div>
+
     <p class="onboarding-result" id="onboarding-result" aria-live="polite"></p>
     <div class="onboarding-actions">
       <button id="onboarding-next" class="install" type="button" hidden>Done</button>
@@ -325,7 +360,7 @@
     </div>
   </section>
 
-  <div class="settings-row">
+  <div class="settings-row" id="settings-foot">
     <p class="settings-note field-wide" id="settings-note" aria-live="polite"></p>
     <button id="settings-apply" class="install settings-apply" type="button" disabled>Apply</button>
   </div>

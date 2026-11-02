@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Onboarding asks for the three things it needs before it proves anything: the pair, the microphone, with the exact Windows place to allow it when it is blocked, and the shortcut, captured from the keys the person presses. Then it waits for one real sentence and reads it back with the program it landed in, and the last line says where the shortcut is and what Escape does. Five steps, every one of them saving a setting that exists, and skipping still stops it asking again.
+
 - Settings is eight sections instead of four. **Dictation** holds the three feature switches, the recogniser and the idle timer, **Languages** the pair and what dictation writes, **Shortcuts** the keys, **Cleanup** the engine and how far it may go, **Provider** the cloud or local model it may call, **Privacy** the key and the sentence about what leaves the machine, **About** the version on this copy and the check for a newer release, and **Advanced** the licences. One Apply sits under every section, so a change is never left waiting behind a tab.
 
 - The cloud key has its own section. **Settings, Privacy** says in one sentence what leaves the machine and when, and holds the API key, the button that removes it and the test sentence that proves the provider answers, all three moved out of the cleanup section where they had been left.

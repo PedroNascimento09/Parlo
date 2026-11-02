@@ -2702,22 +2702,83 @@ async function clearHistory() {
 
 const onboarding = document.getElementById("onboarding");
 const onboardingStep = document.getElementById("onboarding-step");
-const onboardingKey = document.getElementById("onboarding-key");
+const onboardingTitle = document.getElementById("onboarding-title");
 const onboardingNote = document.getElementById("onboarding-note");
 const onboardingList = document.getElementById("onboarding-list");
 const onboardingResult = document.getElementById("onboarding-result");
 const onboardingNext = document.getElementById("onboarding-next");
 const onboardingSkip = document.getElementById("onboarding-skip");
+const onboardingPair = document.getElementById("onboarding-pair");
+const onboardingFrom = document.getElementById("onboarding-from");
+const onboardingTo = document.getElementById("onboarding-to");
+const onboardingSwap = document.getElementById("onboarding-swap");
+const onboardingPairSave = document.getElementById("onboarding-pair-save");
+const onboardingMic = document.getElementById("onboarding-mic");
+const onboardingMicAllow = document.getElementById("onboarding-mic-allow");
+const onboardingMicNote = document.getElementById("onboarding-mic-note");
+const onboardingKeys = document.getElementById("onboarding-keys");
+const onboardingShortcut = document.getElementById("onboarding-shortcut");
+const onboardingKeySave = document.getElementById("onboarding-key-save");
+const onboardingKeyNote = document.getElementById("onboarding-key-note");
+
+const ONBOARDING_TITLES = [
+  "Two languages",
+  "The microphone",
+  "The shortcut",
+  "Say one sentence",
+  "Ready",
+];
 
 let onboardingTimer = null;
 let onboardingStage = 0;
-let onboardingKnown = 0;
+let onboardingKnown = -1;
+let onboardingChosen = "Ctrl+Alt+D";
 
 function markOnboardingStep(step) {
   for (const item of onboardingList.querySelectorAll("li")) {
     item.classList.toggle("done", Number(item.dataset.step) < step);
   }
-  onboardingStep.textContent = "Step " + step + " of 3";
+  onboardingStep.textContent = "Step " + step + " of 5";
+}
+
+function showOnboardingStage(step) {
+  onboardingStage = step;
+  onboarding.hidden = false;
+  markOnboardingStep(step);
+  onboardingTitle.textContent = ONBOARDING_TITLES[step - 1];
+  onboardingPair.hidden = step !== 1;
+  onboardingMic.hidden = step !== 2;
+  onboardingKeys.hidden = step !== 3;
+  onboardingNext.hidden = step !== 5;
+  if (step !== 4) {
+    clearInterval(onboardingTimer);
+    onboardingTimer = null;
+  }
+  if (step === 1) {
+    onboardingNote.textContent =
+      "Parlo hears one language and speaks the other. Changing the pair later loads the models again.";
+  }
+  if (step === 2) {
+    onboardingNote.textContent =
+      "The microphone opens only while you hold the shortcut, and the sound never leaves this machine.";
+  }
+  if (step === 3) {
+    onboardingNote.textContent = "Press the keys you want to use for dictation.";
+  }
+  if (step === 4) {
+    onboardingNote.textContent =
+      "Hold " + onboardingChosen + ", say a sentence, then let go. Escape throws the sentence away.";
+    onboardingKnown = -1;
+    readHistory().then((entries) => {
+      onboardingKnown = entries.length;
+    });
+    clearInterval(onboardingTimer);
+    onboardingTimer = setInterval(tickOnboarding, 400);
+  }
+  if (step === 5) {
+    onboardingNote.textContent =
+      "Home says Ready. Press " + onboardingChosen + " anywhere and speak; Escape throws the sentence away.";
+  }
 }
 
 function finishOnboarding() {
@@ -2756,57 +2817,150 @@ async function readHistory() {
 }
 
 async function tickOnboarding() {
+  if (onboardingStage !== 4 || onboardingKnown < 0) {
+    return;
+  }
   const state = await readState();
-  if (onboardingStage === 1 && state === "listening") {
-    onboardingStage = 2;
-    markOnboardingStep(2);
+  if (state === "listening") {
     onboardingNote.textContent = "Keep talking, then let go of the key.";
     return;
   }
-  if (onboardingStage !== 2 || !["success", "error", "cancelled"].includes(state)) {
+  if (!["success", "error", "cancelled"].includes(state)) {
     return;
   }
   const entries = await readHistory();
   if (entries.length <= onboardingKnown) {
     onboardingNote.textContent =
       "Nothing was written. Hold the key, speak a full sentence, then let go.";
-    onboardingStage = 1;
-    markOnboardingStep(1);
     return;
   }
   const latest = entries[0];
   const text = latest.translation || latest.text || "";
   onboardingResult.textContent =
     "“" + text + "”" + (latest.app ? " landed in " + latest.app : "");
-  onboardingNote.textContent =
-    "That sentence is in the Library too, with the program it went into.";
-  onboardingStage = 3;
-  markOnboardingStep(3);
-  onboardingNext.hidden = false;
-  clearInterval(onboardingTimer);
-  onboardingTimer = null;
+  showOnboardingStage(5);
+}
+
+async function saveOnboardingPair() {
+  onboardingPairSave.disabled = true;
+  onboardingNote.textContent = "Loading the models. This takes about twenty seconds.";
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ from: onboardingFrom.value, to: onboardingTo.value }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That pair cannot be used.");
+    }
+    onboardingChosen = detail.shortcut || onboardingChosen;
+    showOnboardingStage(2);
+  } catch (failure) {
+    onboardingNote.textContent = failure.message || "That pair cannot be used.";
+  } finally {
+    onboardingPairSave.disabled = false;
+  }
+}
+
+async function saveOnboardingShortcut() {
+  const wanted = onboardingShortcut.value.trim();
+  if (!wanted) {
+    onboardingKeyNote.textContent = "Press a combination first.";
+    return;
+  }
+  onboardingKeySave.disabled = true;
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ shortcut: wanted }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That combination cannot be used.");
+    }
+    onboardingChosen = detail.shortcut || wanted;
+    onboardingResult.textContent = "";
+    showOnboardingStage(4);
+  } catch (failure) {
+    onboardingKeyNote.textContent = failure.message || "That combination cannot be used.";
+  } finally {
+    onboardingKeySave.disabled = false;
+  }
 }
 
 async function startOnboarding() {
   if (localStorage.getItem("parlo.onboarded") === "1") {
     return;
   }
-  onboarding.hidden = false;
   try {
     const response = await fetch("/settings", { cache: "no-store" });
     if (response.ok) {
       const values = await response.json();
-      onboardingKey.textContent = values.shortcut || "Ctrl+Alt+D";
+      onboardingFrom.value = values.from || "pt";
+      onboardingTo.value = values.to || "en";
+      onboardingShortcut.value = values.shortcut || "Ctrl+Alt+D";
+      onboardingChosen = values.shortcut || "Ctrl+Alt+D";
     }
   } catch (failure) {
-    onboardingKey.textContent = "the shortcut";
+    onboardingShortcut.value = "Ctrl+Alt+D";
   }
-  onboardingKnown = (await readHistory()).length;
-  onboardingStage = 1;
-  markOnboardingStep(1);
-  clearInterval(onboardingTimer);
-  onboardingTimer = setInterval(tickOnboarding, 400);
+  onboardingResult.textContent = "";
+  showOnboardingStage(1);
 }
+
+onboardingSwap.addEventListener("click", () => {
+  const from = onboardingFrom.value;
+  onboardingFrom.value = onboardingTo.value;
+  onboardingTo.value = from;
+});
+
+onboardingPairSave.addEventListener("click", () => saveOnboardingPair());
+
+onboardingKeySave.addEventListener("click", () => saveOnboardingShortcut());
+
+onboardingShortcut.addEventListener("keydown", (event) => {
+  event.preventDefault();
+  const refused = ["Control", "Alt", "Shift", "Meta", "Escape", "Tab"];
+  const named = { " ": "Space", Spacebar: "Space", Space: "Space" };
+  const parts = [];
+  if (event.ctrlKey) {
+    parts.push("Ctrl");
+  }
+  if (event.altKey) {
+    parts.push("Alt");
+  }
+  if (event.shiftKey) {
+    parts.push("Shift");
+  }
+  if (event.metaKey) {
+    parts.push("Win");
+  }
+  if (refused.includes(event.key)) {
+    onboardingKeyNote.textContent = "Add a letter, a digit or Space after the modifiers.";
+    return;
+  }
+  if (parts.length === 0) {
+    onboardingKeyNote.textContent =
+      "A key on its own is refused: it would swallow typing everywhere.";
+    return;
+  }
+  const key = named[event.key] || event.key.toUpperCase();
+  onboardingShortcut.value = parts.concat([key]).join("+");
+  onboardingKeyNote.textContent = "Press Save when this is the combination you want.";
+});
+
+onboardingMicAllow.addEventListener("click", async () => {
+  onboardingMicNote.textContent = "Asking Windows for the microphone.";
+  try {
+    await openMicrophone();
+    onboardingMicNote.textContent = "The microphone is ready.";
+    showOnboardingStage(3);
+  } catch (failure) {
+    onboardingMicNote.textContent = describeMicrophoneError(failure);
+  }
+});
 
 onboardingSkip.addEventListener("click", () => finishOnboarding());
 onboardingNext.addEventListener("click", () => finishOnboarding());
@@ -2865,10 +3019,12 @@ const ROUTES = {
     "status-list",
     "recent",
   ],
-  library: ["vocabulary", "catalog", "history", "models", "dub"],
+  library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub"],
   meetings: ["meetings"],
   voice: ["voice"],
   settings: [
+    "settings-tabs",
+    "settings-foot",
     "settings",
     "languages",
     "shortcuts",
