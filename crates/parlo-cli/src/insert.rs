@@ -99,6 +99,38 @@ mod win {
     #[link(name = "kernel32")]
     extern "system" {
         pub fn GetCurrentProcessId() -> u32;
+        pub fn OpenProcess(access: u32, inherit: i32, process: u32) -> *mut c_void;
+        pub fn QueryFullProcessImageNameW(
+            handle: *mut c_void,
+            flags: u32,
+            buffer: *mut u16,
+            size: *mut u32,
+        ) -> i32;
+        pub fn CloseHandle(handle: *mut c_void) -> i32;
+    }
+
+    const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+
+    pub fn process_name(process: u32) -> Option<String> {
+        unsafe {
+            let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, process);
+            if handle.is_null() {
+                return None;
+            }
+            let mut buffer = [0u16; 1024];
+            let mut size = buffer.len() as u32;
+            let answered = QueryFullProcessImageNameW(handle, 0, buffer.as_mut_ptr(), &mut size);
+            CloseHandle(handle);
+            if answered == 0 {
+                return None;
+            }
+            let path = String::from_utf16_lossy(&buffer[..size as usize]);
+            std::path::Path::new(&path)
+                .file_stem()
+                .and_then(|name| name.to_str())
+                .map(str::to_string)
+                .filter(|name| !name.is_empty())
+        }
     }
 }
 
@@ -117,6 +149,23 @@ pub fn capture_target() -> Result<usize, String> {
         return Err("Parlo itself has the focus, so the text would land in Parlo".to_string());
     }
     Ok(window as usize)
+}
+
+#[cfg(windows)]
+pub fn foreground() -> Result<(usize, String), String> {
+    use win::*;
+    let window = capture_target()?;
+    let mut process = 0u32;
+    unsafe {
+        GetWindowThreadProcessId(window as Window, &mut process);
+    }
+    let app = process_name(process).unwrap_or_else(|| "another program".to_string());
+    Ok((window, app))
+}
+
+#[cfg(not(windows))]
+pub fn foreground() -> Result<(usize, String), String> {
+    Err("writing into the active field is windows only for now".to_string())
 }
 
 #[cfg(windows)]

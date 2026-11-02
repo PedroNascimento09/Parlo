@@ -1329,6 +1329,21 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/target" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let answer = match crate::insert::foreground() {
+            Ok((_, app)) => format!("{{\"insertable\":true,\"app\":\"{}\"}}", json_string(&app)),
+            Err(error) => format!(
+                "{{\"insertable\":false,\"reason\":\"{}\"}}",
+                json_string(&error)
+            ),
+        };
+        return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
+    }
+
     if path == "/state" {
         let mut machine = match STATE.lock() {
             Ok(machine) => machine,
@@ -1491,11 +1506,16 @@ fn handle(
             }
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        let app = crate::insert::foreground()
+            .map(|(_, name)| name)
+            .unwrap_or_else(|_| "unknown".to_string());
         if let Err(error) = crate::history::append(&crate::history::Entry::now(
             &text,
             &translation,
             &session.from,
             &target,
+            &app,
+            "dictate",
         )) {
             println!("could not store the dictation: {error}");
         }

@@ -42,6 +42,8 @@ Estimate: 3 hours.
 
 Check: dictate into two different applications and confirm each history row names the right one.
 
+Built: `insert::foreground` names the program that owns the focused window through `QueryFullProcessImageNameW`, `GET /target` reports it with whether Parlo can type there, the island says the name before it starts listening, and a history entry now carries `app` and `mode`. Entries written before this change still load, reading as empty strings.
+
 Estimate: 3 hours.
 
 ## Phase 4: Home becomes status

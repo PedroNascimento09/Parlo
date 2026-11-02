@@ -13,10 +13,14 @@ pub struct Entry {
     pub translation: String,
     pub from: String,
     pub to: String,
+    #[serde(default)]
+    pub app: String,
+    #[serde(default)]
+    pub mode: String,
 }
 
 impl Entry {
-    pub fn now(text: &str, translation: &str, from: &str, to: &str) -> Self {
+    pub fn now(text: &str, translation: &str, from: &str, to: &str, app: &str, mode: &str) -> Self {
         Self {
             at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
@@ -26,6 +30,8 @@ impl Entry {
             translation: translation.to_string(),
             from: from.to_string(),
             to: to.to_string(),
+            app: app.to_string(),
+            mode: mode.to_string(),
         }
     }
 }
@@ -56,6 +62,8 @@ pub fn as_json(limit: usize) -> String {
                 "translation": entry.translation,
                 "from": entry.from,
                 "to": entry.to,
+                "app": entry.app,
+                "mode": entry.mode,
             })
         })
         .collect();
@@ -136,8 +144,16 @@ mod tests {
     #[test]
     fn keeps_the_newest_first() {
         let path = scratch("order");
-        append_to(&path, &Entry::now("bom dia", "good morning", "pt", "en")).unwrap();
-        append_to(&path, &Entry::now("até logo", "see you soon", "pt", "en")).unwrap();
+        append_to(
+            &path,
+            &Entry::now("bom dia", "good morning", "pt", "en", "Notepad", "dictate"),
+        )
+        .unwrap();
+        append_to(
+            &path,
+            &Entry::now("até logo", "see you soon", "pt", "en", "Slack", "dictate"),
+        )
+        .unwrap();
         let recent = recent_at(&path, 10);
         assert_eq!(recent.len(), 2);
         assert_eq!(recent[0].translation, "see you soon");
@@ -150,7 +166,11 @@ mod tests {
         let path = scratch("limit");
         for index in 0..5 {
             let text = format!("frase {index}");
-            append_to(&path, &Entry::now(&text, &text, "pt", "pt")).unwrap();
+            append_to(
+                &path,
+                &Entry::now(&text, &text, "pt", "pt", "Notepad", "dictate"),
+            )
+            .unwrap();
         }
         let recent = recent_at(&path, 2);
         assert_eq!(recent.len(), 2);
@@ -163,7 +183,11 @@ mod tests {
         let path = scratch("bound");
         for index in 0..(LIMIT + 5) {
             let text = format!("linha {index}");
-            append_to(&path, &Entry::now(&text, &text, "pt", "pt")).unwrap();
+            append_to(
+                &path,
+                &Entry::now(&text, &text, "pt", "pt", "Notepad", "dictate"),
+            )
+            .unwrap();
         }
         let entries = entries_at(&path);
         assert_eq!(entries.len(), LIMIT);
@@ -174,11 +198,19 @@ mod tests {
     #[test]
     fn a_damaged_line_never_hides_the_rest() {
         let path = scratch("damaged");
-        append_to(&path, &Entry::now("primeira", "first", "pt", "en")).unwrap();
+        append_to(
+            &path,
+            &Entry::now("primeira", "first", "pt", "en", "Notepad", "dictate"),
+        )
+        .unwrap();
         let mut file = fs::read_to_string(&path).unwrap();
         file.push_str("isto não é json\n");
         fs::write(&path, file).unwrap();
-        append_to(&path, &Entry::now("segunda", "second", "pt", "en")).unwrap();
+        append_to(
+            &path,
+            &Entry::now("segunda", "second", "pt", "en", "Notepad", "dictate"),
+        )
+        .unwrap();
         let recent = recent_at(&path, 10);
         assert_eq!(recent.len(), 2);
         assert_eq!(recent[0].text, "segunda");
@@ -188,7 +220,11 @@ mod tests {
     #[test]
     fn clearing_removes_the_file_and_tolerates_a_missing_one() {
         let path = scratch("clear");
-        append_to(&path, &Entry::now("apagar", "delete", "pt", "en")).unwrap();
+        append_to(
+            &path,
+            &Entry::now("apagar", "delete", "pt", "en", "Notepad", "dictate"),
+        )
+        .unwrap();
         assert!(path.exists());
         clear_at(&path).unwrap();
         assert!(!path.exists());

@@ -231,7 +231,8 @@ async function begin() {
   if (stream) {
     return;
   }
-  target = await beginTarget();
+  const app = await beginTarget();
+  target = Boolean(app);
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
@@ -261,7 +262,13 @@ async function begin() {
   started = performance.now();
   document.body.classList.add("listening");
   document.body.classList.remove("showing-hint");
-  setState("Listening", "Speak now. Release to write it down, Escape to cancel.", true);
+  setState(
+    "Listening",
+    app
+      ? "Into " + app + ". Release to write it down, Escape to cancel."
+      : "No text field in front, so the words go to the clipboard.",
+    true,
+  );
   report("listening");
   clearInterval(ticker);
   ticker = setInterval(() => {
@@ -316,13 +323,16 @@ function release() {
 
 async function beginTarget() {
   try {
-    const response = await fetch("/dictate/begin", {
-      method: "POST",
+    const response = await fetch("/target", {
       headers: { Authorization: "Bearer " + token },
     });
-    return response.ok;
+    if (!response.ok) {
+      return "";
+    }
+    const values = await response.json();
+    return values.insertable ? values.app || "" : "";
   } catch (failure) {
-    return false;
+    return "";
   }
 }
 
