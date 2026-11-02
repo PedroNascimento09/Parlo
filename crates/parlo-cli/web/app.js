@@ -18,6 +18,7 @@ const progressBox = document.getElementById("update-progress");
 const progressFill = document.getElementById("update-fill");
 const progressNote = document.getElementById("update-note");
 const engineEl = document.getElementById("status-engine");
+const engineNote = document.getElementById("engine-note");
 const stateEl = document.getElementById("status-state");
 const shortcutEl = document.getElementById("status-shortcut");
 const languagesEl = document.getElementById("status-languages");
@@ -781,6 +782,15 @@ const STATE_WORDS = {
 };
 
 async function refreshHealth() {
+  try {
+    const response = await fetch("/engine", { cache: "no-store" });
+    if (response.ok) {
+      const engine = await response.json();
+      engineNote.textContent = engine.reason || "";
+    }
+  } catch (failure) {
+    engineNote.textContent = "";
+  }
   try {
     const response = await fetch("/health", { cache: "no-store" });
     if (!response.ok) {

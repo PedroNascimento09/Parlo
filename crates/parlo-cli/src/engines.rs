@@ -197,6 +197,124 @@ pub fn fidelity_for(profile: Profile) -> Fidelity {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Choice {
+    pub requested: Fidelity,
+    pub chosen: Fidelity,
+    pub profile: Profile,
+    pub reason: String,
+}
+
+pub fn chain(requested: Fidelity) -> Vec<Fidelity> {
+    let mut steps = vec![requested];
+    let mut level = requested.level();
+    while level > 0 {
+        level -= 1;
+        steps.push(match level {
+            0 => Fidelity::Captions,
+            1 => Fidelity::Neutral,
+            2 => Fidelity::Approximate,
+            _ => Fidelity::Cloned,
+        });
+    }
+    steps
+}
+
+pub fn choose(cores: usize, gpu_memory_mb: Option<u32>, requested: Fidelity) -> Choice {
+    choose_with(
+        cores,
+        gpu_memory_mb,
+        requested,
+        &parlo_core::device::profile().describe(),
+    )
+}
+
+pub fn choose_with(
+    cores: usize,
+    gpu_memory_mb: Option<u32>,
+    requested: Fidelity,
+    machine: &str,
+) -> Choice {
+    let profile = profile_for(cores, gpu_memory_mb);
+    let supported = fidelity_for(profile);
+    if requested.level() <= supported.level() {
+        return Choice {
+            requested,
+            chosen: requested,
+            profile,
+            reason: format!(
+                "{} is in use: this machine has {machine}.",
+                requested.label()
+            ),
+        };
+    }
+    Choice {
+        requested,
+        chosen: supported,
+        profile,
+        reason: format!(
+            "{} needs more than this machine has, so {} is used instead. This machine has {machine}.",
+            requested.label(),
+            supported.label()
+        ),
+    }
+}
+
+fn log_path() -> std::path::PathBuf {
+    crate::config::data_root()
+        .join("logs")
+        .join("engines.jsonl")
+}
+
+pub fn log_choice(choice: &Choice) -> Option<std::path::PathBuf> {
+    static LAST: std::sync::OnceLock<std::sync::Mutex<Option<String>>> = std::sync::OnceLock::new();
+    let line = serde_json::json!({
+        "at": std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_secs())
+            .unwrap_or_default(),
+        "profile": choice.profile.label(),
+        "requested": choice.requested.label(),
+        "chosen": choice.chosen.label(),
+        "reason": choice.reason,
+    })
+    .to_string();
+    let last = LAST.get_or_init(|| std::sync::Mutex::new(None));
+    if let Ok(mut last) = last.lock() {
+        if last.as_deref() == Some(line.as_str()) {
+            return Some(log_path());
+        }
+        *last = Some(line.clone());
+    }
+    let path = log_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok()?;
+    }
+    let entry = format!("{line}\n");
+    use std::io::Write;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .ok()?;
+    file.write_all(entry.as_bytes()).ok()?;
+    Some(path)
+}
+
+pub fn recent_switches(count: usize) -> Vec<serde_json::Value> {
+    let Ok(text) = std::fs::read_to_string(log_path()) else {
+        return Vec::new();
+    };
+    let mut rows: Vec<serde_json::Value> = text
+        .lines()
+        .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
+        .collect();
+    if rows.len() > count {
+        rows = rows.split_off(rows.len() - count);
+    }
+    rows
+}
+
 pub fn detect_cores() -> usize {
     std::thread::available_parallelism()
         .map(|cores| cores.get())
@@ -206,6 +324,29 @@ pub fn detect_cores() -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_chain_walks_down_to_captions() {
+        let steps = chain(Fidelity::Cloned);
+        assert_eq!(steps[0], Fidelity::Cloned);
+        assert_eq!(*steps.last().unwrap(), Fidelity::Captions);
+        assert_eq!(steps.len(), 4);
+    }
+
+    #[test]
+    fn a_machine_without_a_gpu_keeps_a_neutral_voice_and_says_why() {
+        let choice = choose_with(12, None, Fidelity::Cloned, "8 cores");
+        assert_eq!(choice.chosen, Fidelity::Neutral);
+        assert!(choice.reason.contains("neutral voice"));
+        assert!(choice.reason.contains("8 cores"));
+    }
+
+    #[test]
+    fn a_machine_that_can_clone_keeps_the_cloned_voice() {
+        let choice = choose_with(12, Some(16_384), Fidelity::Cloned, "8 cores");
+        assert_eq!(choice.chosen, Fidelity::Cloned);
+        assert!(choice.reason.contains("cloned voice"));
+    }
 
     #[test]
     fn cores_without_a_gpu_stay_at_medium() {

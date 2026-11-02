@@ -1639,6 +1639,30 @@ fn handle(
         return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/engine" {
+        let choice = crate::engines::choose(
+            crate::engines::detect_cores(),
+            crate::engines::detect_gpu_memory_mb(),
+            crate::engines::Fidelity::Cloned,
+        );
+        let logged = crate::engines::log_choice(&choice);
+        let steps: Vec<&str> = crate::engines::chain(choice.requested)
+            .iter()
+            .map(|fidelity| fidelity.label())
+            .collect();
+        let body = serde_json::json!({
+            "profile": choice.profile.label(),
+            "requested": choice.requested.label(),
+            "chosen": choice.chosen.label(),
+            "chain": steps,
+            "reason": choice.reason,
+            "log": logged.map(|path| path.display().to_string()),
+            "switches": crate::engines::recent_switches(5),
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
     if path == "/health" {
         let uptime = started.elapsed().as_secs();
         let engine = session.pipeline.engine_id();
