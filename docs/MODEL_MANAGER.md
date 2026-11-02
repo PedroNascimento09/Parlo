@@ -4,7 +4,7 @@ What a person should experience, written down before it is built. Every number b
 
 ## The problem this solves
 
-The archive is 220 MB and unpacks to 631 MB; the first start then asks for about 800 MB of models before anything works. That is a slow first impression and it asks the person to care about models before they have dictated a single sentence.
+The first builds shipped a 231 MB installer, unpacked to 655 MB, and then asked for about 800 MB of models before anything worked. That is a slow first impression and it asks the person to care about models before they have dictated a single sentence.
 
 The target is the opposite: a small download, a first start that looks at the machine, one clear recommendation, and a download that only brings what the person will actually use.
 
@@ -90,6 +90,6 @@ Applied to the current surfaces: dictation needs a recogniser; write-in-another-
 
 ## Status
 
-**Partly built.** The app lists the recogniser and the two voices, each with its own size and its own button: **Download** fetches that model alone and **Remove** deletes it, refusing while a download is running and saying why. The engine accepts `--only parakeet`, `--only voice-pt` and the rest, so a machine can be given the recogniser by itself.
+Built: the list holds the recogniser, the two voices and the two translation pairs, and each row shows its size on disk and the feature it serves. Download fetches that model alone and Remove deletes it, refusing while a download runs and saying which. A running download can be stopped and what already arrived stays on disk. Each row also says why it is the model offered, from the cores, memory and AVX2 read on this machine when the page asks, and claims no speed, because no speed was measured for the new recommendation. The folder that holds the models can move to another disk: the app copies the tree, compares the bytes, and only then deletes the old folder and saves the new path. Dictation, translation, read aloud and captions are separate switches saved in `config.json`, and captions or dubbing refuse with a sentence when the model behind them is switched off. The first-start screen asks for the recogniser alone, about 640 MB. The engine accepts `--only parakeet`, `--only voice-pt` and the rest, so a machine without the window gets exactly the units it asked for.
 
-The first-start screen now asks for the recogniser alone, about 640 MB, and says that translation and read aloud are separate models added later; the screen leaves once dictation works. Not built yet: no recommendation from the machine profile, no feature switches, no relocation of the model folder, no cancellation and resume of a download, and the translation pairs are not in the list because the app cannot yet verify their files. The plan keeps this work at **v0.7 Modelos**.
+Missing, from the sections above: no row shows memory when loaded, speed measured here, or which of the four states a model is in, so a downloaded model and a loaded one read the same. A folder that already holds models is not adopted after a digest check, the space a move needs is not shown before it copies, and removing a model does not switch off the feature that depended on it. A download is checked against the size and digest the publisher lists, and an interrupted one starts again from the beginning. The plan keeps the rest at **v0.7 Modelos**.
