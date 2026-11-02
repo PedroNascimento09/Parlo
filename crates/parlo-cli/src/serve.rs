@@ -37,6 +37,7 @@ const INDEX: &str = include_str!("../web/index.html");
 const STYLESHEET: &str = include_str!("../web/app.css");
 const SCRIPT: &str = include_str!("../web/app.js");
 const ISLAND: &str = include_str!("../web/island.html");
+const CAPTIONS: &str = include_str!("../web/captions.html");
 
 pub fn new_token() -> String {
     let nanos = SystemTime::now()
@@ -1310,6 +1311,17 @@ fn handle(
 
     if method == "GET" && (path == "/island" || path == "/island.html") {
         let page = ISLAND.replace("__PARLO_VERSION__", VERSION);
+        return respond(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            page.as_bytes(),
+        )
+        .map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && (path == "/captions" || path == "/captions.html") {
+        let page = CAPTIONS.replace("__PARLO_VERSION__", VERSION);
         return respond(
             stream,
             "200 OK",

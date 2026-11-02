@@ -78,7 +78,7 @@ Estimate: 4 hours.
 3. Onboarding: five steps under sixty seconds, ending with a real insertion.
 4. Captions as its own floating window, then Live, then Meetings with a lifecycle.
 
-Built so far: Settings carries three tabs (Dictation, Cleanup, Advanced, the last holding the licences), and the tray tooltip now reads the shared state, so the three surfaces repeat the same word. The onboarding is three steps and proves the loop instead of describing it: it waits for the shared state to say listening, then for a new history entry, then reads back the sentence and the program it landed in. Skipping sets a local flag and never asks again.
+Built so far: Settings carries three tabs (Dictation, Cleanup, Advanced, the last holding the licences), and the tray tooltip now reads the shared state, so the three surfaces repeat the same word. The onboarding is three steps and proves the loop instead of describing it: it waits for the shared state to say listening, then for a new history entry, then reads back the sentence and the program it landed in. Skipping sets a local flag and never asks again. Captions live in their own always-on-top window served from /captions, started from the tray, with a pause button and a size button; the audio is cut into two and a half second windows and each one is sent through /dictate.
 
 Estimate: 12 hours across several sittings.
 

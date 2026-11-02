@@ -32,6 +32,21 @@
         "visible": false,
         "focus": false,
         "backgroundColor": "#00000000"
+      },
+      {
+        "label": "captions",
+        "title": "Parlo Captions",
+        "width": 720,
+        "height": 240,
+        "resizable": true,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false,
+        "backgroundColor": "#00000000"
       }
     ],
     "security": {
@@ -40,6 +55,9 @@
   },
   "bundle": {
     "active": false,
-    "icon": ["../../assets/parlo.ico", "../../assets/parlo-256.png"]
+    "icon": [
+      "../../assets/parlo.ico",
+      "../../assets/parlo-256.png"
+    ]
   }
 }

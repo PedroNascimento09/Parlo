@@ -22,6 +22,8 @@ const ISLAND_MARGIN: f64 = 64.0;
 
 struct Engine(Mutex<Option<Child>>);
 
+struct Address(Mutex<Option<(u16, String)>>);
+
 fn main() {
     let app = tauri::Builder::default()
         .setup(|app| {
@@ -29,6 +31,7 @@ fn main() {
                 .get_webview_window("main")
                 .ok_or("the main window is missing")?;
             app.manage(Engine(Mutex::new(None)));
+            app.manage(Address(Mutex::new(None)));
             if let Err(error) = presence::install(app.handle()) {
                 note(&format!("the tray presence is not available: {error}"));
             }
@@ -68,6 +71,12 @@ fn serve(handle: tauri::AppHandle, window: WebviewWindow) {
         return fail(&window);
     }
 
+    if let Some(address) = handle.try_state::<Address>() {
+        if let Ok(mut slot) = address.0.lock() {
+            *slot = Some((port, token.clone()));
+        }
+    }
+
     match Url::parse(&format!("http://127.0.0.1:{port}/?t={token}")) {
         Ok(url) => {
             if let Err(error) = window.navigate(url) {
@@ -101,6 +110,34 @@ fn show_island(handle: &tauri::AppHandle, port: u16, token: &str) {
             }
         }
         Err(error) => note(&format!("cannot build the island address: {error}")),
+    }
+}
+
+pub fn captions_toggle(handle: &tauri::AppHandle) {
+    let Some(window) = handle.get_webview_window("captions") else {
+        note("the captions window is missing from the window list");
+        return;
+    };
+    if window.is_visible().unwrap_or(false) {
+        let _ = window.hide();
+        return;
+    }
+    let address = handle
+        .try_state::<Address>()
+        .and_then(|address| address.0.lock().ok().and_then(|slot| slot.clone()));
+    let Some((port, token)) = address else {
+        note("captions needs the engine address, which is not ready yet");
+        return;
+    };
+    match Url::parse(&format!("http://127.0.0.1:{port}/captions?t={token}")) {
+        Ok(url) => {
+            if let Err(error) = window.navigate(url) {
+                note(&format!("cannot open captions: {error}"));
+                return;
+            }
+            let _ = window.show();
+        }
+        Err(error) => note(&format!("cannot build the captions address: {error}")),
     }
 }
 

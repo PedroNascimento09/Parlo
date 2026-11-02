@@ -7,6 +7,7 @@ const ICON: &[u8] = include_bytes!("../../../assets/parlo-256.png");
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
     let dictate = MenuItem::with_id(app, "dictate", "Dictate", true, None::<&str>)?;
     let live = MenuItem::with_id(app, "live", "Live", true, None::<&str>)?;
+    let captions = MenuItem::with_id(app, "captions", "Captions", true, None::<&str>)?;
     let hub = MenuItem::with_id(app, "hub", "Open Parlo", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Parlo", true, None::<&str>)?;
@@ -15,6 +16,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         &[
             &dictate,
             &live,
+            &captions,
             &PredefinedMenuItem::separator(app)?,
             &hub,
             &settings,
@@ -32,6 +34,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "dictate" => crate::island::show(app),
             "live" => focus_hub(app, Some("live")),
+            "captions" => crate::captions_toggle(app),
             "hub" => focus_hub(app, None),
             "settings" => focus_hub(app, Some("settings")),
             "quit" => app.exit(0),
