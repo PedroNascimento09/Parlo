@@ -568,6 +568,10 @@ async function refreshHealth() {
     }
     const current = await response.json();
     stateEl.textContent = STATE_WORDS[current.state] || "ready";
+    const stage = stateEl.closest(".stage");
+    if (stage) {
+      stage.dataset.state = current.state || "idle";
+    }
   } catch (failure) {
     stateEl.textContent = "checking";
   }

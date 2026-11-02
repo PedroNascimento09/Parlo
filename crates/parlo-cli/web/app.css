@@ -982,7 +982,6 @@ footer p {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 86%, transparent);
-  box-shadow: 0 1px 2px rgba(23, 19, 16, 0.04);
 }
 
 .rail a {
@@ -1441,4 +1440,38 @@ kbd {
 
 #history-list {
   gap: 10px;
+}
+
+.stage[data-state="listening"] .wave span,
+.stage[data-state="recording"] .wave span,
+.stage[data-state="capturing"] .wave span {
+  animation: bar-breathe 780ms ease-in-out infinite alternate;
+}
+
+.stage[data-state="listening"] .wave span:nth-child(2n) {
+  animation-delay: -180ms;
+}
+
+.stage[data-state="listening"] .wave span:nth-child(3n) {
+  animation-delay: -340ms;
+}
+
+.stage[data-state="listening"] .wave span:nth-child(5n) {
+  animation-delay: -520ms;
+}
+
+@keyframes bar-breathe {
+  from {
+    transform: scaleY(0.45);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave span {
+    animation: none !important;
+  }
 }
