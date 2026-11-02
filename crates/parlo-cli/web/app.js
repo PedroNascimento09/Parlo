@@ -1092,6 +1092,8 @@ const vocabularyNote = document.getElementById("vocabulary-note");
 const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
 const meetingExport = document.getElementById("meeting-export");
+const meetingSearch = document.getElementById("meeting-search");
+const meetingMatches = document.getElementById("meeting-matches");
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
@@ -2162,6 +2164,54 @@ async function exportMeetings() {
 }
 
 meetingExport.addEventListener("click", () => exportMeetings());
+
+async function searchMeetings() {
+  const needle = meetingSearch.value.trim().toLowerCase();
+  meetingMatches.replaceChildren();
+  if (needle.length < 2) {
+    return;
+  }
+  let meetings = [];
+  try {
+    const response = await fetch("/meetings", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    meetings = await response.json();
+  } catch (failure) {
+    return;
+  }
+  const matches = [];
+  for (const meeting of meetings) {
+    for (const segment of meeting.segments || []) {
+      if (!(segment.text || "").toLowerCase().includes(needle)) {
+        continue;
+      }
+      const who = segment.name ? segment.name.name : segment.speaker;
+      const total = Math.floor((segment.at_ms || 0) / 1000);
+      const stamp =
+        String(Math.floor(total / 60)).padStart(2, "0") + ":" + String(total % 60).padStart(2, "0");
+      matches.push((meeting.title || "Untitled") + " · " + stamp + " · " + who + ": " + segment.text);
+      if (matches.length >= 40) {
+        break;
+      }
+    }
+    if (matches.length >= 40) {
+      break;
+    }
+  }
+  if (!matches.length) {
+    matches.push("No line in any transcript carries that word.");
+  }
+  for (const line of matches) {
+    const row = document.createElement("p");
+    row.textContent = line;
+    meetingMatches.append(row);
+  }
+}
+
+meetingSearch.addEventListener("input", searchMeetings);
+
 
 meetingLive.addEventListener("click", () => {
   if (meetingRecording) {

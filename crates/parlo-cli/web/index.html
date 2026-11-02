@@ -301,6 +301,15 @@
       <button id="meeting-export" class="swap" type="button">Copy all as Markdown</button>
     </div>
     <div class="settings-row">
+      <label class="field field-wide" for="meeting-search">
+        <span class="field-label">Search every transcript</span>
+        <input id="meeting-search" class="field-input" type="search" autocomplete="off" spellcheck="false" placeholder="a word someone said">
+      </label>
+    </div>
+    <div class="status" id="meeting-matches" aria-live="polite"></div>
+    <div hidden>
+    </div>
+    <div class="settings-row">
       <button id="meeting-live" class="live" type="button" aria-pressed="false">
         <span class="live-dot" aria-hidden="true"></span>
         <span>Record a meeting</span>
