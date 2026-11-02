@@ -67,6 +67,8 @@ Estimate: 5 hours.
 
 Check: find a dictation from last week by the application it went into.
 
+Built so far: the three parts share the Library destination, and the history keeps every entry in memory, lists the programs it has seen, and filters by program, mode and a word of the text. A row now reads the time, the language pair, the program and the mode. Models and Vocabulary still live as sections rather than tabs.
+
 Estimate: 4 hours.
 
 ## Phase 6: the remaining surfaces
