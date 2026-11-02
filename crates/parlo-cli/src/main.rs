@@ -7,6 +7,7 @@ use parlo_core::gain::{normalize, peak as peak_amplitude};
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, PipelineConfig, Wav};
 
+mod ask;
 mod catalog;
 mod config;
 mod dictate;

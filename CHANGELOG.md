@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Meetings answer questions from the transcript alone. **Ask this meeting** and **Ask every meeting** post to `/meeting/ask` and `/memory/ask`, and the answer is assembled only from stored lines: every answer carries the meeting, the speaker and the time behind each line it used, and a question the transcript does not answer gets one sentence saying so instead of a guess. Deterministic rules, with no model and no network, and a decision is only called a decision when the line closes it.
 - The release downloads like a program. The Windows installer is one fixed file, `Parlo-Setup.exe`, so `releases/latest/download/Parlo-Setup.exe` always fetches the current build, and setup opens Parlo as soon as it finishes.
 - `parlo app` opens the Parlo window and nothing else. The browser is no longer a way in, so the local address and the microphone prompt attached to it are gone; the window answers the microphone permission itself. Options passed to `parlo app` are saved and the window uses them, and `--port` now points at `parlo serve`, which keeps the local api.
 - Escape stops a surface. Live, Captions and a running meeting all end the capture on Escape instead of leaving it running behind another window, and the button that used to say **Pause** says **Stop**, because it ends the capture rather than holding it. The header of each window says the same in a sentence: `Live · listening, every 2.5 seconds · Escape stops`.

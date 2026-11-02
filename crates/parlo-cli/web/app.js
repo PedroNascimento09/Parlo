@@ -1229,6 +1229,11 @@ const meetingSearch = document.getElementById("meeting-search");
 const meetingSummary = document.getElementById("meeting-summary");
 const meetingSummaryText = document.getElementById("meeting-summary-text");
 const meetingMatches = document.getElementById("meeting-matches");
+const meetingQuestion = document.getElementById("meeting-question");
+const meetingAsk = document.getElementById("meeting-ask");
+const meetingAskAll = document.getElementById("meeting-ask-all");
+const meetingAnswer = document.getElementById("meeting-answer");
+const meetingCitations = document.getElementById("meeting-citations");
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
@@ -2019,6 +2024,57 @@ async function deleteMeeting(id) {
     meetingNote.textContent = "The meeting could not be deleted. Try again.";
   }
 }
+
+function meetingClock(atMs) {
+  const seconds = Math.floor((atMs || 0) / 1000);
+  return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+}
+
+function renderAnswer(answer) {
+  meetingCitations.replaceChildren();
+  meetingAnswer.textContent = answer.answer || "No answer.";
+  for (const citation of answer.citations || []) {
+    const term = document.createElement("dt");
+    term.textContent =
+      (citation.title || "Untitled") + " · " + citation.speaker + " · " + meetingClock(citation.at_ms);
+    const detail = document.createElement("dd");
+    detail.textContent = citation.text;
+    meetingCitations.append(term, detail);
+  }
+}
+
+async function askMeetings(every) {
+  const question = meetingQuestion.value.trim();
+  if (!question) {
+    meetingAnswer.textContent = "Ask a question first.";
+    return;
+  }
+  meetingAnswer.textContent = "Reading the stored lines…";
+  meetingCitations.replaceChildren();
+  try {
+    const response = await fetch(every ? "/memory/ask" : "/meeting/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ question }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The question was refused.");
+    }
+    renderAnswer(detail);
+  } catch (failure) {
+    meetingAnswer.textContent = failure.message || "The question could not be answered.";
+  }
+}
+
+meetingAsk.addEventListener("click", () => askMeetings(false));
+meetingAskAll.addEventListener("click", () => askMeetings(true));
+meetingQuestion.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    askMeetings(false);
+  }
+});
 
 function vocabularyHeaders() {
   return { "Content-Type": "application/json", Authorization: "Bearer " + token };

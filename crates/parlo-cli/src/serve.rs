@@ -698,6 +698,51 @@ fn handle(
         };
     }
 
+    if method == "POST" && (path == "/meeting/ask" || path == "/memory/ask") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let question = request
+            .get("question")
+            .and_then(|value| value.as_str())
+            .unwrap_or("")
+            .trim();
+        if question.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json("ask a question first"),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let meetings = if path == "/memory/ask" {
+            crate::meeting::list()
+        } else {
+            let id = request
+                .get("id")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            let chosen = if id.is_empty() {
+                crate::meeting::list().into_iter().next()
+            } else {
+                crate::meeting::load(id).ok()
+            };
+            chosen.into_iter().collect()
+        };
+        let answer = crate::ask::ask(question, &meetings);
+        let body =
+            serde_json::to_string(&answer).unwrap_or_else(|error| error_json(&error.to_string()));
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/vocabulary" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")

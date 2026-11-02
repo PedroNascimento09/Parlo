@@ -481,6 +481,18 @@
     </div>
     <div class="status" id="meeting-matches" aria-live="polite"></div>
     <p class="settings-note" id="meeting-summary-text" aria-live="polite"></p>
+    <div class="settings-row">
+      <label class="field field-wide" for="meeting-question">
+        <span class="field-label">Ask these transcripts</span>
+        <input id="meeting-question" class="field-input" type="search" autocomplete="off" placeholder="What was decided about the launch?">
+      </label>
+      <div class="meeting-actions">
+        <button id="meeting-ask" class="install" type="button">Ask this meeting</button>
+        <button id="meeting-ask-all" class="swap" type="button">Ask every meeting</button>
+      </div>
+    </div>
+    <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
+    <dl class="status" id="meeting-citations"></dl>
     <div class="settings-row meeting-record">
       <button id="meeting-live" class="live" type="button" aria-pressed="false">
         <span class="live-dot" aria-hidden="true"></span>

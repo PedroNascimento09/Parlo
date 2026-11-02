@@ -27,7 +27,7 @@ Parlo is a desktop app that turns speech into writing without sending it anywher
 
 **Read what you say while you say it.** Live opens a window with two columns, the microphone on the left and the translation on the right, in windows of about 2.5 seconds. Captions put the same stream in a thin strip over a call or a video, with one button that changes the size. `Ctrl+Alt+C` opens captions from anywhere, and Escape stops either of them.
 
-**Keep a meeting.** Record the room and get a transcript with a time and a speaker on every line. Rename a speaker once and every line follows, import a transcript you already have, search the whole meeting, and copy it out as Markdown.
+**Keep a meeting.** Record the room and get a transcript with a time and a speaker on every line. Rename a speaker once and every line follows, import a transcript you already have, search the whole meeting, ask what was decided and get the line, the speaker and the time behind the answer, and copy it all out as Markdown.
 
 **Dub a recording.** Drop a video or an audio file and get it back in the other language, with subtitles timed to the source beside it and the original background under the new voice if you want it.
 
