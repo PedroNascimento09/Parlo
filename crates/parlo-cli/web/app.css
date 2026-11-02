@@ -984,3 +984,39 @@ footer p {
 .away {
   display: none !important;
 }
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem 0 0.75rem;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab:hover,
+.tab:focus-visible {
+  opacity: 1;
+}
+
+.tab[aria-selected="true"] {
+  opacity: 1;
+  font-weight: 620;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.tab-away {
+  display: none !important;
+}

@@ -2365,10 +2365,42 @@ function showRoute(name) {
       link.removeAttribute("aria-current");
     }
   }
+  showLibraryTab(libraryTab);
 }
 
 function routeNow() {
   showRoute((location.hash || "#home").slice(1));
+}
+
+const LIBRARY_TABS = {
+  history: ["history"],
+  models: ["models", "catalog"],
+  vocabulary: ["vocabulary"],
+  files: ["dub"],
+};
+
+let libraryTab = "history";
+
+function showLibraryTab(name) {
+  const chosen = LIBRARY_TABS[name] ? name : "history";
+  for (const [key, ids] of Object.entries(LIBRARY_TABS)) {
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.classList.toggle("tab-away", key !== chosen);
+      }
+    }
+  }
+  for (const button of document.querySelectorAll("#library-tabs .tab")) {
+    button.setAttribute("aria-selected", String(button.dataset.tab === chosen));
+  }
+}
+
+for (const button of document.querySelectorAll("#library-tabs .tab")) {
+  button.addEventListener("click", () => {
+    libraryTab = button.dataset.tab;
+    showLibraryTab(libraryTab);
+  });
 }
 
 window.addEventListener("hashchange", routeNow);
