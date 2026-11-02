@@ -134,6 +134,7 @@
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
     <button type="button" class="tab" data-tab="cleanup">Cleanup</button>
     <button type="button" class="tab" data-tab="advanced">Advanced</button>
+    <button type="button" class="tab" data-tab="privacy">Privacy</button>
   </nav>
 
   <section class="settings" id="settings" aria-labelledby="settings-title">
@@ -261,6 +262,13 @@
         <input id="intelligence-base-url" class="field-input" type="text" placeholder="https://api.example.com/v1" autocomplete="off" spellcheck="false">
       </label>
       <button id="intelligence-apply" class="install settings-apply" type="button">Apply</button>
+    </div>
+  </section>
+
+  <section class="settings" id="privacy" aria-labelledby="privacy-title">
+    <div class="settings-head">
+      <h2 id="privacy-title">What leaves this machine</h2>
+      <p class="settings-note" id="privacy-note">Rules and the models on this machine send nothing. A cloud provider is reached only when you choose it, allow it here, and save a key: the sentence you dictated goes to that provider and nowhere else. There is no Parlo server in the middle.</p>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="intelligence-key">

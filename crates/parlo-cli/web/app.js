@@ -2847,7 +2847,7 @@ const ROUTES = {
   library: ["vocabulary", "catalog", "history", "models", "dub"],
   meetings: ["meetings"],
   voice: ["voice"],
-  settings: ["settings", "intelligence", "licences"],
+  settings: ["settings", "intelligence", "licences", "privacy"],
 };
 
 function showRoute(name) {
@@ -2907,6 +2907,7 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 }
 
 const SETTINGS_TABS = {
+  privacy: ["privacy"],
   dictation: ["settings"],
   cleanup: ["intelligence"],
   advanced: ["licences"],
