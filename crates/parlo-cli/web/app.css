@@ -601,6 +601,11 @@ body.first-run .dub {
   line-height: var(--line-caption);
 }
 
+.models-state[data-state="installed"] {
+  border-color: color-mix(in srgb, var(--muted) 35%, transparent);
+  color: var(--muted);
+}
+
 .models-list {
   margin: 16px 0 0;
   padding: 0;
