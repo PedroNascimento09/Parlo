@@ -1,11 +1,9 @@
-<p align="center">
-  <img src="assets/parlo-wordmark.png" width="280" alt="Parlo">
-</p>
+<h1 align="center">Parlo</h1>
 
 <p align="center">
   <b>Speech in. Text out. In any app, in two languages, on your own computer.</b><br>
   Dictation, live text, captions, meetings and dubbing share one engine.<br>
-  Windows, macOS and Linux. No account, no telemetry, no audio upload.
+  Windows first, with macOS and Linux building from source. No account, no telemetry, no audio upload.
 </p>
 
 <p align="center">
@@ -13,10 +11,6 @@
   <a href="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PedroNascimento09/Parlo/ci.yml?style=flat-square"></a>
   <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-Apache--2.0-1e4f4a?style=flat-square"></a>
   <a href="https://github.com/PedroNascimento09/Parlo/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
-</p>
-
-<p align="center">
-  <img src="assets/social.png" alt="Parlo: speak, and the words land where you were already typing" width="100%">
 </p>
 
 Parlo is a desktop app that turns speech into writing without sending it anywhere. Press a shortcut, speak, and the sentence appears in the field you were already typing in, cleaned up, translated if you asked for another language. The same engine powers live text, captions, meetings and dubbing, so a model installed once serves every surface: the window configures it, the shortcut and the tray are how you use it.
