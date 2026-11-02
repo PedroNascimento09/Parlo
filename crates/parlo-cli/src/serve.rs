@@ -29,7 +29,8 @@ const MAX_BODY: usize = 20 * 1024 * 1024;
 const MAX_DUB_BODY: usize = 512 * 1024 * 1024;
 const KEPT_DUBS: usize = 8;
 
-static ISLAND_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static STATE: std::sync::Mutex<parlo_core::state::Machine> =
+    std::sync::Mutex::new(parlo_core::state::Machine::new());
 const DUB_TIMEOUT: Duration = Duration::from_secs(3_600);
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const INDEX: &str = include_str!("../web/index.html");
@@ -1328,18 +1329,37 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
-    if path == "/island/busy" {
+    if path == "/state" {
+        let mut machine = match STATE.lock() {
+            Ok(machine) => machine,
+            Err(_) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    "{\"error\":\"the state is unavailable\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
         if method == "POST" {
-            let busy = serde_json::from_slice::<serde_json::Value>(&body)
+            let next = serde_json::from_slice::<serde_json::Value>(&body)
                 .ok()
-                .and_then(|request| request.get("busy").and_then(serde_json::Value::as_bool))
-                .unwrap_or(false);
-            ISLAND_BUSY.store(busy, std::sync::atomic::Ordering::Relaxed);
+                .and_then(|request| {
+                    request
+                        .get("state")
+                        .and_then(serde_json::Value::as_str)
+                        .and_then(parlo_core::state::State::parse)
+                });
+            let Some(next) = next else {
+                return respond_json(stream, "400 Bad Request", "{\"error\":\"unknown state\"}")
+                    .map(|()| Flow::Serve);
+            };
+            if let Err(error) = machine.enter(next) {
+                return respond_json(stream, "409 Conflict", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
         }
-        let answer = format!(
-            "{{\"busy\":{}}}",
-            ISLAND_BUSY.load(std::sync::atomic::Ordering::Relaxed)
-        );
+        let answer = format!("{{\"state\":\"{}\"}}", machine.state().as_str());
         return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
     }
 

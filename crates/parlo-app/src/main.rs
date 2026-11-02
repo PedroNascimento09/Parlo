@@ -111,7 +111,7 @@ fn watch_island(handle: tauri::AppHandle, port: u16, token: String) {
         let Some(window) = handle.get_webview_window(island::ISLAND) else {
             return;
         };
-        if !window.is_visible().unwrap_or(false) || island_busy(port, &token) {
+        if !window.is_visible().unwrap_or(false) || !island_quiet(port, &token) {
             quiet = 0;
             continue;
         }
@@ -123,25 +123,42 @@ fn watch_island(handle: tauri::AppHandle, port: u16, token: String) {
     }
 }
 
-fn island_busy(port: u16, token: &str) -> bool {
-    let Ok(mut stream) = TcpStream::connect(("127.0.0.1", port)) else {
+fn island_quiet(port: u16, token: &str) -> bool {
+    let Some(state) = island_state(port, token) else {
         return false;
     };
+    matches!(state.as_str(), "idle" | "success" | "cancelled")
+}
+
+fn island_state(port: u16, token: &str) -> Option<String> {
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).ok()?;
     let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
     let request = format!(
-        "GET /island/busy HTTP/1.1
+        "GET /state HTTP/1.1
 Host: 127.0.0.1
 Authorization: Bearer {token}
 Connection: close
 
 "
     );
-    if stream.write_all(request.as_bytes()).is_err() {
-        return false;
-    }
+    stream.write_all(request.as_bytes()).ok()?;
     let mut answer = String::new();
-    let _ = stream.read_to_string(&mut answer);
-    answer.contains("\"busy\":true")
+    stream.read_to_string(&mut answer).ok()?;
+    for state in [
+        "idle",
+        "armed",
+        "listening",
+        "processing",
+        "inserting",
+        "success",
+        "error",
+        "cancelled",
+    ] {
+        if answer.contains(&format!("\"state\":\"{state}\"")) {
+            return Some(state.to_string());
+        }
+    }
+    None
 }
 
 fn place(window: &WebviewWindow) {

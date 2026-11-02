@@ -7,6 +7,7 @@ pub mod resample;
 pub mod ring;
 pub mod settings;
 pub mod shortcut;
+pub mod state;
 pub mod vad;
 pub mod voice;
 pub mod wav;

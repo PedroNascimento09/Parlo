@@ -30,6 +30,8 @@ Built: `island.html` separates `stop()` from `cancel()`, Escape cancels, losing 
 
 Check: start a dictation and watch the island, the tray and the window agree at every step.
 
+Built: `parlo_core::state` holds the eight states with the legal transitions and seven tests over them. The engine serves `GET /state` and accepts `POST /state`, refusing a step that skips a state with 409 and naming both states in the message. The island reports listening, processing, success, error and cancelled, and the app hides it once it reports a quiet state for three polls.
+
 Estimate: 3 hours.
 
 ## Phase 3: insertion certainty

@@ -155,11 +155,11 @@ function setHint(text) {
   document.body.classList.add("showing-hint");
 }
 
-function setBusy(value) {
-  fetch("/island/busy", {
+function report(state) {
+  fetch("/state", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({ busy: Boolean(value) }),
+    body: JSON.stringify({ state }),
     keepalive: true,
   }).catch(() => {});
 }
@@ -262,7 +262,7 @@ async function begin() {
   document.body.classList.add("listening");
   document.body.classList.remove("showing-hint");
   setState("Listening", "Speak now. Release to write it down, Escape to cancel.", true);
-  setBusy(true);
+  report("listening");
   clearInterval(ticker);
   ticker = setInterval(() => {
     clockEl.textContent = ((performance.now() - started) / 1000).toFixed(1) + " s";
@@ -392,7 +392,7 @@ function cancel() {
   } else {
     setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
   }
-  setBusy(false);
+  report("cancelled");
 }
 
 async function stop() {
@@ -400,15 +400,17 @@ async function stop() {
     return;
   }
   busy = true;
+  let failed = false;
   const captured = release();
   clockEl.textContent = "0.0 s";
   if (!captured) {
     setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
     busy = false;
-    setBusy(false);
+    report("idle");
     return;
   }
   setState("Writing", "Your words are being written down.", true);
+  report("processing");
   controller = new AbortController();
   const { signal } = controller;
   try {
@@ -432,7 +434,7 @@ async function stop() {
     if (!text) {
       setState("Nothing heard", "Speak a little closer to the microphone.", true);
       busy = false;
-      setBusy(false);
+      report("error");
       return;
     }
     lastText = text;
@@ -455,13 +457,15 @@ async function stop() {
   } catch (failure) {
     if (signal.aborted) {
       setState("Ready", "Cancelled. Nothing was inserted.", true);
+      failed = true;
     } else {
       setState("Failed", failure.message || "The dictation failed.", true);
+      failed = true;
     }
   }
   controller = null;
   busy = false;
-  setBusy(false);
+  report(failed ? (signal.aborted ? "cancelled" : "error") : "success");
 }
 
 function handsFree() {
