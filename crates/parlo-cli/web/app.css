@@ -1337,3 +1337,13 @@ kbd {
     top: 16px;
   }
 }
+
+.wordmark-mark {
+  height: 22px;
+  width: auto;
+  fill: var(--ink);
+}
+
+.brand {
+  color: var(--ink);
+}
