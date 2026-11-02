@@ -4,7 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
-Nothing yet.
+- A model can be loaded and unloaded by hand. Every row of the model list has **Load** or **Unload now**, so a model can be brought into memory before a meeting or freed before another program needs the RAM. Unloading refuses with a sentence while a task is running, and it never deletes anything: the files stay on disk.
+- Each model decides when it is freed. Its row carries a delay from ten minutes to four hours, or **Keep loaded**, and says whether that delay is its own or the global one. The setting lives in `config.json` as `policies`, which the engine reads at every check, so nothing has to be reloaded. Settings gained the switch that turns automatic memory management off, and the delay is greyed out while it is off.
+- The engine measures inactivity per stage instead of for the whole process, so a recogniser that ran for an hour no longer keeps the voice in memory. `GET /models` carries `idle_seconds`, `policy` and `policy_origin`, taken from a new `lifecycle` op on the sidecar protocol, and the row reads `Loaded`, `Installed · unloaded`, `In use` or `Not installed` in the words the plan fixes.
+- `POST /models/load/<id>`, `POST /models/unload/<id>` and `POST /models/policy` are the routes. A model whose files are missing is refused with its name, and an unknown id with 404.
 
 ## [0.2.2] - 2 November 2026
 
