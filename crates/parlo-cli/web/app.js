@@ -1091,6 +1091,7 @@ const vocabularyList = document.getElementById("vocabulary-list");
 const vocabularyNote = document.getElementById("vocabulary-note");
 const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
+const meetingExport = document.getElementById("meeting-export");
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
@@ -2117,6 +2118,50 @@ async function stopMeeting(message) {
     showError(message);
   }
 }
+
+function meetingsAsMarkdown(meetings) {
+  const lines = [];
+  for (const meeting of meetings) {
+    const day = new Date((meeting.started_at || 0) * 1000).toLocaleString();
+    lines.push("# " + (meeting.title || "Untitled"), "", day, "");
+    for (const segment of meeting.segments || []) {
+      const total = Math.floor((segment.at_ms || 0) / 1000);
+      const stamp =
+        String(Math.floor(total / 60)).padStart(2, "0") +
+        ":" +
+        String(total % 60).padStart(2, "0");
+      const who = segment.name ? segment.name.name : segment.speaker;
+      lines.push("- `" + stamp + "` **" + who + "**: " + segment.text);
+    }
+    lines.push("");
+  }
+  return lines.join("
+").trim() + "
+";
+}
+
+async function exportMeetings() {
+  try {
+    const response = await fetch("/meetings", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    const meetings = await response.json();
+    if (!meetings.length) {
+      meetingNote.textContent = "There is nothing to export yet.";
+      return;
+    }
+    await navigator.clipboard.writeText(meetingsAsMarkdown(meetings));
+    meetingNote.textContent =
+      meetings.length === 1
+        ? "Copied 1 meeting as Markdown."
+        : "Copied " + meetings.length + " meetings as Markdown.";
+  } catch (failure) {
+    meetingNote.textContent = "The meetings could not be exported. Try again.";
+  }
+}
+
+meetingExport.addEventListener("click", () => exportMeetings());
 
 meetingLive.addEventListener("click", () => {
   if (meetingRecording) {
