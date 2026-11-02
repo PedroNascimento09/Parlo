@@ -14,6 +14,7 @@ const updateLink = document.getElementById("update-link");
 const updateText = document.getElementById("update-text");
 const installButton = document.getElementById("update-install");
 const engineEl = document.getElementById("status-engine");
+const stateEl = document.getElementById("status-state");
 const uptimeEl = document.getElementById("status-uptime");
 const micEl = document.getElementById("status-mic");
 const latencyEl = document.getElementById("status-latency");
@@ -669,6 +670,17 @@ function formatUptime(totalSeconds) {
   return Math.floor(seconds / 3600) + " h " + Math.floor((seconds % 3600) / 60) + " min";
 }
 
+const STATE_WORDS = {
+  idle: "ready",
+  armed: "opening the microphone",
+  listening: "listening",
+  processing: "processing",
+  inserting: "inserting",
+  success: "inserted",
+  error: "needs attention",
+  cancelled: "cancelled",
+};
+
 async function refreshHealth() {
   try {
     const response = await fetch("/health", { cache: "no-store" });
@@ -680,6 +692,16 @@ async function refreshHealth() {
     uptimeEl.textContent = formatUptime(health.uptime_s);
   } catch (failure) {
     engineEl.textContent = "offline";
+  }
+  try {
+    const response = await fetch("/state", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const current = await response.json();
+    stateEl.textContent = STATE_WORDS[current.state] || "ready";
+  } catch (failure) {
+    stateEl.textContent = "unknown";
   }
 }
 
