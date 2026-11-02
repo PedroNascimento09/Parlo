@@ -148,6 +148,30 @@ jobs:
           Copy-Item README.md, LICENSE, NOTICE, LICENSES.md, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
           Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/WebView2Loader.dll, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
 
+      - name: Sign the Windows binaries
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          SIGNING_PFX: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
+          SIGNING_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:SIGNING_PFX)) {
+            "SIGNED=0" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            Write-Host "No signing certificate is configured, so the binaries ship unsigned."
+            exit 0
+          }
+          $pfx = Join-Path $env:RUNNER_TEMP "parlo-signing.pfx"
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:SIGNING_PFX))
+          $signtool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -like '*x64*' } | Select-Object -First 1
+          if (-not $signtool) { throw "signtool is missing, so the binaries cannot be signed" }
+          foreach ($file in @("release/parlo.exe", "release/parlo-app.exe")) {
+            & $signtool.FullName sign /fd SHA256 /f $pfx /p $env:SIGNING_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $file
+            if ($LASTEXITCODE -ne 0) { throw "Signing failed for $file" }
+          }
+          "SIGNED=1" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SIGNING_PFX_PATH=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Build the one click installer
         if: runner.os == 'Windows'
         shell: pwsh
@@ -163,9 +187,14 @@ jobs:
           $version = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw "Inno Setup is missing, so the one click installer cannot be built" }
-          & $iscc "/DAppVersion=$version" "installer/parlo.iss"
+          if ($env:SIGNED -eq "1") {
+            $sign = "signtool sign /fd SHA256 /f `"$env:SIGNING_PFX_PATH`" /p `"$env:SIGNING_PASSWORD`" /tr http://timestamp.digicert.com /td SHA256 `$f"
+            & $iscc "/DAppVersion=$version" "/DSignedInstall" "/Sparlo=$sign" "installer/parlo.iss"
+          } else {
+            & $iscc "/DAppVersion=$version" "installer/parlo.iss"
+          }
           if ($LASTEXITCODE -ne 0) { throw "The installer did not compile" }
-          Get-Item build/installer/Parlo-Setup.exe | Select-Object Name, Length
+          Get-Item "build/installer/Parlo-$version-Setup.exe" | Select-Object Name, Length
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
@@ -174,5 +203,5 @@ jobs:
           files: |
             ${{ matrix.archive }}
             sbom.cdx.json
-            build/installer/Parlo-Setup.exe
+            build/installer/Parlo-*-Setup.exe
           generate_release_notes: false

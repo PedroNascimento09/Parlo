@@ -107,7 +107,8 @@ let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
 let settingsBusy = false;
 let playbackDone = null;
 
-versionEl.textContent = version || "unknown";
+const versionLabel = version ? "v" + version : "";
+versionEl.textContent = versionLabel;
 
 function showError(message) {
   errorBox.textContent = message;
@@ -479,7 +480,7 @@ async function finish() {
       body: wav,
     });
     if (response.status === 401) {
-      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+      throw new Error("Parlo lost the connection to its engine. Close Parlo and open it again.");
     }
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
@@ -528,14 +529,14 @@ function formatUptime(totalSeconds) {
 }
 
 const STATE_WORDS = {
-  idle: "ready",
-  armed: "opening the microphone",
-  listening: "listening",
-  processing: "processing",
-  inserting: "inserting",
-  success: "inserted",
-  error: "needs attention",
-  cancelled: "cancelled",
+  idle: "Ready to dictate",
+  armed: "Opening the microphone",
+  listening: "Listening",
+  processing: "Writing it down",
+  inserting: "Typing into your app",
+  success: "Done",
+  error: "Needs attention",
+  cancelled: "Thrown away",
 };
 
 async function refreshHealth() {
@@ -556,9 +557,9 @@ async function refreshHealth() {
     const health = await response.json();
     engineEl.textContent = health.engine || "unknown";
     uptimeEl.textContent = formatUptime(health.uptime_s);
-    languagesEl.textContent = (health.from || "?") + " to " + (health.to || "?");
+    languagesEl.textContent = describePair(health.from, health.to);
   } catch (failure) {
-    engineEl.textContent = "offline";
+    engineEl.textContent = "not answering";
   }
   try {
     const response = await fetch("/state", { cache: "no-store" });
@@ -568,7 +569,7 @@ async function refreshHealth() {
     const current = await response.json();
     stateEl.textContent = STATE_WORDS[current.state] || "ready";
   } catch (failure) {
-    stateEl.textContent = "unknown";
+    stateEl.textContent = "checking";
   }
   try {
     const response = await fetch("/settings", { cache: "no-store" });
@@ -577,7 +578,9 @@ async function refreshHealth() {
     }
     const values = await response.json();
     shortcutEl.textContent = values.shortcut || "not set";
-    modeEl.textContent = values.write ? "dictating in " + values.write : "translating";
+    modeEl.textContent = values.write
+      ? "writing in " + (LANGUAGE_NAMES[values.write] || values.write)
+      : "translating";
   } catch (failure) {
     shortcutEl.textContent = "unknown";
   }
@@ -1283,7 +1286,7 @@ async function saveSettings() {
     });
     const detail = await response.json().catch(() => ({}));
     if (response.status === 401) {
-      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+      throw new Error("Parlo lost the connection to its engine. Close Parlo and open it again.");
     }
     if (!response.ok) {
       throw new Error(detail.error || "Parlo could not change the languages.");
@@ -1673,7 +1676,7 @@ async function startDub() {
     });
     const detail = await response.json().catch(() => ({}));
     if (response.status === 401) {
-      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
+      throw new Error("Parlo lost the connection to its engine. Close Parlo and open it again.");
     }
     if (!response.ok) {
       throw new Error(describeDubError(detail.error));

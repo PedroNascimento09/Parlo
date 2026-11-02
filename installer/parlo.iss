@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.2.0"
+  #define AppVersion "0.2.2"
 #endif
 
 #define Root ".."
@@ -14,14 +14,19 @@ AppPublisher=Parlo
 AppPublisherURL=https://github.com/PedroNascimento09/Parlo
 AppSupportURL=https://github.com/PedroNascimento09/Parlo/issues
 AppUpdatesURL=https://github.com/PedroNascimento09/Parlo/releases
+AppCopyright=Copyright (C) 2026 Pedro Nascimento. Apache-2.0.
 DefaultDirName={localappdata}\Programs\Parlo
-DefaultGroupName=Parlo
 DisableProgramGroupPage=yes
 DisableWelcomePage=no
+LicenseFile={#Root}\LICENSE
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+UsePreviousAppDir=yes
+CloseApplications=yes
+RestartApplications=no
+SetupLogging=yes
 OutputDir={#Root}\build\installer
-OutputBaseFilename=Parlo-Setup
+OutputBaseFilename=Parlo-{#AppVersion}-Setup
 SetupIconFile={#Root}\assets\parlo.ico
 UninstallDisplayIcon={app}\parlo-app.exe
 UninstallDisplayName=Parlo
@@ -40,17 +45,25 @@ VersionInfoDescription=Parlo, speech and translation on this computer
 VersionInfoProductName=Parlo
 VersionInfoProductVersion={#AppVersion}
 VersionInfoVersion={#AppVersion}
-VersionInfoCopyright=Apache-2.0
+VersionInfoCopyright=Copyright (C) 2026 Pedro Nascimento
+
+#ifdef SignedInstall
+SignTool=parlo
+SignedUninstaller=yes
+#endif
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Messages]
-WelcomeLabel1=Welcome to Parlo
-WelcomeLabel2=Parlo turns your speech into clean text and your text into another language, on this computer alone. Nothing is uploaded and there is no account.%n%nThe models are a separate download of about 800 MB, chosen inside the app, and after that everything works offline.
-FinishedLabel=Parlo is installed. Open it from the Start menu, or from the button below.
-FinishedHeadingLabel=Parlo is ready
+WelcomeLabel1=Install Parlo
+WelcomeLabel2=Parlo turns speech into clean text, and writes it into whatever you were already typing in. Everything happens on this computer: no account, no upload, no telemetry.%n%nSetup installs Parlo for your user only, so Windows never asks for an administrator password. The speech model is a separate download of about 640 MB, chosen inside the app.
+FinishedHeadingLabel=Parlo is installed
+FinishedLabel=Parlo is ready. Open it from the Start menu or from the box below, then press Ctrl+Alt+D anywhere and speak.
 
 [Tasks]
 Name: "desktopicon"; Description: "Put a shortcut on the Desktop"; Flags: unchecked
-Name: "startup"; Description: "Open Parlo when Windows starts"; Flags: unchecked
+Name: "startup"; Description: "Start Parlo when I sign in to Windows"; Flags: unchecked
 
 [Files]
 Source: "{#Payload}\parlo.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -58,13 +71,17 @@ Source: "{#Payload}\parlo-app.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo-engine\*"; DestDir: "{app}\parlo-engine"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Root}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Root}\NOTICE"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Root}\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Parlo"; Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"
+Name: "{group}\Uninstall Parlo"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Parlo"; Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Parlo"; ValueData: """{app}\parlo-app.exe"""; Tasks: startup; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Parlo"; ValueData: "\"{app}\parlo-app.exe\""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
 Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"; Description: "Open Parlo"; Flags: nowait postinstall skipifsilent

@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.2] - 2 November 2026
+
 - Two more keys are settings of their own: `Ctrl+Alt+Shift+D` stays listening without holding anything, and `Ctrl+Alt+C` opens or closes the captions window, beside the existing dictation key. All three are validated when they are saved, refused when they repeat one another, and refused when Windows says another program already owns the combination, with a sentence that names the keys instead of an error code.
 
 - The dictation island opens on the screen the cursor is on, not on the primary one. Its place is the bottom centre of that monitor, and a machine that reports no monitor under the cursor still falls back to the primary one.

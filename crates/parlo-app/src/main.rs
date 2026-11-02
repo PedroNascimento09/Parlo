@@ -10,6 +10,7 @@ use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use tauri::webview::{PermissionKind, PermissionResponse};
 use tauri::{LogicalPosition, Manager, RunEvent, Url, WebviewWindow};
 
 mod island;
@@ -26,6 +27,10 @@ struct Address(Mutex<Option<(u16, String)>>);
 
 fn main() {
     let app = tauri::Builder::default()
+        .on_permission_request(|_webview, kind| match kind {
+            PermissionKind::Microphone => PermissionResponse::Allow,
+            _ => PermissionResponse::Default,
+        })
         .setup(|app| {
             let window = app
                 .get_webview_window("main")

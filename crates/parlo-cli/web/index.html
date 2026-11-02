@@ -10,8 +10,25 @@
 </head>
 <body>
 <header class="bar">
-  <p class="wordmark">Parlo</p>
-  <span class="version" id="status-version">unknown</span>
+  <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="parlo-mark" x1="0" y1="0" x2="0.35" y2="1">
+            <stop offset="0" stop-color="#f6b18d" />
+            <stop offset="1" stop-color="#c9502f" />
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="9" fill="url(#parlo-mark)" />
+        <path d="M6.8 6h18.4a3.6 3.6 0 0 1 3.6 3.6v8.2a3.6 3.6 0 0 1-3.6 3.6H13l-3.4 3a.8.8 0 0 1-1.3-.6v-2.4h-1.5a3.6 3.6 0 0 1-3.6-3.6V9.6A3.6 3.6 0 0 1 6.8 6Z" fill="#fff6ee" />
+        <g fill="#c9502f">
+          <rect x="10.6" y="11" width="2.4" height="6.4" rx="1.2" />
+          <rect x="14.8" y="8.9" width="2.4" height="10.6" rx="1.2" />
+          <rect x="19" y="11" width="2.4" height="6.4" rx="1.2" />
+        </g>
+      </svg>
+    <p class="wordmark">Parlo</p>
+  </div>
+  <span class="version" id="status-version"></span>
 </header>
 
 <nav class="rail" aria-label="Sections">
@@ -107,41 +124,35 @@
   <p class="error" id="error" role="alert" hidden></p>
   <p class="translation" id="translation" aria-live="polite" hidden></p>
 
-  <dl class="status" id="status-list">
-    <div>
-      <dt>Engine</dt>
-      <dd id="status-engine">starting</dd>
-        <p class="status-note" id="engine-note" aria-live="polite"></p>
-    </div>
-    <div>
-      <dt>Right now</dt>
-      <dd id="status-state">ready</dd>
-    </div>
-    <div>
-      <dt>Shortcut</dt>
-      <dd id="status-shortcut">not set</dd>
-    </div>
-    <div>
-      <dt>Languages</dt>
-      <dd id="status-languages">unknown</dd>
-    </div>
-    <div>
-      <dt>Mode</dt>
-      <dd id="status-mode">translating</dd>
-    </div>
-    <div>
-      <dt>Running for</dt>
-      <dd id="status-uptime">just now</dd>
-    </div>
-    <div>
-      <dt>Microphone</dt>
-      <dd id="status-mic">waiting</dd>
-    </div>
-    <div>
-      <dt>Last translation</dt>
-      <dd id="status-latency">not yet</dd>
-    </div>
-  </dl>
+  <section class="today" id="status-list" aria-label="Right now">
+    <p class="today-state">
+      <span class="dot" id="status-dot" aria-hidden="true"></span>
+      <span id="status-state">Ready to dictate</span>
+    </p>
+    <p class="today-line">
+      Press <kbd id="status-shortcut">Ctrl+Alt+D</kbd> and speak, or use the Parlo icon in the tray.
+      <span id="status-languages">Portuguese to English</span>, <span id="status-mode">translating</span>.
+    </p>
+    <p class="settings-note" id="engine-note" aria-live="polite"></p>
+    <dl class="today-facts">
+      <div>
+        <dt>Microphone</dt>
+        <dd id="status-mic">not opened yet</dd>
+      </div>
+      <div>
+        <dt>Engine</dt>
+        <dd id="status-engine">starting</dd>
+      </div>
+      <div>
+        <dt>Running for</dt>
+        <dd id="status-uptime">just now</dd>
+      </div>
+      <div>
+        <dt>Last translation</dt>
+        <dd id="status-latency">nothing yet</dd>
+      </div>
+    </dl>
+  </section>
 
   <section class="recent" id="recent" aria-labelledby="recent-title">
     <h2 id="recent-title">Last three results</h2>
@@ -313,7 +324,7 @@
       </label>
       <label class="field field-wide" for="intelligence-local-url">
         <span class="field-label">Local model address, optional</span>
-        <input id="intelligence-local-url" class="field-input" type="text" placeholder="http://127.0.0.1:8080/v1/chat/completions" autocomplete="off" spellcheck="false">
+        <input id="intelligence-local-url" class="field-input" type="text" placeholder="the address your local model listens on" autocomplete="off" spellcheck="false">
       </label>
       <label class="field" for="intelligence-local-model">
         <span class="field-label">Local model name</span>
@@ -566,7 +577,7 @@
 </details>
 
 <footer>
-  <p>Parlo translates on this machine. Audio is never uploaded, and there is no telemetry and no account.</p>
+  <p>Parlo works on this computer. Your voice is never uploaded, and there is no account and no telemetry.</p>
 </footer>
 
 <script src="/app.js"></script>
