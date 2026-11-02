@@ -4,7 +4,7 @@ Parlo opens as a window of its own. The window, `parlo-app`, is a thin native sh
 
 ## Start it
 
-From a release, unzip the archive and double-click `parlo-app`, which is `parlo-app.exe` on Windows. The archive carries three things: `parlo`, the command line; `parlo-app`, the window; and a folder named `parlo-engine`, the self-contained translation engine with its libraries, about 900 MB once unpacked. The engine folder must stay next to the other two, because the window looks for it beside itself, and no Python is involved. From a terminal, `parlo app` opens the window when `parlo-app` sits beside `parlo`, and falls back to the browser otherwise. Models are not in the archive: the Models panel downloads them on first use into `%APPDATA%\parlo\models` on Windows, `~/Library/Application Support/parlo/models` on macOS, or `$XDG_DATA_HOME/parlo/models` elsewhere, and `PARLO_MODELS_DIR` moves them. That first download is roughly 800 MB, so the first launch needs a network connection once, and everything works offline afterwards. The config file sits beside that folder.
+From a release, unzip the archive and double-click `parlo-app`, which is `parlo-app.exe` on Windows. The archive carries three things: `parlo`, the command line; `parlo-app`, the window; and a folder named `parlo-engine`, the self-contained translation engine with its libraries, about 900 MB once unpacked. The engine folder must stay next to the other two, because the window looks for it beside itself, and no Python is involved. From a terminal, `parlo app` opens the window, which has to sit beside `parlo`; without it the command says so instead of opening a page. Models are not in the archive: the Models panel downloads them on first use into `%APPDATA%\parlo\models` on Windows, `~/Library/Application Support/parlo/models` on macOS, or `$XDG_DATA_HOME/parlo/models` elsewhere, and `PARLO_MODELS_DIR` moves them. That first download is roughly 800 MB, so the first launch needs a network connection once, and everything works offline afterwards. The config file sits beside that folder.
 
 To keep the release somewhere permanent, `parlo install` copies both programs and the engine folder into `%LOCALAPPDATA%\Programs\Parlo` on Windows, `~/Applications/Parlo` on macOS or `~/.local/opt/parlo` on Linux, and writes one menu entry that opens the window rather than a console. `--dir` installs somewhere else and `--no-shortcut` skips the entry. `parlo uninstall` removes both and keeps your models, because redownloading 800 MB on a whim is not a kindness; `--purge` removes them as well.
 
@@ -17,11 +17,11 @@ target/release/parlo-app
 
 The window starts the server behind it and stops it on the way out, so no terminal has to stay open. Both programs have to be built, because the window looks for `parlo` beside itself.
 
-The language pair and the recogniser are chosen inside the page. `parlo app --from en --to pt --stt whisper` starts the browser version with those values instead of the window, and they are written to the config file, which the window reads too, so the next start of either keeps them.
+The language pair and the recogniser are chosen inside the page. `parlo app --from en --to pt --stt whisper` writes those values to the config file and opens the window, which reads them at start.
 
 ## The window
 
-`parlo-app` does one thing before the page appears: it starts `parlo serve` on a free loopback port with a fresh token, waits for the local server to answer `/health`, and only then loads the page with the token already in the address. The page, the endpoints and the behaviour described below are identical to the browser version.
+`parlo-app` does one thing before the page appears: it starts `parlo serve` on a free loopback port with a fresh token, waits for the local server to answer `/health`, and only then loads the page with the token already in the address. The page, the endpoints and the behaviour described below are the whole app.
 
 While the engine loads, the window shows a quiet starting screen with a pulsing mark. A cold start measured about 18 seconds on the reference machine, and the window waits up to four minutes before giving up, which leaves room for a first run that is still fetching models.
 
