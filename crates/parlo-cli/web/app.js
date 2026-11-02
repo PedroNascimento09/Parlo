@@ -2482,6 +2482,7 @@ const ONBOARDING_TITLES = [
 ];
 
 let onboardingTimer = null;
+let onboardingNudge = null;
 let onboardingStage = 0;
 let onboardingKnown = -1;
 let onboardingChosen = "Ctrl+Alt+D";
@@ -2495,6 +2496,7 @@ function markOnboardingStep(step) {
 
 function showOnboardingStage(step) {
   onboardingStage = step;
+  localStorage.setItem("parlo.onboarding.stage", String(step));
   onboarding.hidden = false;
   markOnboardingStep(step);
   onboardingTitle.textContent = ONBOARDING_TITLES[step - 1];
@@ -2525,7 +2527,17 @@ function showOnboardingStage(step) {
       onboardingKnown = entries.length;
     });
     clearInterval(onboardingTimer);
+    clearTimeout(onboardingNudge);
     onboardingTimer = setInterval(tickOnboarding, 400);
+    onboardingNudge = setTimeout(() => {
+      if (onboardingStage !== 4) {
+        return;
+      }
+      onboardingNote.textContent =
+        "Nothing arrived. Allow the microphone in Windows settings, Privacy and security, Microphone, then hold " +
+        onboardingChosen +
+        " and speak again.";
+    }, 25000);
   }
   if (step === 5) {
     onboardingNote.textContent =
@@ -2535,8 +2547,10 @@ function showOnboardingStage(step) {
 
 function finishOnboarding() {
   clearInterval(onboardingTimer);
+  clearTimeout(onboardingNudge);
   onboardingTimer = null;
   localStorage.setItem("parlo.onboarded", "1");
+  localStorage.removeItem("parlo.onboarding.stage");
   onboarding.hidden = true;
 }
 
@@ -2659,7 +2673,8 @@ async function startOnboarding() {
     onboardingShortcut.value = "Ctrl+Alt+D";
   }
   onboardingResult.textContent = "";
-  showOnboardingStage(1);
+  const saved = Number(localStorage.getItem("parlo.onboarding.stage") || "1");
+  showOnboardingStage(saved === 5 ? 4 : Math.min(4, Math.max(1, saved)));
 }
 
 onboardingSwap.addEventListener("click", () => {

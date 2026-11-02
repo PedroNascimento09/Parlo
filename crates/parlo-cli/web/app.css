@@ -1260,3 +1260,75 @@ kbd {
 .today-note:empty {
   display: none;
 }
+
+.settings-layout {
+  display: grid;
+  gap: 18px;
+  margin: 4px 0 0;
+}
+
+.settings-panes > .settings {
+  margin-top: 0;
+}
+
+.settings-nav {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+
+.settings-nav .tab {
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.settings-nav .tab:hover,
+.settings-nav .tab:focus-visible {
+  background: var(--surface-sunken);
+  opacity: 1;
+}
+
+.settings-nav .tab[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+#settings-foot {
+  align-items: center;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+@media (max-width: 719px) {
+  .settings-nav {
+    grid-auto-flow: column;
+    justify-content: start;
+  }
+}
+
+@media (min-width: 720px) {
+  .settings-layout {
+    grid-template-columns: 190px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .settings-nav {
+    position: sticky;
+    top: 16px;
+  }
+}
