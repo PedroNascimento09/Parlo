@@ -119,6 +119,20 @@ impl Engine {
             .as_mut()
             .ok_or_else(|| "the voice is unavailable".to_string())
     }
+
+    fn loaded(&self) -> Vec<&'static str> {
+        let mut units = Vec::new();
+        if self.recognizer.is_some() {
+            units.push("recognition");
+        }
+        if self.translator.is_some() {
+            units.push("translation");
+        }
+        if self.voice.is_some() {
+            units.push("voice");
+        }
+        units
+    }
 }
 
 fn main() {
@@ -151,6 +165,7 @@ fn handle(request: &Value, engine: &mut Engine, session: &mut Session) -> String
     let seq = request.get("seq").and_then(Value::as_u64).unwrap_or(0);
     match op {
         "hello" => protocol::hello(&engine.to),
+        "loaded" => protocol::loaded(&engine.loaded()),
         "dictate" => with_audio(request, seq, |samples| {
             Ok(protocol::dictated(
                 seq,

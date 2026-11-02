@@ -590,6 +590,17 @@ body.first-run .dub {
   font-size: 14px;
 }
 
+.models-state {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--listen) 40%, transparent);
+  border-radius: 999px;
+  color: var(--listen);
+  font-size: var(--size-caption);
+  line-height: var(--line-caption);
+}
+
 .models-list {
   margin: 16px 0 0;
   padding: 0;

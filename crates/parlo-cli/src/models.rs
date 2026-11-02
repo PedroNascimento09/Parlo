@@ -441,7 +441,26 @@ pub fn reason_for(model: &Model, machine: &str) -> String {
     format!("{what}, and this machine has {machine}")
 }
 
-pub fn as_json(models: &[Model]) -> String {
+fn state_of(model: &Model, loaded: &[String]) -> &'static str {
+    if !model.installed {
+        return "not installed";
+    }
+    let unit = match model.id {
+        "parakeet" => "recognition",
+        "voice-pt" | "voice-en" => "voice",
+        _ => "translation",
+    };
+    let held = loaded
+        .iter()
+        .any(|name| name == unit || (unit == "translation" && name == "dictation translation"));
+    if held {
+        "loaded"
+    } else {
+        "installed"
+    }
+}
+
+pub fn as_json(models: &[Model], loaded: &[String]) -> String {
     let machine = device::profile();
     let described = machine.describe();
     let rows: Vec<serde_json::Value> = models
@@ -453,6 +472,7 @@ pub fn as_json(models: &[Model]) -> String {
                 "kind": model.kind,
                 "feature": model.feature,
                 "installed": model.installed,
+                "state": state_of(model, loaded),
                 "bytes": model.bytes,
                 "reason": reason_for(model, &described),
             })
@@ -500,7 +520,7 @@ mod tests {
     #[test]
     fn every_model_says_why_it_is_the_one_offered() {
         let models = status();
-        let parsed: serde_json::Value = serde_json::from_str(&as_json(&models)).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&as_json(&models, &[])).unwrap();
         let rows = parsed["models"].as_array().unwrap();
         assert!(!rows.is_empty());
         for row in rows {
@@ -521,7 +541,7 @@ mod tests {
             bytes: 1024,
         }];
         assert!(!downloading(&models));
-        assert!(as_json(&models).contains("\"downloading\":false"));
+        assert!(as_json(&models, &[]).contains("\"downloading\":false"));
     }
 
     #[test]
@@ -543,7 +563,7 @@ mod tests {
         let models = status();
         assert!(models.iter().all(|model| !model.id.is_empty()));
         assert!(models.iter().any(|model| model.feature == "Dictation"));
-        assert!(as_json(&models).contains("\"dictation\":"));
+        assert!(as_json(&models, &[]).contains("\"dictation\":"));
     }
 
     #[test]
@@ -560,5 +580,58 @@ mod tests {
         assert!(voice.1.starts_with("pt_PT-"), "{}", voice.1);
         let paths = paths_for("voice-pt").unwrap();
         assert_eq!(paths[0].file_name().unwrap(), voice.1);
+    }
+
+    #[test]
+    fn a_model_says_whether_it_sits_in_memory() {
+        let models = vec![
+            Model {
+                id: "parakeet",
+                name: "recogniser".to_string(),
+                kind: "recogniser",
+                feature: "Dictation",
+                installed: true,
+                bytes: 10,
+            },
+            Model {
+                id: "mt-pt-en",
+                name: "pair".to_string(),
+                kind: "translation",
+                feature: "Translation",
+                installed: true,
+                bytes: 10,
+            },
+            Model {
+                id: "voice-pt",
+                name: "voice".to_string(),
+                kind: "voice",
+                feature: "Read aloud",
+                installed: false,
+                bytes: 0,
+            },
+        ];
+        let loaded = vec![
+            "recognition".to_string(),
+            "dictation translation".to_string(),
+        ];
+        let parsed: serde_json::Value = serde_json::from_str(&as_json(&models, &loaded)).unwrap();
+        let rows = parsed["models"].as_array().unwrap();
+        assert_eq!(rows[0]["state"], "loaded");
+        assert_eq!(rows[1]["state"], "loaded");
+        assert_eq!(rows[2]["state"], "not installed");
+    }
+
+    #[test]
+    fn a_model_that_was_not_asked_for_reads_as_on_disk() {
+        let models = vec![Model {
+            id: "voice-en",
+            name: "voice".to_string(),
+            kind: "voice",
+            feature: "Read aloud",
+            installed: true,
+            bytes: 10,
+        }];
+        let parsed: serde_json::Value = serde_json::from_str(&as_json(&models, &[])).unwrap();
+        assert_eq!(parsed["models"][0]["state"], "installed");
     }
 }

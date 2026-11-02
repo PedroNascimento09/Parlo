@@ -217,6 +217,18 @@ class CascadeEngine:
             )
         return self._stt
 
+    def loaded_units(self) -> tuple[str, ...]:
+        units = []
+        if self._stt is not None:
+            units.append("recognition")
+        if self._translator is not None:
+            units.append("translation")
+        if self._writers:
+            units.append("dictation translation")
+        if self._tts is not None:
+            units.append("voice")
+        return tuple(units)
+
     def unload_if_idle(self, now: float | None = None) -> tuple[str, ...]:
         minutes = configured_unload()
         if minutes <= 0:

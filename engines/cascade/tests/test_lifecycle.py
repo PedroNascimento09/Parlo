@@ -37,6 +37,16 @@ class UnloadPolicyTests(unittest.TestCase):
         engine._writers["en"] = lambda text: text
         return engine
 
+    def test_what_is_loaded_is_reported(self):
+        engine = self.engine_with_models()
+        self.assertEqual(
+            engine.loaded_units(),
+            ("recognition", "translation", "dictation translation", "voice"),
+        )
+        engine._stt = None
+        engine._tts = None
+        self.assertEqual(engine.loaded_units(), ("translation", "dictation translation"))
+
     def test_a_missing_setting_means_thirty_minutes(self):
         self.assertEqual(configured_unload(), 30)
 

@@ -108,6 +108,10 @@ impl Pipeline {
         self.engine.id()
     }
 
+    pub fn loaded_units(&mut self) -> Option<Vec<String>> {
+        self.engine.loaded_units()
+    }
+
     pub fn input_gain(&self) -> f32 {
         self.gain.gain()
     }

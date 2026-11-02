@@ -41,6 +41,8 @@ struct Response {
     events: Vec<StreamEvent>,
     #[serde(default)]
     mode: Option<String>,
+    #[serde(default)]
+    units: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -234,6 +236,21 @@ impl SidecarEngine {
         &self.stream_mode
     }
 
+    pub fn loaded(&mut self) -> Result<Vec<String>, EngineError> {
+        let response = self.request(&Request {
+            op: "loaded",
+            seq: None,
+            pcm16: None,
+            target: None,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(response.error.unwrap_or_else(
+                || "the engine did not say what is loaded".to_string(),
+            )));
+        }
+        Ok(response.units)
+    }
+
     fn exchange(
         &mut self,
         op: &str,
@@ -304,6 +321,10 @@ impl Engine for SidecarEngine {
         target: Option<&str>,
     ) -> Result<(String, String), EngineError> {
         SidecarEngine::write(self, pcm16, target)
+    }
+
+    fn loaded_units(&mut self) -> Option<Vec<String>> {
+        SidecarEngine::loaded(self).ok()
     }
 
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError> {

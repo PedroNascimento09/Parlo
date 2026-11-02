@@ -74,6 +74,10 @@ pub trait Engine: Send {
         ))
     }
 
+    fn loaded_units(&mut self) -> Option<Vec<String>> {
+        None
+    }
+
     fn reset(&mut self) {}
 }
 

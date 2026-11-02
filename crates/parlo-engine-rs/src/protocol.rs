@@ -44,6 +44,10 @@ pub fn hello(target: &str) -> String {
     .to_string()
 }
 
+pub fn loaded(units: &[&str]) -> String {
+    json!({"op": "loaded", "units": units}).to_string()
+}
+
 pub fn dictated(seq: u64, text: &str) -> String {
     json!({"op": "dictated", "seq": seq, "text": text}).to_string()
 }
@@ -150,5 +154,12 @@ mod tests {
         let line = hello("en");
         assert!(line.contains("\"engine\":\"cascade\""));
         assert!(line.contains("\"en\""));
+    }
+
+    #[test]
+    fn loaded_lists_the_units_in_memory() {
+        let line = loaded(&["recognition", "voice"]);
+        assert!(line.contains("\"op\":\"loaded\""));
+        assert!(line.contains("\"recognition\""));
     }
 }

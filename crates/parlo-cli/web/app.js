@@ -1082,6 +1082,13 @@ function describeModels(state) {
     reason.textContent = model.reason || "";
     name.append(reason);
 
+    if (model.state === "loaded") {
+      const badge = document.createElement("span");
+      badge.className = "models-state";
+      badge.textContent = "In memory";
+      name.append(badge);
+    }
+
     const fact = document.createElement("span");
     fact.className = "models-fact" + (model.installed ? " ready" : "");
     fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";

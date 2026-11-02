@@ -15,6 +15,11 @@ def hello(engine) -> dict:
     }
 
 
+def loaded(engine) -> dict:
+    units = getattr(engine, "loaded_units", None)
+    return {"op": "loaded", "units": list(units()) if callable(units) else []}
+
+
 def handle_line(line: str, engine) -> dict:
     try:
         request = json.loads(line)
@@ -27,6 +32,8 @@ def handle_line(line: str, engine) -> dict:
     op = request.get("op")
     if op == "hello":
         return hello(engine)
+    if op == "loaded":
+        return loaded(engine)
     if op == "translate":
         return translate(request, engine)
     if op == "dictate":
