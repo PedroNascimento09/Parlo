@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Translation, read aloud and captions can be switched off without deleting a single model. The switches live in Settings and are saved in `config.json`; with captions off the captions page refuses with a sentence, and with translation off dubbing refuses instead of quietly doing half the work. `GET` and `POST /features` are the routes.
 - The engine says what this machine can do and why. `GET /engine` reports the profile, the voice that was asked for, the voice that is used instead, the chain of steps, and a sentence that names the cores, the memory and AVX2; every change is appended to `logs/engines.jsonl`, and the Home screen shows that sentence under the engine. Nothing in it claims a latency that was not measured.
 ## [0.2.1.1] - 2026-11-02
 

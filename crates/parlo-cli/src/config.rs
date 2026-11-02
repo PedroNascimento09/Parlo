@@ -75,6 +75,7 @@ mod tests {
             unload: 15,
             models_dir: String::new(),
             intelligence: Default::default(),
+            features: Default::default(),
         };
         let text = serde_json::to_string(&config).unwrap();
         assert_eq!(serde_json::from_str::<Config>(&text).unwrap(), config);

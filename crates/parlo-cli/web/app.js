@@ -30,6 +30,10 @@ const versionEl = document.getElementById("status-version");
 const modelsBox = document.getElementById("models");
 const modelsList = document.getElementById("models-list");
 const modelsCancel = document.getElementById("models-cancel");
+const featureTranslation = document.getElementById("feature-translation");
+const featureVoice = document.getElementById("feature-voice");
+const featureCaptions = document.getElementById("feature-captions");
+const featuresNote = document.getElementById("features-note");
 const modelsFolder = document.getElementById("models-folder");
 const modelsMove = document.getElementById("models-move");
 const modelsMoveNote = document.getElementById("models-move-note");
@@ -3057,3 +3061,54 @@ voiceForm.addEventListener("submit", async (event) => {
 });
 
 loadVoices();
+
+
+async function loadFeatures() {
+  try {
+    const response = await fetch("/features", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const features = await response.json();
+    featureTranslation.checked = features.translation !== false;
+    featureVoice.checked = features.voice !== false;
+    featureCaptions.checked = features.captions !== false;
+  } catch (failure) {
+    featuresNote.textContent = "";
+  }
+}
+
+async function saveFeatures() {
+  featuresNote.textContent = "Saving.";
+  try {
+    const response = await fetch("/features", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({
+        translation: featureTranslation.checked,
+        voice: featureVoice.checked,
+        captions: featureCaptions.checked,
+      }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      featuresNote.textContent = detail.error || "The switch was not saved.";
+      await loadFeatures();
+      return;
+    }
+    const off = [];
+    if (!detail.translation) off.push("translation");
+    if (!detail.voice) off.push("read aloud");
+    if (!detail.captions) off.push("captions");
+    featuresNote.textContent = off.length
+      ? "Off: " + off.join(", ") + ". The models stay on this computer."
+      : "Everything is on again.";
+  } catch (failure) {
+    featuresNote.textContent = "The switch was not saved. Check that Parlo is still running.";
+  }
+}
+
+for (const input of [featureTranslation, featureVoice, featureCaptions]) {
+  input.addEventListener("change", () => saveFeatures());
+}
+loadFeatures();

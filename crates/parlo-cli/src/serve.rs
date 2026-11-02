@@ -609,6 +609,34 @@ fn handle(
         };
     }
 
+    if method == "GET" && path == "/features" {
+        let features = crate::config::load().features;
+        let body = serde_json::to_string(&features).unwrap_or_else(|_| "{}".to_string());
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/features" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let requested: parlo_core::settings::Features = match serde_json::from_slice(&body) {
+            Ok(features) => features,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve)
+            }
+        };
+        let mut config = crate::config::load();
+        config.features = requested;
+        if let Err(error) = crate::config::save(&config) {
+            return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        let body = serde_json::to_string(&config.features).unwrap_or_else(|_| "{}".to_string());
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/catalog" {
         return respond_json(stream, "200 OK", &crate::catalog::as_json()).map(|()| Flow::Serve);
     }
@@ -1201,6 +1229,14 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
+        if !crate::config::load().features.translation {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"dubbing needs translation, and translation is switched off in Settings\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
         if body.is_empty() {
             return respond_json(
                 stream,
@@ -1570,6 +1606,14 @@ fn handle(
     }
 
     if method == "GET" && (path == "/captions" || path == "/captions.html") {
+        if !crate::config::load().features.captions {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"captions are switched off in Settings\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
         let page = CAPTIONS.replace("__PARLO_VERSION__", VERSION);
         return respond(
             stream,

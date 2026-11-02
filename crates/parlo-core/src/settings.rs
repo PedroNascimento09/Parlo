@@ -20,6 +20,25 @@ pub struct Config {
     pub unload: u32,
     pub models_dir: String,
     pub intelligence: Intelligence,
+    pub features: Features,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Features {
+    pub translation: bool,
+    pub voice: bool,
+    pub captions: bool,
+}
+
+impl Default for Features {
+    fn default() -> Self {
+        Self {
+            translation: true,
+            voice: true,
+            captions: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -64,6 +83,7 @@ impl Default for Config {
             unload: 30,
             models_dir: String::new(),
             intelligence: Intelligence::default(),
+            features: Features::default(),
         }
     }
 }
@@ -121,6 +141,20 @@ pub fn save(config: &Config) -> Result<PathBuf, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn features_start_on_and_round_trip() {
+        let features = Features::default();
+        assert!(features.translation && features.voice && features.captions);
+        let text = serde_json::to_string(&features).unwrap();
+        assert_eq!(serde_json::from_str::<Features>(&text).unwrap(), features);
+    }
+
+    #[test]
+    fn a_config_without_features_keeps_them_on() {
+        let config: Config = serde_json::from_str("{\"port\": 9000}").unwrap();
+        assert!(config.features.translation);
+    }
 
     #[test]
     fn defaults_carry_the_documented_shortcut() {
