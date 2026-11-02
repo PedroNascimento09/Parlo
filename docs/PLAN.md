@@ -67,7 +67,7 @@ Estimate: 5 hours.
 
 Check: find a dictation from last week by the application it went into.
 
-Built so far: the three parts share the Library destination, and the history keeps every entry in memory, lists the programs it has seen, and filters by program, mode and a word of the text. A row now reads the time, the language pair, the program and the mode. Models and Vocabulary still live as sections rather than tabs.
+Built so far: the three parts share the Library destination, and the history keeps every entry in memory, lists the programs it has seen, and filters by program, mode and a word of the text. A row now reads the time, the language pair, the program and the mode. Models, Vocabulary, Files and History now sit behind four tabs over one Library destination.
 
 Estimate: 4 hours.
 
@@ -77,6 +77,8 @@ Estimate: 4 hours.
 2. Tray: modes and destinations, state in the tooltip, no action duplicated from the window.
 3. Onboarding: five steps under sixty seconds, ending with a real insertion.
 4. Captions as its own floating window, then Live, then Meetings with a lifecycle.
+
+Built so far: Settings carries three tabs (Dictation, Cleanup, Advanced, the last holding the licences), and the tray tooltip now reads the shared state, so the three surfaces repeat the same word.
 
 Estimate: 12 hours across several sittings.
 
