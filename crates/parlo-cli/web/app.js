@@ -52,6 +52,8 @@ const settingsStt = document.getElementById("settings-stt");
 const settingsSwap = document.getElementById("settings-swap");
 const settingsApply = document.getElementById("settings-apply");
 const settingsUnload = document.getElementById("settings-unload");
+const settingsManageMemory = document.getElementById("settings-manage-memory");
+const memoryNote = document.getElementById("memory-note");
 const settingsNote = document.getElementById("settings-note");
 const intelligenceMode = document.getElementById("intelligence-mode");
 const intelligenceClean = document.getElementById("intelligence-clean");
@@ -811,6 +813,38 @@ function reflectFirstRun(ready, dictation, downloading) {
 
 let modelState = { models: [], ready: false, dictation: false, downloading: false };
 
+function describeIdle(seconds) {
+  if (seconds < 60) {
+    return Math.max(0, Math.round(seconds)) + " s";
+  }
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) {
+    return minutes + " min";
+  }
+  const hours = Math.round(minutes / 60);
+  return hours + (hours === 1 ? " hour" : " hours");
+}
+
+function describeLifecycle(model) {
+  if (!model.installed) {
+    return "";
+  }
+  const parts = [];
+  if (model.state === "loaded" && typeof model.idle_seconds === "number") {
+    parts.push("idle for " + describeIdle(model.idle_seconds));
+  }
+  if (model.policy === 0) {
+    parts.push("kept loaded until you unload it");
+    return parts.join(", ");
+  }
+  if (typeof model.policy !== "number") {
+    return parts.join(", ");
+  }
+  const delay = "freed after " + describeIdle(model.policy * 60) + " without use";
+  parts.push(model.policy_origin === "model" ? delay : delay + ", from the global setting");
+  return parts.join(", ");
+}
+
 function describeModels(state) {
   modelState = state;
   modelsCancel.hidden = !state.downloading;
@@ -842,8 +876,20 @@ function describeModels(state) {
       badge.className = "models-state";
       badge.dataset.state = model.state;
       badge.textContent =
-        model.state === "loaded" ? "In memory" : model.state === "in use" ? "In use" : "On disk";
+        model.state === "loaded"
+          ? "Loaded"
+          : model.state === "in use"
+            ? "In use"
+            : "Installed · unloaded";
       name.append(badge);
+    }
+
+    const lifecycle = describeLifecycle(model);
+    if (lifecycle) {
+      const policy = document.createElement("span");
+      policy.className = "models-kind models-policy-note";
+      policy.textContent = lifecycle;
+      name.append(policy);
     }
 
     if (model.quality) {
@@ -857,14 +903,52 @@ function describeModels(state) {
     fact.className = "models-fact" + (model.installed ? " ready" : "");
     fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";
 
+    const actions = document.createElement("div");
+    actions.className = "models-actions";
+
+    if (model.installed) {
+      const policy = document.createElement("select");
+      policy.className = "field-input models-policy";
+      policy.setAttribute("aria-label", "Free " + model.name + " after");
+      [
+        ["", "Follows the global setting"],
+        ["10", "Free after 10 min"],
+        ["15", "Free after 15 min"],
+        ["30", "Free after 30 min"],
+        ["60", "Free after 1 hour"],
+        ["120", "Free after 2 hours"],
+        ["240", "Free after 4 hours"],
+        ["0", "Keep loaded"],
+      ].forEach(([value, label]) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        policy.append(option);
+      });
+      policy.value = model.policy_origin === "model" ? String(model.policy) : "";
+      policy.disabled = Boolean(state.downloading);
+      policy.addEventListener("change", () => savePolicy(model, policy));
+      actions.append(policy);
+
+      const held = document.createElement("button");
+      held.type = "button";
+      held.className = "models-action";
+      held.textContent = model.state === "loaded" ? "Unload now" : "Load";
+      held.disabled = Boolean(state.downloading) || model.state === "in use";
+      held.title = model.state === "in use" ? "In use. Unload it when the task finishes." : "";
+      held.addEventListener("click", () => modelStateAction(model, held));
+      actions.append(held);
+    }
+
     const action = document.createElement("button");
     action.type = "button";
     action.className = "models-action";
     action.textContent = model.installed ? "Remove" : "Download";
     action.disabled = Boolean(state.downloading);
     action.addEventListener("click", () => modelAction(model, action));
+    actions.append(action);
 
-    row.append(name, fact, action);
+    row.append(name, fact, actions);
     modelsList.append(row);
   }
   modelsBox.hidden = false;
@@ -932,6 +1016,51 @@ async function modelAction(model, button) {
   } catch (failure) {
     modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
     button.disabled = false;
+  }
+}
+
+async function modelStateAction(model, button) {
+  const loading = model.state !== "loaded";
+  button.disabled = true;
+  try {
+    const response = await fetch("/models/" + (loading ? "load/" : "unload/") + model.id, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    modelsNote.textContent =
+      detail.message || detail.error || "That could not be done. Try again in a moment.";
+    if (response.ok) {
+      await loadModels();
+    } else {
+      button.disabled = false;
+    }
+  } catch (failure) {
+    modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
+    button.disabled = false;
+  }
+}
+
+async function savePolicy(model, select) {
+  select.disabled = true;
+  const minutes = select.value === "" ? null : Number(select.value);
+  try {
+    const response = await fetch("/models/policy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ id: model.id, minutes }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    modelsNote.textContent =
+      detail.message || detail.error || "That setting could not be saved.";
+    if (response.ok) {
+      await loadModels();
+    }
+  } catch (failure) {
+    modelsNote.textContent =
+      "That setting could not be saved. Check that Parlo is still running.";
+  } finally {
+    select.disabled = false;
   }
 }
 
@@ -1136,6 +1265,9 @@ function reflectSettings(values) {
   settingsTo.value = values.to || "en";
   settingsStt.value = values.stt || "parakeet";
   settingsWrite.value = values.write || "";
+  settingsManageMemory.checked = values.manage_memory !== false;
+  settingsUnload.value = String(typeof values.unload === "number" ? values.unload : 30);
+  settingsUnload.disabled = !settingsManageMemory.checked;
   settingsShortcut.value = values.shortcut || "Ctrl+Alt+D";
   settingsHandsFree.value = values.hands_free || "Ctrl+Alt+Shift+D";
   settingsCaptions.value = values.captions || "Ctrl+Alt+C";
@@ -1331,6 +1463,28 @@ settingsUnload.addEventListener("change", async () => {
         : "The models are freed after " + minutes + " minutes without use.";
   } catch (failure) {
     settingsNote.textContent = failure.message || "That delay cannot be used.";
+  }
+});
+
+settingsManageMemory.addEventListener("change", async () => {
+  const enabled = settingsManageMemory.checked;
+  settingsUnload.disabled = !enabled;
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ manage_memory: enabled }),
+    });
+    if (!response.ok) {
+      throw new Error("That setting cannot be used.");
+    }
+    memoryNote.textContent = enabled
+      ? "A model is freed after the delay beside it and loaded again the next time it is needed."
+      : "No model is freed on its own. The files stay on disk and each model is loaded when it is needed.";
+  } catch (failure) {
+    settingsManageMemory.checked = !enabled;
+    settingsUnload.disabled = enabled;
+    memoryNote.textContent = failure.message || "That setting cannot be used.";
   }
 });
 

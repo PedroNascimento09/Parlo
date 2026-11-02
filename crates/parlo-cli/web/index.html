@@ -228,6 +228,13 @@
     </div>
     <p class="settings-note" id="features-note" aria-live="polite"></p>
     <div class="settings-row">
+      <label class="check" for="settings-manage-memory">
+        <input id="settings-manage-memory" type="checkbox">
+        <span>Let Parlo manage model memory</span>
+      </label>
+      <p class="settings-note field-wide" id="memory-note" aria-live="polite">A model is freed after the delay beside it and loaded again the next time it is needed.</p>
+    </div>
+    <div class="settings-row">
       <label class="field field-wide" for="settings-stt">
         <span class="field-label">Recogniser</span>
         <select id="settings-stt" class="field-input">
@@ -236,7 +243,7 @@
         </select>
       </label>
       <label class="field" for="settings-unload">
-        <span class="field-label">Free the models after</span>
+        <span class="field-label">Unload unused models after</span>
         <select id="settings-unload" class="field-input">
           <option value="10">10 minutes idle</option>
           <option value="15">15 minutes idle</option>
