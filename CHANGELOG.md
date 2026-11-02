@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The model list says whether a model sits in memory. `GET /models` answers with `state` on every row, `not installed`, `installed` or `loaded`, by asking the engine what it holds through a new `loaded` op in the sidecar protocol, which the bundled engine and the Python one both answer. The page shows `In memory` beside a model that is loaded, and a downloaded model reads as installed without claiming more. A translation pair reads as loaded only for the direction the engine is set to, because the engine holds one direction at a time.
+
 ## [0.2.1.3] - 2026-11-02
 
 - Read aloud speaks European Portuguese. The voice Parlo installs is `pt_PT-tugão-medium` instead of the Brazilian `pt_BR-faber-medium`, because on this project's own 20 sentences the European voice scored 0.24 word error rate against 0.67 for the Brazilian one, measured with Parakeet v3 on Windows 11 and 4 threads. Models already on disk are not moved: the list offers the European voice as a separate download, and `setup_models.py --voice pt_br` still fetches the Brazilian one.

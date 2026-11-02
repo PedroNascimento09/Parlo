@@ -979,7 +979,8 @@ fn handle(
 
     if method == "GET" && path == "/models" {
         let loaded = session.pipeline.loaded_units().unwrap_or_default();
-        let body = models::as_json(&models::status(), &loaded);
+        let pair = format!("{}-{}", session.from, session.to);
+        let body = models::as_json(&models::status(), &loaded, &pair);
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
