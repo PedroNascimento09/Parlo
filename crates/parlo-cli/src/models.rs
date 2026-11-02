@@ -384,10 +384,16 @@ pub fn relocate(target: &str) -> Result<String, String> {
     crate::config::save(&config)
         .map_err(|error| format!("the models moved but the folder was not saved: {error}"))?;
     let megabytes = copied as f64 / (1024.0 * 1024.0);
-    Ok(format!(
+    let mut message = format!(
         "Moved {megabytes:.1} MB to {}. The old folder is gone.",
         destination.display()
-    ))
+    );
+    if env::var("PARLO_MODELS_DIR").is_ok() {
+        message.push_str(
+            " This session still reads PARLO_MODELS_DIR, so start Parlo without it to use the new folder.",
+        );
+    }
+    Ok(message)
 }
 
 pub fn reason_for(model: &Model, machine: &str) -> String {
