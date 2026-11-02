@@ -3,7 +3,8 @@ use std::io::{BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::{Mutex, OnceLock};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
@@ -65,15 +66,19 @@ struct Settings {
     unload: Option<u32>,
 }
 
-pub struct Session {
-    pipeline: Pipeline,
+struct Chosen {
     engine: String,
     stt: String,
     from: String,
     to: String,
     write: String,
     shortcut: String,
-    target: Option<usize>,
+}
+
+pub struct Session {
+    pipeline: Mutex<Pipeline>,
+    settings: RwLock<Chosen>,
+    target: Mutex<Option<usize>>,
 }
 
 fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
@@ -91,23 +96,43 @@ fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, Stri
 }
 
 impl Session {
+    fn pipeline(&self) -> MutexGuard<'_, Pipeline> {
+        self.pipeline
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+    }
+
+    fn chosen(&self) -> RwLockReadGuard<'_, Chosen> {
+        self.settings
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+    }
+
+    fn choose(&self) -> RwLockWriteGuard<'_, Chosen> {
+        self.settings
+            .write()
+            .unwrap_or_else(|error| error.into_inner())
+    }
+
     fn open(engine: String, stt: String, from: String, to: String) -> Result<Self, String> {
         let pipeline = build(&from, &to, &engine, &stt)?;
         let stored = crate::config::load();
         Ok(Self {
-            pipeline,
-            engine,
-            stt,
-            from,
-            to,
-            write: stored.write,
-            shortcut: stored.shortcut,
-            target: None,
+            pipeline: Mutex::new(pipeline),
+            settings: RwLock::new(Chosen {
+                engine,
+                stt,
+                from,
+                to,
+                write: stored.write,
+                shortcut: stored.shortcut,
+            }),
+            target: Mutex::new(None),
         })
     }
 
     fn switch(
-        &mut self,
+        &self,
         engine: String,
         stt: String,
         from: String,
@@ -115,49 +140,63 @@ impl Session {
         write: String,
     ) -> Result<(), String> {
         let pipeline = build(&from, &to, &engine, &stt)?;
-        self.pipeline = pipeline;
-        self.engine = engine;
-        self.stt = stt;
-        self.from = from;
-        self.to = to;
-        self.write = write;
-        self.target = None;
+        let mut chosen = self.choose();
+        let shortcut = chosen.shortcut.clone();
+        *chosen = Chosen {
+            engine,
+            stt,
+            from,
+            to,
+            write,
+            shortcut,
+        };
+        drop(chosen);
+        *self.pipeline() = pipeline;
+        if let Ok(mut target) = self.target.lock() {
+            *target = None;
+        }
         Ok(())
     }
 
-    fn capture_target(&mut self) -> Result<(), String> {
-        self.target = Some(insert::capture_target()?);
+    fn capture_target(&self) -> Result<(), String> {
+        let target = insert::capture_target()?;
+        if let Ok(mut stored) = self.target.lock() {
+            *stored = Some(target);
+        }
         Ok(())
     }
 
-    fn insert_text(&mut self, text: &str) -> Result<(), String> {
+    fn insert_text(&self, text: &str) -> Result<(), String> {
         let target = self
             .target
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
             .take()
             .ok_or_else(|| "Parlo does not know which field to write into".to_string())?;
         insert::type_text(target, text)
     }
 
-    fn write(&mut self, pcm16: &[u8], target: &str) -> Result<(String, String), String> {
+    fn write(&self, pcm16: &[u8], target: &str) -> Result<(String, String), String> {
         let target = if target.is_empty() {
             None
         } else {
             Some(target)
         };
-        self.pipeline
+        self.pipeline()
             .write(pcm16, target)
             .map_err(|error| error.to_string())
     }
 
     fn as_json(&self) -> String {
+        let chosen = self.chosen();
         format!(
             "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
-            json_string(&self.engine),
-            json_string(&self.stt),
-            json_string(&self.from),
-            json_string(&self.to),
-            json_string(&self.write),
-            json_string(&self.shortcut)
+            json_string(&chosen.engine),
+            json_string(&chosen.stt),
+            json_string(&chosen.from),
+            json_string(&chosen.to),
+            json_string(&chosen.write),
+            json_string(&chosen.shortcut)
         )
     }
 }
@@ -190,12 +229,15 @@ pub fn start(
 
     println!("listening on http://127.0.0.1:{port}");
     println!("  token      {token}");
-    println!(
-        "  engine     {} on {}",
-        session.pipeline.engine_id(),
-        session.stt
-    );
-    println!("  languages  {} to {}", session.from, session.to);
+    {
+        let chosen = session.chosen();
+        println!(
+            "  engine     {} on {}",
+            session.pipeline().engine_id(),
+            chosen.stt
+        );
+        println!("  languages  {} to {}", chosen.from, chosen.to);
+    }
     println!("  input      16 kHz mono wav, POST /translate");
 
     let address = format!("http://127.0.0.1:{port}");
@@ -213,9 +255,25 @@ fn exit_with_parent() {
     });
 }
 
-fn listen(listener: TcpListener, token: String, port: u16, mut session: Session) {
+static OPEN: AtomicUsize = AtomicUsize::new(0);
+const MAX_OPEN: usize = 64;
+
+struct Open;
+
+impl Drop for Open {
+    fn drop(&mut self) {
+        OPEN.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+
+fn listen(listener: TcpListener, token: String, port: u16, session: Session) {
     let started = Instant::now();
+    let session = Arc::new(session);
+    let accepting = Arc::new(AtomicBool::new(true));
     for stream in listener.incoming() {
+        if !accepting.load(Ordering::Relaxed) {
+            break;
+        }
         let mut stream = match stream {
             Ok(stream) => stream,
             Err(error) => {
@@ -225,11 +283,27 @@ fn listen(listener: TcpListener, token: String, port: u16, mut session: Session)
         };
         let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        match handle(&mut stream, &token, port, &mut session, started) {
-            Ok(Flow::Serve) => {}
-            Ok(Flow::Stop) => break,
-            Err(error) => eprintln!("request failed: {error}"),
+        if OPEN.fetch_add(1, Ordering::Relaxed) >= MAX_OPEN {
+            OPEN.fetch_sub(1, Ordering::Relaxed);
+            let _ = respond_json(
+                &mut stream,
+                "503 Service Unavailable",
+                "{\"error\":\"too many open connections\"}",
+            );
+            continue;
         }
+        let open = Open;
+        let token = token.clone();
+        let session = Arc::clone(&session);
+        let accepting = Arc::clone(&accepting);
+        std::thread::spawn(move || {
+            let _open = open;
+            match handle(&mut stream, &token, port, &session, started) {
+                Ok(Flow::Serve) => {}
+                Ok(Flow::Stop) => accepting.store(false, Ordering::Relaxed),
+                Err(error) => eprintln!("request failed: {error}"),
+            }
+        });
     }
 }
 
@@ -297,7 +371,7 @@ fn handle(
     stream: &mut TcpStream,
     token: &str,
     port: u16,
-    session: &mut Session,
+    session: &Session,
     started: Instant,
 ) -> Result<Flow, String> {
     let (head, body) = read_http(stream)?;
@@ -707,7 +781,7 @@ fn handle(
                 )
                 .map(|()| Flow::Serve);
             }
-            session.shortcut = canonical;
+            session.choose().shortcut = canonical;
             let only_shortcut = requested.engine.is_none()
                 && requested.stt.is_none()
                 && requested.from.is_none()
@@ -739,20 +813,24 @@ fn handle(
             }
         }
 
-        let engine = requested.engine.unwrap_or_else(|| session.engine.clone());
-        let stt = requested.stt.unwrap_or_else(|| session.stt.clone());
+        let engine = requested
+            .engine
+            .unwrap_or_else(|| session.chosen().engine.clone());
+        let stt = requested
+            .stt
+            .unwrap_or_else(|| session.chosen().stt.clone());
         let from = requested
             .from
-            .unwrap_or_else(|| session.from.clone())
+            .unwrap_or_else(|| session.chosen().from.clone())
             .to_ascii_lowercase();
         let to = requested
             .to
-            .unwrap_or_else(|| session.to.clone())
+            .unwrap_or_else(|| session.chosen().to.clone())
             .to_ascii_lowercase();
 
         let write = requested
             .write
-            .unwrap_or_else(|| session.write.clone())
+            .unwrap_or_else(|| session.chosen().write.clone())
             .to_ascii_lowercase();
         if !write.is_empty() && !crate::config::check_language(&write) {
             return respond_json(
@@ -795,20 +873,23 @@ fn handle(
         }
 
         let mut stored = crate::config::load();
-        stored.engine = session.engine.clone();
-        stored.stt = session.stt.clone();
-        stored.from = session.from.clone();
-        stored.to = session.to.clone();
+        stored.engine = session.chosen().engine.clone();
+        stored.stt = session.chosen().stt.clone();
+        stored.from = session.chosen().from.clone();
+        stored.to = session.chosen().to.clone();
         if let Err(error) = crate::config::save(&stored) {
             eprintln!("could not save the settings: {error}");
         }
-        println!(
-            "  ready       {} on {}, {} to {}",
-            session.pipeline.engine_id(),
-            session.stt,
-            session.from,
-            session.to
-        );
+        {
+            let chosen = session.chosen();
+            println!(
+                "  ready       {} on {}, {} to {}",
+                session.pipeline().engine_id(),
+                chosen.stt,
+                chosen.from,
+                chosen.to
+            );
+        }
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
     }
 
@@ -978,8 +1059,11 @@ fn handle(
     }
 
     if method == "GET" && path == "/models" {
-        let loaded = session.pipeline.loaded_units().unwrap_or_default();
-        let pair = format!("{}-{}", session.from, session.to);
+        let loaded = session.pipeline().loaded_units().unwrap_or_default();
+        let pair = {
+            let chosen = session.chosen();
+            format!("{}-{}", chosen.from, chosen.to)
+        };
         let body = models::as_json(&models::status(), &loaded, &pair);
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
@@ -1719,12 +1803,13 @@ fn handle(
 
     if path == "/health" {
         let uptime = started.elapsed().as_secs();
-        let engine = session.pipeline.engine_id();
+        let chosen = session.chosen();
+        let engine = chosen.engine.clone();
         let body = format!(
             "{{\"status\":\"ok\",\"uptime_s\":{uptime},\"engine\":\"{engine}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\"}}",
-            json_string(&session.stt),
-            json_string(&session.from),
-            json_string(&session.to)
+            json_string(&chosen.stt),
+            json_string(&chosen.from),
+            json_string(&chosen.to)
         );
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
@@ -1830,7 +1915,7 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        let target = dictation_target(&write, &session.from);
+        let target = dictation_target(&write, &session.chosen().from);
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
         let (text, translation) = match session.write(&pcm16, &target) {
@@ -1851,7 +1936,7 @@ fn handle(
         if let Err(error) = crate::history::append(&crate::history::Entry::now(
             &text,
             &translation,
-            &session.from,
+            &session.chosen().from,
             &target,
             &app,
             "dictate",
@@ -1902,8 +1987,9 @@ fn handle(
 
     let mut samples = Vec::new();
     let mut transcript = String::new();
+    let mut pipeline = session.pipeline();
     for chunk in wav.samples.chunks(320) {
-        for output in session.pipeline.push(chunk) {
+        for output in pipeline.push(chunk) {
             if let Some(text) = output.transcript {
                 if !transcript.is_empty() {
                     transcript.push(' ');
@@ -2341,6 +2427,12 @@ fn respond(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_session_can_be_shared_between_threads() {
+        fn shareable<T: Send + Sync>() {}
+        shareable::<Session>();
+    }
 
     #[test]
     fn a_wav_length_is_read_from_its_header() {
