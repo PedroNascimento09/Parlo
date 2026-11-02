@@ -109,7 +109,10 @@ impl Engine {
 
     fn voice(&mut self) -> Result<&mut Voice, String> {
         if self.voice.is_none() {
-            let model = models_root().join(voice_file(&self.to));
+            let model = match std::env::var("PARLO_VOICE_PATH") {
+                Ok(configured) => PathBuf::from(configured),
+                Err(_) => models_root().join(voice_file(&self.to)),
+            };
             self.voice = Some(Voice::open(&model, threads())?);
         }
         self.voice
