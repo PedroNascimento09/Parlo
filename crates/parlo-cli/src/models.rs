@@ -1,13 +1,10 @@
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::{Mutex, OnceLock};
-use std::time::Instant;
 
 use parlo_core::device;
-
-const DOWNLOAD_WINDOW_SECONDS: u64 = 3_600;
 
 const PARAKEET_FILES: &[&str] = &[
     "encoder.int8.onnx",
@@ -165,13 +162,32 @@ pub fn install(units: &[&str]) -> Result<(), String> {
             command
         }
     };
-    command
+    let child = command
         .env("PARLO_MODELS_DIR", models_root())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .spawn()
-        .map(|_| mark_started())
-        .map_err(|error| format!("cannot start the model download: {error}"))
+        .map_err(|error| format!("cannot start the model download: {error}"))?;
+    let mut slot = running()
+        .lock()
+        .map_err(|_| "the download state is locked".to_string())?;
+    *slot = Some(child);
+    Ok(())
+}
+
+pub fn cancel() -> Result<(), String> {
+    let mut slot = running()
+        .lock()
+        .map_err(|_| "the download state is locked".to_string())?;
+    let Some(child) = slot.as_mut() else {
+        return Err("no download is running".to_string());
+    };
+    child
+        .kill()
+        .map_err(|error| format!("the download could not be stopped: {error}"))?;
+    let _ = child.wait();
+    *slot = None;
+    Ok(())
 }
 
 pub fn remove(id: &str) -> Result<(), String> {
@@ -197,24 +213,31 @@ pub fn remove(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn started() -> &'static Mutex<Option<Instant>> {
-    static STARTED: OnceLock<Mutex<Option<Instant>>> = OnceLock::new();
-    STARTED.get_or_init(|| Mutex::new(None))
+fn running() -> &'static Mutex<Option<Child>> {
+    static RUNNING: OnceLock<Mutex<Option<Child>>> = OnceLock::new();
+    RUNNING.get_or_init(|| Mutex::new(None))
 }
 
 pub fn downloading(models: &[Model]) -> bool {
     if ready(models) {
         return false;
     }
-    let Ok(started) = started().lock() else {
+    let Ok(mut slot) = running().lock() else {
         return false;
     };
-    started.is_some_and(|at| at.elapsed().as_secs() < DOWNLOAD_WINDOW_SECONDS)
-}
-
-fn mark_started() {
-    if let Ok(mut started) = started().lock() {
-        *started = Some(Instant::now());
+    let Some(child) = slot.as_mut() else {
+        return false;
+    };
+    match child.try_wait() {
+        Ok(Some(_)) => {
+            *slot = None;
+            false
+        }
+        Ok(None) => true,
+        Err(_) => {
+            *slot = None;
+            false
+        }
     }
 }
 
@@ -261,6 +284,11 @@ pub fn as_json(models: &[Model]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cancelling_without_a_download_says_so() {
+        assert!(cancel().unwrap_err().contains("no download"));
+    }
 
     #[test]
     fn every_model_says_why_it_is_the_one_offered() {

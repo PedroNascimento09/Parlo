@@ -1395,6 +1395,24 @@ fn handle(
         return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/models/cancel" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match models::cancel() {
+            Ok(()) => respond_json(
+                stream,
+                "200 OK",
+                "{\"cancelled\":true,\"message\":\"Stopped. What already arrived stays on this machine.\"}",
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "POST" && path.starts_with("/models/remove/") {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")

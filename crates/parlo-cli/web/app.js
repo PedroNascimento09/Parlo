@@ -24,6 +24,7 @@ const latencyEl = document.getElementById("status-latency");
 const versionEl = document.getElementById("status-version");
 const modelsBox = document.getElementById("models");
 const modelsList = document.getElementById("models-list");
+const modelsCancel = document.getElementById("models-cancel");
 const modelsNote = document.getElementById("models-note");
 const modelsInstall = document.getElementById("models-install");
 const dropZone = document.getElementById("drop");
@@ -977,6 +978,7 @@ let modelState = { models: [], ready: false, dictation: false, downloading: fals
 
 function describeModels(state) {
   modelState = state;
+  modelsCancel.hidden = !state.downloading;
   modelsList.replaceChildren();
   for (const model of state.models || []) {
     const row = document.createElement("li");
@@ -1074,6 +1076,26 @@ async function modelAction(model, button) {
     button.disabled = false;
   }
 }
+
+async function cancelDownload() {
+  modelsCancel.disabled = true;
+  try {
+    const response = await fetch("/models/cancel", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    modelsNote.textContent =
+      detail.message || detail.error || "The download could not be stopped.";
+    await loadModels();
+  } catch (failure) {
+    modelsNote.textContent = "The download could not be stopped. Check that Parlo is still running.";
+  } finally {
+    modelsCancel.disabled = false;
+  }
+}
+
+modelsCancel.addEventListener("click", () => cancelDownload());
 
 async function loadModels() {
   try {

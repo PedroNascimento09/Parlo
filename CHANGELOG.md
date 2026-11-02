@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A model download can be stopped. **Stop the download** appears in the list while one runs and ends the process, the list reports **downloading** from the process itself rather than from a clock, and what already arrived stays on disk; starting again continues from the files the download tool can reuse, and the page says only that much.
 - The model list says why each model is the one offered, with the machine it measured: cores, memory and whether AVX2 is there, read at the moment the page asks. Nothing about speed is claimed, because nothing was measured for the new recommendation.
 - The sample can be sealed with the Windows account that made it. A profile created with **Keep the sample sealed with my Windows account** stores it as DPAPI ciphertext, the list marks it as sealed, and playback and export unseal it on demand; a sample another account wrote is refused with a sentence instead of failing silently.
 - A voice profile can carry a real sample. Ten to thirty seconds are recorded in the window or refused with the measured length, the silent take is refused too, and the profile can then be heard back, exported as one file that marks the voice as synthetic, or deleted with its sample; the engine that turns the sample into speech is still not in the build, and the panel says so.
