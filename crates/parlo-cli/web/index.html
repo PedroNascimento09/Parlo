@@ -31,6 +31,25 @@
 </section>
 
 <main>
+
+  <section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
+    <p class="onboarding-step" id="onboarding-step">Step 1 of 3</p>
+    <h1 id="onboarding-title">Press the shortcut and speak</h1>
+    <p class="onboarding-note" id="onboarding-note">
+      Hold <strong id="onboarding-key">Ctrl+Alt+D</strong>, say a sentence, then let go.
+      Escape throws the sentence away.
+    </p>
+    <ol class="onboarding-list" id="onboarding-list">
+      <li data-step="1">Press the shortcut</li>
+      <li data-step="2">Say one sentence</li>
+      <li data-step="3">Read what landed</li>
+    </ol>
+    <p class="onboarding-result" id="onboarding-result" aria-live="polite"></p>
+    <div class="onboarding-actions">
+      <button id="onboarding-next" class="install" type="button" hidden>Done</button>
+      <button id="onboarding-skip" class="swap" type="button">Skip this</button>
+    </div>
+  </section>
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title">Speak once. Be heard.</h1>
     <p class="welcome-lede">Parlo listens on this machine, translates, and speaks the other language back. Nothing is uploaded and there is no account.</p>

@@ -1020,3 +1020,52 @@ footer p {
 .tab-away {
   display: none !important;
 }
+
+.onboarding {
+  max-width: 34rem;
+  margin: 0 auto 2rem;
+  padding: 1.5rem;
+  border: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 1rem;
+}
+
+.onboarding-step {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.onboarding h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.3rem;
+}
+
+.onboarding-note,
+.onboarding-result {
+  margin: 0 0 1rem;
+  line-height: 1.5;
+}
+
+.onboarding-list {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  line-height: 1.7;
+}
+
+.onboarding-list li.done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.onboarding-result {
+  font-weight: 600;
+}
+
+.onboarding-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}

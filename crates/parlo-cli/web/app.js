@@ -2291,6 +2291,117 @@ async function clearHistory() {
   }
 }
 
+const onboarding = document.getElementById("onboarding");
+const onboardingStep = document.getElementById("onboarding-step");
+const onboardingKey = document.getElementById("onboarding-key");
+const onboardingNote = document.getElementById("onboarding-note");
+const onboardingList = document.getElementById("onboarding-list");
+const onboardingResult = document.getElementById("onboarding-result");
+const onboardingNext = document.getElementById("onboarding-next");
+const onboardingSkip = document.getElementById("onboarding-skip");
+
+let onboardingTimer = null;
+let onboardingStage = 0;
+let onboardingKnown = 0;
+
+function markOnboardingStep(step) {
+  for (const item of onboardingList.querySelectorAll("li")) {
+    item.classList.toggle("done", Number(item.dataset.step) < step);
+  }
+  onboardingStep.textContent = "Step " + step + " of 3";
+}
+
+function finishOnboarding() {
+  clearInterval(onboardingTimer);
+  onboardingTimer = null;
+  localStorage.setItem("parlo.onboarded", "1");
+  onboarding.hidden = true;
+}
+
+async function readState() {
+  try {
+    const response = await fetch("/state", { cache: "no-store" });
+    if (!response.ok) {
+      return "";
+    }
+    const current = await response.json();
+    return current.state || "";
+  } catch (failure) {
+    return "";
+  }
+}
+
+async function readHistory() {
+  try {
+    const response = await fetch("/history", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      return [];
+    }
+    return await response.json();
+  } catch (failure) {
+    return [];
+  }
+}
+
+async function tickOnboarding() {
+  const state = await readState();
+  if (onboardingStage === 1 && state === "listening") {
+    onboardingStage = 2;
+    markOnboardingStep(2);
+    onboardingNote.textContent = "Keep talking, then let go of the key.";
+    return;
+  }
+  if (onboardingStage !== 2 || !["success", "error", "cancelled"].includes(state)) {
+    return;
+  }
+  const entries = await readHistory();
+  if (entries.length <= onboardingKnown) {
+    onboardingNote.textContent =
+      "Nothing was written. Hold the key, speak a full sentence, then let go.";
+    onboardingStage = 1;
+    markOnboardingStep(1);
+    return;
+  }
+  const latest = entries[0];
+  const text = latest.translation || latest.text || "";
+  onboardingResult.textContent =
+    "“" + text + "”" + (latest.app ? " landed in " + latest.app : "");
+  onboardingNote.textContent =
+    "That sentence is in the Library too, with the program it went into.";
+  onboardingStage = 3;
+  markOnboardingStep(3);
+  onboardingNext.hidden = false;
+  clearInterval(onboardingTimer);
+  onboardingTimer = null;
+}
+
+async function startOnboarding() {
+  if (localStorage.getItem("parlo.onboarded") === "1") {
+    return;
+  }
+  onboarding.hidden = false;
+  try {
+    const response = await fetch("/settings", { cache: "no-store" });
+    if (response.ok) {
+      const values = await response.json();
+      onboardingKey.textContent = values.shortcut || "Ctrl+Alt+D";
+    }
+  } catch (failure) {
+    onboardingKey.textContent = "the shortcut";
+  }
+  onboardingKnown = (await readHistory()).length;
+  onboardingStage = 1;
+  markOnboardingStep(1);
+  clearInterval(onboardingTimer);
+  onboardingTimer = setInterval(tickOnboarding, 400);
+}
+
+onboardingSkip.addEventListener("click", () => finishOnboarding());
+onboardingNext.addEventListener("click", () => finishOnboarding());
+
 historyClear.addEventListener("click", () => clearHistory());
 historySearch.addEventListener("input", () => renderHistory());
 historyApp.addEventListener("change", () => renderHistory());
@@ -2301,6 +2412,7 @@ window.addEventListener("load", () => {
   loadMeetings();
   loadCatalog();
   loadHistory();
+  startOnboarding();
   if (location.hash) {
     openSection();
   }
@@ -2334,6 +2446,7 @@ setInterval(refreshHealth, 5000);
 const ROUTES = {
   home: [
     "update",
+    "onboarding",
     "welcome",
     "live-row",
     "dictate-row",
