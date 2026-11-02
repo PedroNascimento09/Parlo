@@ -1,15 +1,19 @@
 cff-version: 1.2.0
 message: "If you reference Parlo in academic work, cite this repository."
 title: "Parlo"
-abstract: "Real-time voice translation that keeps your voice and runs locally."
+abstract: "Offline speech transcription, dictation and Portuguese to English translation for the desktop, with captions, meetings and file dubbing."
 authors:
   - name: "Parlo contributors"
-repository-code: "https://github.com/PedroNascimento09/parlo"
-license: MIT
+repository-code: "https://github.com/PedroNascimento09/Parlo"
+license: Apache-2.0
+version: 0.2.2
+date-released: 2026-11-02
 type: software
 keywords:
+  - speech to text
   - speech translation
-  - voice cloning
+  - dictation
+  - captions
   - local first
   - privacy
   - rust
