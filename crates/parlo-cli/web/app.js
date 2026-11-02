@@ -2607,7 +2607,6 @@ function renderHistory() {
       : shown.length + " of " + historyEntries.length + " dictations match.";
   historyClear.hidden = false;
 }
-}
 
 async function copyHistory(text) {
   try {
