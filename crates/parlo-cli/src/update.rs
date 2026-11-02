@@ -1,6 +1,8 @@
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::sync::{Mutex, OnceLock};
 
 const LATEST: &str = "https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest";
 
@@ -26,6 +28,97 @@ pub fn binary_name() -> &'static str {
     } else {
         "parlo"
     }
+}
+
+#[derive(Clone)]
+pub struct Progress {
+    pub running: bool,
+    pub phase: String,
+    pub percent: u8,
+    pub version: String,
+}
+
+fn slot() -> &'static Mutex<Progress> {
+    static SLOT: OnceLock<Mutex<Progress>> = OnceLock::new();
+    SLOT.get_or_init(|| {
+        Mutex::new(Progress {
+            running: false,
+            phase: "idle".to_string(),
+            percent: 0,
+            version: String::new(),
+        })
+    })
+}
+
+fn report(running: bool, phase: &str, percent: u8, version: &str) {
+    if let Ok(mut state) = slot().lock() {
+        state.running = running;
+        state.phase = phase.to_string();
+        state.percent = percent;
+        state.version = version.to_string();
+    }
+}
+
+pub fn progress_json() -> String {
+    let state = match slot().lock() {
+        Ok(state) => state.clone(),
+        Err(_) => Progress {
+            running: false,
+            phase: "idle".to_string(),
+            percent: 0,
+            version: String::new(),
+        },
+    };
+    serde_json::json!({
+        "running": state.running,
+        "phase": state.phase,
+        "percent": state.percent,
+        "version": state.version,
+    })
+    .to_string()
+}
+
+pub fn percent_from_curl(line: &str) -> Option<u8> {
+    let index = line.find('%')?;
+    let digits: String = line[..index]
+        .chars()
+        .rev()
+        .take_while(|character| character.is_ascii_digit() || *character == '.')
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+    digits
+        .parse::<f32>()
+        .ok()
+        .map(|value| value.clamp(0.0, 100.0) as u8)
+}
+
+fn download(url: &str, archive: &Path, version: &str) -> Result<(), String> {
+    let mut child = Command::new("curl")
+        .args([
+            "-L",
+            "--progress-bar",
+            "-o",
+            &archive.display().to_string(),
+            url,
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("cannot start the download: {error}"))?;
+    if let Some(stderr) = child.stderr.take() {
+        for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+            if let Some(percent) = percent_from_curl(&line) {
+                report(true, "downloading", percent.saturating_mul(3) / 4, version);
+            }
+        }
+    }
+    let status = child.wait().map_err(|error| error.to_string())?;
+    if !status.success() {
+        return Err("the download did not finish".to_string());
+    }
+    Ok(())
 }
 
 pub fn is_newer(current: &str, candidate: &str) -> bool {
@@ -89,24 +182,15 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
         .archive_url
         .as_deref()
         .ok_or_else(|| format!("release {} has no build for this platform", latest.version))?;
+    report(true, "downloading", 0, &latest.version);
     let directory = std::env::temp_dir().join(format!("parlo-{}", latest.version));
     let _ = fs::remove_dir_all(&directory);
     fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
     let archive = directory.join(archive_name());
 
     if cfg!(target_os = "windows") {
-        run(
-            "powershell",
-            &[
-                "-NoProfile",
-                "-Command",
-                &format!(
-                    "Invoke-WebRequest -UseBasicParsing -Uri '{}' -OutFile '{}'",
-                    url,
-                    archive.display()
-                ),
-            ],
-        )?;
+        download(url, &archive, &latest.version)?;
+        report(true, "unpacking", 78, &latest.version);
         run(
             "powershell",
             &[
@@ -120,10 +204,8 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
             ],
         )?;
     } else {
-        run(
-            "curl",
-            &["-fsSL", "-o", &archive.display().to_string(), url],
-        )?;
+        download(url, &archive, &latest.version)?;
+        report(true, "unpacking", 78, &latest.version);
         run(
             "tar",
             &[
@@ -135,40 +217,42 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
         )?;
     }
 
+    report(true, "checking", 92, &latest.version);
     let binary = directory.join(binary_name());
     if !binary.is_file() {
         return Err(format!("the archive did not contain {}", binary_name()));
     }
+    report(true, "ready", 100, &latest.version);
     Ok(binary)
 }
 
-pub fn replace_running(new_binary: &Path) -> Result<(), String> {
-    let current = std::env::current_exe().map_err(|error| error.to_string())?;
-    let backup = current.with_extension("previous");
-    let _ = fs::copy(&current, &backup);
-
-    if cfg!(target_os = "windows") {
-        let command = format!(
-            "ping 127.0.0.1 -n 3 >nul & move /y \"{}\" \"{}\"",
-            new_binary.display(),
-            current.display()
-        );
-        Command::new("cmd")
-            .args(["/c", &command])
-            .spawn()
-            .map_err(|error| error.to_string())?;
-        return Ok(());
-    }
-
-    let command = format!(
-        "sleep 2; mv -f '{}' '{}'",
+pub fn replacement_script(pid: u32, new_binary: &Path, current: &Path) -> String {
+    format!(
+        "@echo off\r\n:parlo_wait\r\ntasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto parlo_wait\r\n)\r\nmove /y \"{}\" \"{}\" >nul\r\nstart \"\" \"{}\" app\r\n",
         new_binary.display(),
+        current.display(),
         current.display()
-    );
-    Command::new("sh")
-        .args(["-c", &command])
+    )
+}
+
+pub fn schedule_replacement(new_binary: &Path) -> Result<PathBuf, String> {
+    let current = std::env::current_exe().map_err(|error| error.to_string())?;
+    let script = std::env::temp_dir().join(format!("parlo-update-{}.cmd", std::process::id()));
+    let body = replacement_script(std::process::id(), new_binary, &current);
+    fs::write(&script, body).map_err(|error| error.to_string())?;
+    Command::new("cmd")
+        .args(["/c", "start", "", &script.display().to_string()])
         .spawn()
-        .map_err(|error| error.to_string())?;
+        .map_err(|error| format!("cannot start the replacement: {error}"))?;
+    Ok(script)
+}
+
+pub fn restart() -> Result<(), String> {
+    let current = std::env::current_exe().map_err(|error| error.to_string())?;
+    Command::new(&current)
+        .arg("app")
+        .spawn()
+        .map_err(|error| format!("Parlo could not start again: {error}"))?;
     Ok(())
 }
 
@@ -213,6 +297,25 @@ fn run(program: &str, args: &[&str]) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_curl_progress_line_gives_a_percentage() {
+        assert_eq!(percent_from_curl("####                    45.3%"), Some(45));
+        assert_eq!(percent_from_curl("100.0%"), Some(100));
+        assert_eq!(percent_from_curl("no meter here"), None);
+    }
+
+    #[test]
+    fn the_replacement_waits_for_the_process_then_moves_and_starts_it() {
+        let script = replacement_script(
+            4242,
+            Path::new("C:/temp/new/parlo.exe"),
+            Path::new("C:/apps/parlo.exe"),
+        );
+        assert!(script.contains("PID eq 4242"));
+        assert!(script.contains("move /y \"C:/temp/new/parlo.exe\" \"C:/apps/parlo.exe\""));
+        assert!(script.contains("start \"\" \"C:/apps/parlo.exe\" app"));
+    }
 
     #[test]
     fn newer_versions_are_detected() {

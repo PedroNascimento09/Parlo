@@ -1451,6 +1451,23 @@ fn handle(
         };
     }
 
+    if method == "GET" && path == "/update/progress" {
+        return respond_json(stream, "200 OK", &update::progress_json()).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/update/restart" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if let Err(error) = update::restart() {
+            return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        respond_json(stream, "200 OK", "{\"restarting\":true}").map(|()| Flow::Serve)?;
+        return Ok(Flow::Stop);
+    }
+
     if method == "GET" && path == "/update" {
         let latest = match update::latest() {
             Ok(latest) => latest,
@@ -1504,7 +1521,7 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        if let Err(error) = update::replace_running(&binary) {
+        if let Err(error) = update::schedule_replacement(&binary) {
             return respond_json(
                 stream,
                 "500 Internal Server Error",

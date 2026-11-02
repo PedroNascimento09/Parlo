@@ -1069,3 +1069,28 @@ footer p {
   gap: 0.5rem;
   align-items: center;
 }
+
+.update-progress {
+  margin-top: 0.6rem;
+}
+
+.update-bar {
+  background: rgba(127, 127, 127, 0.25);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.update-bar span {
+  background: currentColor;
+  display: block;
+  height: 100%;
+  width: 0;
+  transition: width 0.2s ease;
+}
+
+.update-note {
+  font-size: 0.9rem;
+  margin: 0.4rem 0 0;
+  opacity: 0.8;
+}

@@ -24,8 +24,13 @@
 
 <section class="update" id="update" aria-live="polite" hidden>
   <p id="update-text">Parlo <strong id="update-version"></strong> is available.</p>
+  <div class="update-progress" id="update-progress" hidden>
+    <div class="update-bar"><span id="update-fill"></span></div>
+    <p class="update-note" id="update-note" aria-live="polite"></p>
+  </div>
   <div class="update-actions">
     <button id="update-install" class="install" type="button" hidden>Install update</button>
+    <button id="update-restart" class="install quiet" type="button" hidden>Restart now</button>
     <a id="update-link" href="https://github.com/PedroNascimento09/Parlo/releases">See what changed</a>
   </div>
 </section>

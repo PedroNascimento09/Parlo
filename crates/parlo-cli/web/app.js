@@ -13,6 +13,10 @@ const updateVersion = document.getElementById("update-version");
 const updateLink = document.getElementById("update-link");
 const updateText = document.getElementById("update-text");
 const installButton = document.getElementById("update-install");
+const updateRestart = document.getElementById("update-restart");
+const progressBox = document.getElementById("update-progress");
+const progressFill = document.getElementById("update-fill");
+const progressNote = document.getElementById("update-note");
 const engineEl = document.getElementById("status-engine");
 const stateEl = document.getElementById("status-state");
 const shortcutEl = document.getElementById("status-shortcut");
@@ -886,6 +890,36 @@ async function checkLocalUpdate() {
   }
 }
 
+function describeUpdatePhase(state) {
+  if (state.phase === "downloading") {
+    return "Downloading the new version: " + (state.percent || 0) + "%.";
+  }
+  if (state.phase === "unpacking") {
+    return "Unpacking the new version.";
+  }
+  if (state.phase === "checking") {
+    return "Checking the new program is there.";
+  }
+  if (state.phase === "ready") {
+    return "Ready. Parlo closes and starts the new version.";
+  }
+  return "Waiting for the release.";
+}
+
+async function pollUpdateProgress() {
+  try {
+    const response = await fetch("/update/progress", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const state = await response.json();
+    progressFill.style.width = (state.percent || 0) + "%";
+    progressNote.textContent = describeUpdatePhase(state);
+  } catch (failure) {
+    progressNote.textContent = "Parlo is closing to replace itself.";
+  }
+}
+
 async function installUpdate() {
   if (installButton.disabled) {
     return;
@@ -894,6 +928,10 @@ async function installUpdate() {
   installButton.textContent = "Installing…";
   clearError();
   updateBox.hidden = false;
+  progressBox.hidden = false;
+  progressFill.style.width = "0%";
+  progressNote.textContent = "Starting the download.";
+  const poll = setInterval(pollUpdateProgress, 400);
   try {
     const response = await fetch("/update", {
       method: "POST",
@@ -902,20 +940,38 @@ async function installUpdate() {
     const detail = await response.json().catch(() => ({}));
     if (!response.ok) {
       updateText.textContent = detail.error || "The update could not be installed. Run parlo update in a terminal instead.";
+      progressNote.textContent = "";
       installButton.disabled = false;
       installButton.textContent = "Install update";
       return;
     }
+    progressFill.style.width = "100%";
     const installed = detail.version || localUpdate.latest || "";
-    updateText.textContent = "Parlo " + installed + " is installed. Start parlo app again so the new version runs.";
-    updateLink.hidden = true;
-    installButton.textContent = "Installed";
+    updateText.textContent =
+      "Parlo " + installed + " is unpacked. The window closes and the new version starts on its own.";
+    progressNote.textContent = "If Parlo does not come back by itself, press Restart now.";
+    installButton.hidden = true;
+    updateRestart.hidden = false;
   } catch (failure) {
-    updateText.textContent = "The connection to Parlo closed, so the update may already be installed. Start parlo app again to check the version.";
-    updateLink.hidden = true;
-    installButton.textContent = "Start parlo app again";
+    updateText.textContent = "Parlo is closing to replace itself, which is what should happen. The new version starts on its own.";
+    progressNote.textContent = "If Parlo does not come back by itself, open it again.";
+  } finally {
+    clearInterval(poll);
   }
 }
+
+updateRestart.addEventListener("click", async () => {
+  updateRestart.disabled = true;
+  try {
+    await fetch("/update/restart", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    progressNote.textContent = "Parlo is starting again.";
+  } catch (failure) {
+    progressNote.textContent = "Parlo did not answer. Open it again from the Start menu.";
+  }
+});
 
 function formatSize(bytes) {
   const megabytes = Math.round((bytes || 0) / (1024 * 1024));

@@ -894,7 +894,7 @@ fn update_command(args: &[String]) -> Result<(), String> {
 
     let binary = update::install(&latest)?;
     println!("  staged     {}", binary.display());
-    update::replace_running(&binary)?;
+    update::schedule_replacement(&binary)?;
     println!("  replacing this binary two seconds after it exits");
     Ok(())
 }
