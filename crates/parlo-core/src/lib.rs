@@ -1,5 +1,6 @@
 pub mod audio;
 pub mod crypto;
+pub mod device;
 pub mod engine;
 pub mod gain;
 pub mod latency;

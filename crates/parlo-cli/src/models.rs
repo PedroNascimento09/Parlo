@@ -5,6 +5,8 @@ use std::process::{Command, Stdio};
 use std::sync::{Mutex, OnceLock};
 use std::time::Instant;
 
+use parlo_core::device;
+
 const DOWNLOAD_WINDOW_SECONDS: u64 = 3_600;
 
 const PARAKEET_FILES: &[&str] = &[
@@ -216,28 +218,62 @@ fn mark_started() {
     }
 }
 
+pub fn reason_for(model: &Model, machine: &str) -> String {
+    let what = match model.id {
+        "parakeet" => "the only dictation model in this build",
+        "voice-pt" => "the Portuguese voice for read aloud",
+        _ => "the English voice for read aloud",
+    };
+    format!("{what}, and this machine has {machine}")
+}
+
 pub fn as_json(models: &[Model]) -> String {
-    let rows: Vec<String> = models
+    let machine = device::profile();
+    let described = machine.describe();
+    let rows: Vec<serde_json::Value> = models
         .iter()
         .map(|model| {
-            format!(
-                "{{\"id\":\"{}\",\"name\":\"{}\",\"kind\":\"{}\",\"feature\":\"{}\",\"installed\":{},\"bytes\":{}}}",
-                model.id, model.name, model.kind, model.feature, model.installed, model.bytes
-            )
+            serde_json::json!({
+                "id": model.id,
+                "name": model.name,
+                "kind": model.kind,
+                "feature": model.feature,
+                "installed": model.installed,
+                "bytes": model.bytes,
+                "reason": reason_for(model, &described),
+            })
         })
         .collect();
-    format!(
-        "{{\"models\":[{}],\"ready\":{},\"dictation\":{},\"downloading\":{}}}",
-        rows.join(","),
-        ready(models),
-        dictation_ready(models),
-        downloading(models)
-    )
+    serde_json::json!({
+        "models": rows,
+        "ready": ready(models),
+        "dictation": dictation_ready(models),
+        "downloading": downloading(models),
+        "machine": {
+            "cores": machine.cores,
+            "memory_gb": machine.memory_gb,
+            "avx2": machine.avx2,
+        },
+    })
+    .to_string()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_model_says_why_it_is_the_one_offered() {
+        let models = status();
+        let parsed: serde_json::Value = serde_json::from_str(&as_json(&models)).unwrap();
+        let rows = parsed["models"].as_array().unwrap();
+        assert!(!rows.is_empty());
+        for row in rows {
+            let reason = row["reason"].as_str().unwrap();
+            assert!(reason.contains("this machine has"), "{reason}");
+        }
+        assert!(parsed["machine"]["cores"].as_u64().unwrap() >= 1);
+    }
 
     #[test]
     fn installed_models_are_never_downloading() {

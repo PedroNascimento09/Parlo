@@ -991,6 +991,11 @@ function describeModels(state) {
     kind.textContent = model.kind || "";
     name.append(kind);
 
+    const reason = document.createElement("span");
+    reason.className = "models-kind models-reason";
+    reason.textContent = model.reason || "";
+    name.append(reason);
+
     const fact = document.createElement("span");
     fact.className = "models-fact" + (model.installed ? " ready" : "");
     fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";
