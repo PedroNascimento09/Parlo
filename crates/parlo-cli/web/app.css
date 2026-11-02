@@ -1212,28 +1212,6 @@ kbd {
   font-size: 12.5px;
 }
 
-.wave {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 3px;
-  height: 58px;
-  margin: 20px 0 14px;
-}
-
-.wave span {
-  flex: 1 1 auto;
-  max-width: 7px;
-  height: var(--h, 40%);
-  min-height: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 62%, var(--line));
-}
-
-.wave span:nth-child(3n) {
-  background: color-mix(in srgb, var(--accent) 32%, var(--line));
-}
-
 .stage-sub {
   display: flex;
   align-items: center;
@@ -1357,7 +1335,7 @@ kbd {
 }
 
 .wordmark-mark {
-  height: 32px;
+  height: 34px;
   width: auto;
   fill: var(--ink);
 }
@@ -1412,40 +1390,6 @@ kbd {
 
 #history-list {
   gap: 10px;
-}
-
-.stage[data-state="listening"] .wave span,
-.stage[data-state="recording"] .wave span,
-.stage[data-state="capturing"] .wave span {
-  animation: bar-breathe 780ms ease-in-out infinite alternate;
-}
-
-.stage[data-state="listening"] .wave span:nth-child(2n) {
-  animation-delay: -180ms;
-}
-
-.stage[data-state="listening"] .wave span:nth-child(3n) {
-  animation-delay: -340ms;
-}
-
-.stage[data-state="listening"] .wave span:nth-child(5n) {
-  animation-delay: -520ms;
-}
-
-@keyframes bar-breathe {
-  from {
-    transform: scaleY(0.45);
-  }
-
-  to {
-    transform: scaleY(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wave span {
-    animation: none !important;
-  }
 }
 
 #library-tabs {

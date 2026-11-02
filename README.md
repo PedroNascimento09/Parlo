@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/mark.png" width="36" alt=""><br>
+  <img src="assets/parlo-wordmark.png" width="140" alt="Parlo"><br>
   <b>Parlo turns speech into clean text, and text into another language, on your own computer.</b><br>
   Windows, macOS and Linux. No account, no telemetry, no subscription.
 </p>
@@ -219,7 +219,7 @@ CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps
 
 ## Roadmap
 
-Latest published: **v0.2.1.3**, which installs the European Portuguese voice for read aloud and makes every text colour in the window clear 4.5:1. The plan's next milestone is **v0.3 Listen**, which decides with data before adding features, and the committed scope stops at **v0.5**: speak one language, write another in the active field, behind a measured gate instead of a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels, never version numbers; releases live in [docs/releases](docs/releases) and are announced inside the app.
+Latest published: **v0.2.2**, which gives Parlo a new mark, a warmer palette, one sentence about what the app is doing right now, and a microphone that no longer asks for permission on every start. The plan's next milestone is **v0.3 Listen**, which decides with data before adding features, and the committed scope stops at **v0.5**: speak one language, write another in the active field, behind a measured gate instead of a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels, never version numbers; releases live in [docs/releases](docs/releases) and are announced inside the app.
 
 ## Docs and contributing
 
