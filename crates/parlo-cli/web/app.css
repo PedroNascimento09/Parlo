@@ -366,7 +366,8 @@ footer {
 
 .settings,
 .models,
-.dub {
+.dub,
+.voice {
   margin: 26px 0 0;
   padding: 22px 24px 24px;
   border: 1px solid var(--line);
@@ -385,7 +386,8 @@ footer {
 
 .settings h2,
 .models h2,
-.dub h2 {
+.dub h2,
+.voice h2 {
   margin: 0;
   color: var(--ink);
   font-size: 15px;
@@ -518,29 +520,12 @@ body.first-run .dub {
   display: none;
 }
 
-.models {
-  margin: 28px 0 0;
-  padding: 20px 22px 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-}
-
 .models-head {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 8px 18px;
-}
-
-.models h2 {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .models-note {
@@ -1474,4 +1459,41 @@ kbd {
   .wave span {
     animation: none !important;
   }
+}
+
+#library-tabs {
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 20px 0 0;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+#library-tabs .tab {
+  padding: 8px 15px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.68;
+  transition: background-color 120ms ease, opacity 120ms ease;
+}
+
+#library-tabs .tab:hover,
+#library-tabs .tab:focus-visible {
+  opacity: 1;
+  background: var(--surface-sunken);
+}
+
+#library-tabs .tab[aria-selected="true"] {
+  background: var(--ink);
+  color: var(--canvas);
+  font-weight: 600;
+  opacity: 1;
 }
