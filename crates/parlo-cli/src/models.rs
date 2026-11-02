@@ -16,6 +16,11 @@ const VOICES: &[(&str, &str, &str)] = &[
     ("voice-pt", "pt_BR-faber-medium.onnx", "Portuguese voice"),
     ("voice-en", "en_US-lessac-medium.onnx", "English voice"),
 ];
+const TRANSLATION: &[(&str, &str, &str, &str)] = &[
+    ("mt-pt-en", "pt", "en", "Portuguese to English"),
+    ("mt-en-pt", "en", "pt", "English to Portuguese"),
+];
+
 pub const DICTATION_UNITS: &[&str] = &["parakeet"];
 pub const REMAINING_UNITS: &[&str] = &["voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"];
 
@@ -91,6 +96,17 @@ pub fn status() -> Vec<Model> {
             bytes,
         });
     }
+    for (id, source, target, label) in TRANSLATION {
+        let (installed, bytes) = translation_size(&root, source, target);
+        models.push(Model {
+            id,
+            name: (*label).to_string(),
+            kind: "translation",
+            feature: "Translation",
+            installed,
+            bytes,
+        });
+    }
     models
 }
 
@@ -105,6 +121,46 @@ pub fn dictation_ready(models: &[Model]) -> bool {
         .is_some_and(|model| model.installed)
 }
 
+fn translation_folder(root: &Path, source: &str, target: &str) -> Option<PathBuf> {
+    let direct = root
+        .join("mt")
+        .join(format!("{source}-{target}"))
+        .join("ct2");
+    if direct.is_dir() {
+        return Some(direct);
+    }
+    let prefix = format!("translate-{source}_{target}-");
+    for entry in fs::read_dir(root.join("mt")).ok()?.flatten() {
+        if entry.file_name().to_string_lossy().starts_with(&prefix) {
+            let model = entry.path().join("model");
+            if model.is_dir() {
+                return Some(model);
+            }
+        }
+    }
+    None
+}
+
+fn translation_size(root: &Path, source: &str, target: &str) -> (bool, u64) {
+    match translation_folder(root, source, target) {
+        Some(folder) => size(&folder, &["model.bin", "config.json"]),
+        None => (false, 0),
+    }
+}
+
+fn translation_paths(root: &Path, source: &str, target: &str) -> Vec<PathBuf> {
+    let mut paths = vec![root.join("mt").join(format!("{source}-{target}"))];
+    let prefix = format!("translate-{source}_{target}-");
+    if let Ok(entries) = fs::read_dir(root.join("mt")) {
+        for entry in entries.flatten() {
+            if entry.file_name().to_string_lossy().starts_with(&prefix) {
+                paths.push(entry.path());
+            }
+        }
+    }
+    paths
+}
+
 fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
     let root = models_root();
     match id {
@@ -117,6 +173,8 @@ fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
             root.join("en_US-lessac-medium.onnx"),
             root.join("en_US-lessac-medium.onnx.json"),
         ]),
+        "mt-pt-en" => Some(translation_paths(&root, "pt", "en")),
+        "mt-en-pt" => Some(translation_paths(&root, "en", "pt")),
         _ => None,
     }
 }
@@ -245,6 +303,8 @@ pub fn reason_for(model: &Model, machine: &str) -> String {
     let what = match model.id {
         "parakeet" => "the only dictation model in this build",
         "voice-pt" => "the Portuguese voice for read aloud",
+        "mt-pt-en" => "the Portuguese to English translation pack",
+        "mt-en-pt" => "the English to Portuguese translation pack",
         _ => "the English voice for read aloud",
     };
     format!("{what}, and this machine has {machine}")
@@ -284,6 +344,15 @@ pub fn as_json(models: &[Model]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn both_translation_pairs_are_listed_and_removable() {
+        let ids: Vec<&str> = status().iter().map(|model| model.id).collect();
+        assert!(ids.contains(&"mt-pt-en"));
+        assert!(ids.contains(&"mt-en-pt"));
+        assert!(paths_for("mt-pt-en").is_some());
+        assert!(paths_for("mt-en-pt").is_some());
+    }
 
     #[test]
     fn cancelling_without_a_download_says_so() {
