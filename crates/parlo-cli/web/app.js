@@ -2131,6 +2131,13 @@ let meetingTimer = null;
 let meetingLines = 0;
 let meetingFailures = 0;
 
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && meetingRecording) {
+    event.preventDefault();
+    stopMeeting("Recording stopped. The lines already kept stay in the meeting.");
+  }
+});
+
 function meetingStatus(last) {
   if (!meetingRecording) {
     meetingLiveNote.textContent =

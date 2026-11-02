@@ -302,8 +302,8 @@ async function start() {
   processor.connect(sink);
   sink.connect(context.destination);
   running = true;
-  toggleButton.textContent = "Pause";
-  setState("Live · every 2.5 seconds", true);
+  toggleButton.textContent = "Stop";
+  setState("Live · listening, every 2.5 seconds · Escape stops", true);
 }
 
 function stop() {
@@ -339,6 +339,13 @@ toggleButton.addEventListener("click", () => {
     stop();
   } else {
     start();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && running) {
+    event.preventDefault();
+    stop();
   }
 });
 
