@@ -583,6 +583,39 @@ mod tests {
     }
 
     #[test]
+    fn a_profile_stays_inside_its_own_folder_and_leaves_nothing_behind() {
+        let sandbox = Sandbox::new("contained");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        store.revoke(&profile.id, 7).unwrap();
+        store.set_encryption(&profile.id, true).unwrap();
+        store.set_encryption(&profile.id, false).unwrap();
+        let roots: Vec<String> = fs::read_dir(store.root())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        assert_eq!(roots, vec![profile.id.clone()]);
+        let mut inside: Vec<String> = fs::read_dir(store.root().join(&profile.id))
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        inside.sort();
+        assert_eq!(
+            inside,
+            vec!["profile.json".to_string(), "sample.wav".to_string()]
+        );
+        store.delete(&profile.id).unwrap();
+        assert_eq!(fs::read_dir(store.root()).unwrap().count(), 0);
+    }
+
+    #[test]
     fn revoking_keeps_the_profile_and_marks_it_unusable() {
         let sandbox = Sandbox::new("revoke");
         let store = sandbox.store();

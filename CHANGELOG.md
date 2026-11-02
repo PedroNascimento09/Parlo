@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The sample can be sealed with the Windows account that made it. A profile created with **Keep the sample sealed with my Windows account** stores it as DPAPI ciphertext, the list marks it as sealed, and playback and export unseal it on demand; a sample another account wrote is refused with a sentence instead of failing silently.
 - A voice profile can carry a real sample. Ten to thirty seconds are recorded in the window or refused with the measured length, the silent take is refused too, and the profile can then be heard back, exported as one file that marks the voice as synthetic, or deleted with its sample; the engine that turns the sample into speech is still not in the build, and the panel says so.
 - The first start offers the recogniser alone, about 640 MB, instead of asking for the whole set of models at once; translation and read aloud are added later, one model at a time.
 
