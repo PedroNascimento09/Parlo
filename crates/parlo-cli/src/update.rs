@@ -122,21 +122,29 @@ fn download(url: &str, archive: &Path, version: &str) -> Result<(), String> {
 }
 
 pub fn is_newer(current: &str, candidate: &str) -> bool {
-    parse(current) < parse(candidate)
+    let left = parse(current);
+    let right = parse(candidate);
+    for index in 0..left.len().max(right.len()) {
+        let a = *left.get(index).unwrap_or(&0);
+        let b = *right.get(index).unwrap_or(&0);
+        if a != b {
+            return b > a;
+        }
+    }
+    false
 }
 
-fn parse(version: &str) -> (u32, u32, u32) {
-    let mut parts = version
+fn parse(version: &str) -> Vec<u32> {
+    let mut parts: Vec<u32> = version
         .trim()
         .trim_start_matches('v')
         .split(['.', '-', '+'])
         .filter_map(|part| part.parse::<u32>().ok())
-        .chain(std::iter::repeat(0));
-    (
-        parts.next().unwrap_or(0),
-        parts.next().unwrap_or(0),
-        parts.next().unwrap_or(0),
-    )
+        .collect();
+    while parts.len() < 3 {
+        parts.push(0);
+    }
+    parts
 }
 
 pub fn latest() -> Result<Latest, String> {
@@ -297,6 +305,14 @@ fn run(program: &str, args: &[&str]) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_fourth_number_is_read_and_compared() {
+        assert!(is_newer("0.2.1", "0.2.1.1"));
+        assert!(!is_newer("0.2.1+1", "0.2.1.1"));
+        assert!(!is_newer("0.2.1+1", "0.2.1"));
+        assert!(is_newer("0.2.1.1", "0.2.2"));
+    }
 
     #[test]
     fn a_curl_progress_line_gives_a_percentage() {
