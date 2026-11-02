@@ -1095,6 +1095,10 @@ const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
 const historyNote = document.getElementById("history-note");
+const historySearch = document.getElementById("history-search");
+const historyApp = document.getElementById("history-app");
+const historyMode = document.getElementById("history-mode");
+let historyEntries = [];
 const historyClear = document.getElementById("history-clear");
 
 function describePair(from, to) {
@@ -2172,28 +2176,76 @@ async function loadHistory() {
     if (!response.ok) {
       return;
     }
-    renderHistory(await response.json());
+    historyEntries = await response.json();
+    fillHistoryApps();
+    renderHistory();
   } catch (failure) {
     historyNote.textContent = "The recent dictations could not be read.";
   }
 }
 
-function renderHistory(entries) {
+function fillHistoryApps() {
+  const seen = new Set();
+  for (const entry of historyEntries) {
+    const app = (entry.app || "").trim();
+    if (app) {
+      seen.add(app);
+    }
+  }
+  const chosen = historyApp.value;
+  historyApp.replaceChildren();
+  const any = document.createElement("option");
+  any.value = "";
+  any.textContent = "Any program";
+  historyApp.append(any);
+  for (const app of [...seen].sort()) {
+    const option = document.createElement("option");
+    option.value = app;
+    option.textContent = app;
+    historyApp.append(option);
+  }
+  historyApp.value = seen.has(chosen) ? chosen : "";
+}
+
+function matchesHistory(entry) {
+  const app = historyApp.value;
+  const mode = historyMode.value;
+  const needle = historySearch.value.trim().toLowerCase();
+  if (app && (entry.app || "") !== app) {
+    return false;
+  }
+  if (mode && (entry.mode || "") !== mode) {
+    return false;
+  }
+  if (needle) {
+    const haystack = ((entry.text || "") + " " + (entry.translation || "")).toLowerCase();
+    if (!haystack.includes(needle)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function renderHistory() {
   historyList.replaceChildren();
-  if (!entries.length) {
-    historyNote.textContent = "Nothing dictated yet. What you dictate and its translation will appear here.";
+  if (!historyEntries.length) {
+    historyNote.textContent =
+      "Nothing dictated yet. What you dictate and its translation will appear here.";
     historyClear.hidden = true;
     return;
   }
-  for (const entry of entries) {
+  const shown = historyEntries.filter(matchesHistory);
+  for (const entry of shown) {
     const term = document.createElement("dt");
     const moment = new Date((entry.at || 0) * 1000);
+    const where = [entry.app, entry.mode].filter(Boolean).join(" · ");
     term.textContent =
       moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
       " · " +
       (LANGUAGE_NAMES[entry.from] || entry.from) +
       " → " +
-      (LANGUAGE_NAMES[entry.to] || entry.to);
+      (LANGUAGE_NAMES[entry.to] || entry.to) +
+      (where ? " · " + where : "");
     const detail = document.createElement("dd");
     const reuse = document.createElement("button");
     reuse.type = "button";
@@ -2205,10 +2257,13 @@ function renderHistory(entries) {
     historyList.append(term, detail);
   }
   historyNote.textContent =
-    entries.length === 1
-      ? "1 dictation kept on this computer."
-      : entries.length + " dictations kept on this computer.";
+    shown.length === historyEntries.length
+      ? historyEntries.length === 1
+        ? "1 dictation kept on this computer."
+        : historyEntries.length + " dictations kept on this computer."
+      : shown.length + " of " + historyEntries.length + " dictations match.";
   historyClear.hidden = false;
+}
 }
 
 async function copyHistory(text) {
@@ -2229,13 +2284,17 @@ async function clearHistory() {
     if (!response.ok) {
       throw new Error("status " + response.status);
     }
-    renderHistory([]);
+    historyEntries = [];
+    renderHistory();
   } catch (failure) {
     historyNote.textContent = "The history could not be cleared. Try again.";
   }
 }
 
 historyClear.addEventListener("click", () => clearHistory());
+historySearch.addEventListener("input", () => renderHistory());
+historyApp.addEventListener("change", () => renderHistory());
+historyMode.addEventListener("change", () => renderHistory());
 
 window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {
