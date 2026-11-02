@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The window stopped starting modes. Home kept its own Live and Dictate buttons, which the tray already offered, so both are gone with the code behind them: Live is the tray entry and the window served from /live, Dictate is the island the shortcut opens. The hold-to-speak button stays as the first-run test and translates one clip.
+
 - The tray lists every destination instead of one door. Home, Library, Meetings, Voice and Settings each open the window on their own screen, so Open Parlo is gone: it did what Home now does. The three modes stay above the separator, the tooltip still repeats the shared state, and the left click still shows the island.
 
 - Onboarding asks for the three things it needs before it proves anything: the pair, the microphone, with the exact Windows place to allow it when it is blocked, and the shortcut, captured from the keys the person presses. Then it waits for one real sentence and reads it back with the program it landed in, and the last line says where the shortcut is and what Escape does. Five steps, every one of them saving a setting that exists, and skipping still stops it asking again.

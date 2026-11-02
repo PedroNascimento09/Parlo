@@ -77,16 +77,10 @@ const welcomeBox = document.getElementById("welcome");
 const welcomeInstall = document.getElementById("welcome-install");
 const modelsDictation = document.getElementById("models-dictation");
 const welcomeStatus = document.getElementById("welcome-status");
-const liveButton = document.getElementById("live");
-const liveNote = document.getElementById("live-note");
-const dictateButton = document.getElementById("dictate");
-const dictateNote = document.getElementById("dictate-note");
 
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 30;
 const MIN_SECONDS = 0.25;
-const LIVE_SECONDS = 2.5;
-const LIVE_MIN_SECONDS = 0.6;
 const LIVE_MAX_SECONDS = 8;
 const LIVE_FAILURES = 3;
 
@@ -111,12 +105,6 @@ let dubbing = false;
 let dubTimer = null;
 let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
 let settingsBusy = false;
-let live = false;
-let dictating = false;
-let liveTimer = null;
-let liveLines = [];
-let liveWindows = 0;
-let liveFailures = 0;
 let playbackDone = null;
 
 versionEl.textContent = version || "unknown";
@@ -214,7 +202,7 @@ async function ensureAudio() {
     source.connect(analyser);
     processor = context.createScriptProcessor(4096, 1, 1);
     processor.onaudioprocess = (event) => {
-      if (!recording && !live && !sampling) {
+      if (!recording && !sampling) {
         return;
       }
       chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
@@ -403,7 +391,7 @@ function playAndWait(blob) {
     audio.addEventListener("ended", done, { once: true });
     audio.addEventListener("error", done, { once: true });
     audio.play().catch(() => {
-      showError("The translation is ready but the browser blocked playback. Click the page once, then start live again.");
+      showError("The translation is ready but the browser blocked playback. Click the page once, then try again.");
       done();
     });
   });
@@ -430,10 +418,6 @@ function play(blob) {
 
 async function begin() {
   if (recording) {
-    return;
-  }
-  if (live) {
-    showError("Live is on. Stop it before holding the button for a single clip.");
     return;
   }
   clearError();
@@ -465,7 +449,8 @@ async function finish() {
   micEl.textContent = "ready";
   clearTimeout(maxTimer);
   talk.setAttribute("aria-pressed", "false");
-  describeButton();
+  label.textContent = "Try it once";
+  sub.textContent = "Hold, speak, release";
 
   const captured = chunks;
   chunks = [];
@@ -482,11 +467,6 @@ async function finish() {
   for (const chunk of captured) {
     merged.set(chunk, offset);
     offset += chunk.length;
-  }
-
-  if (dictating) {
-    await dictateSpeech(merged, rate, seconds);
-    return;
   }
 
   setProgress("Translating " + seconds.toFixed(1) + " s of speech.");
@@ -517,85 +497,6 @@ async function finish() {
   }
 }
 
-function describeButton() {
-  label.textContent = dictating ? "Try dictation" : "Try it once";
-  sub.textContent = "Hold, speak, release";
-}
-
-async function dictateSpeech(merged, rate, seconds) {
-  setProgress("Writing down " + seconds.toFixed(1) + " s of speech.");
-  try {
-    const wav = encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE);
-    const startedAt = performance.now();
-    const response = await fetch("/dictate", {
-      method: "POST",
-      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
-      body: wav,
-    });
-    if (response.status === 401) {
-      throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
-    }
-    if (!response.ok) {
-      const detail = await response.json().catch(() => ({}));
-      throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
-    }
-    const result = await response.json();
-    const waited = (performance.now() - startedAt) / 1000;
-    const text = (result.text || "").trim();
-    if (!text) {
-      setProgress("");
-      showError("Nothing was recognised. Move closer to the microphone and try again.");
-      return;
-    }
-    translation.textContent = text;
-    translation.hidden = false;
-    latencyEl.textContent = waited.toFixed(1) + " s from speech to text";
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(text);
-      copied = true;
-    } catch (failure) {
-      copied = false;
-    }
-    setProgress(
-      copied
-        ? "Copied to the clipboard. Paste it wherever you need it."
-        : "The text is ready above. Copy it with the keyboard, the clipboard refused it.",
-    );
-  } catch (failure) {
-    setProgress("");
-    showError(
-      failure.message || "The dictation failed. Check that the engine is running and try again.",
-    );
-  }
-}
-
-function describeLive(message) {
-  liveNote.textContent =
-    message ||
-    (live
-      ? "Listening continuously. Each window is translated and played in turn."
-      : "Turns on continuous translation for a call. Everything stays on this machine.");
-}
-
-function appendLiveLine(encoded) {
-  if (!encoded) {
-    return;
-  }
-  try {
-    const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
-    const text = new TextDecoder().decode(bytes).trim();
-    if (!text) {
-      return;
-    }
-    liveLines.push(text);
-    translation.textContent = liveLines.join(" ");
-    translation.hidden = false;
-  } catch (failure) {
-    return;
-  }
-}
-
 function takeWindow(minimum) {
   const rate = context ? context.sampleRate : 48000;
   const captured = chunks;
@@ -614,155 +515,6 @@ function takeWindow(minimum) {
   const kept = merged.length > cap ? merged.subarray(merged.length - cap) : merged;
   return encodeWav(downsample(kept, rate, TARGET_RATE), TARGET_RATE);
 }
-
-async function translateWindow(wav) {
-  const startedAt = performance.now();
-  const response = await fetch("/translate", {
-    method: "POST",
-    headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
-    body: wav,
-  });
-  if (response.status === 401) {
-    throw new Error("This page lost its access token. Start parlo app again and open the link it prints.");
-  }
-  if (!response.ok) {
-    const detail = await response.json().catch(() => ({}));
-    throw new Error(detail.error || "The translator answered with status " + response.status + ".");
-  }
-  const audio = await response.blob();
-  return { audio, transcript: response.headers.get("X-Parlo-Transcript"), waited: (performance.now() - startedAt) / 1000 };
-}
-
-async function liveStep() {
-  liveTimer = null;
-  if (!live) {
-    return;
-  }
-  const wav = takeWindow(LIVE_SECONDS);
-  if (!wav) {
-    liveTimer = setTimeout(liveStep, 200);
-    return;
-  }
-  try {
-    const result = await translateWindow(wav);
-    if (!live) {
-      return;
-    }
-    liveFailures = 0;
-    liveWindows += 1;
-    latencyEl.textContent = result.waited.toFixed(1) + " s from speech to voice";
-    appendLiveLine(result.transcript);
-    setProgress(
-      "Live, " +
-        liveWindows +
-        (liveWindows === 1 ? " window" : " windows") +
-        " translated, each one played in turn.",
-    );
-    await playAndWait(result.audio);
-  } catch (failure) {
-    liveFailures += 1;
-    if (liveFailures >= LIVE_FAILURES) {
-      stopLive("Live stopped after " + LIVE_FAILURES + " failures in a row. " + (failure.message || ""));
-      return;
-    }
-    showError(failure.message || "One window could not be translated. Parlo is still listening.");
-  }
-  if (live) {
-    liveTimer = setTimeout(liveStep, 0);
-  }
-}
-
-async function startLive() {
-  if (live) {
-    return;
-  }
-  if (dubbing) {
-    showError("Wait for the file to finish dubbing before going live.");
-    return;
-  }
-  if (!welcomeBox.hidden || modelsDownloading) {
-    showError("Download the models first, then live mode works offline.");
-    return;
-  }
-  if (recording) {
-    showError("Release the record button first, then start live mode.");
-    return;
-  }
-  if (dictating) {
-    showError("Turn off dictation before going live.");
-    return;
-  }
-  clearError();
-  clearTranslation();
-  stopPlayback();
-  chunks = [];
-  liveLines = [];
-  liveWindows = 0;
-  liveFailures = 0;
-  try {
-    await ensureAudio();
-  } catch (failure) {
-    micEl.textContent = "blocked";
-    showError(describeMicrophoneError(failure));
-    return;
-  }
-  live = true;
-  liveButton.setAttribute("aria-pressed", "true");
-  talk.disabled = true;
-  micEl.textContent = "listening";
-  describeLive();
-  setProgress("Live, listening. The first translation arrives after a couple of seconds.");
-  clearTimeout(liveTimer);
-  liveTimer = setTimeout(liveStep, 200);
-}
-
-async function stopLive(message) {
-  if (!live) {
-    if (message) {
-      showError(message);
-    }
-    return;
-  }
-  live = false;
-  clearTimeout(liveTimer);
-  liveTimer = null;
-  liveButton.setAttribute("aria-pressed", "false");
-  talk.disabled = false;
-  micEl.textContent = "ready";
-  describeLive();
-  const rest = takeWindow(LIVE_MIN_SECONDS);
-  chunks = [];
-  if (!rest) {
-    stopPlayback();
-    setProgress("");
-  } else {
-    setProgress("Live stopped. Translating the last words now.");
-    try {
-      const result = await translateWindow(rest);
-      appendLiveLine(result.transcript);
-      setProgress("Live stopped after " + liveWindows + " windows.");
-      play(result.audio);
-    } catch (failure) {
-      setProgress("");
-      stopPlayback();
-    }
-  }
-  if (message) {
-    showError(message);
-  }
-}
-
-liveButton.addEventListener("click", () => {
-  if (live) {
-    stopLive("");
-  } else {
-    startLive();
-  }
-});
-
-window.addEventListener("beforeunload", () => {
-  clearTimeout(liveTimer);
-});
 
 function formatUptime(totalSeconds) {
   const seconds = Math.max(0, Math.floor(totalSeconds || 0));
@@ -1475,10 +1227,6 @@ async function saveSettings() {
     showError("Wait for the file to finish dubbing before changing the languages.");
     return;
   }
-  if (live) {
-    showError("Stop live mode before changing the languages.");
-    return;
-  }
 
   clearError();
   const previous = {
@@ -1867,10 +1615,6 @@ async function startDub() {
     showError("Let go of the record button before dubbing a file.");
     return;
   }
-  if (live) {
-    showError("Stop live mode before dubbing a file.");
-    return;
-  }
   clearError();
   clearTranslation();
   stopPlayback();
@@ -1961,21 +1705,6 @@ document.addEventListener("drop", (event) => {
   }
 });
 
-dictateButton.addEventListener("click", () => {
-  if (live) {
-    showError("Stop live mode before dictating.");
-    return;
-  }
-  dictating = !dictating;
-  dictateButton.setAttribute("aria-pressed", dictating ? "true" : "false");
-  dictateNote.textContent = dictating
-    ? "Dictation is on. Hold the button, speak, and let go: your words arrive as text in the clipboard, with no translation and no voice."
-    : "Holding the button writes down what you say instead of translating it. The text goes to your clipboard.";
-  clearError();
-  clearTranslation();
-  describeButton();
-});
-
 talk.addEventListener("pointerdown", (event) => {
   event.preventDefault();
   talk.focus({ preventScroll: true });
@@ -1987,10 +1716,6 @@ window.addEventListener("pointercancel", () => finish());
 
 function openSection() {
   const fragment = (location.hash || "").replace("#", "");
-  if (fragment === "live") {
-    startLive();
-    return;
-  }
   if (fragment === "settings") {
     const section = document.getElementById("settings");
     if (!section) {
@@ -2316,11 +2041,7 @@ async function startMeeting() {
   if (meetingRecording) {
     return;
   }
-  if (live) {
-    showError("Stop live mode before recording a meeting.");
-    return;
-  }
-  if (recording || dictating) {
+  if (recording) {
     showError("Finish the current dictation before recording a meeting.");
     return;
   }
@@ -3011,8 +2732,6 @@ const ROUTES = {
     "update",
     "onboarding",
     "welcome",
-    "live-row",
-    "dictate-row",
     "progress",
     "error",
     "translation",
@@ -3134,7 +2853,6 @@ loadModels();
 loadSettings();
 loadIntelligence();
 loadVocabulary();
-describeLive();
 
 const voiceForm = document.getElementById("voice-form");
 const voiceList = document.getElementById("voice-list");

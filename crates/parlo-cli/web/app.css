@@ -250,66 +250,7 @@ footer {
   opacity: 0.95;
 }
 
-.live-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin: 14px 0 0;
-}
-
-.live {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 18px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 140ms ease, background-color 140ms ease;
-}
-
-.live:hover {
-  border-color: var(--accent);
-}
-
-.live:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 3px;
-}
-
-.live-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--muted);
-}
-
-.live[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
-}
-
-.live[aria-pressed="true"] .live-dot {
-  background: var(--accent);
-  animation: listening 2s ease-in-out infinite;
-}
-
-.live-note {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-}
-
 @media (max-width: 480px) {
-  .live-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
 }
 
 .meter {
