@@ -1,0 +1,75 @@
+# The build plan
+
+`docs/UX.md` says what the product should be. This file says what to change, in what order, and how to know each step worked.
+
+Six phases. Each one leaves the app usable, and each one is finished before the next starts. The order is chosen so the shortest phase fixes the worst defect.
+
+## Phase 1: the dictation key behaves
+
+Why first: Escape inserts and focus loss submits. Both lose a sentence.
+
+1. Split `finish()` in `crates/parlo-cli/web/island.html` into `stop()` and `cancel()`. `stop()` transcribes, inserts, writes history. `cancel()` closes the microphone, drops the audio, writes nothing, and returns to Ready.
+2. Bind `Escape` to `cancel()`, and say so in the overlay hint while listening.
+3. Delete the `visibilitychange → finish()` handler. Losing focus keeps the session open, because clicking the target application is the normal step, not an abandonment.
+4. Register the shortcut with a low level keyboard hook in `crates/parlo-app/src/island.rs`, because `RegisterHotKey` reports a press and never a release. Down starts capture, up stops it. Keep `RegisterHotKey` as the fallback and say which mode is active in the log.
+5. A tap shorter than 250 ms means hands free: capture stays open until the next press.
+
+Check: hold the key, speak, release; the text lands in Notepad. Press the key, speak, press Escape; nothing is inserted and no history entry appears. Click into another window mid-sentence; the session survives and the text still lands.
+
+Tests: `cargo test -p parlo-app -p parlo-cli`, `cargo clippy -- -D warnings`. The key release path is Windows only, so it is checked by hand on this machine and recorded in the release notes as such.
+
+Estimate: 2 hours.
+
+## Phase 2: one state machine
+
+1. Add `crates/parlo-cli/src/live_state.rs` with the eight states from `docs/UX.md` and the legal transitions, plus a unit test per transition.
+2. Expose it as `GET /state` and push it to the island as `POST /state/stream` or a short poll, whichever the island renders without a frame drop.
+3. Render the same state in three places: island line, tray tooltip, window readiness line. No surface invents its own wording.
+
+Check: start a dictation and watch the island, the tray and the window agree at every step.
+
+Estimate: 3 hours.
+
+## Phase 3: insertion certainty
+
+1. Add `GET /target` returning the foreground application name and whether it accepts typed input.
+2. The island asks before it opens the microphone. The hint reads "Text goes into Notepad", or "No text field here, the text goes to the clipboard".
+3. History gains `app` and `mode`. Entries written before this change read as `unknown` instead of failing to parse.
+
+Check: dictate into two different applications and confirm each history row names the right one.
+
+Estimate: 3 hours.
+
+## Phase 4: Home becomes status
+
+1. Add a navigation rail to `index.html` with five destinations: Home, Library, Meetings, Voice, Settings.
+2. Move the sections into those destinations without changing their ids, so `app.js` keeps working while the router is added.
+3. Home shows readiness, shortcut, mode, languages, active model, and the last three results. The hold-to-speak button becomes the onboarding test only.
+4. Licences move to Settings → Advanced, dubbing to Library.
+
+Check: a person who never used Parlo answers "is it ready, and what does it do" from Home without scrolling.
+
+Estimate: 5 hours.
+
+## Phase 5: Library
+
+1. Merge Models, History and Vocabulary into one destination with three tabs.
+2. Add filters by application and mode, plus search across the text.
+3. Vocabulary moves out of Settings, where it never belonged.
+
+Check: find a dictation from last week by the application it went into.
+
+Estimate: 4 hours.
+
+## Phase 6: the remaining surfaces
+
+1. Settings split into eight sections, cloud key under Privacy with the sentence about what leaves the machine.
+2. Tray: modes and destinations, state in the tooltip, no action duplicated from the window.
+3. Onboarding: five steps under sixty seconds, ending with a real insertion.
+4. Captions as its own floating window, then Live, then Meetings with a lifecycle.
+
+Estimate: 12 hours across several sittings.
+
+## Order of evidence
+
+Every phase ends with the same three checks: the crate's tests, clippy with warnings as errors, and one hand check of the flow it changed. A phase that cannot be hand checked on this machine says so in its commit message rather than claiming it works.
