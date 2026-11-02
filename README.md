@@ -83,7 +83,7 @@ A recording comes back dubbed, with subtitles timed to the source written beside
 | **Your words** | A local vocabulary fixes the names the recogniser keeps missing, before any model reads the sentence. |
 | **Engines and keys** | Rules only, a model on this machine, or your own cloud key — kept in DPAPI, the macOS keychain or the Linux secret service, never in a config file, a log or an error message. |
 | **Memory** | Loaded models are released after 10 minutes to 4 hours of silence, or never, your choice. |
-| **Models** | One row per model with its size on disk and its own **Download** or **Remove** button; removing is real, and the feature that needed it says so before it is used. |
+| **Models** | One row per model with its size, whether it sits on disk or in memory, the quality number measured for it, and its own **Download** or **Remove** button; removing turns off the feature that needed it and names the switch. |
 | **Updates** | The latest release is offered with its notes and one button; the running copy is replaced, never uninstalled first. |
 
 ## Install
@@ -202,6 +202,8 @@ Verify it yourself: [docs/PRIVACY.md](docs/PRIVACY.md).
 - Meetings capture the microphone, not the sound of another application.
 - **No meeting summary and no questions over past meetings yet.** The transcript, its speakers and its timings exist and can be renamed and deleted; a summary of the conversation, decisions and tasks is planned and not built. Nothing in the app pretends otherwise.
 - Speakers are labelled by the recogniser, not by a model trained to separate voices, so two similar voices can share a label.
+- Read aloud speaks with a neutral European Portuguese voice that no panel of listeners has judged, and no voice is cloned from a recording.
+- A model that is downloaded says **On disk** and one that is loaded says **In memory**; **In use** is not shown, because the local server answers one request at a time.
 
 ## Build and test
 
@@ -217,7 +219,7 @@ CI runs those on Linux, macOS and Windows, alongside the licence gate that keeps
 
 ## Roadmap
 
-The next release is **v0.2.0**, and it carries what is already on `main`: meetings captured live, a vocabulary the recogniser actually uses, and models released after silence. The plan's next milestone is **v0.3 Listen**, which decides with data before adding features, and the committed scope stops at **v0.5** — speak one language, write another in the active field, behind a measured gate instead of a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels, never version numbers; releases live in [docs/releases](docs/releases) and are announced inside the app.
+Latest published: **v0.2.1.3**, which installs the European Portuguese voice for read aloud and makes every text colour in the window clear 4.5:1. The plan's next milestone is **v0.3 Listen**, which decides with data before adding features, and the committed scope stops at **v0.5**: speak one language, write another in the active field, behind a measured gate instead of a promise. Milestones in [ROADMAP.md](ROADMAP.md) are labels, never version numbers; releases live in [docs/releases](docs/releases) and are announced inside the app.
 
 ## Docs and contributing
 
