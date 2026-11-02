@@ -397,6 +397,13 @@ fn translate(args: &[String]) -> Result<(), String> {
         }
     }
 
+    if translated.is_empty() {
+        return Err(format!(
+            "the {} engine returned text but no audio, so nothing was written to {output_path}: its voice is not available yet",
+            pipeline.engine_id()
+        ));
+    }
+
     let result = Wav {
         format: output,
         samples: translated,
