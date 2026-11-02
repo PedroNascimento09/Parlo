@@ -1127,6 +1127,7 @@ const historyApp = document.getElementById("history-app");
 const historyMode = document.getElementById("history-mode");
 let historyEntries = [];
 const historyClear = document.getElementById("history-clear");
+const historyFilters = document.getElementById("history-filters");
 const recentList = document.getElementById("recent-list");
 const recentEmpty = document.getElementById("recent-empty");
 
@@ -2391,6 +2392,7 @@ function renderHistory() {
   renderRecent();
   historyList.replaceChildren();
   if (!historyEntries.length) {
+    historyFilters.hidden = true;
     historyNote.textContent =
       "Nothing dictated yet. Press Ctrl+Alt+D, speak, and the sentence appears here with the program it landed in.";
     historyClear.hidden = true;
@@ -2427,6 +2429,7 @@ function renderHistory() {
         ? "1 dictation kept on this computer."
         : historyEntries.length + " dictations kept on this computer."
       : shown.length + " of " + historyEntries.length + " dictations match.";
+  historyFilters.hidden = false;
   historyClear.hidden = false;
 }
 
