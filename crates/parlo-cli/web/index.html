@@ -484,7 +484,7 @@
       <h2 id="meetings-title">Meetings</h2>
       <p class="settings-note" id="meetings-note" aria-live="polite"></p>
     </div>
-    <div class="settings-row">
+    <div class="settings-row meeting-compose">
       <label class="field" for="meeting-title">
         <span class="field-label">Title</span>
         <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Product Sync" autocomplete="off">
@@ -493,9 +493,11 @@
         <span class="field-label">Transcript</span>
         <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: Olá, tudo bem?&#10;Speaker 2: Sim, tudo bem."></textarea>
       </label>
-      <button id="meeting-import" class="install" type="button">Import transcript</button>
-      <button id="meeting-export" class="swap" type="button">Copy all as Markdown</button>
-      <button id="meeting-summary" class="swap" type="button">Summarise the latest</button>
+      <div class="meeting-actions">
+        <button id="meeting-import" class="install" type="button">Import transcript</button>
+        <button id="meeting-export" class="swap" type="button">Copy all as Markdown</button>
+        <button id="meeting-summary" class="swap" type="button">Summarise the latest</button>
+      </div>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="meeting-search">
@@ -505,7 +507,7 @@
     </div>
     <div class="status" id="meeting-matches" aria-live="polite"></div>
     <p class="settings-note" id="meeting-summary-text" aria-live="polite"></p>
-    <div class="settings-row">
+    <div class="settings-row meeting-record">
       <button id="meeting-live" class="live" type="button" aria-pressed="false">
         <span class="live-dot" aria-hidden="true"></span>
         <span>Record a meeting</span>

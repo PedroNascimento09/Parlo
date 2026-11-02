@@ -1539,3 +1539,24 @@ kbd {
 #history-list:empty {
   display: none;
 }
+
+.meeting-compose,
+.meeting-record {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  justify-items: start;
+}
+
+.meeting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.meeting-compose .field,
+.meeting-compose .field-wide {
+  width: 100%;
+}
