@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The update box only offers **Install update** when the release carries a build for this platform. `/update` now reports whether an archive exists, and a release without one shows the sentence and the link to what changed instead of a button that did nothing.
 - The models can live on another drive. **Keep the models in this folder** copies the whole tree, compares the copied bytes with the original, and only then deletes the old folder and saves the new path; a copy that does not match leaves both in place and says so, and a relative path or a folder inside the old one is refused before anything moves.
 ## [0.2.1] - 2026-11-02
 
