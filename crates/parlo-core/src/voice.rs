@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 
 pub const NOTICE_VERSION: &str = "1";
+pub const SAMPLE: &str = "sample.wav";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -229,6 +230,24 @@ impl Store {
         Ok(profile)
     }
 
+    pub fn save_sample(&self, id: &str, bytes: &[u8]) -> Result<Profile, VoiceError> {
+        let folder = self.folder(id)?;
+        if !folder.is_dir() {
+            return Err(VoiceError::NotFound(id.to_string()));
+        }
+        fs::write(folder.join(SAMPLE), bytes)?;
+        self.record_artefact(id, SAMPLE)
+    }
+
+    pub fn sample(&self, id: &str) -> Result<Vec<u8>, VoiceError> {
+        let folder = self.folder(id)?;
+        let path = folder.join(SAMPLE);
+        if !path.is_file() {
+            return Err(VoiceError::NotFound(id.to_string()));
+        }
+        Ok(fs::read(path)?)
+    }
+
     pub fn revoke(&self, id: &str, at: u64) -> Result<Profile, VoiceError> {
         let folder = self.folder(id)?;
         if !folder.is_dir() {
@@ -431,6 +450,51 @@ mod tests {
         assert!(!folder.exists());
         assert!(matches!(
             store.get(&profile.id),
+            Err(VoiceError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn a_sample_is_stored_recorded_and_read_back() {
+        let sandbox = Sandbox::new("sample");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        let saved = store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        assert_eq!(saved.artefacts, vec![SAMPLE.to_string()]);
+        assert_eq!(store.sample(&profile.id).unwrap(), b"RIFFwav");
+    }
+
+    #[test]
+    fn a_sample_for_an_unknown_profile_is_refused() {
+        let sandbox = Sandbox::new("nosample");
+        let store = sandbox.store();
+        assert!(matches!(
+            store.save_sample("missing-00000000", b"RIFFwav"),
+            Err(VoiceError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn deleting_removes_the_sample_too() {
+        let sandbox = Sandbox::new("deletesample");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        store.delete(&profile.id).unwrap();
+        assert!(matches!(
+            store.sample(&profile.id),
             Err(VoiceError::NotFound(_))
         ));
     }

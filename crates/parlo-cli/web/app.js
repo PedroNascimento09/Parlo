@@ -83,6 +83,7 @@ let processor = null;
 let levels = null;
 let meterFrame = null;
 let recording = false;
+let sampling = false;
 let chunks = [];
 let maxTimer = null;
 let player = null;
@@ -199,7 +200,7 @@ async function ensureAudio() {
     source.connect(analyser);
     processor = context.createScriptProcessor(4096, 1, 1);
     processor.onaudioprocess = (event) => {
-      if (!recording && !live) {
+      if (!recording && !live && !sampling) {
         return;
       }
       chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
@@ -263,6 +264,95 @@ function encodeWav(samples, sampleRate) {
     offset += 2;
   }
   return new Blob([view], { type: "audio/wav" });
+}
+
+function mergedVoiceChunks() {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const merged = new Float32Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return merged;
+}
+
+async function recordVoiceSample(profile, button) {
+  if (sampling) {
+    return;
+  }
+  clearError();
+  try {
+    const audio = await ensureAudio();
+    chunks.length = 0;
+    sampling = true;
+    const started = Date.now();
+    const tick = setInterval(() => {
+      button.textContent = "Recording " + Math.max(0, 10 - Math.round((Date.now() - started) / 1000)) + " s";
+    }, 250);
+    button.textContent = "Recording 10 s";
+    await new Promise((done) => setTimeout(done, 10000));
+    sampling = false;
+    clearInterval(tick);
+    button.textContent = "Saving the sample";
+    const samples = downsample(mergedVoiceChunks(), audio.sampleRate, 16000);
+    const response = await fetch("/voice/sample", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token, "X-Parlo-Voice": profile.id },
+      body: encodeWav(samples, 16000),
+    });
+    const answer = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(answer.error || "The sample was not saved.");
+    }
+    voiceStatus.textContent = "Sample saved. Listen to it before you use this voice.";
+    await loadVoices();
+  } catch (failure) {
+    sampling = false;
+    showError(failure.message);
+  }
+}
+
+async function playVoiceSample(profile) {
+  clearError();
+  try {
+    const response = await fetch("/voice/sample/play", {
+      method: "POST",
+      headers: voiceHeaders(),
+      body: JSON.stringify({ id: profile.id }),
+    });
+    if (!response.ok) {
+      const answer = await response.json().catch(() => ({}));
+      throw new Error(answer.error || "The sample could not be read.");
+    }
+    play(await response.blob());
+  } catch (failure) {
+    showError(failure.message);
+  }
+}
+
+async function exportVoice(profile) {
+  clearError();
+  try {
+    const response = await fetch("/voice/export", {
+      method: "POST",
+      headers: voiceHeaders(),
+      body: JSON.stringify({ id: profile.id }),
+    });
+    if (!response.ok) {
+      const answer = await response.json().catch(() => ({}));
+      throw new Error(answer.error || "The profile could not be exported.");
+    }
+    const blob = await response.blob();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "parlo-voice-" + profile.id + ".txt";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    voiceStatus.textContent = "Exported. The file marks the voice as synthetic and names its origin.";
+  } catch (failure) {
+    showError(failure.message);
+  }
 }
 
 function stopPlayback() {
@@ -2724,6 +2814,15 @@ function renderVoices(profiles) {
     meta.textContent = describeVoice(profile) + " · since " + new Date(profile.created_at * 1000).toLocaleDateString();
     const actions = document.createElement("div");
     actions.className = "voice-item-actions";
+    const hasSample = (profile.artefacts || []).includes("sample.wav");
+    if (hasSample) {
+      actions.append(voiceButton("Play sample", () => playVoiceSample(profile)));
+    } else {
+      actions.append(
+        voiceButton("Record 10 s", (event) => recordVoiceSample(profile, event.currentTarget))
+      );
+    }
+    actions.append(voiceButton("Export", () => exportVoice(profile)));
     if (!profile.consent.revoked_at) {
       actions.append(
         voiceButton("Revoke", () =>
@@ -2756,7 +2855,7 @@ async function voiceCall(path, profile, done) {
     if (!response.ok) {
       throw new Error(payload.error || "The request failed.");
     }
-    voiceStatus.textContent = done;
+    voiceStatus.textContent = payload.message || done;
     await loadVoices();
   } catch (failure) {
     showError(failure.message);

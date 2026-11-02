@@ -1040,9 +1040,18 @@ fn handle(
                 .revoke(&target.id, now_seconds())
                 .map(|profile| serde_json::to_string(&profile).unwrap_or_else(|_| "{}".to_string()))
         } else {
-            store
-                .delete(&target.id)
-                .map(|()| "{\"deleted\":true}".to_string())
+            let removed = store
+                .get(&target.id)
+                .map(|profile| profile.artefacts)
+                .unwrap_or_default();
+            store.delete(&target.id).map(|()| {
+                serde_json::json!({
+                    "deleted": true,
+                    "removed": removed,
+                    "message": "Deleted. The sample and everything made from it are gone; copies in system backups are outside Parlo's reach.",
+                })
+                .to_string()
+            })
         };
         return match outcome {
             Ok(body) => respond_json(stream, "200 OK", &body).map(|()| Flow::Serve),
@@ -1059,6 +1068,122 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
+    }
+
+    if method == "POST" && path == "/voice/sample" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let Some(id) = header(&headers, "x-parlo-voice") else {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"the sample needs a voice profile id\"}",
+            )
+            .map(|()| Flow::Serve);
+        };
+        let audio = match parlo_core::wav::read_pcm16(&body) {
+            Ok(audio) => audio,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &error_json(&format!("the sample is not a readable wav: {error}")),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let seconds = wav_seconds(&body);
+        if !(MIN_SAMPLE_SECONDS..=MAX_SAMPLE_SECONDS).contains(&seconds) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json(&format!(
+                    "the sample is {seconds:.1} s; a voice profile takes between {MIN_SAMPLE_SECONDS:.0} and {MAX_SAMPLE_SECONDS:.0} s of speech"
+                )),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let peak = audio
+            .samples
+            .iter()
+            .fold(0f32, |peak, sample| peak.max(sample.abs()));
+        if peak < SILENT_PEAK {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"the sample is silent; speak into the microphone and record again\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        return match voice_store().save_sample(&id, &body) {
+            Ok(profile) => {
+                let saved = serde_json::to_string(&profile).unwrap_or_else(|_| "{}".to_string());
+                respond_json(stream, "200 OK", &saved).map(|()| Flow::Serve)
+            }
+            Err(error) => {
+                let status = match error {
+                    parlo_core::VoiceError::NotFound(_) => "404 Not Found",
+                    _ => "400 Bad Request",
+                };
+                respond_json(stream, status, &error_json(&error.to_string())).map(|()| Flow::Serve)
+            }
+        };
+    }
+
+    if method == "POST" && path == "/voice/sample/play" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let target: VoiceTarget = match serde_json::from_slice(&body) {
+            Ok(target) => target,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve)
+            }
+        };
+        return match voice_store().sample(&target.id) {
+            Ok(bytes) => respond_audio(stream, &bytes, "").map(|()| Flow::Serve),
+            Err(error) => respond_json(stream, "404 Not Found", &error_json(&error.to_string()))
+                .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/voice/export" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let target: VoiceTarget = match serde_json::from_slice(&body) {
+            Ok(target) => target,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve)
+            }
+        };
+        let store = voice_store();
+        let profile = match store.get(&target.id) {
+            Ok(profile) => profile,
+            Err(error) => {
+                return respond_json(stream, "404 Not Found", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve)
+            }
+        };
+        let sample = store.sample(&target.id).unwrap_or_default();
+        let header = serde_json::json!({
+            "format": "parlo-voice-profile",
+            "version": 1,
+            "synthetic": true,
+            "notice": "Audio from this profile is synthetic voice. The person who authorised it is named in the consent record below.",
+            "profile": profile,
+        });
+        let mut exported = header.to_string().into_bytes();
+        exported.extend_from_slice(b"\n\n");
+        exported.extend_from_slice(&sample);
+        return respond_named(stream, &format!("parlo-voice-{}.txt", target.id), &exported)
+            .map(|()| Flow::Serve);
     }
 
     if method == "POST" && path == "/dub" {
@@ -1716,6 +1841,10 @@ struct VoiceTarget {
     id: String,
 }
 
+const MIN_SAMPLE_SECONDS: f64 = 10.0;
+const MAX_SAMPLE_SECONDS: f64 = 30.0;
+const SILENT_PEAK: f32 = 0.002;
+
 fn voice_store() -> Store {
     Store::new(crate::config::data_root().join("voices"))
 }
@@ -1834,6 +1963,25 @@ fn respond_file(stream: &mut TcpStream, path: &Path, name: &str) -> Result<(), S
         .write_all(head.as_bytes())
         .map_err(|error| error.to_string())?;
     std::io::copy(&mut BufReader::new(file), stream).map_err(|error| error.to_string())?;
+    stream.flush().map_err(|error| error.to_string())
+}
+
+fn wav_seconds(bytes: &[u8]) -> f64 {
+    let rate = u32::from_le_bytes([bytes[24], bytes[25], bytes[26], bytes[27]]).max(1);
+    let data = u32::from_le_bytes([bytes[40], bytes[41], bytes[42], bytes[43]]) as f64;
+    data / 2.0 / f64::from(rate)
+}
+
+fn respond_named(stream: &mut TcpStream, name: &str, body: &[u8]) -> Result<(), String> {
+    let head = format!(
+        "HTTP/1.1 200 OK\nContent-Type: {}\nContent-Length: {}\nContent-Disposition: attachment; filename=\"{name}\"\nConnection: close\n\n",
+        content_type(name),
+        body.len()
+    );
+    stream
+        .write_all(head.as_bytes())
+        .map_err(|error| error.to_string())?;
+    stream.write_all(body).map_err(|error| error.to_string())?;
     stream.flush().map_err(|error| error.to_string())
 }
 
@@ -2041,6 +2189,14 @@ fn respond(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_wav_length_is_read_from_its_header() {
+        let mut bytes = vec![0u8; 44];
+        bytes[24..28].copy_from_slice(&16000u32.to_le_bytes());
+        bytes[40..44].copy_from_slice(&(16000u32 * 2 * 5).to_le_bytes());
+        assert!((wav_seconds(&bytes) - 5.0).abs() < 0.01);
+    }
 
     #[test]
     fn accepts_a_bearer_token() {
