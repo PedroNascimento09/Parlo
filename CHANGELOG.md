@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The dictation island opens on the screen the cursor is on, not on the primary one. Its place is the bottom centre of that monitor, and a machine that reports no monitor under the cursor still falls back to the primary one.
+
 - The window stopped starting modes. Home kept its own Live and Dictate buttons, which the tray already offered, so both are gone with the code behind them: Live is the tray entry and the window served from /live, Dictate is the island the shortcut opens. The hold-to-speak button stays as the first-run test and translates one clip.
 
 - The tray lists every destination instead of one door. Home, Library, Meetings, Voice and Settings each open the window on their own screen, so Open Parlo is gone: it did what Home now does. The three modes stay above the separator, the tooltip still repeats the shared state, and the left click still shows the island.

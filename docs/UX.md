@@ -30,6 +30,8 @@ Facts, read from the repository, not remembered.
 9. **The overlay only knows the primary monitor.** `place()` uses `primary_monitor()`, so on a second screen it appears on the wrong one.
 10. **The tray duplicates the window.** Dictate opens the island, Live and Settings open the window; three entries and one duplicate action.
 
+Items 9 and 10 are now fixed in `main`: the island follows the cursor's monitor instead of the primary one, and the tray lists the three modes and the five destinations without duplicating the window.
+
 None of that is a styling problem. It is an architecture problem, and the fix is to make the shortcut the product.
 
 ## A. Product philosophy

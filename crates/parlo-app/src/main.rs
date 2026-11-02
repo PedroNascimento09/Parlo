@@ -210,16 +210,26 @@ Connection: close
 }
 
 fn place(window: &WebviewWindow) {
-    let Ok(Some(monitor)) = window.primary_monitor() else {
-        note("no monitor was reported, the dictation island keeps its default place");
-        return;
+    let under_cursor = window
+        .cursor_position()
+        .ok()
+        .and_then(|cursor| window.monitor_from_point(cursor.x, cursor.y).ok().flatten());
+    let monitor = match under_cursor.or_else(|| window.primary_monitor().ok().flatten()) {
+        Some(monitor) => monitor,
+        None => {
+            note("no monitor was reported, the dictation island keeps its default place");
+            return;
+        }
     };
     let scale = monitor.scale_factor();
+    let origin = monitor.position();
+    let left = origin.x as f64 / scale;
+    let top = origin.y as f64 / scale;
     let width = monitor.size().width as f64 / scale;
     let height = monitor.size().height as f64 / scale;
-    let x = (width - ISLAND_WIDTH) / 2.0;
-    let y = height - ISLAND_HEIGHT - ISLAND_MARGIN;
-    let _ = window.set_position(LogicalPosition::new(x.max(0.0), y.max(0.0)));
+    let x = left + (width - ISLAND_WIDTH) / 2.0;
+    let y = top + height - ISLAND_HEIGHT - ISLAND_MARGIN;
+    let _ = window.set_position(LogicalPosition::new(x.max(left), y.max(top)));
 }
 
 fn launch() -> Result<(Child, u16, String), String> {
