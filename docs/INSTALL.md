@@ -5,7 +5,7 @@ Parlo is one folder and one program. Nothing is installed system-wide, no admini
 ## Windows, one click
 
 1. Open the [latest release](https://github.com/PedroNascimento09/Parlo/releases/latest).
-2. Download `Parlo-Setup.exe` and double click it.
+2. Download `Parlo-<version>-Setup.exe` and double click it.
 3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The build is unsigned, so this appears once.
 4. The Parlo window opens with our own design and one sentence about what the program does. Press **Install Parlo**, watch the line fill as it downloads and unpacks, then **Open Parlo**.
 
