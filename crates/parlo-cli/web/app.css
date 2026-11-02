@@ -1314,16 +1314,21 @@ kbd {
   background: var(--surface);
 }
 
-@media (max-width: 719px) {
+@media (max-width: 599px) {
   .settings-nav {
-    grid-auto-flow: column;
-    justify-content: start;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .settings-nav .tab {
+    flex: 1 1 auto;
+    text-align: center;
   }
 }
 
-@media (min-width: 720px) {
+@media (min-width: 600px) {
   .settings-layout {
-    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-columns: 184px minmax(0, 1fr);
     align-items: start;
   }
 
