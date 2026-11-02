@@ -20,6 +20,31 @@ def loaded(engine) -> dict:
     return {"op": "loaded", "units": list(units()) if callable(units) else []}
 
 
+def lifecycle(engine) -> dict:
+    report = getattr(engine, "lifecycle", None)
+    if not callable(report):
+        return {"op": "lifecycle", "manage": True, "units": []}
+    state = report()
+    return {"op": "lifecycle", "manage": state["manage"], "units": state["units"]}
+
+
+def switch_unit(request: dict, engine) -> dict:
+    unit = request.get("unit")
+    if not isinstance(unit, str) or not unit:
+        return {"op": "error", "error": "unit must be text"}
+    loading = request.get("op") == "load"
+    method = getattr(engine, "load_unit" if loading else "unload_unit", None)
+    if not callable(method):
+        return {"op": "error", "error": "this engine cannot change what it holds"}
+    try:
+        method(unit)
+    except (EngineUnavailable, ValueError) as failure:
+        return {"op": "error", "error": str(failure)}
+    units = getattr(engine, "loaded_units", None)
+    held = callable(units) and unit in units()
+    return {"op": "model", "unit": unit, "state": "loaded" if held else "unloaded"}
+
+
 def handle_line(line: str, engine) -> dict:
     try:
         request = json.loads(line)
@@ -34,6 +59,10 @@ def handle_line(line: str, engine) -> dict:
         return hello(engine)
     if op == "loaded":
         return loaded(engine)
+    if op == "lifecycle":
+        return lifecycle(engine)
+    if op in ("load", "unload"):
+        return switch_unit(request, engine)
     if op == "translate":
         return translate(request, engine)
     if op == "dictate":

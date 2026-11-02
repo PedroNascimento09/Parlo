@@ -31,6 +31,7 @@ VOICES = {
 GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"
 UNLOAD_DEFAULT_MINUTES = 30
 UNLOAD_LIMIT_MINUTES = 1_440
+UNITS = ("recognition", "translation", "dictation translation", "voice")
 
 
 class EngineUnavailable(RuntimeError):
@@ -62,6 +63,28 @@ def configured_unload() -> int:
         except ValueError:
             minutes = UNLOAD_DEFAULT_MINUTES
     return max(0, min(minutes, UNLOAD_LIMIT_MINUTES))
+
+
+def policy_table() -> tuple[int, dict[str, int], bool]:
+    policies: dict[str, int] = {}
+    manage = True
+    try:
+        payload = json.loads(config_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        payload = {}
+    if isinstance(payload, dict):
+        stored = payload.get("policies")
+        if isinstance(stored, dict):
+            for unit, minutes in stored.items():
+                if (
+                    unit in UNITS
+                    and isinstance(minutes, int)
+                    and not isinstance(minutes, bool)
+                ):
+                    policies[unit] = max(0, min(minutes, UNLOAD_LIMIT_MINUTES))
+        if isinstance(payload.get("manage_memory"), bool):
+            manage = payload["manage_memory"]
+    return configured_unload(), policies, manage
 
 
 def pcm16_to_float(pcm16: bytes) -> list[float]:
@@ -148,7 +171,7 @@ class CascadeEngine:
             )
         self.last_original = ""
         self.last_engine = ""
-        self.used_at = time.time()
+        self.touched: dict[str, float] = {}
         self.intelligence = Intelligence(settings_from_config(self.clean_mode), source)
         self.glossary = load_glossary(GLOSSARY_FILE)
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
@@ -229,30 +252,83 @@ class CascadeEngine:
             units.append("voice")
         return tuple(units)
 
+    def _touch(self, unit: str) -> None:
+        self.touched[unit] = time.time()
+
+    def policy(self, unit: str) -> tuple[int, str]:
+        default, policies, _ = policy_table()
+        if unit in policies:
+            return policies[unit], "model"
+        return default, "global"
+
+    def lifecycle(self, now: float | None = None) -> dict:
+        moment = time.time() if now is None else now
+        _, _, manage = policy_table()
+        loaded = set(self.loaded_units())
+        units = []
+        for unit in UNITS:
+            minutes, origin = self.policy(unit)
+            used = self.touched.get(unit)
+            units.append(
+                {
+                    "unit": unit,
+                    "state": "loaded" if unit in loaded else "unloaded",
+                    "idle_seconds": None if used is None else max(0, int(moment - used)),
+                    "policy": minutes,
+                    "policy_origin": origin,
+                }
+            )
+        return {"manage": manage, "units": units}
+
+    def load_unit(self, unit: str) -> None:
+        if unit == "recognition":
+            self._load_stt()
+        elif unit == "translation":
+            self._load_translation()
+        elif unit == "dictation translation":
+            self._load_writer(self.target)
+        elif unit == "voice":
+            self._load_voice()
+        else:
+            raise ValueError(f"unknown unit {unit}")
+        self._touch(unit)
+
+    def unload_unit(self, unit: str) -> bool:
+        if unit == "recognition":
+            held = self._stt is not None
+            self._stt = None
+        elif unit == "translation":
+            held = self._translator is not None
+            self._translator = None
+        elif unit == "dictation translation":
+            held = bool(self._writers)
+            self._writers.clear()
+        elif unit == "voice":
+            held = self._tts is not None
+            self._tts = None
+        else:
+            raise ValueError(f"unknown unit {unit}")
+        self.touched.pop(unit, None)
+        return held
+
     def unload_if_idle(self, now: float | None = None) -> tuple[str, ...]:
-        minutes = configured_unload()
-        if minutes <= 0:
+        _, _, manage = policy_table()
+        if not manage:
             return ()
         moment = time.time() if now is None else now
-        if moment - self.used_at < minutes * 60:
-            return ()
         dropped = []
-        if self._stt is not None:
-            self._stt = None
-            dropped.append("recognition")
-        if self._translator is not None:
-            self._translator = None
-            dropped.append("translation")
-        if self._writers:
-            self._writers.clear()
-            dropped.append("dictation translation")
-        if self._tts is not None:
-            self._tts = None
-            dropped.append("voice")
+        for unit in self.loaded_units():
+            minutes, _ = self.policy(unit)
+            if minutes <= 0:
+                continue
+            used = self.touched.get(unit)
+            if used is None or moment - used < minutes * 60:
+                continue
+            if self.unload_unit(unit):
+                dropped.append(unit)
         return tuple(dropped)
 
     def translate(self, pcm16: bytes) -> Translation:
-        self.used_at = time.time()
         if not self._ready:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
@@ -301,28 +377,17 @@ class CascadeEngine:
         return self._transcribe(samples)
 
     def write(self, pcm16: bytes, target: str | None = None) -> tuple[str, str]:
-        self.used_at = time.time()
-        from . import mt
-
         text = self.transcribe(pcm16)
         if not text:
             return "", ""
         language = (target or self.target).lower()
         if language == self.source:
             return text, text
-        translator = self._writers.get(language)
-        if translator is None:
-            translator = mt.from_environment(self.source, language)
-            if translator is None:
-                raise EngineUnavailable(
-                    f"no translation model for {self.source}->{language}; "
-                    "run engines/cascade/scripts/setup_models.py"
-                )
-            self._writers[language] = translator
+        translator = self._load_writer(language)
+        self._touch("dictation translation")
         return text, translator(text)
 
     def stream(self, pcm16: bytes) -> list[TextEvent]:
-        self.used_at = time.time()
         if not self._ready:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
@@ -345,10 +410,45 @@ class CascadeEngine:
             return []
         return self._stream.close()
 
+    def _load_translation(self):
+        from . import mt
+
+        if self._translator is None:
+            translator = mt.from_environment(self.source, self.target)
+            if translator is None:
+                raise EngineUnavailable(
+                    f"no translation model for {self.source}->{self.target}; "
+                    "run engines/cascade/scripts/setup_models.py"
+                )
+            self._translator = translator
+        return self._translator
+
+    def _load_writer(self, language: str):
+        from . import mt
+
+        translator = self._writers.get(language)
+        if translator is None:
+            translator = mt.from_environment(self.source, language)
+            if translator is None:
+                raise EngineUnavailable(
+                    f"no translation model for {self.source}->{language}; "
+                    "run engines/cascade/scripts/setup_models.py"
+                )
+            self._writers[language] = translator
+        return translator
+
+    def _load_voice(self):
+        if self._tts is None:
+            if not self.voice_path.is_file():
+                raise EngineUnavailable(f"the voice {self.voice_path.name} is not installed")
+            self._tts = PiperVoice(self.voice_path)
+        return self._tts
+
     def _transcribe(self, samples) -> str:
         import numpy as np
 
         model = self._load_stt()
+        self._touch("recognition")
         if self.stt == "parakeet":
             stream = model.create_stream()
             stream.accept_waveform(SAMPLE_RATE, np.asarray(samples, dtype="float32"))
@@ -366,19 +466,10 @@ class CascadeEngine:
         return apply_glossary(text, self.glossary)
 
     def _translate(self, text: str) -> str:
-        from . import mt
-
-        if self._translator is None:
-            self._translator = mt.from_environment(self.source, self.target)
-            if self._translator is None:
-                raise EngineUnavailable(
-                    f"no translation model for {self.source}->{self.target}; "
-                    "run engines/cascade/scripts/setup_models.py"
-                )
-        return self._translator(text)
+        self._touch("translation")
+        return self._load_translation()(text)
 
     def _synthesize(self, text: str) -> bytes:
-        if self._tts is None:
-            self._tts = PiperVoice(self.voice_path)
-        pcm16, rate = self._tts.synthesize(text)
+        self._touch("voice")
+        pcm16, rate = self._load_voice().synthesize(text)
         return float_to_pcm16(resample(pcm16_to_float(pcm16), rate, SAMPLE_RATE))

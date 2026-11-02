@@ -69,14 +69,14 @@ class UnloadPolicyTests(unittest.TestCase):
     def test_a_model_in_use_is_not_dropped(self):
         self.write({"unload": 10})
         engine = self.engine_with_models()
-        engine.used_at = time.time()
+        engine.touched = {unit: time.time() for unit in engine.loaded_units()}
         self.assertEqual(engine.unload_if_idle(), ())
         self.assertIsNotNone(engine._stt)
 
     def test_an_idle_engine_drops_every_model(self):
         self.write({"unload": 10})
         engine = self.engine_with_models()
-        engine.used_at = time.time() - 11 * 60
+        engine.touched = {unit: time.time() - 11 * 60 for unit in engine.loaded_units()}
         dropped = engine.unload_if_idle()
         self.assertEqual(dropped, ("recognition", "translation", "dictation translation", "voice"))
         self.assertIsNone(engine._stt)
@@ -87,9 +87,67 @@ class UnloadPolicyTests(unittest.TestCase):
     def test_never_means_never(self):
         self.write({"unload": 0})
         engine = self.engine_with_models()
-        engine.used_at = time.time() - 365 * 24 * 60 * 60
+        engine.touched = {
+            unit: time.time() - 365 * 24 * 60 * 60 for unit in engine.loaded_units()
+        }
         self.assertEqual(engine.unload_if_idle(), ())
         self.assertIsNotNone(engine._stt)
+
+    def test_each_model_follows_its_own_delay(self):
+        self.write({"unload": 30, "policies": {"recognition": 5}})
+        engine = self.engine_with_models()
+        moment = time.time()
+        engine.touched = {unit: moment - 6 * 60 for unit in engine.loaded_units()}
+        self.assertEqual(engine.unload_if_idle(moment), ("recognition",))
+        self.assertIsNone(engine._stt)
+        self.assertIsNotNone(engine._translator)
+
+    def test_turning_management_off_keeps_everything(self):
+        self.write({"unload": 10, "manage_memory": False})
+        engine = self.engine_with_models()
+        engine.touched = {unit: 0.0 for unit in engine.loaded_units()}
+        self.assertEqual(engine.unload_if_idle(), ())
+        self.assertIsNotNone(engine._stt)
+
+    def test_an_idle_model_without_a_recorded_use_is_left_alone(self):
+        self.write({"unload": 10})
+        engine = self.engine_with_models()
+        self.assertEqual(engine.unload_if_idle(), ())
+        self.assertIsNotNone(engine._stt)
+
+    def test_the_report_names_each_model_its_delay_and_where_it_comes_from(self):
+        self.write({"unload": 30, "policies": {"voice": 0}})
+        engine = self.engine_with_models()
+        engine.touched = {"recognition": time.time() - 90}
+        report = engine.lifecycle()
+        self.assertTrue(report["manage"])
+        units = {unit["unit"]: unit for unit in report["units"]}
+        self.assertEqual(units["recognition"]["state"], "loaded")
+        self.assertEqual(units["recognition"]["idle_seconds"], 90)
+        self.assertEqual(units["recognition"]["policy"], 30)
+        self.assertEqual(units["recognition"]["policy_origin"], "global")
+        self.assertEqual(units["voice"]["policy"], 0)
+        self.assertEqual(units["voice"]["policy_origin"], "model")
+        self.assertIsNone(units["recognition"].get("memory"))
+
+    def test_unloading_one_model_leaves_the_others(self):
+        engine = self.engine_with_models()
+        self.assertTrue(engine.unload_unit("voice"))
+        self.assertIsNone(engine._tts)
+        self.assertIsNotNone(engine._stt)
+
+    def test_an_unknown_model_is_refused(self):
+        engine = self.engine_with_models()
+        with self.assertRaises(ValueError):
+            engine.unload_unit("nonsense")
+        with self.assertRaises(ValueError):
+            engine.load_unit("nonsense")
+
+    def test_loading_a_model_that_is_held_records_its_use(self):
+        engine = self.engine_with_models()
+        engine.touched = {}
+        engine.load_unit("translation")
+        self.assertIn("translation", engine.touched)
 
 
 if __name__ == "__main__":
