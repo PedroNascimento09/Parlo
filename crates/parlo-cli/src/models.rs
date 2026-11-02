@@ -665,6 +665,6 @@ mod tests {
             assert!(!quality.is_empty(), "{}", row["id"]);
         }
         let voice = models.iter().find(|model| model.id == "voice-en").unwrap();
-        assert!(quality_for(voice).contains("not measured"));
+        assert!(quality_for(voice).contains("no quality number measured"));
     }
 }
