@@ -65,6 +65,7 @@ const intelligenceBaseUrl = document.getElementById("intelligence-base-url");
 const intelligenceLocalUrl = document.getElementById("intelligence-local-url");
 const intelligenceLocalModel = document.getElementById("intelligence-local-model");
 const intelligenceApply = document.getElementById("intelligence-apply");
+const cleanupApply = document.getElementById("cleanup-apply");
 const intelligenceNote = document.getElementById("intelligence-note");
 const intelligenceKey = document.getElementById("intelligence-key");
 const intelligenceKeySave = document.getElementById("intelligence-key-save");
@@ -904,6 +905,23 @@ async function checkLocalUpdate() {
   }
 }
 
+const aboutVersion = document.getElementById("about-version");
+const aboutCheck = document.getElementById("about-check");
+const aboutNote = document.getElementById("about-note");
+
+aboutVersion.textContent = version || "unknown";
+
+aboutCheck.addEventListener("click", async () => {
+  aboutCheck.disabled = true;
+  aboutNote.textContent = "Asking GitHub for the latest release.";
+  await checkLocalUpdate();
+  await checkForUpdate().catch(() => {});
+  aboutNote.textContent = localUpdate.available
+    ? "Release " + localUpdate.latest + " is available. The box at the top of Home installs it."
+    : "This is the latest release.";
+  aboutCheck.disabled = false;
+});
+
 function describeUpdatePhase(state) {
   if (state.phase === "downloading") {
     return "Downloading the new version: " + (state.percent || 0) + "%.";
@@ -1648,6 +1666,7 @@ async function loadIntelligence() {
 async function saveIntelligence() {
   const chosen = intelligenceProvider.value;
   intelligenceApply.disabled = true;
+  cleanupApply.disabled = true;
   intelligenceNote.textContent = "Saving.";
   try {
     const response = await fetch("/intelligence", {
@@ -1674,6 +1693,7 @@ async function saveIntelligence() {
     intelligenceNote.textContent = failure.message || "Parlo could not save these settings.";
   } finally {
     intelligenceApply.disabled = false;
+    cleanupApply.disabled = false;
   }
 }
 
@@ -1757,6 +1777,7 @@ async function testIntelligence() {
 
 intelligenceProvider.addEventListener("change", () => fillIntelligenceModels());
 intelligenceApply.addEventListener("click", () => saveIntelligence());
+cleanupApply.addEventListener("click", () => saveIntelligence());
 intelligenceKeySave.addEventListener("click", () => saveIntelligenceKey());
 intelligenceKeyRemove.addEventListener("click", () => removeIntelligenceKey());
 intelligenceTest.addEventListener("click", () => testIntelligence());
@@ -2847,7 +2868,16 @@ const ROUTES = {
   library: ["vocabulary", "catalog", "history", "models", "dub"],
   meetings: ["meetings"],
   voice: ["voice"],
-  settings: ["settings", "intelligence", "licences", "privacy"],
+  settings: [
+    "settings",
+    "languages",
+    "shortcuts",
+    "intelligence",
+    "provider",
+    "privacy",
+    "about",
+    "licences",
+  ],
 };
 
 function showRoute(name) {
@@ -2907,9 +2937,13 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 }
 
 const SETTINGS_TABS = {
-  privacy: ["privacy"],
   dictation: ["settings"],
+  languages: ["languages"],
+  shortcuts: ["shortcuts"],
   cleanup: ["intelligence"],
+  provider: ["provider"],
+  privacy: ["privacy"],
+  about: ["about"],
   advanced: ["licences"],
 };
 

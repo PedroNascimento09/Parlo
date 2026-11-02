@@ -132,15 +132,20 @@
 
   <nav class="tabs" id="settings-tabs" aria-label="Settings">
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
+    <button type="button" class="tab" data-tab="languages">Languages</button>
+    <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
     <button type="button" class="tab" data-tab="cleanup">Cleanup</button>
-    <button type="button" class="tab" data-tab="advanced">Advanced</button>
+    <button type="button" class="tab" data-tab="provider">Provider</button>
     <button type="button" class="tab" data-tab="privacy">Privacy</button>
+    <button type="button" class="tab" data-tab="about">About</button>
+    <button type="button" class="tab" data-tab="advanced">Advanced</button>
   </nav>
 
   <section class="settings" id="settings" aria-labelledby="settings-title">
     <div class="settings-head">
-      <h2 id="settings-title">Languages and recogniser</h2>
-      <p class="settings-note" id="settings-note" aria-live="polite"></p>
+      <h2 id="settings-title">How dictation runs</h2>
+      <p class="settings-note">Switching a feature off keeps its model on disk and only stops Parlo using it.</p>
+    </div>
     <div class="settings-row">
       <label class="check" for="feature-translation">
         <input id="feature-translation" type="checkbox">
@@ -156,6 +161,33 @@
       </label>
     </div>
     <p class="settings-note" id="features-note" aria-live="polite"></p>
+    <div class="settings-row">
+      <label class="field field-wide" for="settings-stt">
+        <span class="field-label">Recogniser</span>
+        <select id="settings-stt" class="field-input">
+          <option value="parakeet">Parakeet, more accurate</option>
+          <option value="whisper">Whisper, smaller download</option>
+        </select>
+      </label>
+      <label class="field" for="settings-unload">
+        <span class="field-label">Free the models after</span>
+        <select id="settings-unload" class="field-input">
+          <option value="10">10 minutes idle</option>
+          <option value="15">15 minutes idle</option>
+          <option value="30">30 minutes idle</option>
+          <option value="60">1 hour idle</option>
+          <option value="120">2 hours idle</option>
+          <option value="240">4 hours idle</option>
+          <option value="0">Never</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="settings" id="languages" aria-labelledby="languages-title">
+    <div class="settings-head">
+      <h2 id="languages-title">The two languages</h2>
+      <p class="settings-note">Changing the pair loads the models again, which takes about twenty seconds.</p>
     </div>
     <div class="settings-row">
       <label class="field" for="settings-from">
@@ -181,26 +213,13 @@
           <option value="pt">Portuguese</option>
         </select>
       </label>
-      <label class="field field-wide" for="settings-stt">
-        <span class="field-label">Recogniser</span>
-        <select id="settings-stt" class="field-input">
-          <option value="parakeet">Parakeet, more accurate</option>
-          <option value="whisper">Whisper, smaller download</option>
-        </select>
-      </label>
-      <label class="field" for="settings-unload">
-        <span class="field-label">Free the models after</span>
-        <select id="settings-unload" class="field-input">
-          <option value="10">10 minutes idle</option>
-          <option value="15">15 minutes idle</option>
-          <option value="30">30 minutes idle</option>
-          <option value="60">1 hour idle</option>
-          <option value="120">2 hours idle</option>
-          <option value="240">4 hours idle</option>
-          <option value="0">Never</option>
-        </select>
-      </label>
-      <button id="settings-apply" class="install settings-apply" type="button" disabled>Apply</button>
+    </div>
+  </section>
+
+  <section class="settings" id="shortcuts" aria-labelledby="shortcuts-title">
+    <div class="settings-head">
+      <h2 id="shortcuts-title">The keys</h2>
+      <p class="settings-note">A new combination is registered the next time Parlo starts. Until then the old one still works.</p>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="settings-shortcut">
@@ -234,6 +253,16 @@
           <option value="intelligent">Intelligent, tidy the sentence</option>
         </select>
       </label>
+    </div>
+    <button id="cleanup-apply" class="install settings-apply" type="button">Apply</button>
+  </section>
+
+  <section class="settings" id="provider" aria-labelledby="provider-title">
+    <div class="settings-head">
+      <h2 id="provider-title">The model that tidies your words</h2>
+      <p class="settings-note">A cloud or local model is optional. With none chosen, the rules alone clean the sentence and nothing leaves this machine.</p>
+    </div>
+    <div class="settings-row">
       <label class="field" for="intelligence-provider">
         <span class="field-label">Cloud provider</span>
         <select id="intelligence-provider" class="field-input">
@@ -284,6 +313,22 @@
       <p class="settings-note field-wide" id="intelligence-test-note" aria-live="polite"></p>
     </div>
   </section>
+
+  <section class="settings" id="about" aria-labelledby="about-title">
+    <div class="settings-head">
+      <h2 id="about-title">This copy</h2>
+      <p class="settings-note" id="about-note" aria-live="polite">Checking which release is the latest.</p>
+    </div>
+    <div class="settings-row">
+      <p class="settings-note field-wide">You are on Parlo <strong id="about-version">unknown</strong>. A new version installs from the box at the top of Home, and never on its own.</p>
+      <button id="about-check" class="install" type="button">Check again</button>
+    </div>
+  </section>
+
+  <div class="settings-row">
+    <p class="settings-note field-wide" id="settings-note" aria-live="polite"></p>
+    <button id="settings-apply" class="install settings-apply" type="button" disabled>Apply</button>
+  </div>
 
   <nav class="tabs" id="library-tabs" aria-label="Library">
     <button type="button" class="tab" data-tab="history">History</button>

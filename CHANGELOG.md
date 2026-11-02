@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Settings is eight sections instead of four. **Dictation** holds the three feature switches, the recogniser and the idle timer, **Languages** the pair and what dictation writes, **Shortcuts** the keys, **Cleanup** the engine and how far it may go, **Provider** the cloud or local model it may call, **Privacy** the key and the sentence about what leaves the machine, **About** the version on this copy and the check for a newer release, and **Advanced** the licences. One Apply sits under every section, so a change is never left waiting behind a tab.
+
 - The cloud key has its own section. **Settings, Privacy** says in one sentence what leaves the machine and when, and holds the API key, the button that removes it and the test sentence that proves the provider answers, all three moved out of the cleanup section where they had been left.
 
 - Live has a surface of its own. The tray item opens a window with two columns, what the microphone heard on the left and the sentence in the other language on the right, always on top and away from the taskbar, instead of raising the main window and starting live inside it. The page is served at `/live` and refuses with a sentence when translation is switched off in Settings. Captions and Live now share one toggle, so the two windows cannot drift apart.
