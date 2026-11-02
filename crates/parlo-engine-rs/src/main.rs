@@ -191,6 +191,9 @@ fn handle(request: &Value, engine: &mut Engine, session: &mut Session) -> String
         }),
         "stream" => with_audio(request, seq, |samples| {
             session.push(samples);
+            if !session.wants_decode() {
+                return Ok(protocol::stream(seq, &[]));
+            }
             let started = Instant::now();
             let text = engine.recognizer()?.transcribe(session.audio());
             let events = session.observe(&text, started.elapsed().as_millis() as u64);
@@ -202,7 +205,7 @@ fn handle(request: &Value, engine: &mut Engine, session: &mut Session) -> String
                 Ok(recognizer) => recognizer.transcribe(session.audio()),
                 Err(message) => return protocol::error(Some(seq), &message),
             };
-            let events = session.finish(&text, started.elapsed().as_millis() as u64);
+            let events = session.close(&text, started.elapsed().as_millis() as u64);
             protocol::stream(seq, &events)
         }
         other => protocol::error(Some(seq), &format!("unknown op: {other}")),

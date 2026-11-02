@@ -163,6 +163,8 @@ All must be checked for license, quality, and speed in v0.2. This is an evaluati
 
 Measured on the reference machine with the same models and the same six second recording: dictation returns the same text as the Python engine, decoding takes 647 ms against 652 ms, and the translation returns the same sentence as `mt.py` word for word, through CTranslate2 and sentencepiece called from Rust. The whole binary is 6 MB and carries no interpreter and no numpy.
 
+Live mode confirms words instead of rewriting them. A hypothesis stays provisional until two rounds agree, then the agreed words are announced once as `stable`; when the end of a segment changes what was already announced, it is announced again as `corrected` before the `final` text. The interval between decodes follows the time the last decode took, one and a half times it, so a slower machine decodes less often instead of falling further behind: on the same recording and machine a six and a third second clip is decoded nine times rather than fifteen, the first stable words arrive after one second of audio, the whole run costs 4.7 s against 12.6 s when every chunk was decoded, and the final text matches the dictation word for word.
+
 Speech is not speech yet. The voices are piper files, and the sherpa speaker refuses them because they carry no sample rate in their metadata; it aborts the process instead of returning an error. The engine therefore checks the metadata first, refuses the voice with a sentence, and returns the translation as text so a caller still gets the words.
 
 The crate is outside the Cargo workspace, because its speech dependency pulls licences the project does not accept. It builds for the MSVC target with the runtime aligned to static:
