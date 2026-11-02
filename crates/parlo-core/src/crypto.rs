@@ -169,6 +169,7 @@ mod platform {
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
     #[test]
     fn a_sealed_sample_opens_again() {
         let sealed = seal(b"RIFFwav").unwrap();
@@ -182,6 +183,7 @@ mod tests {
         assert!(matches!(open(b"RIFFwav"), Err(CryptError::NotSealed)));
     }
 
+    #[cfg(windows)]
     #[test]
     fn a_sealed_sample_does_not_carry_its_plain_text() {
         let sealed = seal(b"RIFFwav").unwrap();

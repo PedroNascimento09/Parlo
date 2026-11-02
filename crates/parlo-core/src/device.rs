@@ -116,7 +116,9 @@ mod tests {
         let described = device.describe();
         assert!(described.contains("1 core"));
         assert!(described.contains("16 GB"));
-        assert!(described.contains("no AVX2"));
+        if cfg!(target_arch = "x86_64") {
+            assert!(described.contains("no AVX2"));
+        }
     }
 
     #[test]

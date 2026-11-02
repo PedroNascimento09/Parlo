@@ -539,6 +539,7 @@ mod tests {
         ));
     }
 
+    #[cfg(windows)]
     #[test]
     fn a_sealed_profile_keeps_its_sample_private_and_gives_it_back() {
         let sandbox = Sandbox::new("sealed");
@@ -561,6 +562,7 @@ mod tests {
         assert_eq!(store.sample(&profile.id).unwrap(), b"RIFFwav");
     }
 
+    #[cfg(windows)]
     #[test]
     fn a_sealed_profile_is_refused_when_the_sample_is_not_sealed() {
         let sandbox = Sandbox::new("unsealed");
@@ -582,6 +584,7 @@ mod tests {
         ));
     }
 
+    #[cfg(windows)]
     #[test]
     fn a_profile_stays_inside_its_own_folder_and_leaves_nothing_behind() {
         let sandbox = Sandbox::new("contained");
