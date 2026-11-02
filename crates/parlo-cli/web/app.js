@@ -873,7 +873,14 @@ async function checkLocalUpdate() {
       return;
     }
     showUpdate(localUpdate.latest, localUpdate.notes);
-    allowInstall(true);
+    const build = localUpdate.build !== false;
+    allowInstall(build);
+    if (!build) {
+      updateText.textContent =
+        "Release " +
+        localUpdate.latest +
+        " has no build for this computer yet. See what changed; the download appears here when it is ready.";
+    }
   } catch (failure) {
     allowInstall(false);
   }

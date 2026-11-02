@@ -1464,8 +1464,9 @@ fn handle(
             }
         };
         let available = update::is_newer(VERSION, &latest.version);
+        let build = latest.archive_url.is_some();
         let body = format!(
-            "{{\"current\":\"{VERSION}\",\"latest\":\"{}\",\"available\":{available},\"notes\":\"{}\"}}",
+            "{{\"current\":\"{VERSION}\",\"latest\":\"{}\",\"available\":{available},\"build\":{build},\"notes\":\"{}\"}}",
             json_string(&latest.version),
             json_string(&latest.notes_url)
         );
