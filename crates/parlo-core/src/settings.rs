@@ -4,7 +4,8 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::shortcut::DEFAULT as DEFAULT_SHORTCUT;
+use crate::shortcut::HANDS_FREE as DEFAULT_HANDS_FREE;
+use crate::shortcut::{CAPTIONS as DEFAULT_CAPTIONS, DEFAULT as DEFAULT_SHORTCUT};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -15,6 +16,8 @@ pub struct Config {
     pub to: String,
     pub write: String,
     pub shortcut: String,
+    pub hands_free: String,
+    pub captions: String,
     pub port: u16,
     pub device: Option<usize>,
     pub unload: u32,
@@ -78,6 +81,8 @@ impl Default for Config {
             to: "en".to_string(),
             write: String::new(),
             shortcut: DEFAULT_SHORTCUT.to_string(),
+            hands_free: DEFAULT_HANDS_FREE.to_string(),
+            captions: DEFAULT_CAPTIONS.to_string(),
             port: 8787,
             device: None,
             unload: 30,
@@ -159,6 +164,21 @@ mod tests {
     #[test]
     fn defaults_carry_the_documented_shortcut() {
         assert_eq!(Config::default().shortcut, DEFAULT_SHORTCUT);
+    }
+
+    #[test]
+    fn the_defaults_carry_the_three_documented_shortcuts() {
+        let config = Config::default();
+        assert_eq!(config.hands_free, DEFAULT_HANDS_FREE);
+        assert_eq!(config.captions, DEFAULT_CAPTIONS);
+    }
+
+    #[test]
+    fn an_older_config_keeps_the_hands_free_and_captions_defaults() {
+        let config: Config = serde_json::from_str("{\"shortcut\": \"Ctrl+Alt+K\"}").unwrap();
+        assert_eq!(config.shortcut, "Ctrl+Alt+K");
+        assert_eq!(config.hands_free, DEFAULT_HANDS_FREE);
+        assert_eq!(config.captions, DEFAULT_CAPTIONS);
     }
 
     #[test]

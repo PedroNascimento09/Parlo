@@ -64,6 +64,10 @@ struct Settings {
     #[serde(default)]
     shortcut: Option<String>,
     #[serde(default)]
+    hands_free: Option<String>,
+    #[serde(default)]
+    captions: Option<String>,
+    #[serde(default)]
     unload: Option<u32>,
 }
 
@@ -74,6 +78,8 @@ struct Chosen {
     to: String,
     write: String,
     shortcut: String,
+    hands_free: String,
+    captions: String,
 }
 
 pub struct Session {
@@ -161,6 +167,8 @@ impl Session {
                 to,
                 write: stored.write,
                 shortcut: stored.shortcut,
+                hands_free: stored.hands_free,
+                captions: stored.captions,
             }),
             target: Mutex::new(None),
             busy: AtomicBool::new(false),
@@ -179,6 +187,8 @@ impl Session {
         let pipeline = build(&from, &to, &engine, &stt)?;
         let mut chosen = self.choose();
         let shortcut = chosen.shortcut.clone();
+        let hands_free = chosen.hands_free.clone();
+        let captions = chosen.captions.clone();
         *chosen = Chosen {
             engine,
             stt,
@@ -186,6 +196,8 @@ impl Session {
             to,
             write,
             shortcut,
+            hands_free,
+            captions,
         };
         drop(chosen);
         *self.pipeline() = pipeline;
@@ -228,13 +240,15 @@ impl Session {
     fn as_json(&self) -> String {
         let chosen = self.chosen();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
             json_string(&chosen.to),
             json_string(&chosen.write),
-            json_string(&chosen.shortcut)
+            json_string(&chosen.shortcut),
+            json_string(&chosen.hands_free),
+            json_string(&chosen.captions)
         )
     }
 }
@@ -797,20 +811,66 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        if let Some(text) = requested.shortcut.as_deref() {
-            let canonical = match parlo_core::Shortcut::parse(text) {
-                Ok(shortcut) => shortcut.text(),
-                Err(error) => {
+        let wanted_keys = [
+            ("dictation", requested.shortcut.as_deref()),
+            ("hands free", requested.hands_free.as_deref()),
+            ("captions", requested.captions.as_deref()),
+        ];
+        if wanted_keys.iter().any(|(_, text)| text.is_some()) {
+            let mut config = crate::config::load();
+            let before = [
+                config.shortcut.clone(),
+                config.hands_free.clone(),
+                config.captions.clone(),
+            ];
+            let mut after = before.clone();
+            for (index, (label, text)) in wanted_keys.iter().enumerate() {
+                let Some(text) = *text else {
+                    continue;
+                };
+                let parsed = match parlo_core::Shortcut::parse(text) {
+                    Ok(shortcut) => shortcut,
+                    Err(error) => {
+                        return respond_json(
+                            stream,
+                            "400 Bad Request",
+                            &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                        )
+                        .map(|()| Flow::Serve)
+                    }
+                };
+                let canonical = parsed.text();
+                if let Some(other) =
+                    (0..after.len()).find(|other| *other != index && after[*other] == canonical)
+                {
+                    let message = format!(
+                        "{} is already the {} shortcut, so {label} needs another one.",
+                        canonical,
+                        ["dictation", "hands free", "captions"][other]
+                    );
                     return respond_json(
                         stream,
-                        "400 Bad Request",
-                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                        "409 Conflict",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&message)),
                     )
-                    .map(|()| Flow::Serve)
+                    .map(|()| Flow::Serve);
                 }
-            };
-            let mut config = crate::config::load();
-            config.shortcut = canonical.clone();
+                if canonical != before[index]
+                    && parlo_core::shortcut::taken_by_another_program(&parsed)
+                {
+                    let message = format!("{canonical} is already used by another program.");
+                    return respond_json(
+                        stream,
+                        "409 Conflict",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&message)),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+                after[index] = canonical;
+            }
+            config.shortcut = after[0].clone();
+            config.hands_free = after[1].clone();
+            config.captions = after[2].clone();
             if let Err(error) = crate::config::save(&config) {
                 return respond_json(
                     stream,
@@ -819,12 +879,18 @@ fn handle(
                 )
                 .map(|()| Flow::Serve);
             }
-            session.choose().shortcut = canonical;
+            {
+                let mut chosen = session.choose();
+                chosen.shortcut = after[0].clone();
+                chosen.hands_free = after[1].clone();
+                chosen.captions = after[2].clone();
+            }
             let only_shortcut = requested.engine.is_none()
                 && requested.stt.is_none()
                 && requested.from.is_none()
                 && requested.to.is_none()
-                && requested.write.is_none();
+                && requested.write.is_none()
+                && requested.unload.is_none();
             if only_shortcut {
                 return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
             }

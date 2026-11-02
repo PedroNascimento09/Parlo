@@ -62,7 +62,13 @@ pub fn listen(handle: AppHandle) {
     static APP: Mutex<Option<AppHandle>> = Mutex::new(None);
     static KEY: AtomicU32 = AtomicU32::new(0);
     static MODS: AtomicU32 = AtomicU32::new(0);
+    static FREE_KEY: AtomicU32 = AtomicU32::new(0);
+    static FREE_MODS: AtomicU32 = AtomicU32::new(0);
+    static CAPTIONS_KEY: AtomicU32 = AtomicU32::new(0);
+    static CAPTIONS_MODS: AtomicU32 = AtomicU32::new(0);
     static HELD: AtomicBool = AtomicBool::new(false);
+    static FREE_LATCH: AtomicBool = AtomicBool::new(false);
+    static CAPTIONS_LATCH: AtomicBool = AtomicBool::new(false);
     static HANDS_FREE: AtomicBool = AtomicBool::new(false);
     static PRESSED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
@@ -141,6 +147,13 @@ pub fn listen(handle: AppHandle) {
         });
     }
 
+    fn hands_free() {
+        with_app(|handle| {
+            show(handle);
+            tell(handle, "window.parloHandsFree && window.parloHandsFree()");
+        });
+    }
+
     fn ended() {
         let held = PRESSED_AT
             .lock()
@@ -166,23 +179,45 @@ pub fn listen(handle: AppHandle) {
     unsafe extern "system" fn callback(code: i32, w_param: usize, l_param: isize) -> isize {
         if code >= 0 && l_param != 0 {
             let entry = &*(l_param as *const Key);
-            let ours = entry.vk == KEY.load(Ordering::Relaxed);
             let pressed = w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN;
             let released = w_param == WM_KEYUP || w_param == WM_SYSKEYUP;
-            let wanted = MODS.load(Ordering::Relaxed);
-            let modifiers_match = wanted == 0 || wanted & !modifiers_held() == 0;
-            if ours && modifiers_match {
-                if pressed && !HELD.swap(true, Ordering::Relaxed) {
-                    began();
-                } else if released && HELD.swap(false, Ordering::Relaxed) {
-                    ended();
+            if pressed || released {
+                let held = modifiers_held();
+                let matches = |key: u32, modifiers: u32| {
+                    entry.vk == key && (modifiers == 0 || modifiers & !held == 0)
+                };
+                if matches(KEY.load(Ordering::Relaxed), MODS.load(Ordering::Relaxed)) {
+                    if pressed && !HELD.swap(true, Ordering::Relaxed) {
+                        began();
+                    } else if released && HELD.swap(false, Ordering::Relaxed) {
+                        ended();
+                    }
+                } else if matches(
+                    FREE_KEY.load(Ordering::Relaxed),
+                    FREE_MODS.load(Ordering::Relaxed),
+                ) {
+                    if pressed && !FREE_LATCH.swap(true, Ordering::Relaxed) {
+                        hands_free();
+                    } else if released {
+                        FREE_LATCH.store(false, Ordering::Relaxed);
+                    }
+                } else if matches(
+                    CAPTIONS_KEY.load(Ordering::Relaxed),
+                    CAPTIONS_MODS.load(Ordering::Relaxed),
+                ) {
+                    if pressed && !CAPTIONS_LATCH.swap(true, Ordering::Relaxed) {
+                        with_app(crate::captions_toggle);
+                    } else if released {
+                        CAPTIONS_LATCH.store(false, Ordering::Relaxed);
+                    }
                 }
             }
         }
         CallNextHookEx(std::ptr::null_mut(), code, w_param, l_param)
     }
 
-    let text = settings::load().shortcut;
+    let stored = settings::load();
+    let text = stored.shortcut;
     let shortcut = match Shortcut::parse(&text) {
         Ok(shortcut) => shortcut,
         Err(error) => {
@@ -192,8 +227,30 @@ pub fn listen(handle: AppHandle) {
             return;
         }
     };
+    let optional = |label: &str, text: &str, fallback: &str| match Shortcut::parse(text) {
+        Ok(shortcut) => shortcut,
+        Err(error) => {
+            crate::note(&format!(
+                "the {label} shortcut {text} is unusable: {error}, so {fallback} is used"
+            ));
+            Shortcut::parse(fallback).unwrap_or(Shortcut {
+                modifiers: parlo_core::shortcut::CONTROL | parlo_core::shortcut::ALT,
+                key: 0x44,
+            })
+        }
+    };
+    let free = optional(
+        "hands free",
+        &stored.hands_free,
+        parlo_core::shortcut::HANDS_FREE,
+    );
+    let captions = optional("captions", &stored.captions, parlo_core::shortcut::CAPTIONS);
     KEY.store(shortcut.key, Ordering::Relaxed);
     MODS.store(shortcut.modifiers, Ordering::Relaxed);
+    FREE_KEY.store(free.key, Ordering::Relaxed);
+    FREE_MODS.store(free.modifiers, Ordering::Relaxed);
+    CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
+    CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
     if let Ok(mut slot) = APP.lock() {
         *slot = Some(handle);
     }
@@ -204,8 +261,10 @@ pub fn listen(handle: AppHandle) {
             return;
         }
         crate::note(&format!(
-            "dictation shortcut listening on {} with press and release",
-            shortcut.text()
+            "shortcuts listening: {} dictates with press and release, {} stays listening, {} toggles captions",
+            shortcut.text(),
+            free.text(),
+            captions.text()
         ));
         let mut message: Message = std::mem::zeroed();
         while GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) > 0 {
@@ -217,8 +276,9 @@ pub fn listen(handle: AppHandle) {
 
 #[cfg(not(windows))]
 pub fn listen(_handle: AppHandle) {
-    let text = settings::load().shortcut;
+    let stored = settings::load();
     crate::note(&format!(
-        "the global dictation shortcut ({text}) is windows only for now"
+        "the global shortcuts ({} to dictate, {} for hands free, {} for captions) are windows only for now",
+        stored.shortcut, stored.hands_free, stored.captions
     ));
 }

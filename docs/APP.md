@@ -74,7 +74,7 @@ The island opens and closes on **Ctrl+Alt+D**. To use other keys, write them onc
 parlo config --shortcut "Ctrl+Alt+Shift+D"
 ```
 
-The same shortcut can be typed in the settings row of the page, which validates it and stores it. Ctrl, Alt, Shift or Win plus a letter, a digit, a function key or Space is accepted, and a bare key is refused because a global shortcut without a modifier would swallow typing everywhere. The new keys are registered the next time the window starts; until then the old ones still work, and the window log names whatever it registered, including the case where another program already owns the combination.
+Three shortcuts live beside each other: the dictation key, `Ctrl+Alt+Shift+D` for hands free and `Ctrl+Alt+C` for captions. Each can be typed in its settings row, which validates it, refuses a combination another of the three already uses, refuses one Windows reports as taken by another program, and stores it. Ctrl, Alt, Shift or Win plus a letter, a digit, a function key or Space is accepted, and a bare key is refused because a global shortcut without a modifier would swallow typing everywhere. The new keys are registered the next time the window starts; until then the old ones still work, and the window log names whatever it registered, including the case where another program already owns the combination.
 
 ## What dictation leaves out
 

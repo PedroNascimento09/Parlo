@@ -70,6 +70,8 @@ mod tests {
             to: "pt".to_string(),
             write: "pt".to_string(),
             shortcut: "Ctrl+Shift+D".to_string(),
+            hands_free: "Ctrl+Alt+Shift+D".to_string(),
+            captions: "Ctrl+Alt+C".to_string(),
             port: 9100,
             device: Some(2),
             unload: 15,

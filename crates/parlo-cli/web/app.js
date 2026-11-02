@@ -1093,6 +1093,10 @@ const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
 const settingsWrite = document.getElementById("settings-write");
 const settingsShortcut = document.getElementById("settings-shortcut");
 const settingsShortcutSave = document.getElementById("settings-shortcut-save");
+const settingsHandsFree = document.getElementById("settings-hands-free");
+const settingsHandsFreeSave = document.getElementById("settings-hands-free-save");
+const settingsCaptions = document.getElementById("settings-captions");
+const settingsCaptionsSave = document.getElementById("settings-captions-save");
 const meetingTitle = document.getElementById("meeting-title");
 const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
@@ -1146,6 +1150,8 @@ function reflectSettings(values) {
   settingsStt.value = values.stt || "parakeet";
   settingsWrite.value = values.write || "";
   settingsShortcut.value = values.shortcut || "Ctrl+Alt+D";
+  settingsHandsFree.value = values.hands_free || "Ctrl+Alt+Shift+D";
+  settingsCaptions.value = values.captions || "Ctrl+Alt+C";
   savedSettings = {
     from: settingsFrom.value,
     to: settingsTo.value,
@@ -1159,27 +1165,49 @@ function reflectSettings(values) {
   refreshApply();
 }
 
-async function saveShortcut() {
-  const wanted = settingsShortcut.value.trim();
+async function saveShortcut(field, input, sentence) {
+  const wanted = input.value.trim();
+  const body = {};
+  body[field] = wanted;
   try {
     const response = await fetch("/settings", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ shortcut: wanted }),
+      body: JSON.stringify(body),
     });
     const answer = await response.json().catch(() => ({}));
     if (!response.ok) {
       settingsNote.textContent = answer.error || "That shortcut cannot be used.";
       return;
     }
-    settingsShortcut.value = answer.shortcut || wanted;
-    settingsNote.textContent = "Saved. Restart Parlo so the new shortcut is registered.";
+    input.value = answer[field] || wanted;
+    settingsNote.textContent = "Saved. " + sentence;
   } catch (failure) {
     settingsNote.textContent = "The shortcut could not be saved.";
   }
 }
 
-settingsShortcutSave.addEventListener("click", () => saveShortcut());
+settingsShortcutSave.addEventListener("click", () =>
+  saveShortcut(
+    "shortcut",
+    settingsShortcut,
+    "Restart Parlo so the new dictation shortcut is registered.",
+  ),
+);
+settingsHandsFreeSave.addEventListener("click", () =>
+  saveShortcut(
+    "hands_free",
+    settingsHandsFree,
+    "Restart Parlo so the new hands free shortcut is registered.",
+  ),
+);
+settingsCaptionsSave.addEventListener("click", () =>
+  saveShortcut(
+    "captions",
+    settingsCaptions,
+    "Restart Parlo so the new captions shortcut is registered.",
+  ),
+);
 
 async function loadSettings() {
   try {

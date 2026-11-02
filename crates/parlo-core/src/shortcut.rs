@@ -1,6 +1,8 @@
 use std::fmt;
 
 pub const DEFAULT: &str = "Ctrl+Alt+D";
+pub const HANDS_FREE: &str = "Ctrl+Alt+Shift+D";
+pub const CAPTIONS: &str = "Ctrl+Alt+C";
 
 pub const ALT: u32 = 0x0001;
 pub const CONTROL: u32 = 0x0002;
@@ -65,6 +67,38 @@ impl Shortcut {
         parts.push(key_name(self.key));
         parts.join("+")
     }
+}
+
+#[cfg(windows)]
+pub fn taken_by_another_program(shortcut: &Shortcut) -> bool {
+    use std::ffi::c_void;
+
+    extern "system" {
+        fn RegisterHotKey(window: *mut c_void, id: i32, modifiers: u32, key: u32) -> i32;
+        fn UnregisterHotKey(window: *mut c_void, id: i32) -> i32;
+    }
+
+    const PROBE: i32 = 0x5041;
+    let registered = unsafe {
+        RegisterHotKey(
+            std::ptr::null_mut(),
+            PROBE,
+            shortcut.modifiers,
+            shortcut.key,
+        )
+    };
+    if registered == 0 {
+        return true;
+    }
+    unsafe {
+        UnregisterHotKey(std::ptr::null_mut(), PROBE);
+    }
+    false
+}
+
+#[cfg(not(windows))]
+pub fn taken_by_another_program(_shortcut: &Shortcut) -> bool {
+    false
 }
 
 impl fmt::Display for Shortcut {
@@ -159,6 +193,15 @@ mod tests {
         assert_eq!(Shortcut::parse("Ctrl+Shift+1").unwrap().key, 0x31);
         assert_eq!(Shortcut::parse("Ctrl+F12").unwrap().key, 0x7B);
         assert_eq!(Shortcut::parse("Alt+Space").unwrap().text(), "Alt+Space");
+    }
+
+    #[test]
+    fn reads_the_documented_hands_free_and_captions_keys() {
+        assert_eq!(
+            Shortcut::parse(HANDS_FREE).unwrap().text(),
+            "Ctrl+Alt+Shift+D"
+        );
+        assert_eq!(Shortcut::parse(CAPTIONS).unwrap().text(), "Ctrl+Alt+C");
     }
 
     #[test]
