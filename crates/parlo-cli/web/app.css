@@ -1150,3 +1150,51 @@ footer p {
   margin: 0.4rem 0 0;
   opacity: 0.8;
 }
+
+.recent {
+  margin: 28px 0 0;
+}
+
+.recent h2 {
+  margin: 0 0 12px;
+  font-size: var(--size-title);
+  line-height: var(--line-title);
+}
+
+.recent-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-list li {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.recent-text {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 21px;
+  overflow-wrap: anywhere;
+}
+
+.recent-meta {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.recent-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 21px;
+}

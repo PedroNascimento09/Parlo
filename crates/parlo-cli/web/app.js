@@ -1349,6 +1349,8 @@ const historyApp = document.getElementById("history-app");
 const historyMode = document.getElementById("history-mode");
 let historyEntries = [];
 const historyClear = document.getElementById("history-clear");
+const recentList = document.getElementById("recent-list");
+const recentEmpty = document.getElementById("recent-empty");
 
 function describePair(from, to) {
   return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
@@ -2587,7 +2589,32 @@ function matchesHistory(entry) {
   return true;
 }
 
+function renderRecent() {
+  recentList.replaceChildren();
+  const shown = historyEntries.slice(0, 3);
+  recentEmpty.hidden = shown.length > 0;
+  for (const entry of shown) {
+    const item = document.createElement("li");
+    const text = document.createElement("p");
+    text.className = "recent-text";
+    text.textContent = entry.translation || entry.text;
+    const moment = new Date((entry.at || 0) * 1000);
+    const where = document.createElement("p");
+    where.className = "recent-meta";
+    where.textContent = [
+      moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      (LANGUAGE_NAMES[entry.from] || entry.from) + " to " + (LANGUAGE_NAMES[entry.to] || entry.to),
+      entry.app,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    item.append(text, where);
+    recentList.append(item);
+  }
+}
+
 function renderHistory() {
+  renderRecent();
   historyList.replaceChildren();
   if (!historyEntries.length) {
     historyNote.textContent =
@@ -2814,6 +2841,7 @@ const ROUTES = {
     "error",
     "translation",
     "status-list",
+    "recent",
   ],
   library: ["vocabulary", "catalog", "history", "models", "dub"],
   meetings: ["meetings"],
