@@ -812,15 +812,19 @@ function stopWelcomeClock() {
   welcomeTimer = null;
 }
 
-function reflectFirstRun(ready, downloading) {
+function reflectFirstRun(ready, dictation, downloading) {
   const firstRun = document.body.classList.contains("first-run");
-  if (ready) {
+  if (dictation) {
     if (firstRun) {
       stopWelcomeClock();
       setWelcomeStatus("");
       document.body.classList.remove("first-run");
       welcomeBox.hidden = true;
-      setProgress("The models are ready. Parlo works offline from now on.");
+      setProgress(
+        ready
+          ? "The models are ready. Parlo works offline from now on."
+          : "Dictation is ready. Translation and read aloud can be added later, one model at a time.",
+      );
     }
     return;
   }
@@ -838,9 +842,9 @@ function reflectFirstRun(ready, downloading) {
   stopWelcomeClock();
   welcomeInstall.hidden = false;
   welcomeInstall.disabled = modelsPolling;
-  welcomeInstall.textContent = "Download models";
+  welcomeInstall.textContent = "Download the dictation model";
   setWelcomeStatus(
-    "The models are missing. They are a one time download of about 800 MB, and after that everything works offline.",
+    "Dictation needs one download of about 640 MB. Translation and read aloud are separate models you add later, and everything works offline once it is here.",
   );
 }
 
@@ -882,7 +886,7 @@ function describeModels(state) {
     modelsDownloading = false;
     modelsNote.textContent = "Everything the translator needs is on this machine, so you can speak now.";
     modelsInstall.hidden = true;
-    reflectFirstRun(true, false);
+    reflectFirstRun(true, true, false);
     return true;
   }
 
@@ -892,7 +896,7 @@ function describeModels(state) {
       "Downloading models, this can take a few minutes on a normal connection. You can leave this page open.";
     modelsInstall.hidden = true;
     modelsDictation.hidden = true;
-    reflectFirstRun(false, true);
+    reflectFirstRun(false, Boolean(state.dictation), true);
     return false;
   }
 
@@ -912,7 +916,7 @@ function describeModels(state) {
   modelsInstall.hidden = false;
   modelsDictation.hidden = missing.every((model) => model.installed) || !missing.some((model) => model.id === "parakeet");
   modelsInstall.disabled = modelsPolling;
-  reflectFirstRun(false, false);
+  reflectFirstRun(false, Boolean(state.dictation), false);
   return false;
 }
 
@@ -971,7 +975,7 @@ function stopPollingModels() {
   modelsInstall.textContent = "Download models";
   stopWelcomeClock();
   welcomeInstall.disabled = false;
-  welcomeInstall.textContent = "Download models";
+  welcomeInstall.textContent = "Download the dictation model";
 }
 
 async function downloadModels(path = "/models") {
@@ -1032,7 +1036,7 @@ async function downloadModels(path = "/models") {
 }
 
 modelsInstall.addEventListener("click", () => downloadModels());
-welcomeInstall.addEventListener("click", () => downloadModels());
+welcomeInstall.addEventListener("click", () => downloadModels("/models/dictation"));
 modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };

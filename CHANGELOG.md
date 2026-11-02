@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The first start offers the recogniser alone, about 640 MB, instead of asking for the whole set of models at once; translation and read aloud are added later, one model at a time.
+
 ## [0.2.0] - 2026-11-01
 
 ### Changed
