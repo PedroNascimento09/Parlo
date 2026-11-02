@@ -22,6 +22,17 @@ pub fn pcm16(request: &Value) -> Result<Vec<f32>, String> {
         .collect())
 }
 
+pub fn encode(samples: &[f32]) -> String {
+    let bytes: Vec<u8> = samples
+        .iter()
+        .flat_map(|sample| {
+            let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+            value.to_le_bytes()
+        })
+        .collect();
+    BASE64.encode(bytes)
+}
+
 pub fn hello(target: &str) -> String {
     json!({
         "op": "hello",
@@ -35,6 +46,33 @@ pub fn hello(target: &str) -> String {
 
 pub fn dictated(seq: u64, text: &str) -> String {
     json!({"op": "dictated", "seq": seq, "text": text}).to_string()
+}
+
+pub fn written(seq: u64, text: &str, translation: &str) -> String {
+    json!({"op": "written", "seq": seq, "text": text, "translation": translation}).to_string()
+}
+
+pub fn translated(seq: u64, samples: &[f32], rate: i32, text: &str, latency_ms: u64) -> String {
+    json!({
+        "op": "translated",
+        "seq": seq,
+        "pcm16": encode(samples),
+        "sample_rate": rate,
+        "text": text,
+        "latency_ms": latency_ms,
+    })
+    .to_string()
+}
+
+pub fn translated_text(seq: u64, text: &str, latency_ms: u64) -> String {
+    json!({
+        "op": "translated",
+        "seq": seq,
+        "pcm16": "",
+        "text": text,
+        "latency_ms": latency_ms,
+    })
+    .to_string()
 }
 
 pub fn stream(seq: u64, events: &[Event]) -> String {
@@ -90,6 +128,15 @@ mod tests {
         assert_eq!(samples.len(), 3);
         assert!((samples[1] - 0.5).abs() < 1e-3);
         assert!((samples[2] + 0.5).abs() < 1e-3);
+    }
+
+    #[test]
+    fn audio_round_trips_through_base64() {
+        let samples = vec![0.25f32, -0.25, 0.0];
+        let request = json!({"pcm16": encode(&samples)});
+        let decoded = pcm16(&request).unwrap();
+        assert!((decoded[0] - 0.25).abs() < 1e-3);
+        assert!((decoded[1] + 0.25).abs() < 1e-3);
     }
 
     #[test]

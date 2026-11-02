@@ -159,8 +159,16 @@ All must be checked for license, quality, and speed in v0.2. This is an evaluati
 
 ## The Rust engine
 
-`crates/parlo-engine-rs` is a second engine, written in Rust, that speaks the same line protocol as the Python sidecar: `hello`, `dictate`, `stream` and `stream_close` are implemented and answer with the same shapes, and `parlo-engine` refuses `translate` and `write` with a sentence instead of failing silently.
+`crates/parlo-engine-rs` is the engine written in Rust. It speaks the same line protocol as the Python sidecar and answers `hello`, `dictate`, `write`, `translate`, `stream` and `stream_close`.
 
-Measured on the reference machine, transcribing the same six second sentence with the same Parakeet files: the text is identical to the Python engine, decoding took 647 ms in Rust against 652 ms in Python, and the whole binary costs 23 MB against about 63 MB for the Python path, because it carries no interpreter and no numpy.
+Measured on the reference machine with the same models and the same six second recording: dictation returns the same text as the Python engine, decoding takes 647 ms against 652 ms, and the translation returns the same sentence as `mt.py` word for word, through CTranslate2 and sentencepiece called from Rust. The whole binary is 6 MB and carries no interpreter and no numpy.
 
-Translation is not ported. CTranslate2, the library the translation models run on, has to be built from source with MSVC, and this machine's Rust toolchain is GNU/MinGW, so the build stops there. The crate stays out of the released packages until translation and speech are ported and compared. It is also outside the Cargo workspace, because the speech library pulls in licences the project does not accept, so it is built on its own: `cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release`, with the sherpa-onnx runtime libraries next to the binary.
+Speech is not speech yet. The voices are piper files, and the sherpa speaker refuses them because they carry no sample rate in their metadata; it aborts the process instead of returning an error. The engine therefore checks the metadata first, refuses the voice with a sentence, and returns the translation as text so a caller still gets the words.
+
+The crate is outside the Cargo workspace, because its speech dependency pulls licences the project does not accept. It builds for the MSVC target with the runtime aligned to static:
+
+```
+cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release   --target x86_64-pc-windows-msvc
+```
+
+with `RUSTFLAGS="-C target-feature=+crt-static"`, `CC` and `CXX` unset so cc-rs picks the Microsoft compiler for the target and the system compiler for build scripts, and the Microsoft linker named through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. The crate keeps `ct2rs` without its default features, plus `ruy` for the int8 kernels, so the tokenizer dependency that refuses to build is left out.
