@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-02
+
 - The translation pairs are in the model list. **Portuguese to English** and **English to Portuguese** each show their size on disk and their own Download and Remove buttons, detected from both layouts the engine uses (`mt/en-pt/ct2` and `mt/translate-pt_en-1_9/model`), so what the list shows is the file that is actually there.
 - A model download can be stopped. **Stop the download** appears in the list while one runs and ends the process, the list reports **downloading** from the process itself rather than from a clock, and what already arrived stays on disk; starting again continues from the files the download tool can reuse, and the page says only that much.
 - The model list says why each model is the one offered, with the machine it measured: cores, memory and whether AVX2 is there, read at the moment the page asks. Nothing about speed is claimed, because nothing was measured for the new recommendation.

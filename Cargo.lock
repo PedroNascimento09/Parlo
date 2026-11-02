@@ -2397,7 +2397,7 @@ dependencies = [
 
 [[package]]
 name = "parlo-app"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "parlo-core",
  "tauri",
@@ -2406,7 +2406,7 @@ dependencies = [
 
 [[package]]
 name = "parlo-cli"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "base64 0.22.1",
  "cpal",
@@ -2417,7 +2417,7 @@ dependencies = [
 
 [[package]]
 name = "parlo-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "serde",
  "serde_json",
