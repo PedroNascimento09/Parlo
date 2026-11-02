@@ -1273,17 +1273,6 @@ kbd {
   overflow-wrap: anywhere;
 }
 
-.stage-note {
-  margin: 14px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.stage-note:empty {
-  display: none;
-}
-
 @media (max-width: 599px) {
   .stage-facts {
     grid-template-columns: repeat(2, minmax(0, 1fr));
