@@ -37,18 +37,12 @@
     <p class="welcome-lede">Dictation needs one download of about 640 MB. Translation and read aloud are separate models you add later, and everything works offline once it is here.</p>
     <button id="welcome-install" class="install welcome-install" type="button">Download the dictation model</button>
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
+    <button id="talk" class="talk" type="button" aria-pressed="false">
+      <span class="talk-label">Try it once</span>
+      <span class="talk-sub">Hold, speak, release</span>
+      <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
+    </button>
   </section>
-
-  <div class="hero" id="hero">
-    <h1>Speak, and hear it in the other language.</h1>
-    <p class="lede">Hold the button, say a sentence, let go. The translation plays back in a few seconds.</p>
-  </div>
-
-  <button id="talk" class="talk" type="button" aria-pressed="false">
-    <span class="talk-label">Hold to speak</span>
-    <span class="talk-sub">Release to hear the translation</span>
-    <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
-  </button>
 
   <div class="live-row" id="live-row">
     <button id="live" class="live" type="button" aria-pressed="false">

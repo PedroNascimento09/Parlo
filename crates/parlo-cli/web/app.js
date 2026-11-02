@@ -348,7 +348,7 @@ async function begin() {
   micEl.textContent = "listening";
   talk.setAttribute("aria-pressed", "true");
   label.textContent = "Listening";
-  sub.textContent = "Release to hear the translation";
+  sub.textContent = "Release when you are done";
   clearTimeout(maxTimer);
   maxTimer = setTimeout(() => finish(), MAX_SECONDS * 1000);
 }
@@ -414,10 +414,8 @@ async function finish() {
 }
 
 function describeButton() {
-  label.textContent = dictating ? "Hold to dictate" : "Hold to speak";
-  sub.textContent = dictating
-    ? "Release to get your words as text"
-    : "Release to hear the translation";
+  label.textContent = dictating ? "Try dictation" : "Try it once";
+  sub.textContent = "Hold, speak, release";
 }
 
 async function dictateSpeech(merged, rate, seconds) {
@@ -2278,8 +2276,6 @@ const ROUTES = {
   home: [
     "update",
     "welcome",
-    "hero",
-    "talk",
     "live-row",
     "dictate-row",
     "progress",
