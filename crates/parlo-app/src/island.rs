@@ -30,6 +30,7 @@ pub fn toggle(handle: &AppHandle) {
     }
 }
 
+#[cfg(windows)]
 fn tell(handle: &AppHandle, script: &str) {
     if let Some(window) = handle.get_webview_window(ISLAND) {
         let _ = window.eval(script);
