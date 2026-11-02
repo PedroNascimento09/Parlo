@@ -1,4 +1,6 @@
-<h1 align="center">Parlo</h1>
+<p align="center">
+  <img src="assets/parlo-wordmark.png" width="280" alt="Parlo">
+</p>
 
 <p align="center">
   <b>Speech in. Text out. In any app, in two languages, on your own computer.</b><br>
