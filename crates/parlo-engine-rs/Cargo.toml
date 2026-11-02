@@ -1,9 +1,11 @@
 [package]
 name = "parlo-engine-rs"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "0.2.0"
+edition = "2021"
+license = "MIT"
 publish = false
+
+[workspace]
 
 [[bin]]
 name = "parlo-engine"
