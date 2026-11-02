@@ -14,7 +14,7 @@
   --warn: #b4761a;
   --error: #a32b22;
   --tech: #1f3a4d;
-  --accent-ink: #1b1109;
+  --accent-ink: #120a05;
   --paper: var(--canvas);
   --calm: var(--listen);
   --danger: var(--error);
@@ -162,7 +162,7 @@ footer {
 }
 
 .update a {
-  color: var(--accent);
+  color: var(--accent-deep);
   font-size: 15px;
   font-weight: 600;
   text-decoration: underline;
@@ -507,7 +507,7 @@ footer {
 
 .swap:hover:not(:disabled) {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 
 .swap:disabled {
@@ -652,7 +652,7 @@ body.first-run .dub {
 .models-action:hover:not([disabled]),
 .models-action:focus-visible {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 
 .models-action[disabled] {
@@ -669,7 +669,7 @@ body.first-run .dub {
 .install.quiet:hover:not([disabled]),
 .install.quiet:focus-visible {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 
 .models-install {
