@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -21,6 +22,8 @@ pub struct Config {
     pub port: u16,
     pub device: Option<usize>,
     pub unload: u32,
+    pub manage_memory: bool,
+    pub policies: BTreeMap<String, u32>,
     pub models_dir: String,
     pub intelligence: Intelligence,
     pub features: Features,
@@ -86,6 +89,8 @@ impl Default for Config {
             port: 8787,
             device: None,
             unload: 30,
+            manage_memory: true,
+            policies: BTreeMap::new(),
             models_dir: String::new(),
             intelligence: Intelligence::default(),
             features: Features::default(),

@@ -69,6 +69,15 @@ struct Settings {
     captions: Option<String>,
     #[serde(default)]
     unload: Option<u32>,
+    #[serde(default)]
+    manage_memory: Option<bool>,
+}
+
+#[derive(serde::Deserialize)]
+struct Policy {
+    id: String,
+    #[serde(default)]
+    minutes: Option<u32>,
 }
 
 struct Chosen {
@@ -87,7 +96,7 @@ pub struct Session {
     settings: RwLock<Chosen>,
     target: Mutex<Option<usize>>,
     busy: AtomicBool,
-    known: Mutex<Vec<String>>,
+    known: Mutex<Option<Vec<parlo_core::UnitState>>>,
 }
 
 struct Working<'a>(&'a AtomicBool);
@@ -128,19 +137,32 @@ impl Session {
         self.busy.load(Ordering::Relaxed)
     }
 
-    fn unit_snapshot(&self) -> Vec<String> {
+    fn lifecycle_snapshot(&self) -> models::Lifecycle {
+        let manage = crate::config::load().manage_memory;
         if self.is_working() {
-            return self
-                .known
-                .lock()
-                .map(|known| known.clone())
-                .unwrap_or_default();
+            let cached = self.known.lock().map(|known| known.clone()).unwrap_or(None);
+            return models::Lifecycle {
+                manage,
+                units: cached.unwrap_or_default(),
+            };
         }
-        let loaded = self.pipeline().loaded_units().unwrap_or_default();
+        let units = self.pipeline().lifecycle().unwrap_or_default();
         if let Ok(mut known) = self.known.lock() {
-            *known = loaded.clone();
+            *known = Some(units.clone());
         }
-        loaded
+        models::Lifecycle { manage, units }
+    }
+
+    fn load_unit(&self, unit: &str) -> Result<(), String> {
+        self.pipeline()
+            .load_unit(unit)
+            .map_err(|error| error.to_string())
+    }
+
+    fn unload_unit(&self, unit: &str) -> Result<(), String> {
+        self.pipeline()
+            .unload_unit(unit)
+            .map_err(|error| error.to_string())
     }
 
     fn chosen(&self) -> RwLockReadGuard<'_, Chosen> {
@@ -172,7 +194,7 @@ impl Session {
             }),
             target: Mutex::new(None),
             busy: AtomicBool::new(false),
-            known: Mutex::new(Vec::new()),
+            known: Mutex::new(None),
         })
     }
 
@@ -239,8 +261,9 @@ impl Session {
 
     fn as_json(&self) -> String {
         let chosen = self.chosen();
+        let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"]}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -248,7 +271,9 @@ impl Session {
             json_string(&chosen.write),
             json_string(&chosen.shortcut),
             json_string(&chosen.hands_free),
-            json_string(&chosen.captions)
+            json_string(&chosen.captions),
+            stored.manage_memory,
+            stored.unload
         )
     }
 }
@@ -917,6 +942,30 @@ fn handle(
             }
         }
 
+        if let Some(manage) = requested.manage_memory {
+            let mut config = crate::config::load();
+            config.manage_memory = manage;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
+        let only_settings = requested.engine.is_none()
+            && requested.stt.is_none()
+            && requested.from.is_none()
+            && requested.to.is_none()
+            && requested.write.is_none()
+            && requested.unload.is_none()
+            && requested.manage_memory.is_none();
+        if only_settings {
+            return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
+        }
+
         let engine = requested
             .engine
             .unwrap_or_else(|| session.chosen().engine.clone());
@@ -1163,12 +1212,12 @@ fn handle(
     }
 
     if method == "GET" && path == "/models" {
-        let loaded = session.unit_snapshot();
+        let lifecycle = session.lifecycle_snapshot();
         let pair = {
             let chosen = session.chosen();
             format!("{}-{}", chosen.from, chosen.to)
         };
-        let body = models::as_json(&models::status(), &loaded, &pair, session.is_working());
+        let body = models::as_json(&models::status(), &lifecycle, &pair, session.is_working());
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
@@ -1674,6 +1723,95 @@ fn handle(
                     "{{\"removed\":true,\"message\":\"{}\"}}",
                     json_string(&message)
                 ),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "409 Conflict",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST"
+        && (path.starts_with("/models/load/") || path.starts_with("/models/unload/"))
+    {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let loading = path.starts_with("/models/load/");
+        let id = if loading {
+            &path["/models/load/".len()..]
+        } else {
+            &path["/models/unload/".len()..]
+        };
+        let Some(unit) = models::unit_of(id) else {
+            return respond_json(stream, "404 Not Found", "{\"error\":\"unknown model\"}")
+                .map(|()| Flow::Serve);
+        };
+        if session.is_working() {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"a task is running; change this when it finishes\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let outcome = if loading {
+            session.load_unit(unit)
+        } else {
+            session.unload_unit(unit)
+        };
+        return match outcome {
+            Ok(()) => {
+                let state = if loading { "loaded" } else { "unloaded" };
+                let message = if loading {
+                    "Loaded. It stays in memory until it sits idle too long or you unload it."
+                } else {
+                    "Freed from memory. The files stay on disk."
+                };
+                respond_json(
+                    stream,
+                    "200 OK",
+                    &format!(
+                        "{{\"model\":\"{}\",\"state\":\"{state}\",\"message\":\"{message}\"}}",
+                        json_string(id)
+                    ),
+                )
+                .map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(
+                stream,
+                "409 Conflict",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/models/policy" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: Policy = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        return match models::set_policy(&request.id, request.minutes) {
+            Ok(message) => respond_json(
+                stream,
+                "200 OK",
+                &format!("{{\"message\":\"{}\"}}", json_string(&message)),
             )
             .map(|()| Flow::Serve),
             Err(error) => respond_json(

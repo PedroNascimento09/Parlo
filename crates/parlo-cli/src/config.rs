@@ -75,6 +75,8 @@ mod tests {
             port: 9100,
             device: Some(2),
             unload: 15,
+            manage_memory: true,
+            policies: Default::default(),
             models_dir: String::new(),
             intelligence: Default::default(),
             features: Default::default(),

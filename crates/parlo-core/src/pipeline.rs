@@ -112,6 +112,18 @@ impl Pipeline {
         self.engine.loaded_units()
     }
 
+    pub fn lifecycle(&mut self) -> Option<Vec<crate::engine::UnitState>> {
+        self.engine.lifecycle()
+    }
+
+    pub fn load_unit(&mut self, unit: &str) -> Result<(), EngineError> {
+        self.engine.load_unit(unit)
+    }
+
+    pub fn unload_unit(&mut self, unit: &str) -> Result<(), EngineError> {
+        self.engine.unload_unit(unit)
+    }
+
     pub fn input_gain(&self) -> f32 {
         self.gain.gain()
     }

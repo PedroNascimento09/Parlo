@@ -4,7 +4,7 @@ use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
-use parlo_core::{AudioFormat, Engine, EngineError, EngineOutput, Frame};
+use parlo_core::{AudioFormat, Engine, EngineError, EngineOutput, Frame, UnitState};
 use serde::{Deserialize, Serialize};
 
 const DECLARED_LATENCY_MS: u32 = 1_500;
@@ -18,6 +18,24 @@ struct Request<'a> {
     pcm16: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     target: Option<&'a str>,
+}
+
+#[derive(Serialize)]
+struct UnitRequest<'a> {
+    op: &'a str,
+    unit: &'a str,
+}
+
+#[derive(Deserialize)]
+struct WireUnit {
+    unit: String,
+    state: String,
+    #[serde(default)]
+    idle_seconds: Option<u64>,
+    #[serde(default)]
+    policy: u32,
+    #[serde(default)]
+    policy_origin: String,
 }
 
 #[derive(Deserialize)]
@@ -42,7 +60,7 @@ struct Response {
     #[serde(default)]
     mode: Option<String>,
     #[serde(default)]
-    units: Vec<String>,
+    units: Vec<serde_json::Value>,
 }
 
 #[derive(Deserialize)]
@@ -248,7 +266,52 @@ impl SidecarEngine {
                 || "the engine did not say what is loaded".to_string(),
             )));
         }
-        Ok(response.units)
+        Ok(response
+            .units
+            .iter()
+            .filter_map(|value| value.as_str().map(str::to_string))
+            .collect())
+    }
+
+    pub fn lifecycle_report(&mut self) -> Result<Vec<UnitState>, EngineError> {
+        let response = self.request(&Request {
+            op: "lifecycle",
+            seq: None,
+            pcm16: None,
+            target: None,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(response.error.unwrap_or_else(
+                || "the engine did not say what it holds".to_string(),
+            )));
+        }
+        response
+            .units
+            .iter()
+            .map(|value| {
+                let wire: WireUnit = serde_json::from_value(value.clone())
+                    .map_err(|error| EngineError::Rejected(error.to_string()))?;
+                Ok(UnitState {
+                    unit: wire.unit,
+                    loaded: wire.state == "loaded",
+                    idle_seconds: wire.idle_seconds,
+                    policy: wire.policy,
+                    policy_origin: wire.policy_origin,
+                })
+            })
+            .collect()
+    }
+
+    fn switch(&mut self, op: &str, unit: &str) -> Result<(), EngineError> {
+        let response = self.request(&UnitRequest { op, unit })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| format!("the engine did not {op} {unit}")),
+            ));
+        }
+        Ok(())
     }
 
     fn exchange(
@@ -275,7 +338,7 @@ impl SidecarEngine {
         Ok(response.events)
     }
 
-    fn request(&mut self, request: &Request) -> Result<Response, EngineError> {
+    fn request<T: Serialize>(&mut self, request: &T) -> Result<Response, EngineError> {
         let mut line = serde_json::to_string(request)
             .map_err(|error| EngineError::Rejected(error.to_string()))?;
         line.push('\n');
@@ -325,6 +388,18 @@ impl Engine for SidecarEngine {
 
     fn loaded_units(&mut self) -> Option<Vec<String>> {
         SidecarEngine::loaded(self).ok()
+    }
+
+    fn lifecycle(&mut self) -> Option<Vec<UnitState>> {
+        SidecarEngine::lifecycle_report(self).ok()
+    }
+
+    fn load_unit(&mut self, unit: &str) -> Result<(), EngineError> {
+        SidecarEngine::switch(self, "load", unit)
+    }
+
+    fn unload_unit(&mut self, unit: &str) -> Result<(), EngineError> {
+        SidecarEngine::switch(self, "unload", unit)
     }
 
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError> {

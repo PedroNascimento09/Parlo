@@ -15,7 +15,7 @@ pub mod voice;
 pub mod wav;
 
 pub use audio::{AudioFormat, FormatError, Frame};
-pub use engine::{EchoEngine, Engine, EngineError, EngineOutput};
+pub use engine::{EchoEngine, Engine, EngineError, EngineOutput, UnitState};
 pub use latency::LatencyBudget;
 pub use pipeline::{Pipeline, PipelineConfig, PipelineError, PipelineOutput};
 pub use resample::Resampler;

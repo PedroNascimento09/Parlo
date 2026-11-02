@@ -49,6 +49,15 @@ impl fmt::Display for EngineError {
 
 impl Error for EngineError {}
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnitState {
+    pub unit: String,
+    pub loaded: bool,
+    pub idle_seconds: Option<u64>,
+    pub policy: u32,
+    pub policy_origin: String,
+}
+
 pub trait Engine: Send {
     fn id(&self) -> &str;
 
@@ -76,6 +85,22 @@ pub trait Engine: Send {
 
     fn loaded_units(&mut self) -> Option<Vec<String>> {
         None
+    }
+
+    fn lifecycle(&mut self) -> Option<Vec<UnitState>> {
+        None
+    }
+
+    fn load_unit(&mut self, unit: &str) -> Result<(), EngineError> {
+        Err(EngineError::Rejected(format!(
+            "this engine cannot load {unit} on its own"
+        )))
+    }
+
+    fn unload_unit(&mut self, unit: &str) -> Result<(), EngineError> {
+        Err(EngineError::Rejected(format!(
+            "this engine cannot unload {unit} on its own"
+        )))
     }
 
     fn reset(&mut self) {}

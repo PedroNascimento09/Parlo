@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Mutex, OnceLock};
 
-use parlo_core::device;
+use parlo_core::{device, UnitState};
 
 const PARAKEET_FILES: &[&str] = &[
     "encoder.int8.onnx",
@@ -31,6 +31,30 @@ pub struct Model {
     pub feature: &'static str,
     pub installed: bool,
     pub bytes: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Lifecycle {
+    pub manage: bool,
+    pub units: Vec<UnitState>,
+}
+
+impl Default for Lifecycle {
+    fn default() -> Self {
+        Self {
+            manage: true,
+            units: Vec::new(),
+        }
+    }
+}
+
+pub fn unit_of(id: &str) -> Option<&'static str> {
+    match id {
+        "parakeet" => Some("recognition"),
+        "voice-pt" | "voice-en" => Some("voice"),
+        "mt-pt-en" | "mt-en-pt" => Some("translation"),
+        _ => None,
+    }
 }
 
 pub fn cascade_dir() -> PathBuf {
@@ -454,24 +478,24 @@ fn quality_for(model: &Model) -> &'static str {
     }
 }
 
-fn state_of(model: &Model, loaded: &[String], pair: &str, working: bool) -> &'static str {
+fn state_of(model: &Model, lifecycle: &Lifecycle, pair: &str, working: bool) -> &'static str {
     if !model.installed {
         return "not installed";
     }
     if working && model.id == "parakeet" {
         return "in use";
     }
-    let unit = match model.id {
-        "parakeet" => "recognition",
-        "voice-pt" | "voice-en" => "voice",
-        _ => "translation",
-    };
-    if unit == "translation" && model.id != format!("mt-{pair}") {
+    if model.kind == "translation" && model.id != format!("mt-{pair}") {
         return "installed";
     }
-    let held = loaded
-        .iter()
-        .any(|name| name == unit || (unit == "translation" && name == "dictation translation"));
+    let unit = unit_of(model.id);
+    let held = lifecycle.units.iter().any(|state| {
+        if !state.loaded {
+            return false;
+        }
+        Some(state.unit.as_str()) == unit
+            || (unit == Some("translation") && state.unit == "dictation translation")
+    });
     if held {
         "loaded"
     } else {
@@ -479,19 +503,26 @@ fn state_of(model: &Model, loaded: &[String], pair: &str, working: bool) -> &'st
     }
 }
 
-pub fn as_json(models: &[Model], loaded: &[String], pair: &str, working: bool) -> String {
+pub fn as_json(models: &[Model], lifecycle: &Lifecycle, pair: &str, working: bool) -> String {
     let machine = device::profile();
     let described = machine.describe();
     let rows: Vec<serde_json::Value> = models
         .iter()
         .map(|model| {
+            let state = lifecycle
+                .units
+                .iter()
+                .find(|state| Some(state.unit.as_str()) == unit_of(model.id));
             serde_json::json!({
                 "id": model.id,
                 "name": model.name,
                 "kind": model.kind,
                 "feature": model.feature,
                 "installed": model.installed,
-                "state": state_of(model, loaded, pair, working),
+                "state": state_of(model, lifecycle, pair, working),
+                "idle_seconds": state.and_then(|state| state.idle_seconds),
+                "policy": state.map(|state| state.policy),
+                "policy_origin": state.map(|state| state.policy_origin.clone()),
                 "bytes": model.bytes,
                 "reason": reason_for(model, &described),
                 "quality": quality_for(model),
@@ -503,6 +534,7 @@ pub fn as_json(models: &[Model], loaded: &[String], pair: &str, working: bool) -
         "ready": ready(models),
         "dictation": dictation_ready(models),
         "downloading": downloading(models),
+        "manage_memory": lifecycle.manage,
         "folder": models_root().display().to_string(),
         "machine": {
             "cores": machine.cores,
@@ -513,9 +545,57 @@ pub fn as_json(models: &[Model], loaded: &[String], pair: &str, working: bool) -
     .to_string()
 }
 
+pub fn set_policy(id: &str, minutes: Option<u32>) -> Result<String, String> {
+    let unit = unit_of(id).ok_or_else(|| format!("{id} is not a model this app manages"))?;
+    if minutes.is_some_and(|minutes| minutes > 1_440) {
+        return Err("a model cannot be kept for longer than a day".to_string());
+    }
+    let name = status()
+        .into_iter()
+        .find(|model| model.id == id)
+        .map(|model| model.name)
+        .unwrap_or_else(|| id.to_string());
+    let mut config = crate::config::load();
+    match minutes {
+        Some(minutes) => {
+            config.policies.insert(unit.to_string(), minutes);
+        }
+        None => {
+            config.policies.remove(unit);
+        }
+    }
+    crate::config::save(&config).map_err(|error| format!("the setting was not saved: {error}"))?;
+    Ok(match minutes {
+        Some(0) => format!("{name} stays loaded until you unload it."),
+        Some(minutes) => format!("{name} is freed after {minutes} minutes without use."),
+        None => format!("{name} follows the global setting again."),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn held(units: &[&str]) -> Vec<UnitState> {
+        units
+            .iter()
+            .map(|unit| UnitState {
+                unit: (*unit).to_string(),
+                loaded: true,
+                idle_seconds: Some(45),
+                policy: 30,
+                policy_origin: "global".to_string(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn every_model_maps_to_the_unit_the_engine_reports() {
+        assert_eq!(unit_of("parakeet"), Some("recognition"));
+        assert_eq!(unit_of("voice-en"), Some("voice"));
+        assert_eq!(unit_of("mt-en-pt"), Some("translation"));
+        assert_eq!(unit_of("nonsense"), None);
+    }
 
     #[test]
     fn a_relative_folder_is_refused_before_anything_moves() {
@@ -541,7 +621,7 @@ mod tests {
     fn every_model_says_why_it_is_the_one_offered() {
         let models = status();
         let parsed: serde_json::Value =
-            serde_json::from_str(&as_json(&models, &[], "pt-en", false)).unwrap();
+            serde_json::from_str(&as_json(&models, &Lifecycle::default(), "pt-en", false)).unwrap();
         let rows = parsed["models"].as_array().unwrap();
         assert!(!rows.is_empty());
         for row in rows {
@@ -562,7 +642,8 @@ mod tests {
             bytes: 1024,
         }];
         assert!(!downloading(&models));
-        assert!(as_json(&models, &[], "pt-en", false).contains("\"downloading\":false"));
+        let body = as_json(&models, &Lifecycle::default(), "pt-en", false);
+        assert!(body.contains("\"downloading\":false"));
     }
 
     #[test]
@@ -584,7 +665,8 @@ mod tests {
         let models = status();
         assert!(models.iter().all(|model| !model.id.is_empty()));
         assert!(models.iter().any(|model| model.feature == "Dictation"));
-        assert!(as_json(&models, &[], "pt-en", false).contains("\"dictation\":"));
+        let body = as_json(&models, &Lifecycle::default(), "pt-en", false);
+        assert!(body.contains("\"dictation\":"));
     }
 
     #[test]
@@ -631,16 +713,21 @@ mod tests {
                 bytes: 0,
             },
         ];
-        let loaded = vec![
-            "recognition".to_string(),
-            "dictation translation".to_string(),
-        ];
+        let lifecycle = Lifecycle {
+            manage: true,
+            units: held(&["recognition", "dictation translation"]),
+        };
         let parsed: serde_json::Value =
-            serde_json::from_str(&as_json(&models, &loaded, "pt-en", false)).unwrap();
+            serde_json::from_str(&as_json(&models, &lifecycle, "pt-en", false)).unwrap();
         let rows = parsed["models"].as_array().unwrap();
         assert_eq!(rows[0]["state"], "loaded");
         assert_eq!(rows[1]["state"], "loaded");
         assert_eq!(rows[2]["state"], "not installed");
+        assert_eq!(rows[0]["idle_seconds"], 45);
+        assert_eq!(rows[0]["policy"], 30);
+        assert_eq!(rows[0]["policy_origin"], "global");
+        assert!(rows[2]["idle_seconds"].is_null());
+        assert!(rows[2]["policy"].is_null());
     }
 
     #[test]
@@ -654,7 +741,7 @@ mod tests {
             bytes: 10,
         }];
         let parsed: serde_json::Value =
-            serde_json::from_str(&as_json(&models, &[], "pt-en", false)).unwrap();
+            serde_json::from_str(&as_json(&models, &Lifecycle::default(), "pt-en", false)).unwrap();
         assert_eq!(parsed["models"][0]["state"], "installed");
     }
 
@@ -678,13 +765,16 @@ mod tests {
                 bytes: 10,
             },
         ];
-        let loaded = vec!["recognition".to_string()];
+        let lifecycle = Lifecycle {
+            manage: true,
+            units: held(&["recognition"]),
+        };
         let parsed: serde_json::Value =
-            serde_json::from_str(&as_json(&models, &loaded, "pt-en", true)).unwrap();
+            serde_json::from_str(&as_json(&models, &lifecycle, "pt-en", true)).unwrap();
         assert_eq!(parsed["models"][0]["state"], "in use");
         assert_eq!(parsed["models"][1]["state"], "installed");
         let idle: serde_json::Value =
-            serde_json::from_str(&as_json(&models, &loaded, "pt-en", false)).unwrap();
+            serde_json::from_str(&as_json(&models, &lifecycle, "pt-en", false)).unwrap();
         assert_eq!(idle["models"][0]["state"], "loaded");
     }
 
@@ -692,7 +782,7 @@ mod tests {
     fn every_row_states_a_number_or_says_there_is_none() {
         let models = status();
         let parsed: serde_json::Value =
-            serde_json::from_str(&as_json(&models, &[], "pt-en", false)).unwrap();
+            serde_json::from_str(&as_json(&models, &Lifecycle::default(), "pt-en", false)).unwrap();
         for row in parsed["models"].as_array().unwrap() {
             let quality = row["quality"].as_str().unwrap();
             assert!(!quality.is_empty(), "{}", row["id"]);
