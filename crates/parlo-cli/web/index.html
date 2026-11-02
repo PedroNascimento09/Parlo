@@ -290,6 +290,24 @@
       <h2 id="history-title">Recent dictations</h2>
       <p class="settings-note" id="history-note" aria-live="polite">Nothing dictated yet.</p>
     </div>
+    <div class="settings-row">
+      <label class="field" for="history-search">
+        <span class="field-label">Search</span>
+        <input id="history-search" class="field-input" type="search" autocomplete="off" spellcheck="false" placeholder="a word you said">
+      </label>
+      <label class="field" for="history-app">
+        <span class="field-label">Program</span>
+        <select id="history-app" class="field-input"></select>
+      </label>
+      <label class="field" for="history-mode">
+        <span class="field-label">Mode</span>
+        <select id="history-mode" class="field-input">
+          <option value="">Any mode</option>
+          <option value="dictate">Dictation</option>
+          <option value="live">Live</option>
+        </select>
+      </label>
+    </div>
     <dl class="status" id="history-list"></dl>
     <button id="history-clear" class="install" type="button" hidden>Clear history</button>
   </section>
