@@ -79,7 +79,7 @@ fn print_help() {
     println!("commands:");
     println!("  doctor                             check the local audio setup");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
-    println!("  app [--port N] [--engine NAME]     open the microphone translator in a browser");
+    println!("  app [--from X --to Y] [--stt NAME] open the Parlo window");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
     println!("            [--from pt --to en]             language pair for the cascade");
@@ -862,7 +862,6 @@ fn serve_command(args: &[String]) -> Result<(), String> {
         stt,
         from,
         to,
-        false,
     )
 }
 
@@ -900,17 +899,7 @@ fn update_command(args: &[String]) -> Result<(), String> {
 }
 
 fn app_command(args: &[String]) -> Result<(), String> {
-    if args.is_empty() {
-        if let Some(window) = install::window_binary() {
-            Command::new(&window)
-                .spawn()
-                .map_err(|error| format!("cannot open {}: {error}", window.display()))?;
-            return Ok(());
-        }
-    }
-
     let stored = config::load();
-    let mut port = stored.port;
     let mut engine = stored.engine.clone();
     let mut stt = stored.stt.clone();
     let mut from = stored.from.clone();
@@ -928,12 +917,10 @@ fn app_command(args: &[String]) -> Result<(), String> {
                 to = args.get(index).cloned().ok_or("--to needs a value")?;
             }
             "--port" => {
-                index += 1;
-                port = args
-                    .get(index)
-                    .ok_or("--port needs a value")?
-                    .parse()
-                    .map_err(|_| "port must be a number".to_string())?;
+                return Err(
+                    "the Parlo window picks its own port; use parlo serve --port for the local api"
+                        .to_string(),
+                )
             }
             "--engine" => {
                 index += 1;
@@ -950,7 +937,20 @@ fn app_command(args: &[String]) -> Result<(), String> {
 
     set_direction(&from, &to)?;
     config::check_stt(&stt)?;
-    serve::run(port, serve::new_token(), engine, stt, from, to, true)
+    let mut current = config::load();
+    if current.engine != engine || current.stt != stt {
+        current.engine = engine;
+        current.stt = stt;
+        config::save(&current)?;
+    }
+
+    let window = install::window_binary().ok_or_else(|| {
+        "the Parlo window is not beside this program; install the latest release".to_string()
+    })?;
+    Command::new(&window)
+        .spawn()
+        .map_err(|error| format!("cannot open {}: {error}", window.display()))?;
+    Ok(())
 }
 
 fn listen_command(args: &[String]) -> Result<(), String> {

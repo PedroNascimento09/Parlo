@@ -42,7 +42,7 @@ Parlo is a desktop app that turns speech into writing without sending it anywher
 
 ## Install
 
-**Windows.** Run `Parlo-<version>-Setup.exe` from [Releases](https://github.com/PedroNascimento09/Parlo/releases/latest). It installs into your user folder and adds a Start menu entry. The build is unsigned, so SmartScreen asks once: **More info**, then **Run anyway**.
+**Windows.** [Download Parlo-Setup.exe](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) and double click it. It installs for your user, adds a Start menu entry and opens Parlo when it finishes, so one download is the whole install. The build is unsigned, so SmartScreen asks once: **More info**, then **Run anyway**.
 
 **macOS and Linux**, in any terminal:
 

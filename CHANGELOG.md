@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The release downloads like a program. The Windows installer is one fixed file, `Parlo-Setup.exe`, so `releases/latest/download/Parlo-Setup.exe` always fetches the current build, and setup opens Parlo as soon as it finishes.
+- `parlo app` opens the Parlo window and nothing else. The browser is no longer a way in, so the local address and the microphone prompt attached to it are gone; the window answers the microphone permission itself. Options passed to `parlo app` are saved and the window uses them, and `--port` now points at `parlo serve`, which keeps the local api.
 - Escape stops a surface. Live, Captions and a running meeting all end the capture on Escape instead of leaving it running behind another window, and the button that used to say **Pause** says **Stop**, because it ends the capture rather than holding it. The header of each window says the same in a sentence: `Live · listening, every 2.5 seconds · Escape stops`.
 - A model can be loaded and unloaded by hand. Every row of the model list has **Load** or **Unload now**, so a model can be brought into memory before a meeting or freed before another program needs the RAM. Unloading refuses with a sentence while a task is running, and it never deletes anything: the files stay on disk.
 - Each model decides when it is freed. Its row carries a delay from ten minutes to four hours, or **Keep loaded**, and says whether that delay is its own or the global one. The setting lives in `config.json` as `policies`, which the engine reads at every check, so nothing has to be reloaded. Settings gained the switch that turns automatic memory management off, and the delay is greyed out while it is off.

@@ -151,7 +151,7 @@ function showTranslation(encoded) {
 
 function describeMicrophoneError(failure) {
   if (failure && failure.name === "NotAllowedError") {
-    return "The browser blocked the microphone. Choose Allow for 127.0.0.1 in the address bar, then try again.";
+    return "Windows blocked the microphone. Allow Parlo in Settings, Privacy, Microphone, then try again.";
   }
   if (failure && failure.name === "NotFoundError") {
     return "No microphone was found. Connect one and reload this page.";

@@ -2,7 +2,6 @@ use std::fs;
 use std::io::{BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -391,16 +390,9 @@ pub fn run(
     stt: String,
     from: String,
     to: String,
-    open_app: bool,
 ) -> Result<(), String> {
     let server = start(port, token, engine, stt, from, to)?;
-    if open_app {
-        let address = server.app_url();
-        println!("  app        {address}");
-        if let Err(error) = open_browser(&address) {
-            eprintln!("could not open the browser: {error}, open the app link above");
-        }
-    }
+    println!("  api        {}", server.app_url());
     loop {
         std::thread::park();
     }
@@ -2565,23 +2557,6 @@ fn json_string(value: &str) -> String {
         .replace('\\', "\\\\")
         .replace('"', "\\\"")
         .replace(['\n', '\r'], " ")
-}
-
-fn open_browser(address: &str) -> Result<(), String> {
-    let mut command = if cfg!(target_os = "windows") {
-        let mut command = Command::new("cmd");
-        command.args(["/c", "start", ""]);
-        command
-    } else if cfg!(target_os = "macos") {
-        Command::new("open")
-    } else {
-        Command::new("xdg-open")
-    };
-    command
-        .arg(address)
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| error.to_string())
 }
 
 fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>), String> {

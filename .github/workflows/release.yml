@@ -194,7 +194,7 @@ jobs:
             & $iscc "/DAppVersion=$version" "installer/parlo.iss"
           }
           if ($LASTEXITCODE -ne 0) { throw "The installer did not compile" }
-          Get-Item "build/installer/Parlo-$version-Setup.exe" | Select-Object Name, Length
+          Get-Item "build/installer/Parlo-Setup.exe" | Select-Object Name, Length
 
       - name: Attach to release
         uses: softprops/action-gh-release@v2
@@ -203,5 +203,5 @@ jobs:
           files: |
             ${{ matrix.archive }}
             sbom.cdx.json
-            build/installer/Parlo-*-Setup.exe
+            build/installer/Parlo-Setup.exe
           generate_release_notes: false

@@ -26,7 +26,7 @@ CloseApplications=yes
 RestartApplications=no
 SetupLogging=yes
 OutputDir={#Root}\build\installer
-OutputBaseFilename=Parlo-{#AppVersion}-Setup
+OutputBaseFilename=Parlo-Setup
 SetupIconFile={#Root}\assets\parlo.ico
 UninstallDisplayIcon={app}\parlo-app.exe
 UninstallDisplayName=Parlo
@@ -84,4 +84,4 @@ Name: "{autodesktop}\Parlo"; Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Parlo"; ValueData: "\"{app}\parlo-app.exe\""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"; Description: "Open Parlo"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"; Description: "Open Parlo now"; Flags: nowait postinstall skipifsilent
