@@ -950,3 +950,37 @@ footer p {
 .voice-action:hover {
   border-color: var(--accent);
 }
+
+.rail {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem;
+  overflow-x: auto;
+  border-bottom: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.rail a {
+  padding: 0.35rem 0.7rem;
+  color: inherit;
+  opacity: 0.62;
+  text-decoration: none;
+  font-size: 0.9rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.rail a:hover,
+.rail a:focus-visible {
+  opacity: 1;
+}
+
+.rail a[aria-current="page"] {
+  opacity: 1;
+  font-weight: 620;
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+.away {
+  display: none !important;
+}

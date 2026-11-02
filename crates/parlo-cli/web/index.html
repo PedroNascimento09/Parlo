@@ -14,6 +14,14 @@
   <span class="version" id="status-version">unknown</span>
 </header>
 
+<nav class="rail" aria-label="Sections">
+  <a href="#home" data-route="home">Home</a>
+  <a href="#library" data-route="library">Library</a>
+  <a href="#meetings" data-route="meetings">Meetings</a>
+  <a href="#voice" data-route="voice">Voice</a>
+  <a href="#settings" data-route="settings">Settings</a>
+</nav>
+
 <section class="update" id="update" aria-live="polite" hidden>
   <p id="update-text">Parlo <strong id="update-version"></strong> is available.</p>
   <div class="update-actions">
@@ -31,7 +39,7 @@
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
   </section>
 
-  <div class="hero">
+  <div class="hero" id="hero">
     <h1>Speak, and hear it in the other language.</h1>
     <p class="lede">Hold the button, say a sentence, let go. The translation plays back in a few seconds.</p>
   </div>
@@ -42,7 +50,7 @@
     <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
   </button>
 
-  <div class="live-row">
+  <div class="live-row" id="live-row">
     <button id="live" class="live" type="button" aria-pressed="false">
       <span class="live-dot" aria-hidden="true"></span>
       <span>Live</span>
@@ -50,7 +58,7 @@
     <p class="live-note" id="live-note">Turns on continuous translation for a call. Everything stays on this machine.</p>
   </div>
 
-  <div class="live-row">
+  <div class="live-row" id="dictate-row">
     <button id="dictate" class="live" type="button" aria-pressed="false">
       <span class="live-dot" aria-hidden="true"></span>
       <span>Dictate</span>
@@ -62,7 +70,7 @@
   <p class="error" id="error" role="alert" hidden></p>
   <p class="translation" id="translation" aria-live="polite" hidden></p>
 
-  <dl class="status">
+  <dl class="status" id="status-list">
     <div>
       <dt>Engine</dt>
       <dd id="status-engine">starting</dd>
@@ -70,6 +78,18 @@
     <div>
       <dt>Right now</dt>
       <dd id="status-state">ready</dd>
+    </div>
+    <div>
+      <dt>Shortcut</dt>
+      <dd id="status-shortcut">not set</dd>
+    </div>
+    <div>
+      <dt>Languages</dt>
+      <dd id="status-languages">unknown</dd>
+    </div>
+    <div>
+      <dt>Mode</dt>
+      <dd id="status-mode">translating</dd>
     </div>
     <div>
       <dt>Running for</dt>

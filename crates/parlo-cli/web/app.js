@@ -15,6 +15,9 @@ const updateText = document.getElementById("update-text");
 const installButton = document.getElementById("update-install");
 const engineEl = document.getElementById("status-engine");
 const stateEl = document.getElementById("status-state");
+const shortcutEl = document.getElementById("status-shortcut");
+const languagesEl = document.getElementById("status-languages");
+const modeEl = document.getElementById("status-mode");
 const uptimeEl = document.getElementById("status-uptime");
 const micEl = document.getElementById("status-mic");
 const latencyEl = document.getElementById("status-latency");
@@ -690,6 +693,7 @@ async function refreshHealth() {
     const health = await response.json();
     engineEl.textContent = health.engine || "unknown";
     uptimeEl.textContent = formatUptime(health.uptime_s);
+    languagesEl.textContent = (health.from || "?") + " to " + (health.to || "?");
   } catch (failure) {
     engineEl.textContent = "offline";
   }
@@ -702,6 +706,17 @@ async function refreshHealth() {
     stateEl.textContent = STATE_WORDS[current.state] || "ready";
   } catch (failure) {
     stateEl.textContent = "unknown";
+  }
+  try {
+    const response = await fetch("/settings", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const values = await response.json();
+    shortcutEl.textContent = values.shortcut || "not set";
+    modeEl.textContent = values.write ? "dictating in " + values.write : "translating";
+  } catch (failure) {
+    shortcutEl.textContent = "unknown";
   }
 }
 
@@ -2258,6 +2273,51 @@ ensureAudio().catch((failure) => {
 });
 refreshHealth();
 setInterval(refreshHealth, 5000);
+
+const ROUTES = {
+  home: [
+    "update",
+    "welcome",
+    "hero",
+    "talk",
+    "live-row",
+    "dictate-row",
+    "progress",
+    "error",
+    "translation",
+    "status-list",
+  ],
+  library: ["vocabulary", "catalog", "history", "models", "dub"],
+  meetings: ["meetings"],
+  voice: ["voice"],
+  settings: ["settings", "intelligence", "licences"],
+};
+
+function showRoute(name) {
+  const route = ROUTES[name] ? name : "home";
+  for (const [key, ids] of Object.entries(ROUTES)) {
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.classList.toggle("away", key !== route);
+      }
+    }
+  }
+  for (const link of document.querySelectorAll(".rail a")) {
+    if (link.dataset.route === route) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  }
+}
+
+function routeNow() {
+  showRoute((location.hash || "#home").slice(1));
+}
+
+window.addEventListener("hashchange", routeNow);
+routeNow();
 checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
 loadModels();
 loadSettings();
