@@ -26,7 +26,7 @@ Built: `island.html` separates `stop()` from `cancel()`, Escape cancels, losing 
 
 1. Add `crates/parlo-cli/src/live_state.rs` with the eight states from `docs/UX.md` and the legal transitions, plus a unit test per transition.
 2. Expose it as `GET /state` and push it to the island as `POST /state/stream` or a short poll, whichever the island renders without a frame drop.
-3. Render the same state in three places: island line, tray tooltip, window readiness line. No surface invents its own wording. The onboarding is three steps and proves the loop instead of describing it: it waits for the shared state to say listening, then for a new history entry, then reads back the sentence and the program it landed in. Skipping sets a local flag and never asks again.
+3. Render the same state in three places: island line, tray tooltip, window readiness line. No surface invents its own wording.
 
 Check: start a dictation and watch the island, the tray and the window agree at every step.
 
@@ -78,7 +78,7 @@ Estimate: 4 hours.
 3. Onboarding: five steps under sixty seconds, ending with a real insertion.
 4. Captions as its own floating window, then Live, then Meetings with a lifecycle.
 
-Built so far: Settings carries three tabs (Dictation, Cleanup, Advanced, the last holding the licences), and the tray tooltip now reads the shared state, so the three surfaces repeat the same word.
+Built so far: Settings carries three tabs (Dictation, Cleanup, Advanced, the last holding the licences), and the tray tooltip now reads the shared state, so the three surfaces repeat the same word. The onboarding is three steps and proves the loop instead of describing it: it waits for the shared state to say listening, then for a new history entry, then reads back the sentence and the program it landed in. Skipping sets a local flag and never asks again.
 
 Estimate: 12 hours across several sittings.
 
