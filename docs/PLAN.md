@@ -55,7 +55,7 @@ Estimate: 3 hours.
 
 Check: a person who never used Parlo answers "is it ready, and what does it do" from Home without scrolling.
 
-Built so far: a rail with Home, Library, Meetings, Voice and Settings, a hash router that hides the sections outside the chosen one and marks the current link, and Home carrying the shared state, the shortcut, the language pair and the mode. The hold-to-speak button still sits on Home until the onboarding test replaces it.
+Built so far: a rail with Home, Library, Meetings, Voice and Settings, a hash router that hides the sections outside the chosen one and marks the current link, and Home carrying the shared state, the shortcut, the language pair and the mode. The hold-to-speak button is the first-run test: it sits in the welcome block, which Home shows until the models are on disk, and it goes away once dictation works. Home does not list the last three results yet.
 
 Estimate: 5 hours.
 
