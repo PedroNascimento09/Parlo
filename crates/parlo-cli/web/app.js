@@ -25,6 +25,9 @@ const versionEl = document.getElementById("status-version");
 const modelsBox = document.getElementById("models");
 const modelsList = document.getElementById("models-list");
 const modelsCancel = document.getElementById("models-cancel");
+const modelsFolder = document.getElementById("models-folder");
+const modelsMove = document.getElementById("models-move");
+const modelsMoveNote = document.getElementById("models-move-note");
 const modelsNote = document.getElementById("models-note");
 const modelsInstall = document.getElementById("models-install");
 const dropZone = document.getElementById("drop");
@@ -979,6 +982,10 @@ let modelState = { models: [], ready: false, dictation: false, downloading: fals
 function describeModels(state) {
   modelState = state;
   modelsCancel.hidden = !state.downloading;
+  if (state.folder && !modelsFolder.dataset.filled) {
+    modelsFolder.value = state.folder;
+    modelsFolder.dataset.filled = "1";
+  }
   modelsList.replaceChildren();
   for (const model of state.models || []) {
     const row = document.createElement("li");
@@ -1076,6 +1083,31 @@ async function modelAction(model, button) {
     button.disabled = false;
   }
 }
+
+async function moveModels() {
+  modelsMove.disabled = true;
+  modelsMoveNote.textContent = "Copying the models. Nothing is deleted until the copy matches.";
+  try {
+    const response = await fetch("/models/relocate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ path: modelsFolder.value }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    modelsMoveNote.textContent =
+      detail.message || detail.error || "The models could not be moved.";
+    if (response.ok) {
+      modelsFolder.dataset.filled = "1";
+      await loadModels();
+    }
+  } catch (failure) {
+    modelsMoveNote.textContent = "The models could not be moved. Check that Parlo is still running.";
+  } finally {
+    modelsMove.disabled = false;
+  }
+}
+
+modelsMove.addEventListener("click", () => moveModels());
 
 async function cancelDownload() {
   modelsCancel.disabled = true;

@@ -73,6 +73,7 @@ mod tests {
             port: 9100,
             device: Some(2),
             unload: 15,
+            models_dir: String::new(),
             intelligence: Default::default(),
         };
         let text = serde_json::to_string(&config).unwrap();

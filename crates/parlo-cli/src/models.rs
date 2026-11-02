@@ -43,6 +43,10 @@ pub fn models_root() -> PathBuf {
     if let Ok(configured) = env::var("PARLO_MODELS_DIR") {
         return PathBuf::from(configured);
     }
+    let configured = crate::config::load().models_dir;
+    if !configured.trim().is_empty() {
+        return PathBuf::from(configured);
+    }
     let checkout = cascade_dir().join("models");
     if checkout.is_dir() {
         return std::path::absolute(&checkout).unwrap_or(checkout);
@@ -299,6 +303,93 @@ pub fn downloading(models: &[Model]) -> bool {
     }
 }
 
+fn directory_bytes(path: &Path) -> u64 {
+    let Ok(entries) = fs::read_dir(path) else {
+        return 0;
+    };
+    let mut total = 0;
+    for entry in entries.flatten() {
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        if metadata.is_dir() {
+            total += directory_bytes(&entry.path());
+        } else {
+            total += metadata.len();
+        }
+    }
+    total
+}
+
+fn copy_tree(from: &Path, to: &Path) -> Result<u64, String> {
+    fs::create_dir_all(to)
+        .map_err(|error| format!("{} could not be created: {error}", to.display()))?;
+    let entries = fs::read_dir(from)
+        .map_err(|error| format!("{} could not be read: {error}", from.display()))?;
+    let mut copied = 0;
+    for entry in entries.flatten() {
+        let source = entry.path();
+        let destination = to.join(entry.file_name());
+        if source.is_dir() {
+            copied += copy_tree(&source, &destination)?;
+        } else {
+            fs::copy(&source, &destination)
+                .map_err(|error| format!("{} could not be copied: {error}", source.display()))?;
+            copied += fs::metadata(&destination)
+                .map(|meta| meta.len())
+                .unwrap_or(0);
+        }
+    }
+    Ok(copied)
+}
+
+pub fn relocate(target: &str) -> Result<String, String> {
+    let trimmed = target.trim();
+    if trimmed.is_empty() {
+        return Err("give the folder the models should move to".to_string());
+    }
+    let destination = PathBuf::from(trimmed);
+    if !destination.is_absolute() {
+        return Err("that is a relative path; give the full path of the folder".to_string());
+    }
+    let source = models_root();
+    if source == destination {
+        return Err("the models are already there".to_string());
+    }
+    if destination.starts_with(&source) || source.starts_with(&destination) {
+        return Err("the new folder cannot sit inside the old one, or around it".to_string());
+    }
+    if downloading(&status()) {
+        return Err("a download is running; stop it before moving the models".to_string());
+    }
+    if !source.is_dir() {
+        return Err(format!("there are no models in {} yet", source.display()));
+    }
+    let expected = directory_bytes(&source);
+    let copied = copy_tree(&source, &destination)?;
+    if copied != expected {
+        return Err(format!(
+            "the copy holds {copied} bytes but {} holds {expected}; nothing was deleted",
+            source.display()
+        ));
+    }
+    fs::remove_dir_all(&source).map_err(|error| {
+        format!(
+            "the copy is in place but {} could not be removed: {error}",
+            source.display()
+        )
+    })?;
+    let mut config = crate::config::load();
+    config.models_dir = destination.display().to_string();
+    crate::config::save(&config)
+        .map_err(|error| format!("the models moved but the folder was not saved: {error}"))?;
+    let megabytes = copied as f64 / (1024.0 * 1024.0);
+    Ok(format!(
+        "Moved {megabytes:.1} MB to {}. The old folder is gone.",
+        destination.display()
+    ))
+}
+
 pub fn reason_for(model: &Model, machine: &str) -> String {
     let what = match model.id {
         "parakeet" => "the only dictation model in this build",
@@ -332,6 +423,7 @@ pub fn as_json(models: &[Model]) -> String {
         "ready": ready(models),
         "dictation": dictation_ready(models),
         "downloading": downloading(models),
+        "folder": models_root().display().to_string(),
         "machine": {
             "cores": machine.cores,
             "memory_gb": machine.memory_gb,
@@ -344,6 +436,12 @@ pub fn as_json(models: &[Model]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_relative_folder_is_refused_before_anything_moves() {
+        let error = relocate("models-here").unwrap_err();
+        assert!(error.contains("full path"), "{error}");
+    }
 
     #[test]
     fn both_translation_pairs_are_listed_and_removable() {

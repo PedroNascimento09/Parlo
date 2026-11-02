@@ -1395,6 +1395,27 @@ fn handle(
         return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/models/relocate" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":{\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let target = serde_json::from_slice::<RelocateRequest>(&body)
+            .map(|request| request.path)
+            .unwrap_or_default();
+        return match models::relocate(&target) {
+            Ok(message) => respond_json(
+                stream,
+                "200 OK",
+                &serde_json::json!({ "message": message }).to_string(),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "400 Bad Request", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "POST" && path == "/models/cancel" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "\"error\":\"wrong token\"}")
@@ -1874,6 +1895,11 @@ struct VoiceTarget {
 const MIN_SAMPLE_SECONDS: f64 = 10.0;
 const MAX_SAMPLE_SECONDS: f64 = 30.0;
 const SILENT_PEAK: f32 = 0.002;
+
+#[derive(serde::Deserialize)]
+struct RelocateRequest {
+    path: String,
+}
 
 fn voice_store() -> Store {
     Store::new(crate::config::data_root().join("voices"))

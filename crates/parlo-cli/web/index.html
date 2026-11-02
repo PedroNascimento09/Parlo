@@ -405,6 +405,14 @@
     <button id="models-install" class="install models-install" type="button" hidden>Download models</button>
     <button id="models-dictation" class="install models-install quiet" type="button" hidden>Only what dictation needs</button>
     <button id="models-cancel" class="install models-install quiet" type="button" hidden>Stop the download</button>
+    <div class="settings-row">
+      <label class="field field-wide" for="models-folder">
+        <span class="field-label">Keep the models in this folder</span>
+        <input id="models-folder" class="field-input" type="text" autocomplete="off" spellcheck="false" placeholder="D:/Parlo models">
+      </label>
+      <button id="models-move" class="install quiet" type="button">Move the models</button>
+    </div>
+    <p class="settings-note" id="models-move-note" aria-live="polite"></p>
   </section>
 
   <section class="dub" id="dub" aria-labelledby="dub-title">

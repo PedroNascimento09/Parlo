@@ -18,6 +18,7 @@ pub struct Config {
     pub port: u16,
     pub device: Option<usize>,
     pub unload: u32,
+    pub models_dir: String,
     pub intelligence: Intelligence,
 }
 
@@ -61,6 +62,7 @@ impl Default for Config {
             port: 8787,
             device: None,
             unload: 30,
+            models_dir: String::new(),
             intelligence: Intelligence::default(),
         }
     }
