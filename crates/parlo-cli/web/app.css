@@ -104,12 +104,6 @@ footer {
   margin-bottom: 38px;
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-}
-
 .mark {
   width: 30px;
   height: 30px;
@@ -1254,4 +1248,15 @@ kbd {
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.today-note {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.today-note:empty {
+  display: none;
 }
