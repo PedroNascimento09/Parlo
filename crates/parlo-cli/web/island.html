@@ -360,7 +360,7 @@ async function loadVersion() {
     if (!update.available || !update.latest) {
       return;
     }
-    setHint("v" + update.latest + " is available, you are on v" + version + ". Open Parlo to update.");
+    setHint("v" + update.latest + " is available, you are on v" + version + ". Open the window to update.");
   } catch (failure) {
     return;
   }

@@ -21,7 +21,7 @@ Everything below is on `main` since `v0.1.7`, 48 commits, and is reachable from 
 
 ### Presence
 
-- **One presence**: a tray icon with Dictate, Live, Open Parlo, Settings and Quit, whose left click shows the island, and whose menu lands on the screen it names. Every item in it exists.
+- **One presence**: a tray icon with the three modes and the five destinations, whose left click shows the island, and whose menu lands on the screen it names. Every item in it exists.
 
 ### Meetings
 

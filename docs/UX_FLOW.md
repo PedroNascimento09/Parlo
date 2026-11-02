@@ -6,7 +6,7 @@ One product with five levels of presence. The user never chooses which "Parlo ap
 Parlo Presence (tray)
    ├── click            → Contextual surface: Dictate
    ├── Live             → Live surface
-   ├── Open Parlo       → Hub
+   ├── Home             → Hub
    ├── Settings         → Hub, settings group
    └── Quit
 ```
@@ -15,7 +15,7 @@ Parlo Presence (tray)
 
 | State | Surface | What the user sees | How they leave it |
 |---|---|---|---|
-| Presence idle | tray only | One icon, no window, no panel | click, Live, Open Parlo |
+| Presence idle | tray only | One icon, no window, no panel | click, Live, Home |
 | Dictate listening | island 560 × 96 | dot, `LISTENING`, level, timer | click tray again, the dictation shortcut (`Ctrl+Alt+D` by default), `Esc` |
 | Dictate writing | island | `WRITING` | automatic |
 | Dictate delivered | island | `INSERTED` or `COPIED`, one line of text | hides after 4 s |

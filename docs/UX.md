@@ -13,7 +13,7 @@ Facts, read from the repository, not remembered.
 | Main window | `crates/parlo-cli/web/index.html`, 370 lines | One scrolling page: hero with a hold-to-speak button, a Live row, a Dictate row, four status lines, then languages, cleanup, vocabulary, meetings, model library, history, voice, models, dubbing, licences |
 | Global shortcut | `crates/parlo-app/src/island.rs` | `RegisterHotKey` on the configured combination, then toggles the island window visible or hidden |
 | Island | `crates/parlo-cli/web/island.html`, 444 lines | Separate window, opens the microphone itself on focus, records on a timer, posts the WAV to `/dictate`, posts the text to `/insert`, copies to the clipboard when insertion fails |
-| Tray | `crates/parlo-app/src/presence.rs` | Dictate, Live, Open Parlo, Settings, Quit; a left click toggles the island |
+| Tray | `crates/parlo-app/src/presence.rs` | Dictate, Live and Captions above a separator, Home, Library, Meetings, Voice and Settings below it, Quit last; a left click toggles the island |
 | Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` types the text into the focused field on Windows |
 | History | `crates/parlo-cli/src/history.rs` | Append-only JSONL, 200 entries, fields `at`, `text`, `translation`, `from`, `to` |
 
