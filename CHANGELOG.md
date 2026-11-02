@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The interface takes the tokens from section 85 instead of its own palette: the same fifteen colours in both themes, `surface-sunken` and `tech` included, and one focus ring drawn with the accent on everything that can take the keyboard. Measured on the real pairs: ink on canvas 16.65, ink-soft on surface 11.84, muted on surface 5.98, muted on canvas 5.55, error on canvas 6.66, ok 4.85, listen 5.50, tech 11.01; dark reads 16.44, 11.22, 6.47, 5.80, 8.31, 7.95 and 8.64. The one pair below 4.5 is the plan's own `warn` on the light canvas, at 3.51, and it is used only for large text, icons and fills.
 - Translation, read aloud and captions can be switched off without deleting a single model. The switches live in Settings and are saved in `config.json`; with captions off the captions page refuses with a sentence, and with translation off dubbing refuses instead of quietly doing half the work. `GET` and `POST /features` are the routes.
 - The engine says what this machine can do and why. `GET /engine` reports the profile, the voice that was asked for, the voice that is used instead, the chain of steps, and a sentence that names the cores, the memory and AVX2; every change is appended to `logs/engines.jsonl`, and the Home screen shows that sentence under the engine. Nothing in it claims a latency that was not measured.
 ## [0.2.1.1] - 2026-11-02
