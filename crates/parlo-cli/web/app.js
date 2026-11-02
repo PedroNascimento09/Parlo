@@ -2365,9 +2365,7 @@ function meetingsAsMarkdown(meetings) {
     }
     lines.push("");
   }
-  return lines.join("
-").trim() + "
-";
+  return lines.join("\n").trim() + "\n";
 }
 
 async function exportMeetings() {
