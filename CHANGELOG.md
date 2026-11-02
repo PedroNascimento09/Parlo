@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.1.5] - 2026-11-02
+
 - The model list says **In use** while the engine is working, without asking it anything. The session keeps the last answer the engine gave about what it holds and marks the recogniser row as busy for as long as a transcription runs, so the page reads the list in a millisecond instead of waiting for the engine it is describing. Only the recogniser is marked: every transcription and every translation goes through it, while the translation pair depends on what the request asked for. Measured with the real engine: a ten second silence sent to `POST /dictate` came back in **2.47 s**, and `GET /models` answered `in use` at the first poll, 0.2 s into that request, then `loaded` once it finished.
 
 - The local server answers one connection per thread, so a request no longer waits behind every earlier one: a health check came back in 3 ms while another request was in flight, and a static file in 3.6 ms. The chosen languages and shortcut sit behind a read lock and the engine behind a mutex, with a test that fails if the session ever stops being safe to share between threads. The engine still transcribes one request at a time, so `In use` stays absent: the model list would wait for the engine it is trying to describe.
