@@ -28,6 +28,8 @@ const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 20 * 1024 * 1024;
 const MAX_DUB_BODY: usize = 512 * 1024 * 1024;
 const KEPT_DUBS: usize = 8;
+
+static ISLAND_BUSY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 const DUB_TIMEOUT: Duration = Duration::from_secs(3_600);
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const INDEX: &str = include_str!("../web/index.html");
@@ -1324,6 +1326,21 @@ fn handle(
             SCRIPT.as_bytes(),
         )
         .map(|()| Flow::Serve);
+    }
+
+    if path == "/island/busy" {
+        if method == "POST" {
+            let busy = serde_json::from_slice::<serde_json::Value>(&body)
+                .ok()
+                .and_then(|request| request.get("busy").and_then(serde_json::Value::as_bool))
+                .unwrap_or(false);
+            ISLAND_BUSY.store(busy, std::sync::atomic::Ordering::Relaxed);
+        }
+        let answer = format!(
+            "{{\"busy\":{}}}",
+            ISLAND_BUSY.load(std::sync::atomic::Ordering::Relaxed)
+        );
+        return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
     }
 
     if path == "/health" {

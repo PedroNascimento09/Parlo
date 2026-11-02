@@ -82,6 +82,10 @@ fn serve(handle: tauri::AppHandle, window: WebviewWindow) {
     }
 
     show_island(&handle, port, &token);
+
+    let watcher = handle.clone();
+    let watch_token = token.clone();
+    std::thread::spawn(move || watch_island(watcher, port, watch_token));
 }
 
 fn show_island(handle: &tauri::AppHandle, port: u16, token: &str) {
@@ -98,6 +102,46 @@ fn show_island(handle: &tauri::AppHandle, port: u16, token: &str) {
         }
         Err(error) => note(&format!("cannot build the island address: {error}")),
     }
+}
+
+fn watch_island(handle: tauri::AppHandle, port: u16, token: String) {
+    let mut quiet = 0;
+    loop {
+        std::thread::sleep(Duration::from_millis(500));
+        let Some(window) = handle.get_webview_window(island::ISLAND) else {
+            return;
+        };
+        if !window.is_visible().unwrap_or(false) || island_busy(port, &token) {
+            quiet = 0;
+            continue;
+        }
+        quiet += 1;
+        if quiet >= 3 {
+            let _ = window.hide();
+            quiet = 0;
+        }
+    }
+}
+
+fn island_busy(port: u16, token: &str) -> bool {
+    let Ok(mut stream) = TcpStream::connect(("127.0.0.1", port)) else {
+        return false;
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
+    let request = format!(
+        "GET /island/busy HTTP/1.1
+Host: 127.0.0.1
+Authorization: Bearer {token}
+Connection: close
+
+"
+    );
+    if stream.write_all(request.as_bytes()).is_err() {
+        return false;
+    }
+    let mut answer = String::new();
+    let _ = stream.read_to_string(&mut answer);
+    answer.contains("\"busy\":true")
 }
 
 fn place(window: &WebviewWindow) {

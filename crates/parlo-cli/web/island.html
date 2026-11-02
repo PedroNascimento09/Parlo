@@ -140,6 +140,7 @@ let lastText = "";
 let target = false;
 let writeTarget = "";
 let shortcut = "Ctrl+Alt+D";
+let controller = null;
 
 function setState(text, line, pending) {
   stateEl.textContent = text;
@@ -147,6 +148,20 @@ function setState(text, line, pending) {
     lineEl.textContent = line;
     lineEl.classList.toggle("pending", Boolean(pending));
   }
+}
+
+function setHint(text) {
+  hintEl.textContent = text;
+  document.body.classList.add("showing-hint");
+}
+
+function setBusy(value) {
+  fetch("/island/busy", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ busy: Boolean(value) }),
+    keepalive: true,
+  }).catch(() => {});
 }
 
 function describeMicrophone(failure) {
@@ -237,7 +252,7 @@ async function begin() {
     copy.set(block);
     chunks.push(copy);
     if (chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
-      finish();
+      stop();
     }
   };
   source.connect(processor);
@@ -245,7 +260,9 @@ async function begin() {
   sink.connect(context.destination);
   started = performance.now();
   document.body.classList.add("listening");
-  setState("Listening", "Speak now. Click Parlo again or press " + shortcut + " when done.", true);
+  document.body.classList.remove("showing-hint");
+  setState("Listening", "Speak now. Release to write it down, Escape to cancel.", true);
+  setBusy(true);
   clearInterval(ticker);
   ticker = setInterval(() => {
     clockEl.textContent = ((performance.now() - started) / 1000).toFixed(1) + " s";
@@ -333,15 +350,13 @@ async function loadVersion() {
     if (!update.available || !update.latest) {
       return;
     }
-    hintEl.textContent =
-      "v" + update.latest + " is available, you are on v" + version + ". Open Parlo to update.";
-    document.body.classList.add("showing-hint");
+    setHint("v" + update.latest + " is available, you are on v" + version + ". Open Parlo to update.");
   } catch (failure) {
     return;
   }
 }
 
-async function writeIntoField(text) {
+async function writeIntoField(text, signal) {
   if (!target) {
     return false;
   }
@@ -350,6 +365,7 @@ async function writeIntoField(text) {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
       body: JSON.stringify({ text: text }),
+      signal,
     });
     return response.ok;
   } catch (failure) {
@@ -357,7 +373,29 @@ async function writeIntoField(text) {
   }
 }
 
-async function finish() {
+function cancel() {
+  const hadSomething = Boolean(stream) || busy;
+  if (controller) {
+    controller.abort();
+    controller = null;
+  }
+  if (stream) {
+    release();
+  }
+  busy = false;
+  clearInterval(ticker);
+  ticker = null;
+  clockEl.textContent = "0.0 s";
+  document.body.classList.remove("listening", "showing-hint");
+  if (hadSomething) {
+    setState("Ready", "Cancelled. Nothing was inserted.", true);
+  } else {
+    setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
+  }
+  setBusy(false);
+}
+
+async function stop() {
   if (!stream || busy) {
     return;
   }
@@ -367,9 +405,12 @@ async function finish() {
   if (!captured) {
     setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
     busy = false;
+    setBusy(false);
     return;
   }
   setState("Writing", "Your words are being written down.", true);
+  controller = new AbortController();
+  const { signal } = controller;
   try {
     const headers = { "Content-Type": "audio/wav", Authorization: "Bearer " + token };
     if (writeTarget) {
@@ -379,6 +420,7 @@ async function finish() {
       method: "POST",
       headers,
       body: captured.wav,
+      signal,
     });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
@@ -390,47 +432,57 @@ async function finish() {
     if (!text) {
       setState("Nothing heard", "Speak a little closer to the microphone.", true);
       busy = false;
+      setBusy(false);
       return;
     }
     lastText = text;
-    const inserted = await writeIntoField(text);
+    const inserted = await writeIntoField(text, signal);
     const translated = Boolean(spoken) && spoken !== text;
     setState(inserted ? "Inserted" : "Copied", text, false);
-    document.body.classList.add("showing-hint");
-    hintEl.textContent =
+    setHint(
       (inserted
         ? "Written into the field you were in."
         : "Copied to the clipboard. Paste it where you need it.") +
-      (translated ? " Heard: " + spoken : "");
+        (translated ? " Heard: " + spoken : ""),
+    );
     if (!inserted) {
       try {
         await navigator.clipboard.writeText(text);
       } catch (failure) {
-        hintEl.textContent = "The clipboard refused the text. Select it here and copy by hand.";
+        setHint("The clipboard refused the text. Select it here and copy by hand.");
       }
     }
   } catch (failure) {
-    setState("Failed", failure.message || "The dictation failed.", true);
+    if (signal.aborted) {
+      setState("Ready", "Cancelled. Nothing was inserted.", true);
+    } else {
+      setState("Failed", failure.message || "The dictation failed.", true);
+    }
   }
+  controller = null;
   busy = false;
+  setBusy(false);
 }
 
+function handsFree() {
+  setState("Listening", "Hands free. Press the shortcut again to stop, Escape to cancel.", true);
+}
+
+window.parloBegin = begin;
+window.parloStop = stop;
+window.parloCancel = cancel;
+window.parloHandsFree = handsFree;
+
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    finish();
-  } else {
+  if (!document.hidden) {
     begin();
   }
-});
-
-window.addEventListener("focus", () => {
-  begin();
 });
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
-    finish();
+    cancel();
   }
 });
 

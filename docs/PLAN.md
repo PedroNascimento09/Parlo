@@ -20,6 +20,8 @@ Tests: `cargo test -p parlo-app -p parlo-cli`, `cargo clippy -- -D warnings`. Th
 
 Estimate: 2 hours.
 
+Built: `island.html` separates `stop()` from `cancel()`, Escape cancels, losing focus no longer submits, and `island.rs` reads the shortcut with a low level keyboard hook so a release stops the capture. A tap shorter than 250 ms stays listening for hands free. The island reports its busy state on `/island/busy` and the app hides it once it has been idle for a second and a half.
+
 ## Phase 2: one state machine
 
 1. Add `crates/parlo-cli/src/live_state.rs` with the eight states from `docs/UX.md` and the legal transitions, plus a unit test per transition.
