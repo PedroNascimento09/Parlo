@@ -156,3 +156,11 @@ All must be checked for license, quality, and speed in v0.2. This is an evaluati
 4. Add tests for the failure paths first: missing model, invalid audio, engine crash.
 5. Add the engine to the registry with its real license and hardware requirement.
 6. Document its languages and measured latency here.
+
+## The Rust engine
+
+`crates/parlo-engine-rs` is a second engine, written in Rust, that speaks the same line protocol as the Python sidecar: `hello`, `dictate`, `stream` and `stream_close` are implemented and answer with the same shapes, and `parlo-engine` refuses `translate` and `write` with a sentence instead of failing silently.
+
+Measured on the reference machine, transcribing the same six second sentence with the same Parakeet files: the text is identical to the Python engine, decoding took 647 ms in Rust against 652 ms in Python, and the whole binary costs 23 MB against about 63 MB for the Python path, because it carries no interpreter and no numpy.
+
+Translation is not ported. CTranslate2, the library the translation models run on, has to be built from source with MSVC, and this machine's Rust toolchain is GNU/MinGW, so the build stops there. The crate stays out of the released packages until translation and speech are ported and compared.
