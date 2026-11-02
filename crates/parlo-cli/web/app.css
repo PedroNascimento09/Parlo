@@ -1339,11 +1339,59 @@ kbd {
 }
 
 .wordmark-mark {
-  height: 22px;
+  height: 26px;
   width: auto;
   fill: var(--ink);
 }
 
 .brand {
   color: var(--ink);
+}
+
+.history-entry {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(23, 19, 16, 0.04);
+}
+
+.history-entry:hover {
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
+}
+
+.history-entry dt {
+  margin: 0;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.history-entry dd {
+  margin: 0;
+}
+
+.history-entry dd .swap {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+}
+
+.history-entry dd .swap:hover {
+  color: var(--accent-deep);
+}
+
+#history-list {
+  gap: 10px;
 }

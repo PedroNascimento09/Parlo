@@ -2392,7 +2392,7 @@ function renderHistory() {
   historyList.replaceChildren();
   if (!historyEntries.length) {
     historyNote.textContent =
-      "Nothing dictated yet. What you dictate and its translation will appear here.";
+      "Nothing dictated yet. Press Ctrl+Alt+D, speak, and the sentence appears here with the program it landed in.";
     historyClear.hidden = true;
     return;
   }
@@ -2416,7 +2416,10 @@ function renderHistory() {
     reuse.title = "Copy this text again";
     reuse.addEventListener("click", () => copyHistory(reuse.textContent));
     detail.append(reuse);
-    historyList.append(term, detail);
+    const card = document.createElement("div");
+    card.className = "history-entry";
+    card.append(term, detail);
+    historyList.append(card);
   }
   historyNote.textContent =
     shown.length === historyEntries.length
