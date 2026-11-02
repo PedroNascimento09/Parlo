@@ -4,6 +4,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Read aloud speaks European Portuguese. The voice Parlo installs is `pt_PT-tugão-medium` instead of the Brazilian `pt_BR-faber-medium`, because on this project's own 20 sentences the European voice scored 0.24 word error rate against 0.67 for the Brazilian one, measured with Parakeet v3 on Windows 11 and 4 threads. Models already on disk are not moved: the list offers the European voice as a separate download, and `setup_models.py --voice pt_br` still fetches the Brazilian one.
+- The reference battery takes the voice as an option, `--voice`, and records it in the report beside the recogniser and the thread count, so a number is never read against the wrong voice.
+
 ## [0.2.1.2] - 2026-11-02
 
 - The type follows section 85: one interface family and one mono family as tokens, the body at 14/21 instead of 16/1.6, and digits set tabular so timings do not dance while recording. The two large headings drop to the display and title scale. Colour pairs are unchanged, so the ratios already measured still hold, and every body size now sits in the stricter 4.5:1 band that `ink-soft` at 11.84 and `muted` at 5.98 meet.

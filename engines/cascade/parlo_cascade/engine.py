@@ -25,7 +25,7 @@ WHISPER_SIZES = ("tiny", "base", "small", "medium", "large-v3")
 PARAKEET_DIR = MODEL_DIR / "parakeet"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
 VOICES = {
-    "pt": "pt_BR-faber-medium.onnx",
+    "pt": "pt_PT-tugão-medium.onnx",
     "en": "en_US-lessac-medium.onnx",
 }
 GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"

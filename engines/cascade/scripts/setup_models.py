@@ -29,8 +29,8 @@ VOICES = {
         "pt/pt_PT/tugão/medium/pt_PT-tugão-medium.onnx",
     ),
 }
-DEFAULT_VOICES = ("pt_BR-faber-medium", "en_US-lessac-medium")
-OPTIONAL_VOICES = {"pt_pt": ("pt_PT-tugão-medium",)}
+DEFAULT_VOICES = ("pt_PT-tugão-medium", "en_US-lessac-medium")
+OPTIONAL_VOICES = {"pt_br": ("pt_BR-faber-medium",)}
 DIRECTIONS = (("pt", "en"), ("en", "pt"))
 PARAKEET_BASE = f"https://huggingface.co/{PARAKEET_REPO}/resolve/main"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
@@ -149,7 +149,7 @@ UNITS = ("parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt", "whisper")
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--stt", choices=["parakeet", "whisper", "both"], default="parakeet")
-    parser.add_argument("--voice", choices=["", "pt_pt"], default="")
+    parser.add_argument("--voice", choices=["", "pt_br"], default="")
     parser.add_argument(
         "--whisper",
         choices=["tiny", "base", "small", "medium", "large-v3"],
@@ -168,7 +168,7 @@ def main(argv=None) -> int:
         voices = list(DEFAULT_VOICES) + list(OPTIONAL_VOICES.get(args.voice, ()))
     else:
         if "voice-pt" in only:
-            voices.append("pt_BR-faber-medium")
+            voices.append("pt_PT-tugão-medium")
         if "voice-en" in only:
             voices.append("en_US-lessac-medium")
     install_voices(voices)

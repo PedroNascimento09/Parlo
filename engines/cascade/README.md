@@ -7,7 +7,7 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 | Voice detection | Parlo pipeline gate (RMS with hangover) | MIT |
 | Speech recognition | Parakeet TDT 0.6B v3 int8 via sherpa-onnx | CC-BY-4.0 model, Apache-2.0 runtime |
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
-| Speech synthesis | Piper (`pt_BR-faber-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
+| Speech synthesis | Piper (`pt_PT-tugão-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
 
 Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code is Apache-2.0. The engine imports no Piper: synthesis is the optional adapter in [engines/tts-piper](../tts-piper), started as a separate process and driven over JSON lines, so `parlo-engine` contains no GPL code and the adapter is where the GPL applies. [docs/LICENSES.md](../../docs/LICENSES.md) states the split and its limits.
 

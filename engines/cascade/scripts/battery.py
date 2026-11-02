@@ -86,6 +86,7 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--out", default="")
+    parser.add_argument("--voice", default="pt_PT-tugão-medium.onnx")
     args = parser.parse_args()
 
     os.environ["PARLO_CASCADE_STT"] = args.stt
@@ -94,7 +95,7 @@ def main() -> int:
         os.environ["PARLO_CASCADE_MODEL"] = args.model
 
     sentences = SENTENCES[: args.limit] if args.limit > 0 else SENTENCES
-    voice = Path(__file__).resolve().parent.parent / "models" / "pt_BR-faber-medium.onnx"
+    voice = Path(__file__).resolve().parent.parent / "models" / args.voice
     engine = CascadeEngine(source="pt", target="en", voice=voice)
     if not engine.available:
         raise SystemExit("install the cascade requirements first")
@@ -123,6 +124,7 @@ def main() -> int:
         "stt": args.stt,
         "model": args.model if args.stt == "whisper" else "",
         "threads": args.threads,
+        "voice": args.voice,
         "conditions": {},
     }
     print(f"\n{args.stt} | {len(rows)} sentences | seed {args.seed}")

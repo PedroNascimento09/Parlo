@@ -34,7 +34,7 @@ fn language(name: &str, fallback: &str) -> String {
 
 fn voice_file(language: &str) -> &'static str {
     match language {
-        "pt" => "pt_BR-faber-medium.onnx",
+        "pt" => "pt_PT-tugão-medium.onnx",
         _ => "en_US-lessac-medium.onnx",
     }
 }

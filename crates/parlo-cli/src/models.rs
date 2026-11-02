@@ -13,7 +13,7 @@ const PARAKEET_FILES: &[&str] = &[
     "tokens.txt",
 ];
 const VOICES: &[(&str, &str, &str)] = &[
-    ("voice-pt", "pt_BR-faber-medium.onnx", "Portuguese voice"),
+    ("voice-pt", "pt_PT-tugão-medium.onnx", "Portuguese voice"),
     ("voice-en", "en_US-lessac-medium.onnx", "English voice"),
 ];
 const TRANSLATION: &[(&str, &str, &str, &str)] = &[
@@ -170,8 +170,8 @@ fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
     match id {
         "parakeet" => Some(vec![root.join("parakeet")]),
         "voice-pt" => Some(vec![
-            root.join("pt_BR-faber-medium.onnx"),
-            root.join("pt_BR-faber-medium.onnx.json"),
+            root.join("pt_PT-tugão-medium.onnx"),
+            root.join("pt_PT-tugão-medium.onnx.json"),
         ]),
         "voice-en" => Some(vec![
             root.join("en_US-lessac-medium.onnx"),
@@ -506,5 +506,16 @@ mod tests {
     #[test]
     fn the_models_root_is_absolute_after_resolution() {
         assert!(models_root().is_absolute() || models_root().starts_with("engines"));
+    }
+
+    #[test]
+    fn the_portuguese_voice_is_european() {
+        let voice = VOICES
+            .iter()
+            .find(|(id, _, _)| *id == "voice-pt")
+            .expect("a Portuguese voice is offered");
+        assert!(voice.1.starts_with("pt_PT-"), "{}", voice.1);
+        let paths = paths_for("voice-pt").unwrap();
+        assert_eq!(paths[0].file_name().unwrap(), voice.1);
     }
 }
