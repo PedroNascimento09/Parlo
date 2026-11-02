@@ -22,7 +22,6 @@ const stateEl = document.getElementById("status-state");
 const shortcutEl = document.getElementById("status-shortcut");
 const languagesEl = document.getElementById("status-languages");
 const modeEl = document.getElementById("status-mode");
-const uptimeEl = document.getElementById("status-uptime");
 const micEl = document.getElementById("status-mic");
 const latencyEl = document.getElementById("status-latency");
 const versionEl = document.getElementById("status-version");
@@ -516,16 +515,6 @@ function takeWindow(minimum) {
   return encodeWav(downsample(kept, rate, TARGET_RATE), TARGET_RATE);
 }
 
-function formatUptime(totalSeconds) {
-  const seconds = Math.max(0, Math.floor(totalSeconds || 0));
-  if (seconds < 60) {
-    return seconds + " s";
-  }
-  if (seconds < 3600) {
-    return Math.floor(seconds / 60) + " min";
-  }
-  return Math.floor(seconds / 3600) + " h " + Math.floor((seconds % 3600) / 60) + " min";
-}
 
 const STATE_WORDS = {
   idle: "Ready to dictate",
@@ -546,7 +535,6 @@ async function refreshHealth() {
     }
     const health = await response.json();
     engineEl.textContent = health.engine || "unknown";
-    uptimeEl.textContent = formatUptime(health.uptime_s);
     languagesEl.textContent = describePair(health.from, health.to);
   } catch (failure) {
     engineEl.textContent = "not answering";
