@@ -114,8 +114,18 @@ fn show_island(handle: &tauri::AppHandle, port: u16, token: &str) {
 }
 
 pub fn captions_toggle(handle: &tauri::AppHandle) {
-    let Some(window) = handle.get_webview_window("captions") else {
-        note("the captions window is missing from the window list");
+    surface_toggle(handle, "captions", "/captions");
+}
+
+pub fn live_toggle(handle: &tauri::AppHandle) {
+    surface_toggle(handle, "live", "/live");
+}
+
+fn surface_toggle(handle: &tauri::AppHandle, label: &str, page: &str) {
+    let Some(window) = handle.get_webview_window(label) else {
+        note(&format!(
+            "the {label} window is missing from the window list"
+        ));
         return;
     };
     if window.is_visible().unwrap_or(false) {
@@ -126,18 +136,20 @@ pub fn captions_toggle(handle: &tauri::AppHandle) {
         .try_state::<Address>()
         .and_then(|address| address.0.lock().ok().and_then(|slot| slot.clone()));
     let Some((port, token)) = address else {
-        note("captions needs the engine address, which is not ready yet");
+        note(&format!(
+            "{label} needs the engine address, which is not ready yet"
+        ));
         return;
     };
-    match Url::parse(&format!("http://127.0.0.1:{port}/captions?t={token}")) {
+    match Url::parse(&format!("http://127.0.0.1:{port}{page}?t={token}")) {
         Ok(url) => {
             if let Err(error) = window.navigate(url) {
-                note(&format!("cannot open captions: {error}"));
+                note(&format!("cannot open {label}: {error}"));
                 return;
             }
             let _ = window.show();
         }
-        Err(error) => note(&format!("cannot build the captions address: {error}")),
+        Err(error) => note(&format!("cannot build the {label} address: {error}")),
     }
 }
 

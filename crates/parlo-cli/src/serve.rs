@@ -39,6 +39,7 @@ const STYLESHEET: &str = include_str!("../web/app.css");
 const SCRIPT: &str = include_str!("../web/app.js");
 const ISLAND: &str = include_str!("../web/island.html");
 const CAPTIONS: &str = include_str!("../web/captions.html");
+const LIVE: &str = include_str!("../web/live.html");
 
 pub fn new_token() -> String {
     let nanos = SystemTime::now()
@@ -1746,6 +1747,25 @@ fn handle(
             .map(|()| Flow::Serve);
         }
         let page = CAPTIONS.replace("__PARLO_VERSION__", VERSION);
+        return respond(
+            stream,
+            "200 OK",
+            "text/html; charset=utf-8",
+            page.as_bytes(),
+        )
+        .map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && (path == "/live" || path == "/live.html") {
+        if !crate::config::load().features.translation {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"live mode is switched off in Settings\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let page = LIVE.replace("__PARLO_VERSION__", VERSION);
         return respond(
             stream,
             "200 OK",

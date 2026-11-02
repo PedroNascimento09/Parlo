@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="parlo-version" content="__PARLO_VERSION__">
+<meta name="color-scheme" content="light dark">
+<title>Parlo Live</title>
+<style>
+  :root {
+    --shell: rgba(18, 15, 14, 0.92);
+    --ink: #faf6ef;
+    --muted: #b6aa9b;
+    --accent: #f2693a;
+    --line: rgba(250, 246, 239, 0.16);
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --shell: rgba(255, 253, 249, 0.96);
+      --ink: #1b1613;
+      --muted: #6b6257;
+      --accent: #d9481f;
+      --line: rgba(27, 22, 19, 0.14);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: transparent; }
+  body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 10px;
+    padding: 16px 20px;
+    font: 15px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    background: var(--shell);
+    border-radius: 18px;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  body.listening .dot {
+    background: var(--accent);
+    animation: pulse 1.4s ease-out infinite;
+  }
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    min-height: 0;
+  }
+  .column {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 6px;
+    min-height: 0;
+    padding-right: 12px;
+  }
+  .column + .column {
+    border-left: 1px solid var(--line);
+    padding-left: 18px;
+    padding-right: 0;
+  }
+  h2 {
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .lines {
+    overflow-y: auto;
+    display: grid;
+    align-content: end;
+    gap: 0.35rem;
+    min-height: 0;
+  }
+  .line {
+    margin: 0;
+    font-size: 1.25rem;
+    line-height: 1.35;
+  }
+  .line.said {
+    color: var(--muted);
+  }
+  footer {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+  }
+  button {
+    border: 1px solid var(--line);
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 12px;
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  button:hover,
+  button:focus-visible {
+    opacity: 1;
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0.5); }
+    70% { box-shadow: 0 0 0 10px rgba(242, 105, 58, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body.listening .dot { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <span class="dot" aria-hidden="true"></span>
+    <span id="state">Live paused</span>
+  </header>
+  <main>
+    <section class="column" aria-labelledby="heard-title">
+      <h2 id="heard-title">Heard</h2>
+      <div class="lines" id="heard" aria-live="polite"></div>
+    </section>
+    <section class="column" aria-labelledby="translated-title">
+      <h2 id="translated-title">Translated</h2>
+      <div class="lines" id="translated" aria-live="polite"></div>
+    </section>
+  </main>
+  <footer>
+    <button id="toggle" type="button">Start</button>
+  </footer>
+<script>
+const token = new URLSearchParams(location.search).get("t") || "";
+const TARGET_RATE = 16000;
+const WINDOW_SECONDS = 2.5;
+const MAX_LINES = 6;
+
+const stateEl = document.getElementById("state");
+const heardEl = document.getElementById("heard");
+const translatedEl = document.getElementById("translated");
+const toggleButton = document.getElementById("toggle");
+
+let stream = null;
+let context = null;
+let source = null;
+let processor = null;
+let sink = null;
+let chunks = [];
+let sending = false;
+let running = false;
+
+function setState(text, listening) {
+  stateEl.textContent = text;
+  document.body.classList.toggle("listening", Boolean(listening));
+}
+
+function downsample(samples, from, to) {
+  if (from === to) {
+    return samples;
+  }
+  const ratio = from / to;
+  const length = Math.max(Math.floor(samples.length / ratio), 1);
+  const out = new Float32Array(length);
+  for (let index = 0; index < length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.min(Math.floor((index + 1) * ratio), samples.length);
+    let sum = 0;
+    let count = 0;
+    for (let cursor = start; cursor < end; cursor += 1) {
+      sum += samples[cursor];
+      count += 1;
+    }
+    out[index] = count ? sum / count : 0;
+  }
+  return out;
+}
+
+function encodeWav(samples, rate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const text = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) {
+      view.setUint8(offset + index, value.charCodeAt(index));
+    }
+  };
+  text(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  text(8, "WAVE");
+  text(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, rate, true);
+  view.setUint32(28, rate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  text(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  for (let index = 0; index < samples.length; index += 1) {
+    const value = Math.max(-1, Math.min(1, samples[index]));
+    view.setInt16(44 + index * 2, value * 32767, true);
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function addLine(target, text, said) {
+  const line = document.createElement("p");
+  line.className = said ? "line said" : "line";
+  line.textContent = text;
+  target.append(line);
+  while (target.children.length > MAX_LINES) {
+    target.firstElementChild.remove();
+  }
+  target.scrollTop = target.scrollHeight;
+}
+
+async function send(buffer, rate) {
+  if (sending || !buffer.length) {
+    return;
+  }
+  sending = true;
+  try {
+    const wav = encodeWav(downsample(buffer, rate, TARGET_RATE), TARGET_RATE);
+    const response = await fetch("/dictate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: wav,
+    });
+    if (!response.ok) {
+      return;
+    }
+    const result = await response.json();
+    const said = (result.text || "").trim();
+    const shown = (result.translation || "").trim();
+    if (said) {
+      addLine(heardEl, said, false);
+    }
+    if (shown) {
+      addLine(translatedEl, shown, false);
+    } else if (said) {
+      addLine(translatedEl, "Add a translation pair in Library, Models.", true);
+    }
+  } catch (failure) {
+    setState("The engine did not answer", running);
+  }
+  sending = false;
+}
+
+async function start() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+    });
+  } catch (failure) {
+    setState("The microphone is blocked", false);
+    return;
+  }
+  context = new (window.AudioContext || window.webkitAudioContext)();
+  source = context.createMediaStreamSource(stream);
+  processor = context.createScriptProcessor(4096, 1, 1);
+  sink = context.createGain();
+  sink.gain.value = 0;
+  chunks = [];
+  processor.onaudioprocess = (event) => {
+    const block = event.inputBuffer.getChannelData(0);
+    const copy = new Float32Array(block.length);
+    copy.set(block);
+    chunks.push(copy);
+    const length = chunks.reduce((total, chunk) => total + chunk.length, 0);
+    if (length < context.sampleRate * WINDOW_SECONDS) {
+      return;
+    }
+    const merged = new Float32Array(length);
+    let offset = 0;
+    for (const chunk of chunks) {
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    }
+    chunks = [];
+    send(merged, context.sampleRate);
+  };
+  source.connect(processor);
+  processor.connect(sink);
+  sink.connect(context.destination);
+  running = true;
+  toggleButton.textContent = "Pause";
+  setState("Live · every 2.5 seconds", true);
+}
+
+function stop() {
+  running = false;
+  toggleButton.textContent = "Start";
+  setState("Live paused", false);
+  if (processor) {
+    processor.onaudioprocess = null;
+    processor.disconnect();
+  }
+  if (source) {
+    source.disconnect();
+  }
+  if (sink) {
+    sink.disconnect();
+  }
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+  if (context && context.state !== "closed") {
+    context.close();
+  }
+  stream = null;
+  context = null;
+  source = null;
+  processor = null;
+  sink = null;
+  chunks = [];
+}
+
+toggleButton.addEventListener("click", () => {
+  if (running) {
+    stop();
+  } else {
+    start();
+  }
+});
+
+start();
+</script>
+</body>
+</html>

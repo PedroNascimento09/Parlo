@@ -47,6 +47,23 @@
         "visible": false,
         "focus": false,
         "backgroundColor": "#00000000"
+      },
+      {
+        "label": "live",
+        "title": "Parlo Live",
+        "width": 860,
+        "height": 460,
+        "minWidth": 640,
+        "minHeight": 320,
+        "resizable": true,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false,
+        "backgroundColor": "#00000000"
       }
     ],
     "security": {

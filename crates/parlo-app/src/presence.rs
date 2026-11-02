@@ -33,7 +33,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "dictate" => crate::island::show(app),
-            "live" => focus_hub(app, Some("live")),
+            "live" => crate::live_toggle(app),
             "captions" => crate::captions_toggle(app),
             "hub" => focus_hub(app, None),
             "settings" => focus_hub(app, Some("settings")),
