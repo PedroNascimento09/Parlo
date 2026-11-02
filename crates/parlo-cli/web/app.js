@@ -2771,6 +2771,7 @@ const voiceStatus = document.getElementById("voice-status");
 const voiceOrigin = document.getElementById("voice-origin");
 const voiceAuthorisationRow = document.getElementById("voice-authorisation-row");
 const voiceAuthorisation = document.getElementById("voice-authorisation");
+const voiceEncrypt = document.getElementById("voice-encrypt");
 
 function voiceHeaders() {
   return { "Content-Type": "application/json", Authorization: "Bearer " + token };
@@ -2782,7 +2783,8 @@ function describeVoice(profile) {
       ? "someone else's voice, with permission"
       : "your own voice";
   const state = profile.consent.revoked_at ? "authorisation revoked" : "authorised";
-  return profile.language + " · " + source + " · " + state;
+  const seal = profile.encrypted ? " · sealed" : "";
+  return profile.language + " · " + source + " · " + state + seal;
 }
 
 function voiceButton(text, handler) {

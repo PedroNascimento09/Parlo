@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+use crate::crypto;
+
 pub const NOTICE_VERSION: &str = "1";
 pub const SAMPLE: &str = "sample.wav";
 
@@ -94,6 +96,8 @@ pub struct Profile {
     pub created_at: u64,
     pub consent: Consent,
     #[serde(default)]
+    pub encrypted: bool,
+    #[serde(default)]
     pub artefacts: Vec<String>,
 }
 
@@ -108,6 +112,7 @@ pub enum VoiceError {
     EmptyField(&'static str),
     ThirdPartyWithoutAuthorisation,
     Duplicate(String),
+    Crypto(String),
     NotFound(String),
     Corrupt(PathBuf),
     Io(io::Error),
@@ -122,6 +127,7 @@ impl fmt::Display for VoiceError {
                 "a third party voice profile requires a declared authorisation"
             ),
             VoiceError::Duplicate(id) => write!(formatter, "voice profile {id} already exists"),
+            VoiceError::Crypto(reason) => write!(formatter, "{reason}"),
             VoiceError::NotFound(id) => write!(formatter, "voice profile {id} does not exist"),
             VoiceError::Corrupt(path) => {
                 write!(
@@ -180,6 +186,7 @@ impl Store {
             language: language.trim().to_string(),
             created_at: consent.accepted_at,
             consent,
+            encrypted: false,
             artefacts: Vec::new(),
         };
         fs::create_dir_all(&folder)?;
@@ -235,7 +242,13 @@ impl Store {
         if !folder.is_dir() {
             return Err(VoiceError::NotFound(id.to_string()));
         }
-        fs::write(folder.join(SAMPLE), bytes)?;
+        let profile = read(&folder)?;
+        let stored = if profile.encrypted {
+            crypto::seal(bytes).map_err(|error| VoiceError::Crypto(error.to_string()))?
+        } else {
+            bytes.to_vec()
+        };
+        fs::write(folder.join(SAMPLE), stored)?;
         self.record_artefact(id, SAMPLE)
     }
 
@@ -245,7 +258,34 @@ impl Store {
         if !path.is_file() {
             return Err(VoiceError::NotFound(id.to_string()));
         }
-        Ok(fs::read(path)?)
+        let stored = fs::read(path)?;
+        if read(&folder)?.encrypted {
+            return crypto::open(&stored).map_err(|error| VoiceError::Crypto(error.to_string()));
+        }
+        Ok(stored)
+    }
+
+    pub fn set_encryption(&self, id: &str, on: bool) -> Result<Profile, VoiceError> {
+        let folder = self.folder(id)?;
+        if !folder.is_dir() {
+            return Err(VoiceError::NotFound(id.to_string()));
+        }
+        let mut profile = read(&folder)?;
+        if profile.encrypted != on {
+            let path = folder.join(SAMPLE);
+            if path.is_file() {
+                let stored = fs::read(&path)?;
+                let converted = if on {
+                    crypto::seal(&stored).map_err(|error| VoiceError::Crypto(error.to_string()))?
+                } else {
+                    crypto::open(&stored).map_err(|error| VoiceError::Crypto(error.to_string()))?
+                };
+                fs::write(&path, converted)?;
+            }
+            profile.encrypted = on;
+            write(&folder, &profile)?;
+        }
+        Ok(profile)
     }
 
     pub fn revoke(&self, id: &str, at: u64) -> Result<Profile, VoiceError> {
@@ -496,6 +536,49 @@ mod tests {
         assert!(matches!(
             store.sample(&profile.id),
             Err(VoiceError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn a_sealed_profile_keeps_its_sample_private_and_gives_it_back() {
+        let sandbox = Sandbox::new("sealed");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        let sealed = store.set_encryption(&profile.id, true).unwrap();
+        assert!(sealed.encrypted);
+        store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        let on_disk = fs::read(store.root().join(&profile.id).join(SAMPLE)).unwrap();
+        assert!(crypto::sealed(&on_disk));
+        assert_eq!(store.sample(&profile.id).unwrap(), b"RIFFwav");
+        let plain = store.set_encryption(&profile.id, false).unwrap();
+        assert!(!plain.encrypted);
+        assert_eq!(store.sample(&profile.id).unwrap(), b"RIFFwav");
+    }
+
+    #[test]
+    fn a_sealed_profile_is_refused_when_the_sample_is_not_sealed() {
+        let sandbox = Sandbox::new("unsealed");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        store.set_encryption(&profile.id, true).unwrap();
+        let path = store.root().join(&profile.id).join(SAMPLE);
+        fs::write(&path, b"RIFFwav").unwrap();
+        assert!(matches!(
+            store.sample(&profile.id),
+            Err(VoiceError::Crypto(_))
         ));
     }
 

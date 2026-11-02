@@ -1004,7 +1004,17 @@ fn handle(
             }
         };
         let language = request.language.unwrap_or_else(|| "pt-PT".to_string());
-        return match voice_store().create(&request.label, &language, consent) {
+        let store = voice_store();
+        let created = store
+            .create(&request.label, &language, consent)
+            .and_then(|profile| {
+                if request.encrypt {
+                    store.set_encryption(&profile.id, true)
+                } else {
+                    Ok(profile)
+                }
+            });
+        return match created {
             Ok(profile) => {
                 let body = serde_json::to_string(&profile).unwrap_or_else(|_| "{}".to_string());
                 respond_json(stream, "201 Created", &body).map(|()| Flow::Serve)
@@ -1834,6 +1844,8 @@ struct VoiceRequest {
     origin: Option<String>,
     #[serde(default)]
     declared_authorisation: bool,
+    #[serde(default)]
+    encrypt: bool,
 }
 
 #[derive(serde::Deserialize)]
