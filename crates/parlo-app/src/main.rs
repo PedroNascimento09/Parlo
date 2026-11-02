@@ -108,10 +108,16 @@ fn watch_island(handle: tauri::AppHandle, port: u16, token: String) {
     let mut quiet = 0;
     loop {
         std::thread::sleep(Duration::from_millis(500));
+        let state = island_state(port, &token);
+        if let Some(name) = state.as_deref() {
+            presence::set_status(&handle, &format!("Parlo · {name}"));
+        }
+        let calm = matches!(state.as_deref(), Some("idle" | "success" | "cancelled"));
         let Some(window) = handle.get_webview_window(island::ISLAND) else {
-            return;
+            quiet = 0;
+            continue;
         };
-        if !window.is_visible().unwrap_or(false) || !island_quiet(port, &token) {
+        if !window.is_visible().unwrap_or(false) || !calm {
             quiet = 0;
             continue;
         }
@@ -121,13 +127,6 @@ fn watch_island(handle: tauri::AppHandle, port: u16, token: String) {
             quiet = 0;
         }
     }
-}
-
-fn island_quiet(port: u16, token: &str) -> bool {
-    let Some(state) = island_state(port, token) else {
-        return false;
-    };
-    matches!(state.as_str(), "idle" | "success" | "cancelled")
 }
 
 fn island_state(port: u16, token: &str) -> Option<String> {

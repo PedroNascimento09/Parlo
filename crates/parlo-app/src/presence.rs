@@ -65,3 +65,9 @@ pub fn focus_hub(app: &AppHandle, section: Option<&str>) {
         }
     }
 }
+
+pub fn set_status(app: &AppHandle, text: &str) {
+    if let Some(tray) = app.tray_by_id("presence") {
+        let _ = tray.set_tooltip(Some(text));
+    }
+}
