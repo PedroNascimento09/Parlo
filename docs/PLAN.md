@@ -26,7 +26,7 @@ Built: `island.html` separates `stop()` from `cancel()`, Escape cancels, losing 
 
 1. Add `crates/parlo-cli/src/live_state.rs` with the eight states from `docs/UX.md` and the legal transitions, plus a unit test per transition.
 2. Expose it as `GET /state` and push it to the island as `POST /state/stream` or a short poll, whichever the island renders without a frame drop.
-3. Render the same state in three places: island line, tray tooltip, window readiness line. No surface invents its own wording.
+3. Render the same state in three places: island line, tray tooltip, window readiness line. No surface invents its own wording. The onboarding is three steps and proves the loop instead of describing it: it waits for the shared state to say listening, then for a new history entry, then reads back the sentence and the program it landed in. Skipping sets a local flag and never asks again.
 
 Check: start a dictation and watch the island, the tray and the window agree at every step.
 
