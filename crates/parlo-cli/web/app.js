@@ -1082,11 +1082,12 @@ function describeModels(state) {
     reason.textContent = model.reason || "";
     name.append(reason);
 
-    if (model.state === "loaded" || model.state === "installed") {
+    if (model.state === "loaded" || model.state === "installed" || model.state === "in use") {
       const badge = document.createElement("span");
       badge.className = "models-state";
       badge.dataset.state = model.state;
-      badge.textContent = model.state === "loaded" ? "In memory" : "On disk";
+      badge.textContent =
+        model.state === "loaded" ? "In memory" : model.state === "in use" ? "In use" : "On disk";
       name.append(badge);
     }
 

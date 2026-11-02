@@ -79,6 +79,16 @@ pub struct Session {
     pipeline: Mutex<Pipeline>,
     settings: RwLock<Chosen>,
     target: Mutex<Option<usize>>,
+    busy: AtomicBool,
+    known: Mutex<Vec<String>>,
+}
+
+struct Working<'a>(&'a AtomicBool);
+
+impl Drop for Working<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Relaxed);
+    }
 }
 
 fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
@@ -100,6 +110,30 @@ impl Session {
         self.pipeline
             .lock()
             .unwrap_or_else(|error| error.into_inner())
+    }
+
+    fn working(&self) -> Working<'_> {
+        self.busy.store(true, Ordering::Relaxed);
+        Working(&self.busy)
+    }
+
+    fn is_working(&self) -> bool {
+        self.busy.load(Ordering::Relaxed)
+    }
+
+    fn unit_snapshot(&self) -> Vec<String> {
+        if self.is_working() {
+            return self
+                .known
+                .lock()
+                .map(|known| known.clone())
+                .unwrap_or_default();
+        }
+        let loaded = self.pipeline().loaded_units().unwrap_or_default();
+        if let Ok(mut known) = self.known.lock() {
+            *known = loaded.clone();
+        }
+        loaded
     }
 
     fn chosen(&self) -> RwLockReadGuard<'_, Chosen> {
@@ -128,6 +162,8 @@ impl Session {
                 shortcut: stored.shortcut,
             }),
             target: Mutex::new(None),
+            busy: AtomicBool::new(false),
+            known: Mutex::new(Vec::new()),
         })
     }
 
@@ -177,6 +213,7 @@ impl Session {
     }
 
     fn write(&self, pcm16: &[u8], target: &str) -> Result<(String, String), String> {
+        let _working = self.working();
         let target = if target.is_empty() {
             None
         } else {
@@ -1059,12 +1096,12 @@ fn handle(
     }
 
     if method == "GET" && path == "/models" {
-        let loaded = session.pipeline().loaded_units().unwrap_or_default();
+        let loaded = session.unit_snapshot();
         let pair = {
             let chosen = session.chosen();
             format!("{}-{}", chosen.from, chosen.to)
         };
-        let body = models::as_json(&models::status(), &loaded, &pair);
+        let body = models::as_json(&models::status(), &loaded, &pair, session.is_working());
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
@@ -1987,6 +2024,7 @@ fn handle(
 
     let mut samples = Vec::new();
     let mut transcript = String::new();
+    let _working = session.working();
     let mut pipeline = session.pipeline();
     for chunk in wav.samples.chunks(320) {
         for output in pipeline.push(chunk) {

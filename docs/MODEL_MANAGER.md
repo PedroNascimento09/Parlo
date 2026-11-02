@@ -44,7 +44,7 @@ One row per model, and every row answers the same questions in the same order, i
 | Speed on this machine | `0.11 real time`, measured here, not a brochure number |
 | Quality note | `word error 0.231 on this project's corpus` |
 | Licence | `CC-BY-4.0` |
-| State | `Not installed`, `Installed · unloaded`, `Loaded`, `In use` |
+- **In use** marks the recogniser while a transcription or a translation runs. The list keeps the last answer the engine gave about what it holds and does not ask again while the engine is busy, so the row is honest and the page never waits. The translation pair is not marked: whether a request translated depends on the language it wrote into.
 
 States are the four the plan already fixes, and they are visible: a model that is downloaded but not loaded says so, and so does one that a task is currently using.
 
