@@ -2366,6 +2366,7 @@ function showRoute(name) {
     }
   }
   showLibraryTab(libraryTab);
+  showSettingsTab(settingsTab);
 }
 
 function routeNow() {
@@ -2400,6 +2401,36 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
   button.addEventListener("click", () => {
     libraryTab = button.dataset.tab;
     showLibraryTab(libraryTab);
+  });
+}
+
+const SETTINGS_TABS = {
+  dictation: ["settings"],
+  cleanup: ["intelligence"],
+  advanced: ["licences"],
+};
+
+let settingsTab = "dictation";
+
+function showSettingsTab(name) {
+  const chosen = SETTINGS_TABS[name] ? name : "dictation";
+  for (const [key, ids] of Object.entries(SETTINGS_TABS)) {
+    for (const id of ids) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.classList.toggle("tab-away", key !== chosen);
+      }
+    }
+  }
+  for (const button of document.querySelectorAll("#settings-tabs .tab")) {
+    button.setAttribute("aria-selected", String(button.dataset.tab === chosen));
+  }
+}
+
+for (const button of document.querySelectorAll("#settings-tabs .tab")) {
+  button.addEventListener("click", () => {
+    settingsTab = button.dataset.tab;
+    showSettingsTab(settingsTab);
   });
 }
 
