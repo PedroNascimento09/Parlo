@@ -4,8 +4,11 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-02
+
 - The update box only offers **Install update** when the release carries a build for this platform. `/update` now reports whether an archive exists, and a release without one shows the sentence and the link to what changed instead of a button that did nothing.
 - The models can live on another drive. **Keep the models in this folder** copies the whole tree, compares the copied bytes with the original, and only then deletes the old folder and saves the new path; a copy that does not match leaves both in place and says so, and a relative path or a folder inside the old one is refused before anything moves.
+
 ## [0.2.1] - 2026-11-02
 
 - The translation pairs are in the model list. **Portuguese to English** and **English to Portuguese** each show their size on disk and their own Download and Remove buttons, detected from both layouts the engine uses (`mt/en-pt/ct2` and `mt/translate-pt_en-1_9/model`), so what the list shows is the file that is actually there.
