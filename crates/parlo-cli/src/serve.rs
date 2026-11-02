@@ -347,6 +347,63 @@ fn handle(
             .map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/meeting/summary" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value =
+            serde_json::from_slice(&body).unwrap_or(serde_json::Value::Null);
+        let id = request
+            .get("id")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        let meeting = if id.is_empty() {
+            crate::meeting::list().into_iter().next()
+        } else {
+            crate::meeting::load(&id).ok()
+        };
+        let Some(meeting) = meeting else {
+            return respond_json(
+                stream,
+                "404 Not Found",
+                "{\"error\":\"there is no meeting to summarise\"}",
+            )
+            .map(|()| Flow::Serve);
+        };
+        let settings = crate::config::load().intelligence;
+        if settings.local_url.trim().is_empty() {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"no model is configured on this machine. Set the local model address in Settings, Cleanup, and the summary stays here\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let model = if settings.local_model.trim().is_empty() {
+            "local-model".to_string()
+        } else {
+            settings.local_model.clone()
+        };
+        let text = crate::summary::prompt(&meeting.title, &meeting.segments);
+        return match crate::summary::ask(&settings.local_url, &model, &text) {
+            Ok(summary) => respond_json(
+                stream,
+                "200 OK",
+                &format!(
+                    "{{\"meeting\":\"{}\",\"summary\":\"{}\"}}",
+                    json_string(&meeting.id),
+                    json_string(&summary)
+                ),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "502 Bad Gateway", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "POST" && path == "/meetings/clear" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")

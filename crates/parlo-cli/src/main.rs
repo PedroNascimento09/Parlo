@@ -23,6 +23,7 @@ mod playback;
 mod record;
 mod serve;
 mod sidecar;
+mod summary;
 mod update;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");

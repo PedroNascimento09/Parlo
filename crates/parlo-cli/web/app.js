@@ -1093,6 +1093,8 @@ const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
 const meetingExport = document.getElementById("meeting-export");
 const meetingSearch = document.getElementById("meeting-search");
+const meetingSummary = document.getElementById("meeting-summary");
+const meetingSummaryText = document.getElementById("meeting-summary-text");
 const meetingMatches = document.getElementById("meeting-matches");
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
@@ -2211,6 +2213,28 @@ async function searchMeetings() {
 }
 
 meetingSearch.addEventListener("input", searchMeetings);
+
+async function summariseMeeting() {
+  meetingSummaryText.textContent = "Reading the transcript.";
+  try {
+    const response = await fetch("/meeting/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({}),
+    });
+    const answer = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      meetingSummaryText.textContent = answer.error || "The summary failed.";
+      return;
+    }
+    meetingSummaryText.textContent = answer.summary || "The model answered with nothing.";
+  } catch (failure) {
+    meetingSummaryText.textContent = "The model could not be reached.";
+  }
+}
+
+meetingSummary.addEventListener("click", () => summariseMeeting());
+
 
 
 meetingLive.addEventListener("click", () => {
