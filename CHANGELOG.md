@@ -6,6 +6,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - Read aloud speaks European Portuguese. The voice Parlo installs is `pt_PT-tugão-medium` instead of the Brazilian `pt_BR-faber-medium`, because on this project's own 20 sentences the European voice scored 0.24 word error rate against 0.67 for the Brazilian one, measured with Parakeet v3 on Windows 11 and 4 threads. Models already on disk are not moved: the list offers the European voice as a separate download, and `setup_models.py --voice pt_br` still fetches the Brazilian one.
 - The reference battery takes the voice as an option, `--voice`, and records it in the report beside the recogniser and the thread count, so a number is never read against the wrong voice.
+- Removing a voice or a translation pair switches the feature that needed it off and says so where the person did it: the list names the switch in Settings and the model to download again, and `POST /models/remove/<id>` carries the same sentence. The recogniser has no switch to turn off, because dictation exists only while its files are on disk.
 
 ## [0.2.1.2] - 2026-11-02
 

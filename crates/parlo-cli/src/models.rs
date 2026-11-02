@@ -252,11 +252,41 @@ pub fn cancel() -> Result<(), String> {
     Ok(())
 }
 
-pub fn remove(id: &str) -> Result<(), String> {
+fn feature_of(id: &str) -> Option<&'static str> {
+    match id {
+        "voice-pt" | "voice-en" => Some("voice"),
+        "mt-pt-en" | "mt-en-pt" => Some("translation"),
+        _ => None,
+    }
+}
+
+fn switch_off(feature: &str) -> Result<&'static str, String> {
+    let mut config = crate::config::load();
+    let sentence = match feature {
+        "voice" => {
+            config.features.voice = false;
+            " Read aloud is off in Settings until a voice is downloaded again."
+        }
+        _ => {
+            config.features.translation = false;
+            " Translation is off in Settings until a pair is downloaded again."
+        }
+    };
+    crate::config::save(&config)
+        .map_err(|error| format!("the model was removed but the switch was not saved: {error}"))?;
+    Ok(sentence)
+}
+
+pub fn remove(id: &str) -> Result<String, String> {
     let paths = paths_for(id).ok_or_else(|| format!("{id} is not a model this app manages"))?;
     if downloading(&status()) {
         return Err("a download is running; wait for it to finish".to_string());
     }
+    let name = status()
+        .into_iter()
+        .find(|model| model.id == id)
+        .map(|model| model.name)
+        .unwrap_or_else(|| id.to_string());
     for path in paths {
         let removed = if path.is_dir() {
             fs::remove_dir_all(&path)
@@ -272,7 +302,11 @@ pub fn remove(id: &str) -> Result<(), String> {
             ));
         }
     }
-    Ok(())
+    let mut message = format!("{name} removed.");
+    if let Some(feature) = feature_of(id) {
+        message.push_str(switch_off(feature)?);
+    }
+    Ok(message)
 }
 
 fn running() -> &'static Mutex<Option<Child>> {
@@ -493,6 +527,15 @@ mod tests {
     #[test]
     fn an_unknown_model_is_refused_before_any_file_is_touched() {
         assert!(remove("nonsense").is_err());
+    }
+
+    #[test]
+    fn every_removable_model_names_the_switch_it_turns_off() {
+        assert_eq!(feature_of("voice-pt"), Some("voice"));
+        assert_eq!(feature_of("voice-en"), Some("voice"));
+        assert_eq!(feature_of("mt-pt-en"), Some("translation"));
+        assert_eq!(feature_of("mt-en-pt"), Some("translation"));
+        assert_eq!(feature_of("parakeet"), None);
     }
 
     #[test]

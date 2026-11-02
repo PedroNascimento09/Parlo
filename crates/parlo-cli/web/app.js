@@ -1152,9 +1152,12 @@ async function modelAction(model, button) {
       return;
     }
     modelsNote.textContent = model.installed
-      ? "Removed. The feature that needed it will say so before it is used."
+      ? detail.message || "Removed."
       : "Downloading " + model.name + ". This page stays usable meanwhile.";
     await loadModels();
+    if (model.installed) {
+      await loadFeatures();
+    }
   } catch (failure) {
     modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
     button.disabled = false;

@@ -1477,7 +1477,15 @@ fn handle(
         }
         let id = &path["/models/remove/".len()..];
         return match models::remove(id) {
-            Ok(()) => respond_json(stream, "200 OK", "{\"removed\":true}").map(|()| Flow::Serve),
+            Ok(message) => respond_json(
+                stream,
+                "200 OK",
+                &format!(
+                    "{{\"removed\":true,\"message\":\"{}\"}}",
+                    json_string(&message)
+                ),
+            )
+            .map(|()| Flow::Serve),
             Err(error) => respond_json(
                 stream,
                 "409 Conflict",
