@@ -1339,7 +1339,7 @@ kbd {
 }
 
 .wordmark-mark {
-  height: 26px;
+  height: 32px;
   width: auto;
   fill: var(--ink);
 }
