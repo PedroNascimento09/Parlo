@@ -1090,6 +1090,13 @@ function describeModels(state) {
       name.append(badge);
     }
 
+    if (model.quality) {
+      const quality = document.createElement("span");
+      quality.className = "models-kind models-quality";
+      quality.textContent = model.quality;
+      name.append(quality);
+    }
+
     const fact = document.createElement("span");
     fact.className = "models-fact" + (model.installed ? " ready" : "");
     fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";

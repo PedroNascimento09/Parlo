@@ -441,6 +441,19 @@ pub fn reason_for(model: &Model, machine: &str) -> String {
     format!("{what}, and this machine has {machine}")
 }
 
+fn quality_for(model: &Model) -> &'static str {
+    match model.id {
+        "parakeet" => "word error 0.24 on 20 European Portuguese sentences, Windows 11, 4 threads",
+        "mt-pt-en" => {
+            "numbers, clocks and negations 1.000, names 0.980 on this project's gate corpus"
+        }
+        "mt-en-pt" => {
+            "numbers and negations 1.000, clocks and names 0.980 on this project's gate corpus"
+        }
+        _ => "no quality number measured",
+    }
+}
+
 fn state_of(model: &Model, loaded: &[String], pair: &str) -> &'static str {
     if !model.installed {
         return "not installed";
@@ -478,6 +491,7 @@ pub fn as_json(models: &[Model], loaded: &[String], pair: &str) -> String {
                 "state": state_of(model, loaded, pair),
                 "bytes": model.bytes,
                 "reason": reason_for(model, &described),
+                "quality": quality_for(model),
             })
         })
         .collect();
@@ -639,5 +653,18 @@ mod tests {
         let parsed: serde_json::Value =
             serde_json::from_str(&as_json(&models, &[], "pt-en")).unwrap();
         assert_eq!(parsed["models"][0]["state"], "installed");
+    }
+
+    #[test]
+    fn every_row_states_a_number_or_says_there_is_none() {
+        let models = status();
+        let parsed: serde_json::Value =
+            serde_json::from_str(&as_json(&models, &[], "pt-en")).unwrap();
+        for row in parsed["models"].as_array().unwrap() {
+            let quality = row["quality"].as_str().unwrap();
+            assert!(!quality.is_empty(), "{}", row["id"]);
+        }
+        let voice = models.iter().find(|model| model.id == "voice-en").unwrap();
+        assert!(quality_for(voice).contains("not measured"));
     }
 }

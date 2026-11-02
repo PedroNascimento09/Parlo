@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Every model row states the quality number measured for it, or says there is none. The recogniser carries 0.24 word error on 20 European Portuguese sentences, Windows 11, 4 threads; each translation pair carries its gate result for numbers, clocks, negations and names; the voices say no number was measured, because none was.
+
 - The model list says whether a model sits in memory. `GET /models` answers with `state` on every row, `not installed`, `installed` or `loaded`, by asking the engine what it holds through a new `loaded` op in the sidecar protocol, which the bundled engine and the Python one both answer. The page shows `In memory` beside a model that is loaded and `On disk` beside one that is downloaded but not loaded, so the two no longer read the same. A translation pair reads as loaded only for the direction the engine is set to, because the engine holds one direction at a time. `In use` is not shown: the local server answers one request at a time, so no page can read the list while a model works.
 
 ## [0.2.1.3] - 2026-11-02
