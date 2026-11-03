@@ -2176,6 +2176,17 @@ function renderMeetings(meetings) {
       line.textContent = "Note · " + meetingClock(note.at_ms) + " · " + note.text;
       detail.append(line);
     }
+    for (const action of meeting.actions || []) {
+      const line = document.createElement("p");
+      line.className = "meeting-note";
+      line.textContent =
+        "Action · " +
+        action.owner +
+        (action.due ? " · " + action.due : "") +
+        " · " +
+        action.text;
+      detail.append(line);
+    }
     meetingList.append(term, detail);
   }
   meetingNote.textContent =
