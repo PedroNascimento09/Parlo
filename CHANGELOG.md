@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Whisper base joins the library as a second way to dictate: 145 MB on disk, 148 MB in memory, 0.24 of real time and 0.377 word error on the same recordings, downloaded and removed like any other model. It counts as a dictation model without pretending the whole set is installed, and the first start offers it when Parakeet's 746 MB would leave less than 700 MB of headroom on this machine.
+
 - The first start explains itself with measured numbers. Instead of a bare suggestion, each feature states the memory and speed of the model behind it on this machine, so the line reads like `671 MB to download · suggested here · Parakeet TDT 0.6B v3: 746 MB in memory, 0.21 realtime here`.
 
 - The library shows what each model costs on this machine. A new `engines/cascade/scripts/model_memory.py` loads one unit, warms it, then reports the memory it added and how fast it ran: Parakeet 746 MB at 0.21 of real time, Whisper base 148 MB at 0.24, each voice about 2 MB, each translation pair about 112 MB at 278 and 510 ms per sentence. Rows carry those numbers beside the size on disk, measured here rather than quoted from a model card.
