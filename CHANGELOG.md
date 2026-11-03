@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The first start offers the dictation model in one line: the button carries the size it costs, and **More models** beside it opens Library, Models, where every other component is one press away. **Status: built and served; the download itself was not started here.**
+
 - The voice card starts with a name already in it, keeps the origin and the permission in front of you, and the button says **Create the profile**; the language, the purpose and the sealing stay behind **More options**. **Status: the page is built and served; the flow was not exercised against a microphone here.**
 
 - Home says one thing. The three-feature download plan with its sizes, memory figures and speed per model is gone: the first start offers **Download the dictation model**, and everything else waits in Library, Models. The microphone, engine, last translation and model count left the Home card and now sit at the bottom of Settings, Dictation, where they belong. **Status: built and opened in light mode; the buttons still call the same endpoints.**

@@ -586,10 +586,19 @@ body {
   font-size: 17px;
 }
 
-.welcome-install {
-  margin-top: 12px;
-  padding: 12px 24px;
-  font-size: 16px;
+.welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+
+.welcome-more {
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .welcome-status {

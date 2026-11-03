@@ -831,7 +831,11 @@ function reflectFirstRun(ready, dictation, downloading) {
   stopWelcomeClock();
   welcomeInstall.hidden = false;
   welcomeInstall.disabled = modelsPolling;
-  welcomeInstall.textContent = "Download the dictation model";
+  const parakeet = catalogEntries.find((item) => item.unit === "parakeet");
+  welcomeInstall.textContent =
+    parakeet && parakeet.size_mb
+      ? "Download the dictation model · " + parakeet.size_mb + " MB"
+      : "Download the dictation model";
 }
 
 let modelState = { models: [], ready: false, dictation: false, downloading: false };
@@ -1289,6 +1293,11 @@ async function downloadModels(path = "/models") {
 
 modelsInstall.addEventListener("click", () => downloadModels());
 welcomeInstall.addEventListener("click", () => downloadChosenModels(["parakeet"]));
+
+document.getElementById("welcome-more").addEventListener("click", () => {
+  libraryTab = "models";
+  showLibraryTab("models");
+});
 modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
