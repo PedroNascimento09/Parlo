@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The writing style picked on first open shapes what Parlo writes: formal closes sentences and capitalises them, casual drops the first capital and the final stop, excited keeps the exclamation.
+
 - First open asks for a name and a writing style in one card, with a serif display face across headings, and Home drops the download card for a quieter greeting with totals.
 
 - Snippets join terms and short forms: a spoken phrase can become a long piece of text such as a URL, and the Insights pane now lists the words you reach for most.

@@ -2511,6 +2511,18 @@ fn handle(
         } else {
             Some(crate::config::load().intelligence.clean)
         };
+        let style_header = header(&headers, "x-parlo-style")
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        if !style_header.is_empty() && !crate::style::is_known(&style_header) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"x-parlo-style needs formal, casual or excited\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
         let target = dictation_target(&write, &session.chosen().from);
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
@@ -2526,6 +2538,7 @@ fn handle(
             }
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        let text = crate::style::shape(&text, &style_header);
         let app = crate::insert::foreground()
             .map(|(_, name)| name)
             .unwrap_or_else(|_| "unknown".to_string());

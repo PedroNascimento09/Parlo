@@ -383,7 +383,11 @@ async function sendPartial() {
   try {
     const response = await fetch("/listen/stream", {
       method: "POST",
-      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      headers: {
+      "Content-Type": "audio/wav",
+      Authorization: "Bearer " + token,
+      "x-parlo-style": localStorage.getItem("parlo.style") || "",
+    },
       body: encodeWav(downsample(merged, context.sampleRate, TARGET_RATE), TARGET_RATE),
     });
     if (!response.ok || busy) {

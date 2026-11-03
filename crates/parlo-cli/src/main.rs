@@ -34,6 +34,7 @@ mod retention;
 mod sample;
 mod serve;
 mod sidecar;
+mod style;
 mod summary;
 mod update;
 

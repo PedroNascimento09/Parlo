@@ -2492,7 +2492,11 @@ function meetingStatus(last) {
 async function meetingSegment(wav) {
   const response = await fetch("/dictate", {
     method: "POST",
-    headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+    headers: {
+      "Content-Type": "audio/wav",
+      Authorization: "Bearer " + token,
+      "x-parlo-style": storedStyle(),
+    },
     body: wav,
   });
   if (!response.ok) {
