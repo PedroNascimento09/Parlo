@@ -1,7 +1,9 @@
 import hashlib
+import http.server
 import json
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -157,6 +159,92 @@ class MetadataTest(unittest.TestCase):
                 setup_models.expected("repo", "encoder.int8.onnx", Path("encoder.int8.onnx")),
                 (None, None),
             )
+
+
+class RangedServer(http.server.BaseHTTPRequestHandler):
+    seen: list = []
+
+    def do_GET(self):
+        header = self.headers.get("Range")
+        RangedServer.seen.append(header)
+        start = 0
+        if header and header.startswith("bytes="):
+            start = int(header.split("=")[1].split("-")[0])
+        body = PAYLOAD[start:]
+        self.send_response(206 if start else 200)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *arguments):
+        return
+
+
+class PlainServer(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(PAYLOAD)))
+        self.end_headers()
+        self.wfile.write(PAYLOAD)
+
+    def log_message(self, *arguments):
+        return
+
+
+class ResumableDownloadTest(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.root = Path(self.directory.name)
+        self.target = self.root / "models" / "model.bin"
+        self.target.parent.mkdir(parents=True)
+        RangedServer.seen = []
+        self.server = http.server.HTTPServer(("127.0.0.1", 0), RangedServer)
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}/model.bin"
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.directory.cleanup()
+
+    def part(self) -> Path:
+        return self.target.with_suffix(self.target.suffix + ".part")
+
+    def serve(self, handler):
+        server = http.server.HTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        return server, f"http://127.0.0.1:{server.server_address[1]}/model.bin"
+
+    def test_a_half_download_resumes_where_it_stopped(self):
+        self.part().write_bytes(PAYLOAD[:1000])
+        setup_models.download(self.url, self.target, DIGEST, len(PAYLOAD))
+        self.assertEqual(self.target.read_bytes(), PAYLOAD)
+        self.assertEqual(RangedServer.seen[-1], "bytes=1000-")
+        self.assertFalse(self.part().exists())
+
+    def test_a_server_without_ranges_starts_again(self):
+        server, url = self.serve(PlainServer)
+        try:
+            self.part().write_bytes(PAYLOAD[:1000])
+            setup_models.download(url, self.target, DIGEST, len(PAYLOAD))
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(self.target.read_bytes(), PAYLOAD)
+
+    def test_a_complete_part_is_checked_without_a_request(self):
+        self.part().write_bytes(PAYLOAD)
+        RangedServer.seen = []
+        setup_models.download(self.url, self.target, DIGEST, len(PAYLOAD))
+        self.assertEqual(self.target.read_bytes(), PAYLOAD)
+        self.assertEqual(RangedServer.seen, [])
+
+    def test_a_part_larger_than_the_published_size_is_dropped(self):
+        self.part().write_bytes(PAYLOAD + b"extra")
+        setup_models.download(self.url, self.target, DIGEST, len(PAYLOAD))
+        self.assertEqual(self.target.read_bytes(), PAYLOAD)
 
 
 if __name__ == "__main__":

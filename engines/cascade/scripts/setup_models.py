@@ -74,34 +74,72 @@ def download(url: str, target: Path, sha256: str | None = None, size: int | None
             print(f"present   {target.name}")
             return
         print(f"repairing {target.name}, {target.stat().st_size} bytes is not the published {size}")
-    print(f"download  {target.name}")
     target.parent.mkdir(parents=True, exist_ok=True)
     part = target.with_suffix(target.suffix + ".part")
+    held = part.stat().st_size if part.exists() else 0
+    if size is not None and held > size:
+        part.unlink()
+        held = 0
+    if held and size is not None and held == size:
+        print(f"checking  {target.name}, every byte is already here")
+        verify(part, target, held, sha256, size)
+        return
+    print(f"download  {target.name}" + (f", resuming at {held} bytes" if held else ""))
     digest = hashlib.sha256()
-    written = 0
-    try:
-        with urllib.request.urlopen(url, timeout=60) as response, part.open("wb") as sink:
-            while True:
-                block = response.read(CHUNK)
-                if not block:
-                    break
+    if held:
+        with part.open("rb") as existing:
+            for block in iter(lambda: existing.read(CHUNK), b""):
                 digest.update(block)
-                sink.write(block)
-                written += len(block)
+    headers = {"Range": f"bytes={held}-"} if held else {}
+    written = held
+    try:
+        request = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(request, timeout=60) as response:
+            resumed = held > 0 and getattr(response, "status", None) == 206
+            if held and not resumed:
+                written = 0
+                digest = hashlib.sha256()
+            with part.open("ab" if resumed else "wb") as sink:
+                while True:
+                    block = response.read(CHUNK)
+                    if not block:
+                        break
+                    digest.update(block)
+                    sink.write(block)
+                    written += len(block)
         if size is not None and written != size:
+            part.unlink(missing_ok=True)
             raise SystemExit(
                 f"{target.name} arrived with {written} bytes, the server published {size}; "
                 "nothing was installed, run again"
             )
-        if sha256 is not None and digest.hexdigest() != sha256:
+        verify(part, target, written, sha256, size)
+    except SystemExit:
+        raise
+    except BaseException:
+        if written:
+            print(f"kept      {written} bytes in {part.name}, run again to resume")
+        raise
+
+
+def verify(part: Path, target: Path, written: int, sha256: str | None, size: int | None) -> None:
+    if sha256 is not None:
+        digest = hashlib.sha256()
+        with part.open("rb") as held:
+            for block in iter(lambda: held.read(CHUNK), b""):
+                digest.update(block)
+        if digest.hexdigest() != sha256:
+            part.unlink(missing_ok=True)
             raise SystemExit(
                 f"{target.name} does not match the digest the server published; "
                 "nothing was installed, run again"
             )
-        part.replace(target)
-    except BaseException:
-        part.unlink(missing_ok=True)
-        raise
+    if size is not None and written != size:
+        raise SystemExit(
+            f"{target.name} arrived with {written} bytes, the server published {size}; "
+            "nothing was installed, run again"
+        )
+    part.replace(target)
 
 
 def install_voices(names=None) -> None:
