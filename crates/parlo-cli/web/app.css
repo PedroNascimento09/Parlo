@@ -2262,3 +2262,54 @@ body.first-run #status-list {
 .settings-row + .settings-note {
   margin-top: 12px;
 }
+
+.settings-panes > .settings,
+.settings-panes > .onboarding {
+  padding: 26px 28px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.settings-head {
+  margin-bottom: 6px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-head h2 {
+  margin: 0 0 6px;
+}
+
+.settings-head .settings-note {
+  margin: 0;
+}
+
+.settings-row {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.settings-row:first-of-type {
+  margin-top: 6px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.settings-row .settings-note {
+  margin: 0;
+}
+
+.stage-facts {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.stage-facts > div {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-sunken);
+}
