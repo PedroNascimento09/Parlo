@@ -2190,7 +2190,7 @@ function renderMeetings(meetings) {
   }
   for (const meeting of meetings) {
     const term = document.createElement("dt");
-    const day = new Date((meeting.started_at || 0) * 1000);
+    const day = new Date(meeting.started_at || 0);
     term.textContent =
       (meeting.title || "Untitled") +
       " · " +
@@ -2765,7 +2765,7 @@ async function stopMeeting(message) {
 function meetingsAsMarkdown(meetings) {
   const lines = [];
   for (const meeting of meetings) {
-    const day = new Date((meeting.started_at || 0) * 1000).toLocaleString();
+    const day = new Date(meeting.started_at || 0).toLocaleString();
     lines.push("# " + (meeting.title || "Untitled"), "", day, "");
     for (const segment of meeting.segments || []) {
       const total = Math.floor((segment.at_ms || 0) / 1000);

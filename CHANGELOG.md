@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A meeting shows the day it happened. The page multiplied a timestamp that is already in milliseconds by a thousand, so the list and the search results printed years like 58807; both now read the stored value as it is. **Status: the fix is a number on screen, checked against the meeting file on this computer.**
+
 - Settings has four sections instead of eight: **Dictation**, **Languages**, **Shortcuts**, and **Advanced**, which holds the cleanup engine, the cloud provider, the privacy statement and the version together. Voice creation keeps the name, the origin and the permission in front of you and moves the language, the purpose and the sealing behind **More options**; the paragraph above it no longer repeats the same sentence twice. **Status: built and opened at 1000 px in light and dark; the buttons still call the same endpoints, so no behaviour changed.**
 
 - The window reads as an application, not a page. A 232 px sidebar holds the wordmark, the five sections and a footer that says nothing leaves this computer; the content sits in a flat workspace with 14 px body type, 34 px controls, hairline panels and no drop shadows; the palette moved from beige and terracotta to a warm paper with a deep olive accent and lime only for state, and dark mode is a green-tinted black. Sections are Home, Meetings, Voice, Library and Settings, and Alt+1 to Alt+5 follow that order. **Status: seen in this window's own server at one width; the narrow layout collapses the sidebar to a row and was not opened below 720 px.**
