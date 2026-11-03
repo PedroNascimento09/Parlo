@@ -204,10 +204,6 @@
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
     <button type="button" class="tab" data-tab="languages">Languages</button>
     <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
-    <button type="button" class="tab" data-tab="cleanup">Cleanup</button>
-    <button type="button" class="tab" data-tab="provider">Provider</button>
-    <button type="button" class="tab" data-tab="privacy">Privacy</button>
-    <button type="button" class="tab" data-tab="about">About</button>
     <button type="button" class="tab" data-tab="advanced">Advanced</button>
   </nav>
   <div class="settings-panes">
@@ -571,23 +567,12 @@
   <section class="voice" id="voice" aria-labelledby="voice-title">
     <div class="voice-head">
       <h2 id="voice-title">My voice</h2>
-      <p class="voice-note">A voice profile is how Parlo speaks a translation in your own voice instead of a neutral one. The profile, the sample and anything made from it stay in a folder on this computer, and you can revoke or delete them here at any time. Record a ten second sample here, hear it back, and export or delete the profile at any time; the sample and anything made from it stay in a folder on this computer. The engine that turns the sample into speech is not in this build yet, so the profile cannot speak a translation until it is.</p>
+      <p class="voice-note">Parlo can read a translation in your own voice. The sample stays in a folder on this computer and you can revoke or delete it at any time. The engine that clones the voice is not in this build yet.</p>
     </div>
     <form id="voice-form" class="voice-form">
       <label class="field" for="voice-label">
         <span class="field-label">Name for this voice</span>
         <input id="voice-label" class="field-input" type="text" maxlength="48" required autocomplete="off">
-      </label>
-      <label class="field" for="voice-language">
-        <span class="field-label">Speech language</span>
-        <select id="voice-language" class="field-input">
-          <option value="pt-PT">Portuguese (Portugal)</option>
-          <option value="en">English</option>
-        </select>
-      </label>
-      <label class="field field-wide" for="voice-purpose">
-        <span class="field-label">What you will use it for</span>
-        <input id="voice-purpose" class="field-input" type="text" value="translating my own speech" required>
       </label>
       <label class="field" for="voice-origin">
         <span class="field-label">Whose voice is this</span>
@@ -600,10 +585,24 @@
         <input id="voice-authorisation" type="checkbox">
         <span>I have this person's permission to use their voice for this purpose.</span>
       </label>
-      <label class="check" for="voice-encrypt">
-        <input id="voice-encrypt" type="checkbox">
-        <span>Keep the sample sealed with my Windows account</span>
-      </label>
+      <details class="more">
+        <summary>More options</summary>
+        <label class="field" for="voice-language">
+          <span class="field-label">Speech language</span>
+          <select id="voice-language" class="field-input">
+            <option value="pt-PT">Portuguese (Portugal)</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label class="field field-wide" for="voice-purpose">
+          <span class="field-label">What you will use it for</span>
+          <input id="voice-purpose" class="field-input" type="text" value="translating my own speech" required>
+        </label>
+        <label class="check" for="voice-encrypt">
+          <input id="voice-encrypt" type="checkbox">
+          <span>Keep the sample sealed with my Windows account</span>
+        </label>
+      </details>
       <button id="voice-create" class="install" type="submit">Create voice profile</button>
     </form>
     <p class="voice-note" id="voice-status" aria-live="polite"></p>

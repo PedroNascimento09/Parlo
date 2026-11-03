@@ -3677,11 +3677,7 @@ const SETTINGS_TABS = {
   dictation: ["settings"],
   languages: ["languages"],
   shortcuts: ["shortcuts"],
-  cleanup: ["intelligence"],
-  provider: ["provider"],
-  privacy: ["privacy"],
-  about: ["about"],
-  advanced: ["licences"],
+  advanced: ["intelligence", "provider", "privacy", "about"],
 };
 
 let settingsTab = "dictation";
