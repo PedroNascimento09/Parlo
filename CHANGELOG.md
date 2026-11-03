@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A voice sample is refused before a profile is built on it. Past the length window and the silent recording, `POST /voice/sample` now measures how many samples clip, the level in dBFS and how much of the recording carries speech, and answers with the number that failed: a sample that clips, sits under -40 dBFS, or spends more than two thirds of its time in pauses is refused with what to change. **Status: six tests on synthetic buffers; not run against a real microphone here.**
+
+- The window's type scale, measure and states were lifted: a larger display and title size, 42 px fields, one focus colour on every control, hover and press feedback on the recent and history lists, and the reduced-motion list extended to both. **Status: checked in this window's own server on Home; the other sections share the same rules and were not opened.**
+
 ## [0.2.3] - 3 November 2026
 
 - Meetings can expire. `parlo retention --days 30` counts the meetings older than that window and stops, and only `--apply` deletes them; a window of 0 days is refused instead of wiping the folder, the library is left alone because it already keeps the last 200 entries, and nothing runs on a timer, so no file disappears without someone typing the command. **Status: covered by tests; the dry run was run here, nothing was deleted.**
