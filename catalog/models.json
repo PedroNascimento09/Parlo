@@ -18,7 +18,10 @@
       "memory_mb": 148,
       "speed": "0.24 realtime here",
       "quality": "0.377 word error on recorded Portuguese speech",
-      "unit": "whisper"
+      "unit": "whisper",
+      "category": "dictation",
+      "rtf": 0.24,
+      "wer": 0.377
     },
     {
       "id": "piper-voice-pt-pt-tugao",
@@ -36,7 +39,8 @@
       "size_mb": 63,
       "unit": "voice-pt",
       "memory_mb": 2,
-      "speed": "0.16 realtime here"
+      "speed": "0.16 realtime here",
+      "category": "voice"
     },
     {
       "id": "piper-voice-pt-br-faber",
@@ -52,7 +56,8 @@
         "pt-BR"
       ],
       "size_mb": 63,
-      "note": "Listed for reference: the app installs the European voice."
+      "note": "Listed for reference: the app installs the European voice.",
+      "category": "voice"
     },
     {
       "id": "piper-voice-en-us-lessac",
@@ -70,7 +75,8 @@
       "size_mb": 63,
       "unit": "voice-en",
       "memory_mb": 2,
-      "speed": "0.12 realtime here"
+      "speed": "0.12 realtime here",
+      "category": "voice"
     },
     {
       "id": "parakeet-tdt-0.6b-v3",
@@ -92,7 +98,10 @@
       "quality": "0.243 word error on recorded Portuguese speech",
       "unit": "parakeet",
       "memory_mb": 746,
-      "speed": "0.21 realtime here"
+      "speed": "0.21 realtime here",
+      "category": "dictation",
+      "rtf": 0.21,
+      "wer": 0.24
     },
     {
       "id": "qwen3-asr-0.6b",
@@ -109,7 +118,8 @@
         "en",
         "28 more"
       ],
-      "note": "Experimental: this project has no working Windows build for it yet."
+      "note": "Experimental: this project has no working Windows build for it yet.",
+      "category": "dictation"
     },
     {
       "id": "kokoro-82m",
@@ -125,7 +135,8 @@
         "en",
         "pt-BR"
       ],
-      "note": "No European Portuguese voice, so it is not offered."
+      "note": "No European Portuguese voice, so it is not offered.",
+      "category": "voice"
     },
     {
       "id": "whisper-large-v3",
@@ -140,7 +151,8 @@
       "languages": [
         "99 languages"
       ],
-      "note": "Settings offers Whisper base, 145 MB int8, instead."
+      "note": "Settings offers Whisper base, 145 MB int8, instead.",
+      "category": "dictation"
     },
     {
       "id": "opus-mt-pt-en",
@@ -159,7 +171,8 @@
       "quality": "numbers, clocks and negations 1.000; names 0.980",
       "unit": "mt-pt-en",
       "memory_mb": 112,
-      "speed": "278 ms per sentence here"
+      "speed": "278 ms per sentence here",
+      "category": "translation"
     },
     {
       "id": "opus-mt-en-pt",
@@ -178,7 +191,8 @@
       "quality": "numbers and negations 1.000; clocks and names 0.980",
       "unit": "mt-en-pt",
       "memory_mb": 111,
-      "speed": "510 ms per sentence here"
+      "speed": "510 ms per sentence here",
+      "category": "translation"
     },
     {
       "id": "whisper-small",
@@ -193,7 +207,8 @@
       "languages": [
         "99 languages"
       ],
-      "note": "Listed for a machine that can spare more memory than base; this build installs base."
+      "note": "Listed for a machine that can spare more memory than base; this build installs base.",
+      "category": "dictation"
     },
     {
       "id": "whisper-medium",
@@ -208,7 +223,8 @@
       "languages": [
         "99 languages"
       ],
-      "note": "Listed for a machine with memory to spare; this build installs base."
+      "note": "Listed for a machine with memory to spare; this build installs base.",
+      "category": "dictation"
     },
     {
       "id": "piper-voice-en-gb-alba",
@@ -224,7 +240,8 @@
         "en-GB"
       ],
       "size_mb": 63,
-      "note": "Listed; the app installs the US voice."
+      "note": "Listed; the app installs the US voice.",
+      "category": "voice"
     },
     {
       "id": "piper-voice-de-de-thorsten",
@@ -241,7 +258,8 @@
       ],
       "size_mb": 63,
       "note": "The engine reads a German translation aloud with it once installed.",
-      "unit": "voice-de"
+      "unit": "voice-de",
+      "category": "voice"
     },
     {
       "id": "piper-voice-fr-fr-siwis",
@@ -258,7 +276,8 @@
       ],
       "size_mb": 63,
       "note": "The engine reads a French translation aloud with it once installed.",
-      "unit": "voice-fr"
+      "unit": "voice-fr",
+      "category": "voice"
     },
     {
       "id": "opus-mt-pt-de-direct",
@@ -273,7 +292,230 @@
       "languages": [
         "pt to de"
       ],
-      "note": "Translates correctly as an ONNX export; no export is published, so the folder is built locally as docs/MODEL_MANAGER.md describes, and the engine loads it before any other pair."
+      "note": "Translates correctly as an ONNX export; no export is published, so the folder is built locally as docs/MODEL_MANAGER.md describes, and the engine loads it before any other pair.",
+      "category": "translation"
+    },
+    {
+      "id": "whisper-tiny",
+      "kind": "asr",
+      "category": "dictation",
+      "name": "Whisper tiny",
+      "purpose": "Speech to text",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-tiny",
+      "attribution": "Whisper tiny, MIT",
+      "languages": [
+        "99 languages"
+      ],
+      "size_mb": 75,
+      "unit": null,
+      "note": "The smallest Whisper, for short notes on a slow machine. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "whisper-small",
+      "kind": "asr",
+      "category": "dictation",
+      "name": "Whisper small",
+      "purpose": "Speech to text",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-small",
+      "attribution": "Whisper small, MIT",
+      "languages": [
+        "99 languages"
+      ],
+      "size_mb": 466,
+      "unit": null,
+      "note": "Between base and medium, when base mishears too often. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "whisper-medium",
+      "kind": "asr",
+      "category": "dictation",
+      "name": "Whisper medium",
+      "purpose": "Speech to text",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-medium",
+      "attribution": "Whisper medium, MIT",
+      "languages": [
+        "99 languages"
+      ],
+      "size_mb": 1530,
+      "unit": null,
+      "note": "Slower and more accurate, for a machine with memory to spare. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "whisper-large-v3",
+      "kind": "asr",
+      "category": "dictation",
+      "name": "Whisper large v3",
+      "purpose": "Speech to text",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-large-v3",
+      "attribution": "Whisper large v3, MIT",
+      "languages": [
+        "99 languages"
+      ],
+      "size_mb": 3090,
+      "unit": null,
+      "note": "The most accurate Whisper, and the heaviest. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "moonshine-base",
+      "kind": "asr",
+      "category": "dictation",
+      "name": "Moonshine base",
+      "purpose": "Speech to text",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/UsefulSensors/moonshine-base",
+      "attribution": "Moonshine base, MIT",
+      "languages": [
+        "English"
+      ],
+      "size_mb": 61,
+      "unit": null,
+      "note": "Built for short commands, on English only. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "piper-voice-es-es-davefx",
+      "kind": "voice",
+      "category": "voice",
+      "name": "Piper voice, Spanish, Davefx",
+      "purpose": "Read text aloud",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices",
+      "attribution": "Piper voice, Spanish, Davefx, MIT",
+      "languages": [
+        "Spanish"
+      ],
+      "size_mb": 63,
+      "unit": null,
+      "note": "A Spanish speaker for text read aloud. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "piper-voice-it-it-riccardo",
+      "kind": "voice",
+      "category": "voice",
+      "name": "Piper voice, Italian, Riccardo",
+      "purpose": "Read text aloud",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices",
+      "attribution": "Piper voice, Italian, Riccardo, MIT",
+      "languages": [
+        "Italian"
+      ],
+      "size_mb": 63,
+      "unit": null,
+      "note": "An Italian speaker, small enough for a laptop. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "opus-mt-en-de",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus MT, English to German",
+      "purpose": "Translation",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Helsinki-NLP/opus-mt-en-de",
+      "attribution": "Opus MT, English to German, MIT",
+      "languages": [
+        "English",
+        "German"
+      ],
+      "size_mb": 83,
+      "unit": null,
+      "note": "The same family as the Portuguese pairs. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "opus-mt-fr-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus MT, French to English",
+      "purpose": "Translation",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Helsinki-NLP/opus-mt-fr-en",
+      "attribution": "Opus MT, French to English, MIT",
+      "languages": [
+        "French",
+        "English"
+      ],
+      "size_mb": 83,
+      "unit": null,
+      "note": "A French to English pair, 83 MB like the others. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "qwen2.5-7b-instruct",
+      "kind": "text",
+      "category": "text",
+      "name": "Qwen 2.5 7B Instruct",
+      "purpose": "Answers and summaries on this machine",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "verified",
+      "source": "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct",
+      "attribution": "Qwen 2.5 7B Instruct, Apache-2.0",
+      "languages": [
+        "100 languages"
+      ],
+      "size_mb": 4700,
+      "unit": null,
+      "note": "The model to ask what a meeting decided, without a network. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "phi-3-mini-4k-instruct",
+      "kind": "text",
+      "category": "text",
+      "name": "Phi-3 mini 4K Instruct",
+      "purpose": "Answers and summaries on this machine",
+      "version": "",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct",
+      "attribution": "Phi-3 mini 4K Instruct, MIT",
+      "languages": [
+        "English"
+      ],
+      "size_mb": 2200,
+      "unit": null,
+      "note": "Small enough to sit beside the dictation model in memory. Not in this build yet; listed so the choice is visible."
+    },
+    {
+      "id": "mistral-7b-instruct",
+      "kind": "text",
+      "category": "text",
+      "name": "Mistral 7B Instruct",
+      "purpose": "Answers and summaries on this machine",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "verified",
+      "source": "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3",
+      "attribution": "Mistral 7B Instruct, Apache-2.0",
+      "languages": [
+        "English",
+        "French",
+        "German",
+        "Spanish",
+        "Italian"
+      ],
+      "size_mb": 4100,
+      "unit": null,
+      "note": "A general writer and reader of long text. Not in this build yet; listed so the choice is visible."
     }
   ]
 }

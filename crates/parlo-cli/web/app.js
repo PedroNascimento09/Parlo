@@ -1381,6 +1381,16 @@ window.setInterval(checkCall, 20000);
 checkCall();
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
+const catalogTabs = document.getElementById("catalog-tabs");
+const CATALOG_CATEGORIES = [
+  ["dictation", "Dictation"],
+  ["voice", "Voice"],
+  ["translation", "Translation"],
+  ["text", "Text"],
+];
+let catalogTab = "dictation";
+let catalogLast = [];
+
 const historyList = document.getElementById("history-list");
 const historyNote = document.getElementById("history-note");
 const historySearch = document.getElementById("history-search");
@@ -2827,7 +2837,123 @@ async function downloadCatalogModel(entry, button) {
   }
 }
 
+function catalogBar(label, score, value) {
+  const row = document.createElement("div");
+  row.className = "metric";
+  const term = document.createElement("span");
+  term.textContent = label;
+  const track = document.createElement("span");
+  track.className = "track";
+  const fill = document.createElement("i");
+  fill.className = "fill";
+  fill.style.width = Math.max(4, Math.min(100, Math.round(score))) + "%";
+  track.append(fill);
+  const readout = document.createElement("span");
+  readout.textContent = value;
+  row.append(term, track, readout);
+  return row;
+}
+
+function bestOf(items, key) {
+  const values = items
+    .map((item) => item[key])
+    .filter((value) => typeof value === "number" && value > 0);
+  return values.length ? Math.min(...values) : 0;
+}
+
+function catalogCard(entry, items) {
+  const card = document.createElement("article");
+  card.className = "model-card";
+
+  const head = document.createElement("div");
+  head.className = "model-card-head";
+  const name = document.createElement("h3");
+  const base = entry.name || entry.id;
+  const version = (entry.version || "").trim();
+  name.textContent =
+    version && !base.toLowerCase().includes(version.toLowerCase()) ? base + " " + version : base;
+  const licence = document.createElement("span");
+  licence.className = "model-licence";
+  licence.textContent = entry.license || "licence unknown";
+  head.append(name, licence);
+
+  const purpose = document.createElement("p");
+  purpose.className = "model-purpose";
+  purpose.textContent = entry.purpose || CATALOG_KINDS[entry.kind] || entry.kind;
+  card.append(head, purpose);
+
+  const facts = document.createElement("dl");
+  facts.className = "model-facts";
+  const fact = (term, value) => {
+    if (!value) {
+      return;
+    }
+    const label = document.createElement("dt");
+    label.textContent = term;
+    const detail = document.createElement("dd");
+    detail.textContent = value;
+    facts.append(label, detail);
+  };
+  fact("Size", entry.size_mb ? entry.size_mb + " MB" : "");
+  fact("Memory", entry.memory_mb ? entry.memory_mb + " MB" : "");
+  fact("Languages", Array.isArray(entry.languages) ? entry.languages.join(", ") : "");
+  if (facts.childElementCount) {
+    card.append(facts);
+  }
+
+  const bars = document.createElement("div");
+  bars.className = "model-bars";
+  if (typeof entry.rtf === "number") {
+    const best = bestOf(items, "rtf");
+    bars.append(catalogBar("Speed", (100 * best) / entry.rtf, entry.rtf.toFixed(2) + "× realtime"));
+  }
+  if (typeof entry.wer === "number") {
+    const best = bestOf(items, "wer");
+    bars.append(catalogBar("Accuracy", (100 * best) / entry.wer, entry.wer.toFixed(3) + " word error"));
+  }
+  if (typeof entry.latency_ms === "number") {
+    const best = bestOf(items, "latency_ms");
+    bars.append(catalogBar("Speed", (100 * best) / entry.latency_ms, entry.latency_ms + " ms a sentence"));
+  }
+  if (bars.childElementCount) {
+    card.append(bars);
+  } else {
+    const unmeasured = document.createElement("p");
+    unmeasured.className = "model-note";
+    unmeasured.textContent = "Not measured on this machine yet.";
+    card.append(unmeasured);
+  }
+
+  if (entry.note) {
+    const note = document.createElement("p");
+    note.className = "model-note";
+    note.textContent = entry.note;
+    card.append(note);
+  }
+
+  const installed =
+    Boolean(entry.unit) &&
+    modelState.models.some((model) => model.id === entry.unit && model.installed);
+  const action = document.createElement("button");
+  action.type = "button";
+  action.className = "models-action";
+  if (installed) {
+    action.textContent = "On disk";
+    action.disabled = true;
+  } else if (entry.unit) {
+    action.textContent = "Download";
+    action.addEventListener("click", () => downloadCatalogModel(entry, action));
+  } else {
+    action.textContent = "Not in this build";
+    action.disabled = true;
+  }
+  card.append(action);
+  return card;
+}
+
 function renderCatalog(entries) {
+  catalogLast = entries;
+  catalogTabs.replaceChildren();
   catalogList.replaceChildren();
   if (!entries.length) {
     catalogNote.textContent = "This build carries an empty catalogue.";
@@ -2835,68 +2961,41 @@ function renderCatalog(entries) {
   }
   const sections = new Map();
   for (const entry of entries) {
-    const section = entry.purpose || CATALOG_KINDS[entry.kind] || "Other";
-    if (!sections.has(section)) {
-      sections.set(section, []);
+    const key = entry.category || "other";
+    if (!sections.has(key)) {
+      sections.set(key, []);
     }
-    sections.get(section).push(entry);
+    sections.get(key).push(entry);
   }
-  for (const [section, items] of sections) {
-    const heading = document.createElement("h3");
-    heading.textContent = section;
-    const list = document.createElement("dl");
-    list.className = "status";
-    for (const entry of items) {
-    const term = document.createElement("dt");
-    term.textContent = (entry.name || entry.id) + (entry.version ? " · " + entry.version : "");
-    const detail = document.createElement("dd");
-    const parts = [entry.purpose || CATALOG_KINDS[entry.kind] || entry.kind];
-    if (Array.isArray(entry.languages) && entry.languages.length) {
-      parts.push(entry.languages.join(", "));
-    }
-    parts.push(entry.size_mb ? entry.size_mb + " MB" : "size not measured");
-    if (entry.memory_mb) {
-      parts.push(entry.memory_mb + " MB in memory");
-    }
-    if (entry.speed) {
-      parts.push(entry.speed);
-    }
-    parts.push(
-      entry.license + (entry.status === "verified" ? ", licence checked" : ", " + entry.status),
-    );
-    if (entry.quality) {
-      parts.push(entry.quality);
-    }
-    if (entry.note) {
-      parts.push(entry.note);
-    }
-    detail.textContent = parts.join(" · ");
-    const installed =
-      Boolean(entry.unit) &&
-      modelState.models.some((model) => model.id === entry.unit && model.installed);
-    if (installed) {
-      const badge = document.createElement("span");
-      badge.className = "models-kind";
-      badge.textContent = "On disk";
-      detail.append(" ", badge);
-    }
-    if (entry.unit && !installed) {
-      const action = document.createElement("button");
-      action.type = "button";
-      action.className = "models-action";
-      action.textContent = "Download";
-      action.addEventListener("click", () => downloadCatalogModel(entry, action));
-      detail.append(" ", action);
-    }
-    list.append(term, detail);
-    }
-    catalogList.append(heading, list);
+  const known = CATALOG_CATEGORIES.filter(([key]) => sections.has(key));
+  if (!sections.has(catalogTab)) {
+    catalogTab = known.length ? known[0][0] : "other";
   }
+  for (const [key, label] of known) {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "catalog-tab";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(key === catalogTab));
+    tab.textContent = label + " · " + sections.get(key).length;
+    tab.addEventListener("click", () => {
+      catalogTab = key;
+      renderCatalog(entries);
+    });
+    catalogTabs.append(tab);
+  }
+  const items = sections.get(catalogTab) || [];
+  for (const entry of items) {
+    catalogList.append(catalogCard(entry, items));
+  }
+  const label = (CATALOG_CATEGORIES.find(([key]) => key === catalogTab) || [catalogTab, catalogTab])[1];
   catalogNote.textContent =
+    items.length +
+    " in " +
+    label +
+    ", " +
     entries.length +
-    " components in " +
-    sections.size +
-    " sections, with what each does, the languages it covers and its licence. Download brings that model alone.";
+    " in this build. A bar compares models measured on this machine; a model with no measurement says so.";
 }
 
 async function loadHistory() {

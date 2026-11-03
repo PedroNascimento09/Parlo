@@ -33,6 +33,7 @@ pub fn as_json() -> String {
                 "id": text("id"),
                 "name": text("name"),
                 "kind": text("kind"),
+                "category": text("category"),
                 "purpose": text("purpose"),
                 "version": text("version"),
                 "license": text("license"),
@@ -44,6 +45,9 @@ pub fn as_json() -> String {
                 "memory_mb": optional("memory_mb"),
                 "speed": optional("speed"),
                 "quality": optional("quality"),
+                "rtf": optional("rtf"),
+                "wer": optional("wer"),
+                "latency_ms": optional("latency_ms"),
                 "unit": optional("unit"),
                 "note": optional("note"),
             })
@@ -55,6 +59,18 @@ pub fn as_json() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_artifact_belongs_to_a_known_category() {
+        let known = ["dictation", "voice", "translation", "text"];
+        for artifact in artifacts() {
+            let category = artifact
+                .get("category")
+                .and_then(|value| value.as_str())
+                .unwrap_or("");
+            assert!(known.contains(&category), "{artifact:?}");
+        }
+    }
 
     #[test]
     fn the_embedded_catalog_is_readable() {
