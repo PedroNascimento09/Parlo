@@ -58,6 +58,7 @@ These are choices made while the product has no users yet. They narrow the plan 
 
 - **Code first, audio later.** Capture code lands before anyone has heard it, and a capture path that has not been listened to is written down as **implemented, not verified**. No release notes call a capture path tested because it compiles.
 - **No user gate while there are no users.** G2 is the author's own first session on a clean install, run with `parlo doctor`, and the external round begins with the first external user. A release never claims user validation it does not have.
+- **One machine is the hardware matrix.** The author's own PC is the only machine Parlo is measured on, so the compatibility matrix names that machine, its CPU, memory and disk, and every other profile in this file is a stated limit rather than a measured claim. The numbers of anyone else who runs it go into `docs/BENCHMARKS.md` with their hardware beside them, and nothing is promised for a machine nobody has run.
 - **The catalogue is a choice, not a curriculum.** The library is grouped by what a model does, entries are not tested to exist, and only what ships or is claimed carries a measured number.
 - **A decision is recorded once.** When this section and an older document disagree, this section wins and the older document is corrected in the same commit.
 
