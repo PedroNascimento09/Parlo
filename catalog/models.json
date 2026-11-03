@@ -179,6 +179,99 @@
       "unit": "mt-en-pt",
       "memory_mb": 111,
       "speed": "510 ms per sentence here"
+    },
+    {
+      "id": "whisper-small",
+      "kind": "asr",
+      "version": "small",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-small",
+      "attribution": "Whisper small, MIT, converted by Systran for faster-whisper",
+      "name": "Whisper small",
+      "purpose": "Speech to text",
+      "languages": [
+        "99 languages"
+      ],
+      "note": "Listed for a machine that can spare more memory than base; this build installs base."
+    },
+    {
+      "id": "whisper-medium",
+      "kind": "asr",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-medium",
+      "attribution": "Whisper medium, MIT, converted by Systran for faster-whisper",
+      "name": "Whisper medium",
+      "purpose": "Speech to text",
+      "languages": [
+        "99 languages"
+      ],
+      "note": "Listed for a machine with memory to spare; this build installs base."
+    },
+    {
+      "id": "piper-voice-en-gb-alba",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alba/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "English voice (Alba, UK)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "en-GB"
+      ],
+      "size_mb": 63,
+      "note": "Listed; the app installs the US voice."
+    },
+    {
+      "id": "piper-voice-de-de-thorsten",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "German voice (Thorsten)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "de-DE"
+      ],
+      "size_mb": 63,
+      "note": "Listed; German has no translation pair in this build."
+    },
+    {
+      "id": "piper-voice-fr-fr-siwis",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "French voice (Siwis)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "fr-FR"
+      ],
+      "size_mb": 63,
+      "note": "Listed; French has no translation pair in this build."
+    },
+    {
+      "id": "opus-mt-pt-de-direct",
+      "kind": "mt",
+      "version": "1.0",
+      "license": "Apache-2.0",
+      "status": "verified",
+      "source": "https://huggingface.co/Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa",
+      "attribution": "OPUS-MT Romance to German, Jörg Tiedemann and Santhosh Thottingal, licensed Apache 2.0",
+      "name": "Portuguese to German (direct)",
+      "purpose": "Translation",
+      "languages": [
+        "pt to de"
+      ],
+      "note": "Translates correctly in float32; no converted build runs yet, so there is no Download button."
     }
   ]
 }

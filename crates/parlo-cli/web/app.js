@@ -2666,7 +2666,20 @@ function renderCatalog(entries) {
     catalogNote.textContent = "This build carries an empty catalogue.";
     return;
   }
+  const sections = new Map();
   for (const entry of entries) {
+    const section = entry.purpose || CATALOG_KINDS[entry.kind] || "Other";
+    if (!sections.has(section)) {
+      sections.set(section, []);
+    }
+    sections.get(section).push(entry);
+  }
+  for (const [section, items] of sections) {
+    const heading = document.createElement("h3");
+    heading.textContent = section;
+    const list = document.createElement("dl");
+    list.className = "status";
+    for (const entry of items) {
     const term = document.createElement("dt");
     term.textContent = (entry.name || entry.id) + (entry.version ? " · " + entry.version : "");
     const detail = document.createElement("dd");
@@ -2708,11 +2721,15 @@ function renderCatalog(entries) {
       action.addEventListener("click", () => downloadCatalogModel(entry, action));
       detail.append(" ", action);
     }
-    catalogList.append(term, detail);
+    list.append(term, detail);
+    }
+    catalogList.append(heading, list);
   }
   catalogNote.textContent =
     entries.length +
-    " components this build knows, with what each does, the languages it covers and its licence. Download brings that model alone.";
+    " components in " +
+    sections.size +
+    " sections, with what each does, the languages it covers and its licence. Download brings that model alone.";
 }
 
 async function loadHistory() {

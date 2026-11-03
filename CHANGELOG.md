@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The model library is a catalogue by purpose, not a checklist. Rows are grouped into **Speech to text**, **Read text aloud**, **Translation** and **Speech synthesis**, the catalogue names more recognisers and voices than this build installs, and a model that cannot run here says why instead of offering a button. Only what ships or is claimed is measured, so a new row no longer waits for a benchmark of its own.
+
 - The first start ends with the next step instead of a silent change of screen. When a recogniser arrives, the page says `Dictation is ready.` and names the shortcut to hold, taken from the settings, so nobody is left looking at a window with no instruction.
 
 - Whisper can be removed like anything else: the row deletes the weights from the Hugging Face cache, and a download still blocks removal. The first-start choice also stops resetting itself every time the model list refreshes, so a tick someone made stays ticked.

@@ -1532,3 +1532,14 @@ kbd {
   color: var(--muted);
   font-size: 0.9rem;
 }
+
+.catalog-sections h3 {
+  margin: 24px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.catalog-sections dl:first-of-type {
+  margin-top: 0;
+}
