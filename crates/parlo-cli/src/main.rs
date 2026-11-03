@@ -181,10 +181,29 @@ fn doctor() -> Result<(), String> {
     println!();
     if failed > 0 {
         println!("status            not ready: {failed} checks need attention");
+        let missing = models::status()
+            .iter()
+            .filter(|model| !model.installed)
+            .count();
+        if let Some(advice) = next_step(failed, missing) {
+            println!("next              {advice}");
+        }
         std::process::exit(1);
     }
     println!("status            ready for a first session");
     Ok(())
+}
+
+fn next_step(failed: usize, missing: usize) -> Option<String> {
+    if failed == 0 {
+        return None;
+    }
+    if missing > 0 {
+        return Some(format!(
+            "open parlo app and press Install models: {missing} of them are not on this computer"
+        ));
+    }
+    Some("fix the lines marked fail, then run parlo doctor again".to_string())
 }
 
 fn first_session_checks() -> Vec<(bool, String)> {
@@ -1504,4 +1523,27 @@ fn synthetic_speech(sample_rate: u32, duration_ms: u32) -> Vec<f32> {
         }
     }
     samples
+}
+
+#[cfg(test)]
+mod next_step_tests {
+    use super::*;
+
+    #[test]
+    fn a_ready_machine_gets_no_advice() {
+        assert_eq!(next_step(0, 0), None);
+    }
+
+    #[test]
+    fn missing_models_point_at_the_window() {
+        let advice = next_step(2, 8).expect("advice");
+        assert!(advice.contains("parlo app"), "{advice}");
+        assert!(advice.contains("8"), "{advice}");
+    }
+
+    #[test]
+    fn another_failure_points_at_the_failed_lines() {
+        let advice = next_step(1, 0).expect("advice");
+        assert!(advice.contains("marked fail"), "{advice}");
+    }
 }
