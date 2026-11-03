@@ -882,6 +882,11 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/hardware" {
+        return respond_json(stream, "200 OK", &crate::hardware::detect().as_json())
+            .map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/catalog" {
         return respond_json(stream, "200 OK", &crate::catalog::as_json()).map(|()| Flow::Serve);
     }

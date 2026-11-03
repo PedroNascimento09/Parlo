@@ -21,11 +21,26 @@ const VOICES: &[(&str, &str, &str)] = &[
 const TRANSLATION: &[(&str, &str, &str, &str)] = &[
     ("mt-pt-en", "pt", "en", "Portuguese to English"),
     ("mt-en-pt", "en", "pt", "English to Portuguese"),
+    ("mt-pt-es", "pt", "es", "Portuguese to Spanish"),
+    ("mt-es-pt", "es", "pt", "Spanish to Portuguese"),
+    ("mt-pt-fr", "pt", "fr", "Portuguese to French"),
+    ("mt-fr-pt", "fr", "pt", "French to Portuguese"),
+    ("mt-pt-it", "pt", "it", "Portuguese to Italian"),
+    ("mt-pt-nl", "pt", "nl", "Portuguese to Dutch"),
+    ("mt-pt-ru", "pt", "ru", "Portuguese to Russian"),
+    ("mt-en-es", "en", "es", "English to Spanish"),
+    ("mt-en-fr", "en", "fr", "English to French"),
+    ("mt-en-it", "en", "it", "English to Italian"),
+    ("mt-de-en", "de", "en", "German to English"),
+    ("mt-fr-de", "fr", "de", "French to German"),
+    ("mt-es-en", "es", "en", "Spanish to English"),
 ];
 
 pub const DICTATION_UNITS: &[&str] = &["parakeet"];
 pub const REMAINING_UNITS: &[&str] = &[
-    "voice-pt", "voice-en", "voice-de", "voice-fr", "mt-pt-en", "mt-en-pt",
+    "voice-pt", "voice-en", "voice-de", "voice-fr", "mt-pt-en", "mt-en-pt", "mt-pt-es", "mt-es-pt",
+    "mt-pt-fr", "mt-fr-pt", "mt-pt-it", "mt-pt-nl", "mt-pt-ru", "mt-en-es", "mt-en-fr", "mt-en-it",
+    "mt-de-en", "mt-fr-de", "mt-es-en",
 ];
 
 pub struct Model {
@@ -56,7 +71,7 @@ pub fn unit_of(id: &str) -> Option<&'static str> {
     match id {
         "parakeet" | "whisper" => Some("recognition"),
         "voice-pt" | "voice-en" | "voice-de" | "voice-fr" => Some("voice"),
-        "mt-pt-en" | "mt-en-pt" => Some("translation"),
+        id if TRANSLATION.iter().any(|(unit, _, _, _)| *unit == id) => Some("translation"),
         _ => None,
     }
 }
@@ -258,8 +273,10 @@ fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
             root.join("fr_FR-siwis-medium.onnx"),
             root.join("fr_FR-siwis-medium.onnx.json"),
         ]),
-        "mt-pt-en" => Some(translation_paths(&root, "pt", "en")),
-        "mt-en-pt" => Some(translation_paths(&root, "en", "pt")),
+        id if TRANSLATION.iter().any(|(unit, _, _, _)| *unit == id) => TRANSLATION
+            .iter()
+            .find(|(unit, _, _, _)| *unit == id)
+            .map(|(_, source, target, _)| translation_paths(&root, source, target)),
         "whisper" => {
             whisper_cache().map(|cache| vec![cache.join("models--Systran--faster-whisper-base")])
         }
@@ -354,7 +371,7 @@ pub fn cancel() -> Result<(), String> {
 fn feature_of(id: &str) -> Option<&'static str> {
     match id {
         "voice-pt" | "voice-en" | "voice-de" | "voice-fr" => Some("voice"),
-        "mt-pt-en" | "mt-en-pt" => Some("translation"),
+        id if TRANSLATION.iter().any(|(unit, _, _, _)| *unit == id) => Some("translation"),
         _ => None,
     }
 }

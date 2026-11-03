@@ -1967,8 +1967,8 @@
         "pt"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Portuguese to Spanish, the same family as the pairs already here. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-pt-es",
+      "note": "Portuguese to Spanish, the same family as the pairs already here.",
       "pair": "pt→es"
     },
     {
@@ -1987,8 +1987,8 @@
         "es"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Spanish to Portuguese. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-es-pt",
+      "note": "Spanish to Portuguese.",
       "pair": "es→pt"
     },
     {
@@ -2007,8 +2007,8 @@
         "pt"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Portuguese to French. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-pt-fr",
+      "note": "Portuguese to French.",
       "pair": "pt→fr"
     },
     {
@@ -2027,8 +2027,8 @@
         "fr"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "French to Portuguese. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-fr-pt",
+      "note": "French to Portuguese.",
       "pair": "fr→pt"
     },
     {
@@ -2047,8 +2047,8 @@
         "pt"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Portuguese to Italian. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-pt-it",
+      "note": "Portuguese to Italian.",
       "pair": "pt→it"
     },
     {
@@ -2067,8 +2067,8 @@
         "pt"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Portuguese to Dutch. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-pt-nl",
+      "note": "Portuguese to Dutch.",
       "pair": "pt→nl"
     },
     {
@@ -2087,8 +2087,8 @@
         "pt"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Portuguese to Russian. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-pt-ru",
+      "note": "Portuguese to Russian.",
       "pair": "pt→ru"
     },
     {
@@ -2107,8 +2107,8 @@
         "es"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "English to Spanish. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-en-es",
+      "note": "English to Spanish.",
       "pair": "en→es"
     },
     {
@@ -2127,8 +2127,8 @@
         "fr"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "English to French. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-en-fr",
+      "note": "English to French.",
       "pair": "en→fr"
     },
     {
@@ -2147,8 +2147,8 @@
         "it"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "English to Italian. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-en-it",
+      "note": "English to Italian.",
       "pair": "en→it"
     },
     {
@@ -2167,8 +2167,8 @@
         "de"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "German to English. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-de-en",
+      "note": "German to English.",
       "pair": "de→en"
     },
     {
@@ -2187,8 +2187,8 @@
         "fr"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "French to German. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-fr-de",
+      "note": "French to German.",
       "pair": "fr→de"
     },
     {
@@ -2207,8 +2207,8 @@
         "es"
       ],
       "size_mb": 83,
-      "unit": null,
-      "note": "Spanish to English. Not in this build yet; listed so the choice is visible.",
+      "unit": "mt-es-en",
+      "note": "Spanish to English.",
       "pair": "es→en"
     }
   ]

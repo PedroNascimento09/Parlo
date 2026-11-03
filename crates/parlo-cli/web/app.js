@@ -2837,6 +2837,65 @@ const CATALOG_KINDS = {
 };
 
 let catalogEntries = [];
+let machine = null;
+
+async function loadHardware() {
+  try {
+    const response = await fetch("/hardware", { cache: "no-store" });
+    if (response.ok) {
+      machine = await response.json();
+    }
+  } catch (failure) {
+    machine = null;
+  }
+}
+
+function fitBadge(entry) {
+  if (!machine || !machine.memory_mb) {
+    return null;
+  }
+  const need = entry.memory_mb || (entry.size_mb ? Math.round(entry.size_mb * 2.2) : 0);
+  if (!need) {
+    return null;
+  }
+  const gigabyte = 1024;
+  const memory = Math.round(machine.memory_mb / gigabyte);
+  const disk = Math.round((machine.free_disk_mb || 0) / gigabyte);
+  const needed = (need / gigabyte).toFixed(1);
+  let state = "green";
+  let reason =
+    "Fits here: it needs about " + needed + " GB of memory and this machine has " + memory + " GB.";
+  if (need > machine.memory_mb * 0.9) {
+    state = "red";
+    reason =
+      "Too heavy: it needs about " + needed + " GB of memory and this machine has " + memory + " GB.";
+  } else if (need > machine.memory_mb * 0.55) {
+    state = "yellow";
+    reason =
+      "Tight: it needs about " +
+      needed +
+      " GB of memory and this machine has " +
+      memory +
+      " GB, so the rest of the system will feel it.";
+  }
+  if (entry.size_mb && machine.free_disk_mb) {
+    if (entry.size_mb > machine.free_disk_mb * 0.9) {
+      state = "red";
+      reason = "No room: the download is " + entry.size_mb + " MB and " + disk + " GB are free.";
+    } else if (entry.size_mb > machine.free_disk_mb * 0.5 && state !== "red") {
+      state = "yellow";
+      reason =
+        "Tight on disk: the download is " + entry.size_mb + " MB and " + disk + " GB are free.";
+    }
+  }
+  const badge = document.createElement("span");
+  badge.className = "fit";
+  badge.dataset.state = state;
+  badge.title = reason;
+  badge.setAttribute("aria-label", reason);
+  badge.textContent = state === "green" ? "Runs here" : state === "yellow" ? "Tight" : "Too heavy";
+  return badge;
+}
 
 async function loadCatalog() {
   try {
@@ -2845,6 +2904,7 @@ async function loadCatalog() {
       return;
     }
     catalogEntries = await response.json();
+    await loadHardware();
     renderCatalog(catalogEntries);
   } catch (failure) {
     catalogNote.textContent = "The catalogue could not be read.";
@@ -2961,6 +3021,10 @@ function catalogCard(entry, items) {
     pair.className = "pair-chip";
     pair.textContent = entry.pair.toUpperCase();
     head.append(pair);
+  }
+  const fit = fitBadge(entry);
+  if (fit) {
+    head.append(fit);
   }
   const licence = document.createElement("span");
   licence.className = "model-licence";

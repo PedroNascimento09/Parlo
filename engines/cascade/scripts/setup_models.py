@@ -39,7 +39,41 @@ VOICES = {
 }
 DEFAULT_VOICES = ("pt_PT-tugão-medium", "en_US-lessac-medium")
 OPTIONAL_VOICES = {"pt_br": ("pt_BR-faber-medium",)}
-DIRECTIONS = (("pt", "en"), ("en", "pt"))
+PAIR_UNITS = (
+    ("mt-pt-en", "pt", "en"),
+    ("mt-en-pt", "en", "pt"),
+    ("mt-pt-es", "pt", "es"),
+    ("mt-es-pt", "es", "pt"),
+    ("mt-pt-fr", "pt", "fr"),
+    ("mt-fr-pt", "fr", "pt"),
+    ("mt-pt-it", "pt", "it"),
+    ("mt-pt-nl", "pt", "nl"),
+    ("mt-pt-ru", "pt", "ru"),
+    ("mt-en-es", "en", "es"),
+    ("mt-en-fr", "en", "fr"),
+    ("mt-en-it", "en", "it"),
+    ("mt-de-en", "de", "en"),
+    ("mt-fr-de", "fr", "de"),
+    ("mt-es-en", "es", "en"),
+)
+
+DIRECTIONS = (
+    ("pt", "en"),
+    ("en", "pt"),
+    ("pt", "es"),
+    ("es", "pt"),
+    ("pt", "fr"),
+    ("fr", "pt"),
+    ("pt", "it"),
+    ("pt", "nl"),
+    ("pt", "ru"),
+    ("en", "es"),
+    ("en", "fr"),
+    ("en", "it"),
+    ("de", "en"),
+    ("fr", "de"),
+    ("es", "en"),
+)
 PARAKEET_BASE = f"https://huggingface.co/{PARAKEET_REPO}/resolve/main"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
 
@@ -197,6 +231,19 @@ UNITS = (
     "voice-fr",
     "mt-pt-en",
     "mt-en-pt",
+    "mt-pt-es",
+    "mt-es-pt",
+    "mt-pt-fr",
+    "mt-fr-pt",
+    "mt-pt-it",
+    "mt-pt-nl",
+    "mt-pt-ru",
+    "mt-en-es",
+    "mt-en-fr",
+    "mt-en-it",
+    "mt-de-en",
+    "mt-fr-de",
+    "mt-es-en",
     "whisper",
 )
 
@@ -244,10 +291,9 @@ def main(argv=None) -> int:
     if only is None:
         directions = list(DIRECTIONS)
     else:
-        if "mt-pt-en" in only:
-            directions.append(("pt", "en"))
-        if "mt-en-pt" in only:
-            directions.append(("en", "pt"))
+        for unit, source, target in PAIR_UNITS:
+            if unit in only:
+                directions.append((source, target))
     for source, target in directions:
         install_pack(source, target)
     for source, target in directions:

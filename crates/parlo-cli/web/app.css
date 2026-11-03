@@ -1835,6 +1835,38 @@ kbd {
   width: 100%;
 }
 
+
+.fit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.fit::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.fit[data-state="green"]::before {
+  background: #3f8f3f;
+}
+
+.fit[data-state="yellow"]::before {
+  background: #c08a1e;
+}
+
+.fit[data-state="red"]::before {
+  background: #b5432f;
+}
+
 .pair-chip {
   font-size: 10.5px;
   letter-spacing: 0.06em;

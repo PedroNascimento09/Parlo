@@ -17,6 +17,7 @@ mod decisions;
 mod dictate;
 mod dub;
 mod engines;
+mod hardware;
 mod history;
 mod insert;
 mod install;
