@@ -1003,7 +1003,9 @@ footer p {
   align-items: end;
 }
 
-.voice-form .install {
+.voice-form .install,
+.voice-form .more {
+  grid-column: 1 / -1;
   justify-self: start;
 }
 
