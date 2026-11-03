@@ -164,7 +164,82 @@ fn doctor() -> Result<(), String> {
         cores,
         engines::fidelity_for(profile)
     );
+    println!();
+    println!("first session");
+    let checks = first_session_checks();
+    let mut failed = 0;
+    for (ok, line) in &checks {
+        if !ok {
+            failed += 1;
+        }
+        println!("  {:<4} {line}", if *ok { "ok" } else { "fail" });
+    }
+    println!();
+    if failed > 0 {
+        println!("status            not ready: {failed} checks need attention");
+        std::process::exit(1);
+    }
+    println!("status            ready for a first session");
     Ok(())
+}
+
+fn first_session_checks() -> Vec<(bool, String)> {
+    let models = models::status();
+    let mut checks = Vec::new();
+    let missing: Vec<String> = models
+        .iter()
+        .filter(|model| !model.installed)
+        .map(|model| model.name.clone())
+        .collect();
+    checks.push((
+        missing.is_empty(),
+        if missing.is_empty() {
+            "every model this build knows is on disk".to_string()
+        } else {
+            format!("missing {}", missing.join(", "))
+        },
+    ));
+    let chosen = config::load().stt;
+    let dictation = models::dictation_ready_for(&models, &chosen);
+    checks.push((
+        dictation,
+        format!(
+            "dictation uses {chosen}, and that recogniser is {}",
+            if dictation { "on disk" } else { "not on disk" }
+        ),
+    ));
+    let shortcut = config::load().shortcut;
+    checks.push((
+        !shortcut.trim().is_empty(),
+        format!("dictation shortcut {shortcut}"),
+    ));
+    let settings = config::path();
+    checks.push((
+        settings.is_file(),
+        format!("settings at {}", settings.display()),
+    ));
+    let data = config::data_root();
+    let probe = data.join(".first-session-check");
+    let writable = std::fs::create_dir_all(&data)
+        .and_then(|()| std::fs::write(&probe, b"ok"))
+        .is_ok();
+    let _ = std::fs::remove_file(&probe);
+    checks.push((
+        writable,
+        format!(
+            "data folder {} is {}",
+            data.display(),
+            if writable { "writable" } else { "not writable" }
+        ),
+    ));
+    checks.push(match sidecar::bundled_engine() {
+        Some(path) => (true, format!("engine at {}", path.display())),
+        None => (
+            true,
+            "no bundled engine; a source checkout starts python instead".to_string(),
+        ),
+    });
+    checks
 }
 
 fn engine_binary() -> String {

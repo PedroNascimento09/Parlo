@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- `parlo doctor` ends with a **first session** check: every model on disk, the recogniser Settings chose, the shortcut, the settings file and a writable data folder, each pass or fail in one line, and it exits 1 while anything is missing.
+
 - The plan stops waiting for users it does not have. G2 is now the author's own first session on a clean install — models, one sentence, one dictation, reopen — and the external-user round starts when there is a first user; every release still states plainly what has not been validated.
 
 - Captions can be saved. A session keeps the lines it showed, and **Save** writes an SRT with timing into the data folder and names the file it wrote, so a meeting can be read afterwards without another tool.
