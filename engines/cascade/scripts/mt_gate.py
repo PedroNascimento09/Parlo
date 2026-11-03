@@ -169,6 +169,106 @@ def check(row: dict, output: str) -> dict:
     }
 
 
+ONNX_TAGS = {
+    "de": ">>deu<<",
+    "en": ">>eng<<",
+    "fr": ">>fra<<",
+    "pt": ">>por<<",
+    "nl": ">>nld<<",
+    "es": ">>spa<<",
+    "it": ">>ita<<",
+}
+
+
+def onnx_tag(language: str):
+    return ONNX_TAGS.get(language)
+
+
+def onnx_translator(args, folder: Path, target_language: str):
+    if not folder.is_dir():
+        raise SystemExit(f"{folder} is not a folder")
+    for name in ("encoder_model.onnx", "decoder_model.onnx", "source.spm", "target.spm"):
+        if not (folder / name).is_file():
+            raise SystemExit(f"{folder} is missing {name}")
+    tag = args.tag or onnx_tag(target_language)
+    if not tag:
+        raise SystemExit(f"no language tag is known for {target_language}; pass --tag")
+    try:
+        import torch
+        from optimum.onnxruntime import ORTModelForSeq2SeqLM
+        from transformers import MarianTokenizer
+    except ImportError:
+        raise SystemExit(
+            "measuring an ONNX pair needs torch, optimum and transformers; install them in a separate environment"
+        )
+    tokenizer = MarianTokenizer.from_pretrained(str(folder))
+    model = ORTModelForSeq2SeqLM.from_pretrained(str(folder), use_cache=True)
+    token = tokenizer.convert_tokens_to_ids(tag)
+    if token == tokenizer.unk_token_id:
+        raise SystemExit(f"{tag} is not in the vocabulary of {folder}")
+
+    def translate(text: str) -> str:
+        ids = tokenizer(text, return_tensors="pt").input_ids
+        ids = torch.cat([torch.tensor([[token]]), ids], dim=1)
+        out = model.generate(ids, num_beams=4, max_new_tokens=64)
+        return tokenizer.decode(out[0], skip_special_tokens=True)
+
+    return translate, [folder.name]
+
+
+def score(rows, translate, used, args) -> int:
+    results = []
+    for row in rows:
+        output = translate(row["text"])
+        results.append({**row, **check(row, output), "output": output})
+
+    totals = {
+        key: round(sum(1 for result in results if result[key]) / len(results), 3)
+        for key in ("numbers", "clock", "negation", "names", "complete")
+    }
+    if args.show:
+        for result in results:
+            flags = "".join(
+                key[0].upper() if result[key] else key[0]
+                for key in ("numbers", "negation", "names", "complete")
+            )
+            print(f"{result['id']}  {flags}  {result['text']}")
+            print(f"           out  {result['output']}")
+
+    reference = {
+        key: round(sum(1 for result in results if result[f"reference_{key}"]) / len(results), 3)
+        for key in ("numbers", "names")
+    }
+    route = " then ".join(used)
+    pivot = " (pivot through English)" if len(used) > 1 else ""
+    print(f"\n{args.direction} | {len(results)} rows | {args.threads} threads | pack {route}{pivot}")
+    for key, threshold in THRESHOLDS.items():
+        mark = "ok" if totals[key] >= threshold else "FAIL"
+        print(f"  {key:<9} {totals[key]:.3f}  threshold {threshold:.2f}  {mark}")
+    print(f"  reference numbers {reference['numbers']:.3f}, names {reference['names']:.3f}")
+
+    for field, label in (("numbers", "number"), ("negation", "negation"), ("names", "name")):
+        failures = [result["id"] for result in results if not result[field]]
+        if failures:
+            print(f"  rows that lost a {label}: {', '.join(failures)}")
+
+    if args.out:
+        summary = {
+            "direction": args.direction,
+            "rows": len(results),
+            "pivot": len(used) > 1,
+            "packs": used,
+            "totals": totals,
+            "reference": reference,
+        }
+        Path(args.out).write_text(
+            json.dumps({"summary": summary, "rows": results}, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        print(f"written {args.out}")
+    return 0 if all(totals[key] >= value for key, value in THRESHOLDS.items()) else 1
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--direction", required=True, choices=sorted(DIRECTIONS))
@@ -181,12 +281,16 @@ def main(argv=None) -> int:
     parser.add_argument("--source-token", default="", help="token that names the source language")
     parser.add_argument("--target-token", default="", help="token that names the target language")
     parser.add_argument("--pack", action="store_true")
+    parser.add_argument("--onnx", default="", help="measure an ONNX pair in this folder")
+    parser.add_argument("--tag", default="", help="language tag such as >>deu<< for an ONNX pair")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--show", action="store_true")
     parser.add_argument("--out", default="")
     args = parser.parse_args(argv)
-    if not args.pack:
-        raise SystemExit("only --pack is wired; a converted checkpoint is not used for a release gate")
+    if not args.pack and not args.onnx:
+        raise SystemExit(
+            "only --pack or --onnx is wired; a converted checkpoint is not a release gate"
+        )
 
     source, target = DIRECTIONS[args.direction]
     rows = [
@@ -203,6 +307,10 @@ def main(argv=None) -> int:
 
     source_language = source.split("-")[0]
     target_language = target.split("-")[0]
+    if args.onnx:
+        translate, used = onnx_translator(args, Path(args.onnx), target_language)
+        return score(rows, translate, used, args)
+
     stages = [(source_language, target_language)]
     if args.pivot and mt.find_pack(source_language, target_language) is None:
         stages = [(source_language, "en"), ("en", target_language)]
@@ -236,61 +344,7 @@ def main(argv=None) -> int:
             text = translator(text)
         return text
 
-    results = []
-    for row in rows:
-        output = translate(row["text"])
-        results.append({**row, **check(row, output), "output": output})
-
-    totals = {
-        key: round(sum(1 for result in results if result[key]) / len(results), 3)
-        for key in ("numbers", "clock", "negation", "names", "complete")
-    }
-    if args.show:
-        for result in results:
-            flags = "".join(
-                key[0].upper() if result[key] else key[0]
-                for key in ("numbers", "negation", "names", "complete")
-            )
-            print(f"{result['id']}  {flags}  {result['text']}")
-            print(f"           out  {result['output']}")
-
-    reference = {
-        key: round(sum(1 for result in results if result[f"reference_{key}"]) / len(results), 3)
-        for key in ("numbers", "names")
-    }
-    route = " then ".join(used)
-    pivot = " (pivot through English)" if len(used) > 1 else ""
-    print(f"\n{args.direction} | {len(results)} rows | {args.threads} threads | pack {route}{pivot}")
-    for key, threshold in THRESHOLDS.items():
-        mark = "ok" if totals[key] >= threshold else "FAIL"
-        print(f"  {key:<9} {totals[key]:.3f}  threshold {threshold:.2f}  {mark}")
-    print(f"  reference numbers {reference['numbers']:.3f}, names {reference['names']:.3f}")
-
-    failures = [result["id"] for result in results if not result["numbers"]]
-    if failures:
-        print(f"  rows that lost a number: {', '.join(failures)}")
-    failures = [result["id"] for result in results if not result["negation"]]
-    if failures:
-        print(f"  rows that lost a negation: {', '.join(failures)}")
-    failures = [result["id"] for result in results if not result["names"]]
-    if failures:
-        print(f"  rows that lost a name: {', '.join(failures)}")
-
-    if args.out:
-        summary = {
-            "direction": args.direction,
-            "rows": len(results),
-            "pivot": len(used) > 1,
-            "packs": used,
-            "totals": totals,
-            "reference": reference,
-        }
-        Path(args.out).write_text(
-            json.dumps({"summary": summary, "rows": results}, indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
-        print(f"written {args.out}")
-    return 0 if all(totals[key] >= value for key, value in THRESHOLDS.items()) else 1
+    return score(rows, translate, used, args)
 
 
 if __name__ == "__main__":

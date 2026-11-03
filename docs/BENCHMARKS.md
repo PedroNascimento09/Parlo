@@ -458,6 +458,14 @@ With the decoder exported **with past key values** (`text2text-generation-with-p
 
 Median **601.6 ms**, p95 **750.3 ms** per sentence, against about 0.79 s for the two-stage pivot. Three rows the pivot got wrong come back right: `Das Team hat 8 Personen und das Porto-Büro hat 5.` where the pivot produced `Das Büro in Porto ist 5`, `Die Zahlung erfolgte am 15. Oktober, nicht am 20.` and `Wir haben nie solche Beschwerden erhalten.` The one name miss is the same `John`/`Mary` row the PT→EN gate loses. The counts come from the gate's own metric functions, but this was a probe, not `mt_gate.py --pack`: the gate still refuses converted checkpoints, and the engine speaks CTranslate2, so the pair is measured and not yet installable. What remains is an ONNX path in the engine, or a conversion that stops repeating words.
 
+The run is repeatable from the repository:
+
+```bash
+python engines/cascade/scripts/mt_gate.py --direction pt-de --onnx <folder> --tag '>>deu<<'
+```
+
+It needs `torch`, `optimum` and `transformers` in a separate environment; without them the gate refuses with one sentence instead of a traceback.
+
 **And the finding that matters more than the German pair.** `mt.find_pack` searched the Argos application's own package folders before the folder Parlo installs into, so the two tables above described the Argos copy. `pack_roots` reads Parlo's folder first now. The stale folder at `engines/cascade/models/mt/pt-en` still decodes the first corpus sentence into `I set the meeting for 3 .30 pm p . m .30 on Thursday Thursday . .` and keeps going; its layout (`ct2/` and `hf/`) is not what `packs.install` writes, and `find_pack` ignores it by name. What it exposed was the decoder, not the model: joining the hypothesis pieces with spaces split `2026` into `20 26`. With that fixed, the folders the product installs pass the gate in both directions.
 
 The mechanical gate scored that output at numbers 0.950, clocks 0.950, negations 0.950, names 0.950, completeness 1.000, which is the clearest demonstration of what the gate is worth: it counts quantities and punctuation, and cannot hear that the sentence is broken. Nothing from that run is published as a result, and PT→DE still runs only through English.
