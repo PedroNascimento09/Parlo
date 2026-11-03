@@ -2121,7 +2121,14 @@ function renderMeetings(meetings) {
       meeting.segments.length +
       " lines";
     const detail = document.createElement("dd");
-    for (const speaker of meeting.speakers.filter((name) => name !== "Note")) {
+    const speakers = meeting.speakers.filter((name) => name !== "Note");
+    if (speakers.length) {
+      const label = document.createElement("span");
+      label.className = "meeting-label";
+      label.textContent = "Speakers";
+      detail.append(label);
+    }
+    for (const speaker of speakers) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "swap";
@@ -2139,7 +2146,7 @@ function renderMeetings(meetings) {
     const download = document.createElement("button");
     download.type = "button";
     download.className = "swap";
-    download.textContent = "Download .md";
+    download.textContent = "Save as Markdown";
     download.title = "Save this meeting as a Markdown file";
     download.addEventListener("click", () => downloadMeeting(meeting));
     detail.append(download);

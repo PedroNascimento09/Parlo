@@ -1648,6 +1648,15 @@ kbd {
   display: none;
 }
 
+
+.meeting-label {
+  margin-right: 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .meeting-compose,
 .meeting-record {
   display: grid;
