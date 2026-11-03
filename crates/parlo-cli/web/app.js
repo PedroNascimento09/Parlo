@@ -4298,3 +4298,20 @@ document.addEventListener("click", (event) => {
   );
   document.getElementById("vocabulary-right").focus();
 });
+
+const vocabularyHint = document.getElementById("vocabulary-hint");
+if (vocabularyHint) {
+  const examples = {
+    term: 'A name Parlo keeps getting wrong: hear "parlo" and write "Parlo".',
+    abbreviation: 'A short form you say out loud: "qr" becomes "quarta-feira".',
+    snippet: 'A phrase that becomes longer text: say "my channel" and Parlo writes https://www.youtube.com/@example.',
+  };
+  const paintHint = () => {
+    const kind = vocabularyKind.value;
+    vocabularyHint.textContent = examples[kind] || examples.term;
+    vocabularyRight.placeholder =
+      kind === "snippet" ? "https://www.youtube.com/@example" : "Parlo";
+  };
+  vocabularyKind.addEventListener("change", paintHint);
+  paintHint();
+}
