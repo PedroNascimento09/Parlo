@@ -155,9 +155,13 @@ pub fn ready(models: &[Model]) -> bool {
 }
 
 pub fn dictation_ready(models: &[Model]) -> bool {
+    dictation_ready_for(models, &crate::config::load().stt)
+}
+
+pub fn dictation_ready_for(models: &[Model], recogniser: &str) -> bool {
     models
         .iter()
-        .any(|model| model.installed && matches!(model.id, "parakeet" | "whisper"))
+        .any(|model| model.installed && model.id == recogniser)
 }
 
 pub fn whisper_cache() -> Option<PathBuf> {
@@ -634,7 +638,7 @@ mod tests {
     }
 
     #[test]
-    fn whisper_counts_as_dictation_but_not_as_a_complete_set() {
+    fn dictation_needs_the_recogniser_the_engine_will_use() {
         let models = vec![
             Model {
                 id: "whisper",
@@ -653,7 +657,8 @@ mod tests {
                 bytes: 0,
             },
         ];
-        assert!(dictation_ready(&models));
+        assert!(!dictation_ready_for(&models, "parakeet"));
+        assert!(dictation_ready_for(&models, "whisper"));
         assert!(!ready(&models));
     }
 
