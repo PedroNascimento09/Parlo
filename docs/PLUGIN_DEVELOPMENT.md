@@ -32,3 +32,18 @@ Accounts, a marketplace, remote execution, cloud relays and any route that uploa
 ## Compatibility promise
 
 The routes above are stable within a minor version. Adding a field is not a breaking change; removing one, changing a status code or changing what a field means is. `docs/ENGINES.md` describes the sidecar protocol behind them, which is versioned separately and is not a plugin surface.
+
+## The MCP server
+
+`parlo mcp` speaks the Model Context Protocol over stdio: one JSON-RPC 2.0 object per line, a reply per request and nothing on stdout that is not a reply. It reads the same files the window reads — meetings under the data folder and the dictation history — and it makes no network call.
+
+| Tool | Arguments | Answer |
+|---|---|---|
+| `list_meetings` | none | id, title, start, line count and speakers for every meeting |
+| `ask_meetings` | `question` | what the transcripts say, with the meeting, speaker and minute of every line used |
+| `meeting_notes` | `id` | the meeting as Markdown: decisions, action items, notes, transcript |
+| `recent_dictations` | `limit` (1 to 50) | the newest entries of the library |
+
+A tool that cannot answer returns `isError: true` with a sentence in `content[0].text`, so a client sees a refusal instead of a transport failure. `initialize` answers protocol `2024-11-05` with the tools capability, and an unknown method is `-32601`.
+
+Status: the protocol and the four tools are covered by tests; no MCP client was connected to this build here.

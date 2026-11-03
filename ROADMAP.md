@@ -46,7 +46,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Partly: a meeting downloads as a Markdown file with decisions, action items, notes and the transcript; import and speakers exist and were not run against a recording here |
 | v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Partly: action items (owner and the due phrase used) and decisions with supersession are read from a transcript by rule, and a meeting downloads as Markdown; live transcription and the summary wait for G4 |
 | v1.3 Meeting Chat | Ask the meetings, with verifiable citations | G4 | Not started |
-| v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Not started; the contract a plugin will meet is written in [docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) |
+| v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Partly: `parlo mcp` serves meetings and dictations to an MCP client over stdio (list, ask with citations, Markdown notes, recent dictations), tested without a client; the contract a plugin will meet is written in [docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md); no SDK and no plugin host yet |
 | v1.5 Dub e Voz própria | Dub files, clone your own voice with consent | G4 | Dubbing shipped ahead; voice cloning not started |
 | v1.6 Equipa e áudio pro | Workspaces, retention, advanced denoise and echo cancellation, public benchmark | G4 | Not started |
 

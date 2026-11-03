@@ -20,6 +20,7 @@ mod history;
 mod insert;
 mod install;
 mod intelligence;
+mod mcp;
 mod meeting;
 mod mic;
 mod models;
@@ -48,6 +49,7 @@ fn main() -> ExitCode {
         Some("captions") => captions_command(&args[1..]),
         Some("dictate") => dictate_command(&args[1..]),
         Some("app") => app_command(&args[1..]),
+        Some("mcp") => mcp::serve(),
         Some("serve") => serve_command(&args[1..]),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
@@ -108,6 +110,9 @@ fn print_help() {
     );
     println!("            [--window S] [--no-copy]        no translation and no voice");
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
+    println!(
+        "  mcp                                meetings and dictations for an MCP client, on stdio"
+    );
     println!("  update [--check]                   install the latest release in place");
     println!("  engines                            list engines, licenses and voice levels");
     println!("  config [--engine NAME] [--from X]  show or write the defaults in the config file");
