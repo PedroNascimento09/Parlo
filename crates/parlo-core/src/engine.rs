@@ -58,7 +58,25 @@ pub struct UnitState {
     pub policy_origin: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StreamPiece {
+    pub state: String,
+    pub text: String,
+    pub audio_ms: u64,
+    pub latency_ms: u64,
+}
+
 pub trait Engine: Send {
+    fn stream(&mut self, _samples: &[f32]) -> Result<Vec<StreamPiece>, EngineError> {
+        Err(EngineError::Rejected(
+            "this engine does not stream".to_string(),
+        ))
+    }
+
+    fn close_stream(&mut self) -> Result<Vec<StreamPiece>, EngineError> {
+        Ok(Vec::new())
+    }
+
     fn id(&self) -> &str;
 
     fn target_languages(&self) -> Vec<String>;

@@ -71,6 +71,18 @@ pub struct StreamEvent {
     pub latency_ms: u64,
 }
 
+fn pieces(events: Vec<StreamEvent>) -> Vec<parlo_core::engine::StreamPiece> {
+    events
+        .into_iter()
+        .map(|event| parlo_core::engine::StreamPiece {
+            state: event.state,
+            text: event.text,
+            audio_ms: event.audio_ms,
+            latency_ms: event.latency_ms,
+        })
+        .collect()
+}
+
 pub struct SidecarEngine {
     child: Child,
     stdin: ChildStdin,
@@ -384,6 +396,17 @@ impl Engine for SidecarEngine {
         target: Option<&str>,
     ) -> Result<(String, String), EngineError> {
         SidecarEngine::write(self, pcm16, target)
+    }
+
+    fn stream(
+        &mut self,
+        samples: &[f32],
+    ) -> Result<Vec<parlo_core::engine::StreamPiece>, EngineError> {
+        SidecarEngine::stream(self, samples).map(pieces)
+    }
+
+    fn close_stream(&mut self) -> Result<Vec<parlo_core::engine::StreamPiece>, EngineError> {
+        SidecarEngine::close_stream(self).map(pieces)
     }
 
     fn loaded_units(&mut self) -> Option<Vec<String>> {

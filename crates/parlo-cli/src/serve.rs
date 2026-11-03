@@ -258,6 +258,23 @@ impl Session {
             .map_err(|error| error.to_string())
     }
 
+    fn stream_window(
+        &self,
+        samples: &[f32],
+    ) -> Result<Vec<parlo_core::engine::StreamPiece>, String> {
+        let _working = self.working();
+        self.pipeline()
+            .stream(samples)
+            .map_err(|error| error.to_string())
+    }
+
+    fn finish_stream(&self) -> Result<Vec<parlo_core::engine::StreamPiece>, String> {
+        let _working = self.working();
+        self.pipeline()
+            .close_stream()
+            .map_err(|error| error.to_string())
+    }
+
     fn as_json(&self) -> String {
         let chosen = self.chosen();
         let stored = crate::config::load();
@@ -2221,6 +2238,53 @@ fn handle(
         return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
     }
 
+    if method == "POST" && (path == "/listen/stream" || path == "/listen/stream-end") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if path == "/listen/stream-end" {
+            return match session.finish_stream() {
+                Ok(pieces) => {
+                    respond_json(stream, "200 OK", &pieces_json(&pieces)).map(|()| Flow::Serve)
+                }
+                Err(error) => {
+                    respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                        .map(|()| Flow::Serve)
+                }
+            };
+        }
+        let wav = match read_pcm16(&body) {
+            Ok(wav) => wav,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"bad wav: {error}\"}}"),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        if wav.format.channels() != 1 || wav.format.sample_rate() != 16_000 {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"input must be 16 kHz mono pcm16\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if wav.samples.is_empty() {
+            return respond_json(stream, "200 OK", "[]").map(|()| Flow::Serve);
+        }
+        return match session.stream_window(&wav.samples) {
+            Ok(pieces) => {
+                respond_json(stream, "200 OK", &pieces_json(&pieces)).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if path == "/state" {
         let mut machine = match STATE.lock() {
             Ok(machine) => machine,
@@ -2774,6 +2838,21 @@ fn dictation_target(write: &str, from: &str) -> String {
     }
 }
 
+fn pieces_json(pieces: &[parlo_core::engine::StreamPiece]) -> String {
+    let rows: Vec<serde_json::Value> = pieces
+        .iter()
+        .map(|piece| {
+            serde_json::json!({
+                "state": piece.state,
+                "text": piece.text,
+                "audio_ms": piece.audio_ms,
+                "latency_ms": piece.latency_ms,
+            })
+        })
+        .collect();
+    serde_json::to_string(&rows).unwrap_or_else(|_| "[]".to_string())
+}
+
 fn text_field(request: &serde_json::Value, name: &str) -> String {
     request
         .get(name)
@@ -3044,6 +3123,19 @@ mod tests {
         assert_eq!(allowed.origin.as_str(), "third-party");
         let own = consent_for(None, false, "translation".into(), "local".into(), 1).unwrap();
         assert_eq!(own.origin.as_str(), "own-voice");
+    }
+
+    #[test]
+    fn a_stream_piece_carries_its_state_and_text() {
+        let pieces = [parlo_core::engine::StreamPiece {
+            state: "partial".to_string(),
+            text: "bom dia".to_string(),
+            audio_ms: 640,
+            latency_ms: 210,
+        }];
+        let answer = pieces_json(&pieces);
+        assert!(answer.contains("\"partial\""));
+        assert!(answer.contains("bom dia"));
     }
 
     #[test]

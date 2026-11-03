@@ -141,6 +141,8 @@ let target = false;
 let writeTarget = "";
 let shortcut = "Ctrl+Alt+D";
 let controller = null;
+let sentChunks = 0;
+let partials = null;
 
 function setState(text, line, pending) {
   stateEl.textContent = text;
@@ -247,6 +249,9 @@ async function begin() {
   sink = context.createGain();
   sink.gain.value = 0;
   chunks = [];
+  sentChunks = 0;
+  clearInterval(partials);
+  partials = setInterval(sendPartial, 800);
   processor.onaudioprocess = (event) => {
     const block = event.inputBuffer.getChannelData(0);
     const copy = new Float32Array(block.length);
@@ -276,7 +281,54 @@ async function begin() {
   }, 100);
 }
 
+function endStream() {
+  clearInterval(partials);
+  partials = null;
+  fetch("/listen/stream-end", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token },
+    keepalive: true,
+  }).catch(() => {});
+}
+
+async function sendPartial() {
+  if (!stream || !context || busy) {
+    return;
+  }
+  const batch = chunks.slice(sentChunks);
+  if (!batch.length) {
+    return;
+  }
+  sentChunks = chunks.length;
+  const total = batch.reduce((sum, chunk) => sum + chunk.length, 0);
+  const merged = new Float32Array(total);
+  let offset = 0;
+  for (const chunk of batch) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  try {
+    const response = await fetch("/listen/stream", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: encodeWav(downsample(merged, context.sampleRate, TARGET_RATE), TARGET_RATE),
+    });
+    if (!response.ok || busy) {
+      return;
+    }
+    const pieces = await response.json();
+    const last = pieces.filter((piece) => piece.text).pop();
+    if (last && !busy) {
+      lineEl.textContent = last.text;
+      lineEl.classList.toggle("pending", last.state !== "final");
+    }
+  } catch (failure) {
+    return;
+  }
+}
+
 function release() {
+  endStream();
   clearInterval(ticker);
   ticker = null;
   document.body.classList.remove("listening");

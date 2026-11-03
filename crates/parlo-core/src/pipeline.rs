@@ -140,6 +140,17 @@ impl Pipeline {
         self.engine.write(pcm16, target)
     }
 
+    pub fn stream(
+        &mut self,
+        samples: &[f32],
+    ) -> Result<Vec<crate::engine::StreamPiece>, EngineError> {
+        self.engine.stream(samples)
+    }
+
+    pub fn close_stream(&mut self) -> Result<Vec<crate::engine::StreamPiece>, EngineError> {
+        self.engine.close_stream()
+    }
+
     pub fn push(&mut self, samples: &[f32]) -> Vec<PipelineOutput> {
         self.pending.extend_from_slice(samples);
         let mut outputs = Vec::new();

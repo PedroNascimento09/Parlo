@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The island shows the words while they are being said. Every 800 ms it sends the audio captured since the last window to `POST /listen/stream`, which feeds the engine's streaming session and answers with `partial`, `stable` and `final` pieces, so the line under **Listening** grows instead of staying empty; stopping or cancelling closes the session through `/listen/stream-end`. **Status: wired end to end, not run against a microphone here.**
+
 - Dictation can write into another window on Linux and macOS. On X11 the text goes through `xdotool type` after checking that the same window is still in front, on macOS through System Events after checking that the same program is still frontmost, and Wayland refuses with a sentence that puts the text on the clipboard instead of pretending. **Status: implemented, not verified on either system here; the clipboard fallback is unchanged.**
 
 - A failed translation no longer loses the sentence. When the translation stage cannot run, the engine keeps the words it heard and answers with them as the text and an empty translation, so the island inserts what was said instead of reporting an error and dropping it; the reason goes to the engine log. **Status: covered by a test, not run against a live translation failure here.**
