@@ -2199,3 +2199,21 @@ body.first-run #status-list {
   border-color: var(--muted);
   background: var(--surface-sunken);
 }
+
+.history-entry dd .history-actions .swap {
+  width: auto;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.history-entry dd .history-actions .swap:hover,
+.history-entry dd .history-actions .swap:focus-visible {
+  color: var(--ink);
+  border-color: var(--muted);
+  background: var(--surface-sunken);
+}
