@@ -2291,8 +2291,9 @@ body.first-run #status-list {
   border-top: 1px solid var(--line);
 }
 
-.settings-row:first-of-type {
-  margin-top: 6px;
+.settings-row:first-of-type,
+.settings-head + .settings-row {
+  margin-top: 14px;
   padding-top: 0;
   border-top: 0;
 }
