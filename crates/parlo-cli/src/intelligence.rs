@@ -138,18 +138,22 @@ pub fn run(request: &Value) -> Result<Value, String> {
 fn engine() -> Result<Command, String> {
     let configured = crate::models::cascade_dir();
     let directory = std::path::absolute(&configured).unwrap_or(configured);
-    let entry = directory.join("parlo_engine.py");
-    if !entry.is_file() {
+    if !directory.join("parlo_cascade").is_dir() {
         return Err(format!(
             "cannot find {}; these settings need the engine beside Parlo",
-            entry.display()
+            directory.display()
         ));
     }
     let configured = crate::sidecar::python_for(&directory);
     let python =
         std::path::absolute(&configured).unwrap_or_else(|_| std::path::PathBuf::from(configured));
     let mut command = Command::new(python);
-    command.arg(&entry).current_dir(&directory);
+    command
+        .arg("-c")
+        .arg("import sys; sys.path.insert(0, sys.argv[1]); from parlo_cascade import admin; raise SystemExit(admin.main())")
+        .arg(&directory)
+        .env("PYTHONPATH", &directory)
+        .current_dir(&directory);
     Ok(command)
 }
 
