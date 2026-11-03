@@ -614,6 +614,48 @@ fn free_bytes(_path: &Path) -> Option<u64> {
     None
 }
 
+pub const PAIR_FILES: &[&str] = &[
+    "encoder_model.onnx",
+    "decoder_model.onnx",
+    "decoder_with_past_model.onnx",
+    "config.json",
+    "vocab.json",
+    "source.spm",
+    "target.spm",
+];
+
+pub fn install_pair(folder: &str, from: &str, to: &str) -> Result<String, String> {
+    install_pair_in(&models_root(), folder, from, to)
+}
+
+fn install_pair_in(root: &Path, folder: &str, from: &str, to: &str) -> Result<String, String> {
+    let source = PathBuf::from(folder.trim());
+    if !source.is_dir() {
+        return Err(format!("{} is not a folder", source.display()));
+    }
+    let missing: Vec<&str> = PAIR_FILES
+        .iter()
+        .copied()
+        .filter(|name| !source.join(*name).is_file())
+        .collect();
+    if !missing.is_empty() {
+        return Err(format!("the export is missing {}", missing.join(", ")));
+    }
+    let destination = root.join("mt").join(format!("{from}-{to}-onnx"));
+    if destination.exists() {
+        return Err(format!(
+            "{} already holds a pair; remove it before installing another",
+            destination.display()
+        ));
+    }
+    let bytes = copy_tree(&source, &destination)?;
+    Ok(format!(
+        "Installed {from} to {to} in {}, {}",
+        destination.display(),
+        describe_bytes(bytes)
+    ))
+}
+
 pub fn free_space() -> Option<u64> {
     free_bytes(&models_root())
 }
@@ -809,6 +851,76 @@ pub fn set_policy(id: &str, minutes: Option<u32>) -> Result<String, String> {
         Some(minutes) => format!("{name} is freed after {minutes} minutes without use."),
         None => format!("{name} follows the global setting again."),
     })
+}
+
+#[cfg(test)]
+mod pair_tests {
+    use super::*;
+
+    fn write_export(folder: &Path, skip: Option<&str>) {
+        fs::create_dir_all(folder).unwrap();
+        for name in PAIR_FILES {
+            if Some(*name) == skip {
+                continue;
+            }
+            fs::write(folder.join(*name), b"weights").unwrap();
+        }
+    }
+
+    fn scratch(name: &str) -> PathBuf {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_nanos())
+            .unwrap_or_default();
+        let root = std::env::temp_dir().join(format!("parlo-pair-{name}-{stamp}"));
+        fs::create_dir_all(&root).unwrap();
+        root
+    }
+
+    #[test]
+    fn a_complete_export_is_installed() {
+        let root = scratch("ok");
+        let folder = root.join("export");
+        write_export(&folder, None);
+        let answer = install_pair_in(&root, folder.to_str().unwrap(), "pt", "de").unwrap();
+        assert!(answer.contains("pt to de"));
+        assert!(root
+            .join("mt")
+            .join("pt-de-onnx")
+            .join("encoder_model.onnx")
+            .is_file());
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn a_missing_file_is_named() {
+        let root = scratch("missing");
+        let folder = root.join("export");
+        write_export(&folder, Some("vocab.json"));
+        let error = install_pair_in(&root, folder.to_str().unwrap(), "pt", "de").unwrap_err();
+        assert!(error.contains("vocab.json"));
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn a_folder_that_is_not_there_is_refused() {
+        let root = scratch("absent");
+        let absent = root.join("nope");
+        let error = install_pair_in(&root, absent.to_str().unwrap(), "pt", "de").unwrap_err();
+        assert!(error.contains("not a folder"));
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn an_existing_pair_is_not_overwritten() {
+        let root = scratch("exists");
+        let folder = root.join("export");
+        write_export(&folder, None);
+        install_pair_in(&root, folder.to_str().unwrap(), "pt", "de").unwrap();
+        let error = install_pair_in(&root, folder.to_str().unwrap(), "pt", "de").unwrap_err();
+        assert!(error.contains("already holds"));
+        fs::remove_dir_all(&root).unwrap();
+    }
 }
 
 #[cfg(test)]

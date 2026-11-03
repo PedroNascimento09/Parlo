@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A translation pair exported to a folder now installs from the command line. `parlo pair <folder> --from pt --to de` checks the seven files the direct export needs, names the ones that are missing instead of failing inside the decoder, copies them into `models/mt/pt-de-onnx` and refuses a destination that already holds a pair. **Status: the check and the copy are covered by tests; no export is published, so nothing here was run against real weights.**
+
 - An interrupted model download resumes where it stopped. The bytes already on disk stay in the `.part` file and the next run asks the server for the rest with `Range: bytes=<n>-`, hashes the whole file again and only then installs it; a server that ignores the range starts the file over, a part larger than the published size is dropped, and a part that already holds every byte is checked without a request. A downloaded file that ends short of the published size is still refused and deleted, so a wrong total never looks like a resume.
 
 - The island shows the words while they are being said. Every 800 ms it sends the audio captured since the last window to `POST /listen/stream`, which feeds the engine's streaming session and answers with `partial`, `stable` and `final` pieces, so the line under **Listening** grows instead of staying empty; stopping or cancelling closes the session through `/listen/stream-end`. **Status: wired end to end, not run against a microphone here.**

@@ -48,6 +48,7 @@ fn main() -> ExitCode {
         Some("serve") => serve_command(&args[1..]),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
+        Some("pair") => pair_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("speakers") => list_speakers(),
         Some("install") => install_command(&args[1..]),
@@ -501,6 +502,42 @@ fn translate(args: &[String]) -> Result<(), String> {
     );
     println!("  voiced frames   {voiced}");
     println!("  engine          {}", pipeline.engine_id());
+    Ok(())
+}
+
+fn pair_command(args: &[String]) -> Result<(), String> {
+    let mut from = "pt".to_string();
+    let mut to = "de".to_string();
+    let mut folder = None;
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--from" => {
+                index += 1;
+                from = args.get(index).cloned().ok_or("--from needs a value")?;
+            }
+            "--to" => {
+                index += 1;
+                to = args.get(index).cloned().ok_or("--to needs a value")?;
+            }
+            other if other.starts_with("--") => return Err(format!("unknown option: {other}")),
+            other => {
+                if folder.is_some() {
+                    return Err("pair takes one export folder".to_string());
+                }
+                folder = Some(other.to_string());
+            }
+        }
+        index += 1;
+    }
+    let folder = folder.ok_or("usage: parlo pair <export folder> [--from pt] [--to de]")?;
+    if !config::check_language(&from) {
+        return Err(format!("{from} is not a language this build knows"));
+    }
+    if !config::check_language(&to) {
+        return Err(format!("{to} is not a language this build knows"));
+    }
+    println!("{}", models::install_pair(&folder, &from, &to)?);
     Ok(())
 }
 

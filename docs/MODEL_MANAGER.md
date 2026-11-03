@@ -137,7 +137,7 @@ out/onnx/Scripts/pip install torch==2.4.1 "optimum[onnxruntime]==1.24.0" transfo
 out/onnx/Scripts/python engines/cascade/scripts/export_pair.py --output out/pt-de-onnx
 ```
 
-`export_pair.py` calls `main_export` with `text2text-generation-with-past`, which is the task that writes `decoder_with_past_model.onnx`; the plain `translation` task does not. Copy the folder to `models/mt/pt-de-onnx` and the engine picks it up on the next start.
+`export_pair.py` calls `main_export` with `text2text-generation-with-past`, which is the task that writes `decoder_with_past_model.onnx`; the plain `translation` task does not. `parlo pair out/pt-de-onnx --from pt --to de` checks the seven files, names any that are missing, copies the folder to `models/mt/pt-de-onnx` and the engine picks it up on the next start; it refuses a folder that already holds a pair instead of replacing it silently.
 
 **Status: implemented, not verified in an installed build.** The decoding loop and the folder refusals are covered by tests that need no weights; the runtime path has not been run since the export measured in `docs/BENCHMARKS.md` was deleted with the other artefacts, so it is not claimed as working.
 
