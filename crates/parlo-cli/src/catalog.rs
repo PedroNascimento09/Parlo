@@ -23,8 +23,12 @@ pub fn as_json() -> String {
                     .unwrap_or("")
                     .to_string()
             };
-            let optional =
-                |name: &str| artifact.get(name).cloned().unwrap_or(serde_json::Value::Null);
+            let optional = |name: &str| {
+                artifact
+                    .get(name)
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null)
+            };
             serde_json::json!({
                 "id": text("id"),
                 "name": text("name"),
