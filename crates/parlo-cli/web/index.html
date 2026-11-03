@@ -479,6 +479,7 @@
         <button id="call-dismiss" class="swap" type="button">Not now</button>
       </div>
     </div>
+    <h3 class="meeting-group">Record a meeting</h3>
     <div class="settings-row meeting-compose">
       <label class="field" for="meeting-title">
         <span class="field-label">Title</span>
@@ -491,6 +492,7 @@
       <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled>Pause</button>
       <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone into a transcript, a few seconds behind. Sound from another application is not captured yet.</p>
     </div>
+    <h3 class="meeting-group">Find it again</h3>
     <div class="settings-row">
       <label class="field field-wide" for="meeting-search">
         <span class="field-label">Search every transcript</span>
@@ -535,6 +537,7 @@
       </label>
       <button id="meeting-note-add" class="install" type="button">Add note</button>
     </div>
+    <h3 class="meeting-group">Transcripts</h3>
     <dl class="status" id="meeting-list"></dl>
   </section>
 
@@ -599,8 +602,8 @@
         <input id="voice-authorisation" type="checkbox">
         <span>I have this person's permission to use their voice for this purpose.</span>
       </label>
-      <details class="more">
-        <summary>More options</summary>
+      <div class="voice-details">
+        <p class="field-label">Sample details</p>
         <label class="field" for="voice-language">
           <span class="field-label">Speech language</span>
           <select id="voice-language" class="field-input">
@@ -616,10 +619,12 @@
           <input id="voice-encrypt" type="checkbox">
           <span>Keep the sample sealed with my Windows account</span>
         </label>
-      </details>
-      <button id="voice-create" class="install" type="submit">Create the profile</button>
+      </div>
+      <div class="voice-submit">
+        <button id="voice-create" class="install" type="submit">Create the profile</button>
+        <p class="voice-note" id="voice-status" aria-live="polite"></p>
+      </div>
     </form>
-    <p class="voice-note" id="voice-status" aria-live="polite"></p>
     <ul class="voice-list" id="voice-list"></ul>
   </section>
 

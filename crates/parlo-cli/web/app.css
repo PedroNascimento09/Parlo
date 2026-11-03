@@ -2375,3 +2375,56 @@ body.first-run #status-list {
 #voice {
   border-radius: 14px;
 }
+
+.voice-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.voice-form .field-wide,
+.voice-form .check,
+.voice-details,
+.voice-submit {
+  grid-column: 1 / -1;
+}
+
+.voice-details {
+  display: grid;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.voice-details .field-label {
+  margin: 0;
+  color: var(--muted);
+}
+
+.voice-submit {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-top: 6px;
+}
+
+.voice-submit .voice-note {
+  margin: 0;
+}
+
+.meeting-group {
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.meeting-group + .settings-row {
+  margin-top: 12px;
+  padding-top: 0;
+  border-top: 0;
+}
