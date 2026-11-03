@@ -136,8 +136,8 @@ pub fn run(request: &Value) -> Result<Value, String> {
 }
 
 fn engine() -> Result<Command, String> {
-    let directory = crate::models::cascade_dir();
-    let directory = directory.canonicalize().unwrap_or(directory);
+    let configured = crate::models::cascade_dir();
+    let directory = std::path::absolute(&configured).unwrap_or(configured);
     let entry = directory.join("parlo_engine.py");
     if !entry.is_file() {
         return Err(format!(
@@ -145,8 +145,11 @@ fn engine() -> Result<Command, String> {
             entry.display()
         ));
     }
-    let mut command = Command::new(crate::sidecar::python_for(&directory));
-    command.arg("parlo_engine.py").current_dir(&directory);
+    let configured = crate::sidecar::python_for(&directory);
+    let python =
+        std::path::absolute(&configured).unwrap_or_else(|_| std::path::PathBuf::from(configured));
+    let mut command = Command::new(python);
+    command.arg(&entry).current_dir(&directory);
     Ok(command)
 }
 

@@ -116,7 +116,6 @@ fn find_venv_python(script_dir: &Path) -> Option<PathBuf> {
         .take(3)
         .map(|base| base.join(".venv").join(executable))
         .find(|candidate| candidate.is_file())
-        .and_then(|path| path.canonicalize().ok())
 }
 
 pub fn bundled_engine() -> Option<PathBuf> {
