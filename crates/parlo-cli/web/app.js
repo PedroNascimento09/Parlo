@@ -1393,33 +1393,31 @@ let catalogLast = [];
 
 const historyList = document.getElementById("history-list");
 const homeGreeting = document.getElementById("home-greeting");
-const homeStats = document.getElementById("home-stats");
+const progressMinutes = document.getElementById("progress-minutes");
+const progressWords = document.getElementById("progress-words");
+const progressCount = document.getElementById("progress-count");
+const progressFavourites = document.getElementById("progress-favourites");
 
 function paintHome() {
-  if (!homeGreeting || !homeStats) {
-    return;
+  if (homeGreeting) {
+    const hour = new Date().getHours();
+    homeGreeting.textContent =
+      hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
   }
-  const hour = new Date().getHours();
-  homeGreeting.textContent =
-    hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
-  if (!historyEntries.length) {
-    homeStats.textContent = "Nothing dictated yet. Hold the shortcut and speak.";
+  if (!progressMinutes) {
     return;
   }
   const words = historyEntries.reduce((total, entry) => {
     const text = entry.translation || entry.text || "";
     return total + text.split(/\s+/).filter(Boolean).length;
   }, 0);
-  const minutes = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0) / 60;
-  homeStats.textContent =
-    minutes.toFixed(1) +
-    (minutes === 1 ? " minute spoken" : " minutes spoken") +
-    " · " +
-    words +
-    (words === 1 ? " word written" : " words written") +
-    " · " +
-    historyEntries.length +
-    (historyEntries.length === 1 ? " dictation" : " dictations");
+  const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
+  progressMinutes.textContent = (seconds / 60).toFixed(1) + " min";
+  progressWords.textContent = String(words);
+  progressCount.textContent = String(historyEntries.length);
+  progressFavourites.textContent = String(
+    historyEntries.filter((entry) => entry.favourite).length,
+  );
 }
 const historyNote = document.getElementById("history-note");
 const historySearch = document.getElementById("history-search");
@@ -2850,6 +2848,27 @@ async function loadHardware() {
   }
 }
 
+function parloPick(entry, items) {
+  if (!entry.bench || typeof entry.bench.value !== "number") {
+    return false;
+  }
+  const memory = machine && machine.memory_mb ? machine.memory_mb : 0;
+  const weight = (item) => item.memory_mb || (item.size_mb ? item.size_mb * 2.2 : 0);
+  const ranked = items
+    .filter((item) => item.bench && typeof item.bench.value === "number")
+    .sort((left, right) =>
+      left.bench.better === "lower"
+        ? left.bench.value - right.bench.value
+        : right.bench.value - left.bench.value,
+    );
+  if (!ranked.length) {
+    return false;
+  }
+  const affordable = ranked.filter((item) => !memory || weight(item) <= memory * 0.6);
+  const picks = new Set([ranked[0], affordable[0]].filter(Boolean).map((item) => item.id));
+  return picks.has(entry.id);
+}
+
 function fitBadge(entry) {
   if (!machine || !machine.memory_mb) {
     return null;
@@ -3026,6 +3045,13 @@ function catalogCard(entry, items) {
   if (fit) {
     head.append(fit);
   }
+  if (parloPick(entry, items)) {
+    const pick = document.createElement("span");
+    pick.className = "pick";
+    pick.textContent = "Parlo pick";
+    pick.title = "The best balance of accuracy, memory and speed in this section on this machine.";
+    head.append(pick);
+  }
   const licence = document.createElement("span");
   licence.className = "model-licence";
   licence.textContent = entry.license || "licence unknown";
@@ -3095,7 +3121,12 @@ function catalogCard(entry, items) {
   } else {
     const unmeasured = document.createElement("p");
     unmeasured.className = "model-note";
-    unmeasured.textContent = "No published figure for this one yet.";
+    unmeasured.textContent =
+      entry.kind === "voice" || entry.kind === "tts"
+        ? "Piper voices read faster than the audio they produce on a normal CPU, and nobody publishes a number for it."
+        : entry.kind === "mt"
+          ? "Pairs in this family answer a sentence in a few hundred milliseconds here; no publisher reports a figure."
+          : "No publisher reports a figure for this one yet.";
     card.append(unmeasured);
   }
 
@@ -3726,6 +3757,7 @@ refreshHealth();
 setInterval(refreshHealth, 5000);
 
 const ROUTES = {
+  progress: ["progress"],
   home: [
     "update",
     "onboarding",
@@ -3780,7 +3812,7 @@ function routeNow() {
   showRoute(route);
 }
 
-const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "settings" };
+const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "progress", 6: "settings" };
 
 document.addEventListener("keydown", (event) => {
   if (!event.altKey || event.ctrlKey || event.metaKey) {

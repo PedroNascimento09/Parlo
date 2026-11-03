@@ -78,11 +78,12 @@
   <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
   <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
   <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
-  <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5">Settings</a>
+  <a href="#progress" data-route="progress" aria-keyshortcuts="Alt+5">Progress</a>
+  <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6">Settings</a>
 </nav>
 <div class="sidebar-foot">
   <p class="foot-line">Nothing leaves this computer.</p>
-  <p class="foot-line">Alt+1 to Alt+5 moves between sections.</p>
+  <p class="foot-line">Alt+1 to Alt+6 moves between sections.</p>
 </div>
 </aside>
 <div class="workspace">
@@ -168,13 +169,12 @@
 
   <section class="stage" id="status-list" aria-label="Right now">
     <h1 class="home-greeting" id="home-greeting">Hello again</h1>
-    <p class="home-stats" id="home-stats">Nothing dictated yet.</p>
     <p class="stage-state">
       <span class="dot" id="status-dot" aria-hidden="true"></span>
       <span id="status-state">Ready to dictate</span>
     </p>
     <p class="stage-call">Hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> and speak.</p>
-    <p class="stage-sub"><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
+    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
   </section>
 
   <section class="recent" id="recent" aria-labelledby="recent-title">
@@ -193,6 +193,19 @@
     <button type="button" class="tab" data-tab="advanced">Advanced</button>
   </nav>
   <div class="settings-panes">
+
+<section class="settings" id="progress" aria-labelledby="progress-title">
+    <div class="settings-head">
+      <h2 id="progress-title">Progress</h2>
+      <p class="settings-note">Counted from the dictations kept on this computer, nothing else.</p>
+    </div>
+    <dl class="progress-facts">
+      <div><dt>Time spoken</dt><dd id="progress-minutes">0.0 min</dd></div>
+      <div><dt>Words written</dt><dd id="progress-words">0</dd></div>
+      <div><dt>Dictations</dt><dd id="progress-count">0</dd></div>
+      <div><dt>Favourites</dt><dd id="progress-favourites">0</dd></div>
+    </dl>
+  </section>
 
 <section class="settings" id="settings" aria-labelledby="settings-title">
     <div class="settings-head">
