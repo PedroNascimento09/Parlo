@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Captions can be saved. A session keeps the lines it showed, and **Save** writes an SRT with timing into the data folder and names the file it wrote, so a meeting can be read afterwards without another tool.
+
 - A model keeps the copy it replaced. When a model is downloaded again, the build in place is set aside beside it, and a **Restore** row puts it back if the new copy is worse; nothing is deleted until the new download finishes.
 - Moving the models says what it costs before it copies. The first press answers with the megabytes that will move and whether the target already holds an identical copy, and only a second press copies anything; a target that already matches is adopted instead of copied again.
 - The first start names the recogniser it recommends with the measured speed behind the choice, instead of memory alone.

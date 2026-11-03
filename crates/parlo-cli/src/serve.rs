@@ -2097,6 +2097,43 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/captions/save" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", &error_json("wrong token"))
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = serde_json::from_slice(&body).unwrap_or_default();
+        let lines: Vec<(u64, String)> = request["lines"]
+            .as_array()
+            .map(|rows| {
+                rows.iter()
+                    .filter_map(|row| {
+                        let text = row["text"].as_str()?.trim();
+                        if text.is_empty() {
+                            return None;
+                        }
+                        Some((row["at_ms"].as_u64().unwrap_or(0), text.to_string()))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        return match crate::captions::save(&lines) {
+            Ok(path) => respond_json(
+                stream,
+                "200 OK",
+                &serde_json::json!({
+                    "path": path.display().to_string(),
+                    "message": format!("Saved to {}.", path.display()),
+                })
+                .to_string(),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "400 Bad Request", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "GET" && (path == "/live" || path == "/live.html") {
         if !crate::config::load().features.translation {
             return respond_json(
