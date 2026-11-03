@@ -43,8 +43,8 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v0.8 Voz | Read text in a neutral voice, read translations aloud | — | Partial: a voice in the cascade, no picker, no blind MOS; not an immediate commitment |
 | v0.9 Live | Spoken two-way conversation through a virtual microphone, in the speaker's own voice | G1 + G3 | Not started; no virtual microphone, no echo cancellation. The objective the plan is built towards, sequenced after captions and voice |
 | v1.0 Estável | Dictate, Captions, Live and Models stable, PT↔EN validated, signed installers | G4 | Not started |
-| v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Not started |
-| v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Partly: action items (owner and the due phrase used) and decisions with supersession are read from a transcript by rule; live transcription and the summary wait for G4 |
+| v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Partly: a meeting downloads as a Markdown file with decisions, action items, notes and the transcript; import and speakers exist and were not run against a recording here |
+| v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Partly: action items (owner and the due phrase used) and decisions with supersession are read from a transcript by rule, and a meeting downloads as Markdown; live transcription and the summary wait for G4 |
 | v1.3 Meeting Chat | Ask the meetings, with verifiable citations | G4 | Not started |
 | v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Not started; the contract a plugin will meet is written in [docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) |
 | v1.5 Dub e Voz própria | Dub files, clone your own voice with consent | G4 | Dubbing shipped ahead; voice cloning not started |

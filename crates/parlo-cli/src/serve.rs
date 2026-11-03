@@ -507,6 +507,27 @@ fn handle(
             .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path.starts_with("/meetings/") && path.ends_with("/markdown") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = path
+            .trim_start_matches("/meetings/")
+            .trim_end_matches("/markdown")
+            .trim_end_matches('/');
+        let meeting = match crate::meeting::load(id) {
+            Ok(meeting) => meeting,
+            Err(error) => {
+                let body = serde_json::json!({ "error": error }).to_string();
+                return respond_json(stream, "404 Not Found", &body).map(|()| Flow::Serve);
+            }
+        };
+        let name = crate::notes::file_name(&meeting);
+        let body = crate::notes::markdown(&meeting);
+        return respond_named(stream, &name, body.as_bytes()).map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path == "/meeting/summary" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -2775,6 +2796,7 @@ fn content_type(name: &str) -> &'static str {
         Some("mkv") => "video/x-matroska",
         Some("webm") => "video/webm",
         Some("mov") => "video/quicktime",
+        Some("md") => "text/markdown; charset=utf-8",
         Some("wav") => "audio/wav",
         Some("mp3") => "audio/mpeg",
         Some("m4a") => "audio/mp4",

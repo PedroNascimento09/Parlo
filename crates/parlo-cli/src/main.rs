@@ -23,6 +23,7 @@ mod intelligence;
 mod meeting;
 mod mic;
 mod models;
+mod notes;
 mod playback;
 mod record;
 mod serve;

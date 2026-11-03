@@ -2170,6 +2170,13 @@ function renderMeetings(meetings) {
     remove.textContent = "Delete";
     remove.addEventListener("click", () => deleteMeeting(meeting.id));
     detail.append(remove);
+    const download = document.createElement("button");
+    download.type = "button";
+    download.className = "swap";
+    download.textContent = "Download .md";
+    download.title = "Save this meeting as a Markdown file";
+    download.addEventListener("click", () => downloadMeeting(meeting));
+    detail.append(download);
     for (const note of (meeting.segments || []).filter((segment) => segment.speaker === "Note")) {
       const line = document.createElement("p");
       line.className = "meeting-note";
@@ -2204,6 +2211,29 @@ function renderMeetings(meetings) {
     meetings.length === 1
       ? "1 meeting kept on this computer."
       : meetings.length + " meetings kept on this computer.";
+}
+
+async function downloadMeeting(meeting) {
+  try {
+    const response = await fetch("/meetings/" + encodeURIComponent(meeting.id) + "/markdown", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    const blob = await response.blob();
+    const named = /filename="([^"]+)"/.exec(response.headers.get("content-disposition") || "");
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = named ? named[1] : "meeting.md";
+    link.click();
+    URL.revokeObjectURL(url);
+    meetingNote.textContent = "Saved " + link.download + " in your downloads folder.";
+  } catch (failure) {
+    meetingNote.textContent = "The meeting could not be saved as a file. Try again.";
+  }
 }
 
 async function importMeeting() {
