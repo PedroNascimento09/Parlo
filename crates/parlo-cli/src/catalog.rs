@@ -41,6 +41,8 @@ pub fn as_json() -> String {
                 "attribution": text("attribution"),
                 "languages": optional("languages"),
                 "size_mb": optional("size_mb"),
+                "memory_mb": optional("memory_mb"),
+                "speed": optional("speed"),
                 "quality": optional("quality"),
                 "unit": optional("unit"),
                 "note": optional("note"),

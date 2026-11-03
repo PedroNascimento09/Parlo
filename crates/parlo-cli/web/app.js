@@ -2633,6 +2633,12 @@ function renderCatalog(entries) {
       parts.push(entry.languages.join(", "));
     }
     parts.push(entry.size_mb ? entry.size_mb + " MB" : "size not measured");
+    if (entry.memory_mb) {
+      parts.push(entry.memory_mb + " MB in memory");
+    }
+    if (entry.speed) {
+      parts.push(entry.speed);
+    }
     parts.push(
       entry.license + (entry.status === "verified" ? ", licence checked" : ", " + entry.status),
     );

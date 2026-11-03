@@ -15,7 +15,9 @@
         "pt-PT"
       ],
       "size_mb": 63,
-      "unit": "voice-pt"
+      "unit": "voice-pt",
+      "memory_mb": 2,
+      "speed": "0.16 realtime here"
     },
     {
       "id": "piper-voice-pt-br-faber",
@@ -47,7 +49,9 @@
         "en-US"
       ],
       "size_mb": 63,
-      "unit": "voice-en"
+      "unit": "voice-en",
+      "memory_mb": 2,
+      "speed": "0.12 realtime here"
     },
     {
       "id": "parakeet-tdt-0.6b-v3",
@@ -67,7 +71,9 @@
       ],
       "size_mb": 671,
       "quality": "0.243 word error on recorded Portuguese speech",
-      "unit": "parakeet"
+      "unit": "parakeet",
+      "memory_mb": 746,
+      "speed": "0.21 realtime here"
     },
     {
       "id": "qwen3-asr-0.6b",
@@ -132,7 +138,9 @@
       ],
       "size_mb": 83,
       "quality": "numbers, clocks and negations 1.000; names 0.980",
-      "unit": "mt-pt-en"
+      "unit": "mt-pt-en",
+      "memory_mb": 112,
+      "speed": "278 ms per sentence here"
     },
     {
       "id": "opus-mt-en-pt",
@@ -149,7 +157,9 @@
       ],
       "size_mb": 83,
       "quality": "numbers and negations 1.000; clocks and names 0.980",
-      "unit": "mt-en-pt"
+      "unit": "mt-en-pt",
+      "memory_mb": 111,
+      "speed": "510 ms per sentence here"
     }
   ]
 }
