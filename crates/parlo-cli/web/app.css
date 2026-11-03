@@ -2217,3 +2217,47 @@ body.first-run #status-list {
   border-color: var(--muted);
   background: var(--surface-sunken);
 }
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.workspace > * {
+  max-width: 880px;
+  margin-block: 0;
+  margin-inline: auto;
+}
+
+#library-tabs {
+  gap: 6px;
+  margin-top: 22px;
+  padding: 6px;
+}
+
+#library-tabs .tab {
+  padding: 9px 18px;
+}
+
+.history-entry {
+  gap: 10px;
+  padding: 18px 20px;
+}
+
+#history-list {
+  gap: 14px;
+}
+
+#history-clear {
+  margin-top: 18px;
+}
+
+.settings-row {
+  gap: 16px 18px;
+  margin-top: 20px;
+}
+
+.settings-row + .settings-note {
+  margin-top: 12px;
+}
