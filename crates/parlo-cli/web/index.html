@@ -566,12 +566,12 @@
   <section class="voice" id="voice" aria-labelledby="voice-title">
     <div class="voice-head">
       <h2 id="voice-title">My voice</h2>
-      <p class="voice-note">Parlo can read a translation in your own voice. The sample stays in a folder on this computer and you can revoke or delete it at any time. The engine that clones the voice is not in this build yet.</p>
+      <p class="voice-note">Create a profile, then record ten seconds of speech. The sample stays on this computer and you can revoke or delete it at any time.</p>
     </div>
     <form id="voice-form" class="voice-form">
       <label class="field" for="voice-label">
         <span class="field-label">Name for this voice</span>
-        <input id="voice-label" class="field-input" type="text" maxlength="48" required autocomplete="off">
+        <input id="voice-label" class="field-input" type="text" maxlength="48" value="My voice" required autocomplete="off">
       </label>
       <label class="field" for="voice-origin">
         <span class="field-label">Whose voice is this</span>
@@ -602,7 +602,7 @@
           <span>Keep the sample sealed with my Windows account</span>
         </label>
       </details>
-      <button id="voice-create" class="install" type="submit">Create voice profile</button>
+      <button id="voice-create" class="install" type="submit">Create the profile</button>
     </form>
     <p class="voice-note" id="voice-status" aria-live="polite"></p>
     <ul class="voice-list" id="voice-list"></ul>
