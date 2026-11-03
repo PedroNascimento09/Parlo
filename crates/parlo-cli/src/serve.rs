@@ -1707,6 +1707,57 @@ fn handle(
         return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/models/download" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let units: Vec<String> = request
+            .get("units")
+            .and_then(|value| value.as_array())
+            .map(|values| {
+                values
+                    .iter()
+                    .filter_map(|value| value.as_str().map(str::to_string))
+                    .collect()
+            })
+            .unwrap_or_default();
+        if units.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"choose at least one model\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let known = ["parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"];
+        if let Some(unknown) = units.iter().find(|unit| !known.contains(&unit.as_str())) {
+            return respond_json(
+                stream,
+                "404 Not Found",
+                &format!("{{\"error\":\"unknown model {}\"}}", json_string(unknown)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let chosen: Vec<&str> = units.iter().map(String::as_str).collect();
+        if let Err(error) = models::install(&chosen) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path == "/models/relocate" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":{\"wrong token\"}")
