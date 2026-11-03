@@ -2314,3 +2314,64 @@ body.first-run #status-list {
   border-radius: 12px;
   background: var(--surface-sunken);
 }
+
+.field-label,
+.stage-facts dt {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.field-input,
+.swap,
+.install,
+.tab {
+  border-radius: 10px;
+}
+
+#library-tabs .tab,
+.history-actions .swap,
+.history-entry dd .history-actions .swap {
+  border-radius: 999px;
+}
+
+.settings-panes > .settings,
+.settings-panes > .onboarding,
+.history-entry,
+.recent-list li,
+.voice,
+.welcome {
+  border-radius: 14px;
+}
+
+.workspace > #voice,
+.workspace > #meetings,
+.workspace > #status-list,
+.workspace > #recent,
+.workspace > #welcome,
+.workspace > #catalog,
+.workspace > #history,
+.workspace > #onboarding,
+.workspace > .settings-layout,
+.workspace > .library-tabs {
+  margin-block: 0;
+}
+
+#welcome {
+  border-radius: 14px;
+}
+
+#voice,
+#meetings,
+#recent,
+#status-list,
+#welcome,
+#catalog,
+#history,
+#onboarding {
+  margin-block: 0;
+}
+
+#meetings,
+#voice {
+  border-radius: 14px;
+}

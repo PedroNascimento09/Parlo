@@ -3237,7 +3237,9 @@ function matchesHistory(entry) {
 
 function renderRecent() {
   recentList.replaceChildren();
-  const shown = historyEntries.slice(0, 5);
+  const shown = historyEntries
+    .filter((entry) => (entry.translation || entry.text || "").trim())
+    .slice(0, 5);
   recentEmpty.hidden = shown.length > 0;
   recentSection.hidden = shown.length === 0;
   for (const entry of shown) {
