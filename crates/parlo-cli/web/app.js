@@ -3940,6 +3940,7 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 
 const SETTINGS_TABS = {
   setup: ["onboarding"],
+  you: ["you"],
   insights: ["insights"],
   dictation: ["settings"],
   languages: ["languages"],
@@ -4254,14 +4255,29 @@ if (!storedName()) {
   nameInput.focus();
 }
 
-nameSave.addEventListener("click", () => {
-  const value = nameInput.value.trim().replace(/\s+/g, " ").slice(0, 40);
+function storeName(raw) {
+  const value = raw.trim().replace(/\s+/g, " ").slice(0, 40);
   if (value.length < 2) {
+    return "";
+  }
+  localStorage.setItem("parlo.name", value);
+  paintHome();
+  paintSettingsName();
+  return value;
+}
+
+function paintSettingsName() {
+  if (settingsName) {
+    settingsName.value = storedName();
+  }
+}
+
+nameSave.addEventListener("click", () => {
+  if (!storeName(nameInput.value)) {
     nameNote.textContent = "Two letters at least, so it reads like a name.";
     nameInput.focus();
     return;
   }
-  localStorage.setItem("parlo.name", value);
   nameNote.textContent = "";
   gateName.hidden = true;
   gateStyle.hidden = false;
@@ -4295,6 +4311,22 @@ if (settingsStyle) {
   });
 }
 
+const settingsName = document.getElementById("settings-name");
+const settingsNameSave = document.getElementById("settings-name-save");
+const settingsNameNote = document.getElementById("settings-name-note");
+
+if (settingsNameSave) {
+  settingsNameSave.addEventListener("click", () => {
+    if (storeName(settingsName.value)) {
+      settingsNameNote.textContent = "Saved. The greeting and the sign off use it from now on.";
+    } else {
+      settingsNameNote.textContent = "Two letters at least, so it reads like a name.";
+      settingsName.focus();
+    }
+  });
+}
+
+paintSettingsName();
 paintStyleControls();
 
 document.addEventListener("click", (event) => {

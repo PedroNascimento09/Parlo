@@ -10,8 +10,7 @@
 </head>
 <body>
 <div class="shell">
-<aside class="sidebar">
-<header class="bar">
+<header class="masthead">
   <div class="brand">
                   <svg class="wordmark-mark" viewBox="0 0 144.19 64" role="img" aria-label="Parlo">
         <rect x="0.00" y="16.86" width="1.91" height="45.12" rx="0.96" />
@@ -70,21 +69,15 @@
         <rect x="142.28" y="24.09" width="1.91" height="15.97" rx="0.96" />
       </svg>
   </div>
+  <nav class="rail" aria-label="Sections">
+    <a href="#home" data-route="home" aria-keyshortcuts="Alt+1">Home</a>
+    <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
+    <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
+    <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
+    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5">Settings</a>
+  </nav>
   <span class="version" id="status-version"></span>
 </header>
-
-<nav class="rail" aria-label="Sections">
-  <a href="#home" data-route="home" aria-keyshortcuts="Alt+1">Home</a>
-  <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
-  <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
-  <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
-  <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5">Settings</a>
-</nav>
-<div class="sidebar-foot">
-  <p class="foot-line">Nothing leaves this computer.</p>
-  <p class="foot-line">Alt+1 to Alt+5 moves between sections.</p>
-</div>
-</aside>
 <div class="workspace">
 
 <section class="update" id="update" aria-live="polite" hidden>
@@ -206,6 +199,7 @@
   <div class="settings-layout">
 <nav class="settings-nav" id="settings-tabs" aria-label="Settings">
     <button type="button" class="tab" data-tab="setup">Setup</button>
+    <button type="button" class="tab" data-tab="you">You</button>
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
     <button type="button" class="tab" data-tab="languages">Languages</button>
     <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
@@ -257,9 +251,22 @@
       <button id="onboarding-next" class="install" type="button" hidden>Done</button>
       <button id="onboarding-skip" class="swap" type="button">Skip this</button>
     </div>
+  </section>  <section class="settings" id="you" aria-labelledby="you-title">
+    <div class="settings-head">
+      <h2 id="you-title">What Parlo calls you</h2>
+      <p class="settings-note">It appears in the greeting and in the sign off snippet. Nothing about it leaves this computer.</p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="settings-name">
+        <span class="field-label">Your name</span>
+        <input id="settings-name" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Alex">
+      </label>
+      <button id="settings-name-save" class="install" type="button">Save name</button>
+      <p class="settings-note field-wide" id="settings-name-note" aria-live="polite"></p>
+    </div>
   </section>
-  
-<section class="settings" id="settings" aria-labelledby="settings-title">
+
+  <section class="settings" id="settings" aria-labelledby="settings-title">
     <div class="settings-head">
       <h2 id="settings-title">How dictation runs</h2>
       <p class="settings-note">Switching a feature off keeps its model on disk and only stops Parlo using it.</p>
@@ -778,6 +785,7 @@
 
 <footer>
   <p>Parlo works on this computer. Your voice is never uploaded, and there is no account and no telemetry.</p>
+  <p class="foot-keys">Alt+1 to Alt+5 moves between sections.</p>
 </footer>
 
 </div>
