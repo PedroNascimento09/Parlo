@@ -8,20 +8,22 @@
 <title>Parlo Dictate</title>
 <style>
   :root {
-    --shell: rgba(20, 17, 16, 0.92);
-    --ink: #faf6ef;
-    --muted: #b6aa9b;
-    --line: rgba(250, 246, 239, 0.14);
-    --accent: #e57a55;
+    --shell: rgba(13, 18, 14, 0.94);
+    --ink: #f0f3ea;
+    --muted: #8d968a;
+    --line: rgba(240, 243, 234, 0.12);
+    --accent: #c9f26b;
+    --accent-ink: #0a0e0b;
     color-scheme: light dark;
   }
   @media (prefers-color-scheme: light) {
     :root {
-      --shell: rgba(255, 253, 249, 0.94);
-      --ink: #1b1613;
-      --muted: #6b6257;
-      --line: rgba(27, 22, 19, 0.12);
-      --accent: #c9502f;
+      --shell: rgba(255, 255, 255, 0.95);
+      --ink: #0e120f;
+      --muted: #5e665c;
+      --line: rgba(14, 18, 15, 0.12);
+      --accent: #3d5a12;
+      --accent-ink: #ffffff;
     }
   }
   * { box-sizing: border-box; }
@@ -30,7 +32,7 @@
     display: grid;
     align-items: center;
     padding: 8px;
-    font: 13px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+    font: 13px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
     user-select: none;
@@ -40,35 +42,48 @@
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 12px;
-    padding: 12px 18px;
+    padding: 10px 16px;
     border: 1px solid var(--line);
-    border-radius: 26px;
+    border-radius: 14px;
     background: var(--shell);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
     backdrop-filter: blur(18px) saturate(140%);
-    animation: settle 180ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+    animation: settle 160ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
   }
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+  .wave {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 16px;
+    width: 18px;
+  }
+  .wave i {
+    display: block;
+    width: 2px;
+    height: 4px;
+    border-radius: 2px;
     background: var(--muted);
-    transition: background 160ms ease;
+    transition: height 120ms ease, background 160ms ease;
   }
-  body.listening .dot {
+  .wave i:nth-child(2) { height: 8px; }
+  .wave i:nth-child(3) { height: 6px; }
+  body.listening .wave i {
     background: var(--accent);
-    box-shadow: 0 0 0 0 rgba(242, 105, 58, 0.55);
-    animation: pulse 1.4s ease-out infinite;
+    animation: speak 900ms ease-in-out infinite;
   }
-  .readout { min-width: 0; display: grid; gap: 2px; }
+  body.listening .wave i:nth-child(2) { animation-delay: 90ms; }
+  body.listening .wave i:nth-child(3) { animation-delay: 180ms; }
+  body.listening .wave i:nth-child(4) { animation-delay: 270ms; }
+  .readout { min-width: 0; display: grid; gap: 1px; }
   .state {
-    font-size: 12px;
-    letter-spacing: 0.04em;
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--muted);
   }
+  body.listening .state { color: var(--accent); }
   .line {
-    font-size: 14px;
+    font-size: 13.5px;
     line-height: 1.4;
     white-space: nowrap;
     overflow: hidden;
@@ -77,44 +92,45 @@
   .line.pending { color: var(--muted); }
   .clock {
     font-family: "Cascadia Mono", ui-monospace, monospace;
-    font-size: 12px;
+    font-size: 11.5px;
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
   .hint {
-    grid-column: 1 / -1;
-    font-size: 11px;
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    line-height: 1.35;
     color: var(--muted);
     opacity: 0;
     max-height: 0;
+    overflow: hidden;
     transition: opacity 160ms ease, max-height 160ms ease;
   }
-  body.showing-hint .hint { opacity: 1; max-height: 3.2rem; }
+  body.showing-hint .hint { opacity: 1; max-height: 3.4rem; }
   body.listening .hint { opacity: 0; max-height: 0; }
   @keyframes settle {
-    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    from { opacity: 0; transform: translateY(6px) scale(0.99); }
     to { opacity: 1; transform: none; }
   }
-  @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0.5); }
-    70% { box-shadow: 0 0 0 12px rgba(242, 105, 58, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0); }
+  @keyframes speak {
+    0%, 100% { height: 4px; }
+    50% { height: 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .island { animation: none; }
-    body.listening .dot { animation: none; }
+    body.listening .wave i { animation: none; height: 10px; }
   }
 </style>
 </head>
 <body>
   <div class="island">
-    <span class="dot" aria-hidden="true"></span>
+    <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
     <div class="readout">
       <span class="state" id="state">Ready</span>
       <span class="line pending" id="line">Press the shortcut and speak.</span>
+      <p class="hint" id="hint">Text goes to the clipboard when you stop.</p>
     </div>
     <span class="clock" id="clock">0.0 s</span>
-    <p class="hint" id="hint">Text goes to the clipboard when you stop.</p>
   </div>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";

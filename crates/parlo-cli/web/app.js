@@ -3245,10 +3245,8 @@ async function clearHistory() {
 }
 
 const onboarding = document.getElementById("onboarding");
-const onboardingStep = document.getElementById("onboarding-step");
 const onboardingTitle = document.getElementById("onboarding-title");
 const onboardingNote = document.getElementById("onboarding-note");
-const onboardingList = document.getElementById("onboarding-list");
 const onboardingResult = document.getElementById("onboarding-result");
 const onboardingNext = document.getElementById("onboarding-next");
 const onboardingSkip = document.getElementById("onboarding-skip");
@@ -3279,18 +3277,10 @@ let onboardingStage = 0;
 let onboardingKnown = -1;
 let onboardingChosen = "Ctrl+Alt+D";
 
-function markOnboardingStep(step) {
-  for (const item of onboardingList.querySelectorAll("li")) {
-    item.classList.toggle("done", Number(item.dataset.step) < step);
-  }
-  onboardingStep.textContent = "Step " + step + " of 5";
-}
-
 function showOnboardingStage(step) {
   onboardingStage = step;
   localStorage.setItem("parlo.onboarding.stage", String(step));
   onboarding.hidden = false;
-  markOnboardingStep(step);
   onboardingTitle.textContent = ONBOARDING_TITLES[step - 1];
   onboardingPair.hidden = step !== 1;
   onboardingMic.hidden = step !== 2;

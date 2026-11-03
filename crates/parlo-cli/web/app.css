@@ -1164,14 +1164,6 @@ footer p {
   border-radius: 1rem;
 }
 
-.onboarding-step {
-  margin: 0 0 0.5rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  opacity: 0.65;
-}
-
 .onboarding h1 {
   margin: 0 0 0.5rem;
   font-size: 1.3rem;
@@ -1181,17 +1173,6 @@ footer p {
 .onboarding-result {
   margin: 0 0 1rem;
   line-height: 1.5;
-}
-
-.onboarding-list {
-  margin: 0 0 1rem;
-  padding-left: 1.1rem;
-  line-height: 1.7;
-}
-
-.onboarding-list li.done {
-  opacity: 0.55;
-  text-decoration: line-through;
 }
 
 .onboarding-result {
@@ -1686,10 +1667,35 @@ kbd {
   font-weight: 600;
 }
 
-.meeting-import {
-  margin: 22px 0 0;
-  padding-top: 16px;
+.meeting-import,
+.more {
+  margin: 18px 0 0;
+  padding-top: 14px;
   border-top: 1px solid var(--line);
+}
+
+.more > summary {
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.more > summary::before {
+  content: "+";
+  display: inline-block;
+  width: 13px;
+  margin-right: 5px;
+  color: var(--muted);
+}
+
+.more[open] > summary::before {
+  content: "−";
 }
 
 .meeting-import > summary {

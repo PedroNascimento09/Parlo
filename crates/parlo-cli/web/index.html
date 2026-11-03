@@ -103,18 +103,10 @@
 <main>
 
   <section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
-    <p class="onboarding-step" id="onboarding-step">Step 1 of 5</p>
     <h1 id="onboarding-title">Two languages</h1>
     <p class="onboarding-note" id="onboarding-note">
       Parlo hears one language and speaks the other.
     </p>
-    <ol class="onboarding-list" id="onboarding-list">
-      <li data-step="1">Choose the two languages</li>
-      <li data-step="2">Allow the microphone</li>
-      <li data-step="3">Keep the shortcut</li>
-      <li data-step="4">Say one sentence</li>
-      <li data-step="5">Done</li>
-    </ol>
 
     <div class="settings-row" id="onboarding-pair">
       <label class="field" for="onboarding-from">
@@ -157,8 +149,7 @@
   </section>
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title">Speak once. Be heard.</h1>
-    <p class="welcome-lede">Parlo listens on this machine, translates, and speaks the other language back. Nothing is uploaded and there is no account.</p>
-    <p class="welcome-lede">Choose what you want first. Nothing downloads until you press the button, and each model stays on this machine.</p>
+    <p class="welcome-lede">Speak, and Parlo writes the other language. Everything stays on this computer.</p>
     <dl class="status" id="welcome-plan"></dl>
     <button id="welcome-install" class="install welcome-install" type="button">Download the dictation model</button>
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
@@ -499,18 +490,21 @@
     </div>
     <div class="status" id="meeting-matches" aria-live="polite"></div>
     <p class="settings-note" id="meeting-summary-text" aria-live="polite"></p>
-    <div class="settings-row">
-      <label class="field field-wide" for="meeting-question">
-        <span class="field-label">Ask these transcripts</span>
-        <input id="meeting-question" class="field-input" type="search" autocomplete="off" placeholder="What was decided about the launch?">
-      </label>
-      <div class="meeting-actions">
-        <button id="meeting-ask" class="install" type="button">Ask this meeting</button>
-        <button id="meeting-ask-all" class="swap" type="button">Ask every meeting</button>
+    <details class="more">
+      <summary>Ask these transcripts</summary>
+      <div class="settings-row">
+        <label class="field field-wide" for="meeting-question">
+          <span class="field-label">Question</span>
+          <input id="meeting-question" class="field-input" type="search" autocomplete="off" placeholder="What was decided about the launch?">
+        </label>
+        <div class="meeting-actions">
+          <button id="meeting-ask" class="install" type="button">Ask this meeting</button>
+          <button id="meeting-ask-all" class="swap" type="button">Ask every meeting</button>
+        </div>
       </div>
-    </div>
-    <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
-    <dl class="status" id="meeting-citations"></dl>
+      <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
+      <dl class="status" id="meeting-citations"></dl>
+    </details>
     <details class="meeting-import">
       <summary>Import a transcript instead</summary>
       <div class="settings-row meeting-compose">
