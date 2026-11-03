@@ -244,6 +244,9 @@ fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
         ]),
         "mt-pt-en" => Some(translation_paths(&root, "pt", "en")),
         "mt-en-pt" => Some(translation_paths(&root, "en", "pt")),
+        "whisper" => {
+            whisper_cache().map(|cache| vec![cache.join("models--Systran--faster-whisper-base")])
+        }
         _ => None,
     }
 }

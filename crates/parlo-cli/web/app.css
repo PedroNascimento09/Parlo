@@ -1515,3 +1515,20 @@ kbd {
 .meeting-compose .field-wide {
   width: 100%;
 }
+
+#welcome-plan {
+  margin: 0.75rem 0 1rem;
+}
+
+#welcome-plan dt label {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  cursor: pointer;
+}
+
+#welcome-plan dd {
+  margin: 0.2rem 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

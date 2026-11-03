@@ -834,6 +834,8 @@ async function downloadChosenModels(units) {
   }
 }
 
+let welcomePlanKey = "";
+
 async function renderWelcomePlan(state) {
   const plan = document.getElementById("welcome-plan");
   if (!plan) {
@@ -858,6 +860,17 @@ async function renderWelcomePlan(state) {
       ? { ...feature, units: [headroom < 700 ? "whisper" : "parakeet"] }
       : feature,
   );
+  const key =
+    memory +
+    "|" +
+    state.models.map((model) => model.id + (model.installed ? "+" : "-")).join(",") +
+    "|" +
+    catalogEntries.length;
+  if (plan.childElementCount && key === welcomePlanKey) {
+    refreshWelcomeTotal();
+    return;
+  }
+  welcomePlanKey = key;
   plan.replaceChildren();
   for (const feature of features) {
     const missing = feature.units.filter(
