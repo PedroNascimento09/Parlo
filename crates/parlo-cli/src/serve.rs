@@ -1500,17 +1500,9 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        let peak = audio
-            .samples
-            .iter()
-            .fold(0f32, |peak, sample| peak.max(sample.abs()));
-        if peak < SILENT_PEAK {
-            return respond_json(
-                stream,
-                "400 Bad Request",
-                "{\"error\":\"the sample is silent; speak into the microphone and record again\"}",
-            )
-            .map(|()| Flow::Serve);
+        if let Some(problem) = crate::sample::problem(&audio.samples, seconds) {
+            return respond_json(stream, "400 Bad Request", &error_json(&problem))
+                .map(|()| Flow::Serve);
         }
         return match voice_store().save_sample(&id, &body) {
             Ok(profile) => {
@@ -2642,7 +2634,6 @@ struct VoiceTarget {
 
 const MIN_SAMPLE_SECONDS: f64 = 10.0;
 const MAX_SAMPLE_SECONDS: f64 = 30.0;
-const SILENT_PEAK: f32 = 0.002;
 
 fn voice_store() -> Store {
     Store::new(crate::config::data_root().join("voices"))

@@ -28,6 +28,7 @@ mod notes;
 mod playback;
 mod record;
 mod retention;
+mod sample;
 mod serve;
 mod sidecar;
 mod summary;
