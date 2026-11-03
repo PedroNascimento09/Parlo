@@ -35,7 +35,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | Milestone | What a person gains | Gate | Status |
 |---|---|---|---|
 | v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
-| v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current:** recorded speech measured, with Parakeet keeping real time and not accumulating delay; still reprocessing rather than native streaming, and Nemotron 3.5 ASR and Qwen3-ASR untried |
+| v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current:** recorded speech measured, Parakeet keeps real time without accumulating delay, and the decision to keep reprocessing for now is recorded in [docs/ENGINES.md](docs/ENGINES.md) with the blockers of both native streaming candidates |
 | v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** one presence — a tray menu with the three modes and the five destinations — a floating island on a shortcut or a tray click, insertion into the window that had the focus, with the clipboard as fallback, dictation that writes in another language, and a shortcut the user changes in the settings, which validates it and says a restart is what registers it. Missing: macOS or Linux insertion, and the five external users G2 asks for |
 | v0.5 Escrever noutra língua | Speak one language, write another in the active field | G1 + G2 | Planned, not complete; the MT stage exists, the dictation surfaces do not |
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead; system audio not |

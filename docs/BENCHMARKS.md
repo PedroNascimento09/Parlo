@@ -179,7 +179,7 @@ python engines/cascade/scripts/falar_clips.py --parquet test-00000-of-00024.parq
 python engines/cascade/scripts/stream_bench.py --audio-dir out/falar/clips --segment 30 --out out/falar/real.json
 ```
 
-Limits: ten segments from one shard, one parliamentary register, one recording setup, no added noise and no office acoustics. The corpus transcripts carry no punctuation, which suits a word error rate and says nothing about capitalisation. The 30 s segment window is not the 12 s the product uses, so these real time factors compare inside this table and not with the synthetic ones above. G0 still needs Nemotron 3.5 ASR and Qwen3-ASR on the same clips, and the decision between reprocessing and a native streaming model.
+Limits: ten segments from one shard, one parliamentary register, one recording setup, no added noise and no office acoustics. The corpus transcripts carry no punctuation, which suits a word error rate and says nothing about capitalisation. The 30 s segment window is not the 12 s the product uses, so these real time factors compare inside this table and not with the synthetic ones above. Nemotron 3.5 ASR and Qwen3-ASR could not be measured here, for the reasons in `docs/ENGINES.md`, which also records the decision that follows.
 
 ### Latency across a whole stream
 

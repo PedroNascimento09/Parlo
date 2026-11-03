@@ -174,3 +174,12 @@ cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release   --targ
 ```
 
 with `RUSTFLAGS="-C target-feature=+crt-static"`, `CC` and `CXX` unset so cc-rs picks the Microsoft compiler for the target and the system compiler for build scripts, and the Microsoft linker named through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. The crate keeps `ct2rs` without its default features, plus `ruy` for the int8 kernels, so the tokenizer dependency that refuses to build is left out.
+
+## Streaming, the decision
+
+The 0.3 milestone asked whether the windowed pipeline stays or a native streaming recogniser replaces it. On ten recorded European Portuguese segments (`docs/BENCHMARKS.md`), Parakeet keeps a real time factor of 1.023 with flat drift (x0.84 decode, x0.80 real time factor), and local agreement confirms 84.4% of a segment's words before it closes. **The pipeline stays for v0.3**, because it meets the latency target on the reference machine and neither replacement is shippable yet:
+
+- `nvidia/nemotron-3.5-asr-streaming-0.6b` streams natively, lists pt-PT in its transcription-ready tier, and runs on CPU through NVIDIA's NeMo-Speech.cpp in GGUF form. Two blockers: its licence, OpenMDW-1.1, is not approved in `tools/license-policy.json`, and the weights do not decode through the transformers build in this repository. `Nemotron3_5AsrForRNNT` loads, but it has no token generation path this project can drive, and an RNNT decode needs the vendor runtime. Its published Portuguese number is pt-BR, not pt-PT.
+- `Qwen/Qwen3-ASR-0.6B` is Apache-2.0 and lists Portuguese without distinguishing Portugal from Brazil. Its streaming path needs vLLM on a GPU, and its CPU path is a community ONNX export rather than an official release. That is not a local-first default.
+
+What would change the decision: an approved licence, a measured CPU runtime on these clips, and a word error rate at or below Parakeet's 0.243 with a real time factor under 1. Until then reprocessing is the shipped answer, and the plan's criterion is met where it can be measured on this machine.
