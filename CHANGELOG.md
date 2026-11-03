@@ -4,6 +4,16 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Spoken commands turn words into text: "comma", "period", "new line" and "scratch that" are applied before the style, in English and Portuguese.
+- The last dictation can be taken back: `POST /undo`, `parlo undo`, and it refuses when the window it wrote into is not in front or the sentence is older than five minutes.
+- The history has a search over what was said, what was written and the program it landed in, and a line can be rewritten in another style without speaking again.
+- A program can carry its own writing style, so the dictation into a chat window is shaped differently from the one into an email.
+- Settings has a You tab that changes the name Parlo greets you with.
+
+- The window reads as one editorial column: a masthead replaces the sidebar, each settings pane is a hairline section instead of a card, and the palette is warm paper with a single green signal, set in Sitka with Segoe beside it.
+
+- The dictation island shows the sentence first, says "Cleaning up" while the words are polished, and keeps one pill in every state.
+
 - Home shows the writing style next to the live state, and one click there changes it without opening Settings.
 
 - The writing style is saved beside the app, not only in the browser, so dictation from the shortcut or the tray uses it too; the API refuses a style it does not know with 400.

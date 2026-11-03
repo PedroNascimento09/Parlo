@@ -12,6 +12,7 @@ mod ask;
 mod calls;
 mod captions;
 mod catalog;
+mod commands;
 mod config;
 mod decisions;
 mod dictate;
@@ -36,6 +37,7 @@ mod serve;
 mod sidecar;
 mod style;
 mod summary;
+mod undo;
 mod update;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -58,6 +60,7 @@ fn main() -> ExitCode {
         Some("mcp") => mcp::serve(),
         Some("retention") => retention_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
+        Some("undo") => undo_command(),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
         Some("pair") => pair_command(&args[1..]),
@@ -93,6 +96,7 @@ fn print_help() {
     println!();
     println!("commands:");
     println!("  doctor                             check the local audio setup");
+    println!("  undo                               take back what the last dictation wrote");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  app [--from X --to Y] [--stt NAME] open the Parlo window");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
@@ -970,6 +974,16 @@ fn record_command(args: &[String]) -> Result<(), String> {
             println!("  warning          the microphone captured almost nothing, check the input device, mute and gain");
         }
     }
+    Ok(())
+}
+
+fn undo_command() -> Result<(), String> {
+    let last = undo::take()?;
+    if let Err(error) = insert::erase(last.window, last.characters) {
+        undo::restore(&last);
+        return Err(error);
+    }
+    println!("took back {} characters", last.characters);
     Ok(())
 }
 

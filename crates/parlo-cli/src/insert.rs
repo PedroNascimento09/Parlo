@@ -8,6 +8,7 @@ mod win {
     const KEYEVENTF_KEYUP: u32 = 0x0002;
     const KEYEVENTF_UNICODE: u32 = 0x0004;
     const VK_RETURN: u16 = 0x0D;
+    const VK_BACK: u16 = 0x08;
 
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -79,6 +80,21 @@ mod win {
                 union: Union {
                     keyboard: KeyboardInput {
                         vk: VK_RETURN,
+                        scan: 0,
+                        flags: if released { KEYEVENTF_KEYUP } else { 0 },
+                        time: 0,
+                        extra: 0,
+                    },
+                },
+            }
+        }
+
+        pub fn backspace(released: bool) -> Self {
+            Self {
+                kind: INPUT_KEYBOARD,
+                union: Union {
+                    keyboard: KeyboardInput {
+                        vk: VK_BACK,
                         scan: 0,
                         flags: if released { KEYEVENTF_KEYUP } else { 0 },
                         time: 0,
@@ -211,6 +227,28 @@ pub fn type_text(target: usize, text: &str) -> Result<(), String> {
 }
 
 #[cfg(windows)]
+pub fn erase(target: usize, characters: usize) -> Result<(), String> {
+    use win::*;
+    let window = target as Window;
+    if unsafe { GetForegroundWindow() } != window {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    let mut batch: Vec<Input> = Vec::new();
+    for _ in 0..characters {
+        batch.push(Input::backspace(false));
+        batch.push(Input::backspace(true));
+        if batch.len() >= 256 {
+            send(&batch)?;
+            batch.clear();
+        }
+    }
+    if !batch.is_empty() {
+        send(&batch)?;
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
 fn send(batch: &[win::Input]) -> Result<(), String> {
     let sent = unsafe {
         win::SendInput(
@@ -284,6 +322,21 @@ mod x11 {
                 OsStr::new("0"),
                 OsStr::new("--"),
                 OsStr::new(text),
+            ],
+        )
+        .map(|_| ())
+    }
+
+    pub fn erase(characters: usize) -> Result<(), String> {
+        let count = characters.to_string();
+        run(
+            "xdotool",
+            &[
+                OsStr::new("key"),
+                OsStr::new("--clearmodifiers"),
+                OsStr::new("--repeat"),
+                OsStr::new(&count),
+                OsStr::new("BackSpace"),
             ],
         )
         .map(|_| ())
@@ -385,6 +438,39 @@ pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
     mac::run(&applescript_for(text)).map(|_| ())
 }
 
+#[cfg(target_os = "linux")]
+pub fn erase(target: usize, characters: usize) -> Result<(), String> {
+    if x11::active_window()? != target {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    x11::erase(characters)
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn erase_script(characters: usize) -> String {
+    format!(
+        "tell application \"System Events\"\nrepeat {characters} times\nkey code 51\ndelay 0.01\nend repeat\nend tell"
+    )
+}
+
+#[cfg(target_os = "macos")]
+pub fn erase(_target: usize, characters: usize) -> Result<(), String> {
+    let app = mac::frontmost()?;
+    let held = CAPTURED_APP
+        .lock()
+        .map_err(|_| "the program in front could not be read".to_string())?
+        .clone();
+    if held.as_deref() != Some(app.as_str()) {
+        return Err("the program you were writing in is not in front any more".to_string());
+    }
+    mac::run(&erase_script(characters)).map(|_| ())
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+pub fn erase(_target: usize, _characters: usize) -> Result<(), String> {
+    Err(NO_FIELD.to_string())
+}
+
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 pub fn type_text(_target: usize, _text: &str) -> Result<(), String> {
     Err(NO_FIELD.to_string())
@@ -430,6 +516,22 @@ mod tests {
         let script = applescript_for("Diz \"olá\" \\ adeus");
         assert!(script.starts_with("tell application \"System Events\""));
         assert!(script.contains("keystroke \"Diz \\\"olá\\\" \\\\ adeus\""));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_backspace_is_one_key_down_and_one_up() {
+        let pressed = win::Input::backspace(false);
+        let released = win::Input::backspace(true);
+        assert_eq!(unsafe { pressed.union.keyboard.vk }, 0x08);
+        assert_eq!(unsafe { released.union.keyboard.flags } & 0x0002, 0x0002);
+    }
+
+    #[test]
+    fn taking_back_text_repeats_the_delete_key() {
+        let script = erase_script(3);
+        assert!(script.contains("repeat 3 times"));
+        assert!(script.contains("key code 51"));
     }
 
     #[test]

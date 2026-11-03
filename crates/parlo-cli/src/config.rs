@@ -73,6 +73,7 @@ mod tests {
             to: "pt".to_string(),
             write: "pt".to_string(),
             style: String::new(),
+            profiles: Default::default(),
             shortcut: "Ctrl+Shift+D".to_string(),
             hands_free: "Ctrl+Alt+Shift+D".to_string(),
             captions: "Ctrl+Alt+C".to_string(),

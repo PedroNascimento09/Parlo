@@ -12,9 +12,11 @@ use parlo_core::settings::Intelligence;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
+use crate::commands;
 use crate::dub;
 use crate::insert;
 use crate::models;
+use crate::undo;
 
 use crate::update;
 
@@ -243,7 +245,9 @@ impl Session {
             .unwrap_or_else(|error| error.into_inner())
             .take()
             .ok_or_else(|| "Parlo does not know which field to write into".to_string())?;
-        insert::type_text(target, text)
+        insert::type_text(target, text)?;
+        undo::remember(target, text);
+        Ok(())
     }
 
     fn write(
@@ -470,12 +474,8 @@ fn handle(
     let request = lines.next().unwrap_or_default();
     let mut parts = request.split_whitespace();
     let method = parts.next().unwrap_or_default();
-    let path = parts
-        .next()
-        .unwrap_or_default()
-        .split('?')
-        .next()
-        .unwrap_or_default();
+    let target = parts.next().unwrap_or_default();
+    let (path, query) = target.split_once('?').unwrap_or((target, ""));
     let headers: Vec<(String, String)> = lines
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
@@ -918,6 +918,95 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
+    if path == "/profiles" && (method == "GET" || method == "POST") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let mut config = crate::config::load();
+        if method == "POST" {
+            let request: serde_json::Value = match serde_json::from_slice(&body) {
+                Ok(request) => request,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &error_json(&error.to_string()),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            };
+            let program = text_field(&request, "program").to_ascii_lowercase();
+            let style = text_field(&request, "style").to_ascii_lowercase();
+            if program.is_empty() {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"a profile names the program it applies to\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            if !style.is_empty() && !crate::style::is_known(&style) {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"style needs formal, casual or excited\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            if style.is_empty() {
+                config.profiles.remove(&program);
+            } else {
+                config.profiles.insert(program, style);
+            }
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        }
+        let body = serde_json::json!(config.profiles).to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/history/restyle" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let id = text_field(&request, "id");
+        let style = text_field(&request, "style").to_ascii_lowercase();
+        if id.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"a dictation is named by its id\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if !crate::style::is_known(&style) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"style needs formal, casual or excited\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        return match crate::history::restyle(&id, &style) {
+            Ok(entry) => respond_json(stream, "200 OK", &crate::history::entry_json(&entry))
+                .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "404 Not Found", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "GET" && path == "/hardware" {
         return respond_json(stream, "200 OK", &crate::hardware::detect().as_json())
             .map(|()| Flow::Serve);
@@ -932,7 +1021,13 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        return respond_json(stream, "200 OK", &crate::history::as_json(20)).map(|()| Flow::Serve);
+        let asked = parameter(query, "q");
+        let body = if asked.is_empty() {
+            crate::history::as_json(20)
+        } else {
+            crate::history::search_json(&asked, 50)
+        };
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
     if method == "POST" && path == "/history/clear" {
@@ -2445,6 +2540,32 @@ fn handle(
         };
     }
 
+    if method == "POST" && path == "/undo" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let last = match undo::take() {
+            Ok(last) => last,
+            Err(error) => {
+                return respond_json(stream, "409 Conflict", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        return match insert::erase(last.window, last.characters) {
+            Ok(()) => respond_json(
+                stream,
+                "200 OK",
+                &format!("{{\"erased\":{}}}", last.characters),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                undo::restore(&last);
+                respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "POST" && path == "/insert" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -2542,10 +2663,11 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        let stored = crate::config::load();
         let clean = if clean_header == "off" {
             Some("original".to_string())
         } else {
-            Some(crate::config::load().intelligence.clean)
+            Some(stored.intelligence.clean.clone())
         };
         let style_header = header(&headers, "x-parlo-style")
             .unwrap_or_default()
@@ -2559,11 +2681,15 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        let stored_style = crate::config::load().style;
+        let app = crate::insert::foreground()
+            .map(|(_, name)| name)
+            .unwrap_or_else(|_| "unknown".to_string());
         let style = if !style_header.is_empty() {
             style_header
-        } else if crate::style::is_known(&stored_style) {
-            stored_style
+        } else if let Some(profile) = stored.profiles.get(&app.to_ascii_lowercase()) {
+            profile.clone()
+        } else if crate::style::is_known(&stored.style) {
+            stored.style.clone()
         } else {
             String::new()
         };
@@ -2582,10 +2708,8 @@ fn handle(
             }
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        let text = commands::apply(&text);
         let text = crate::style::shape(&text, &style);
-        let app = crate::insert::foreground()
-            .map(|(_, name)| name)
-            .unwrap_or_else(|_| "unknown".to_string());
         let mut entry = crate::history::Entry::now(
             &text,
             &translation,
@@ -2964,6 +3088,47 @@ fn pieces_json(pieces: &[parlo_core::engine::StreamPiece]) -> String {
         })
         .collect();
     serde_json::to_string(&rows).unwrap_or_else(|_| "[]".to_string())
+}
+
+fn parameter(query: &str, name: &str) -> String {
+    query
+        .split('&')
+        .filter_map(|pair| pair.split_once('='))
+        .find(|(key, _)| *key == name)
+        .map(|(_, value)| decode(value))
+        .unwrap_or_default()
+}
+
+fn decode(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut index = 0;
+    while index < bytes.len() {
+        match bytes[index] {
+            b'+' => {
+                out.push(b' ');
+                index += 1;
+            }
+            b'%' if index + 2 < bytes.len() => {
+                let hex = std::str::from_utf8(&bytes[index + 1..index + 3]).unwrap_or("");
+                match u8::from_str_radix(hex, 16) {
+                    Ok(byte) => {
+                        out.push(byte);
+                        index += 3;
+                    }
+                    Err(_) => {
+                        out.push(bytes[index]);
+                        index += 1;
+                    }
+                }
+            }
+            byte => {
+                out.push(byte);
+                index += 1;
+            }
+        }
+    }
+    String::from_utf8_lossy(&out).to_string()
 }
 
 fn text_field(request: &serde_json::Value, name: &str) -> String {

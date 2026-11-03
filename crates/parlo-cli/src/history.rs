@@ -87,6 +87,63 @@ pub fn remove(id: &str) -> Result<(), String> {
     write_entries(&path, &entries)
 }
 
+pub fn search(query: &str, limit: usize) -> Vec<Entry> {
+    let wanted = fold(query);
+    if wanted.is_empty() {
+        return recent(limit);
+    }
+    search_at(&path(), &wanted, limit)
+}
+
+pub fn search_json(query: &str, limit: usize) -> String {
+    let entries: Vec<serde_json::Value> = search(query, limit)
+        .iter()
+        .filter_map(|entry| serde_json::from_str(&entry_json(entry)).ok())
+        .collect();
+    serde_json::json!(entries).to_string()
+}
+
+pub fn restyle(id: &str, style: &str) -> Result<Entry, String> {
+    restyle_at(&path(), id, style)
+}
+
+fn restyle_at(path: &Path, id: &str, style: &str) -> Result<Entry, String> {
+    with_entry(path, id, |entry| {
+        entry.text = crate::style::shape(&entry.text, style)
+    })
+}
+
+fn search_at(path: &Path, wanted: &str, limit: usize) -> Vec<Entry> {
+    let mut hits: Vec<Entry> = entries_at(path)
+        .into_iter()
+        .rev()
+        .filter(|entry| {
+            fold(&entry.text).contains(wanted)
+                || fold(&entry.translation).contains(wanted)
+                || fold(&entry.app).contains(wanted)
+        })
+        .collect();
+    hits.truncate(limit);
+    hits
+}
+
+fn fold(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for character in text.chars() {
+        let plain = match character {
+            'á' | 'à' | 'â' | 'ã' | 'ä' | 'Á' | 'À' | 'Â' | 'Ã' | 'Ä' => 'a',
+            'é' | 'è' | 'ê' | 'ë' | 'É' | 'È' | 'Ê' | 'Ë' => 'e',
+            'í' | 'ì' | 'î' | 'ï' | 'Í' | 'Ì' | 'Î' | 'Ï' => 'i',
+            'ó' | 'ò' | 'ô' | 'õ' | 'ö' | 'Ó' | 'Ò' | 'Ô' | 'Õ' | 'Ö' => 'o',
+            'ú' | 'ù' | 'û' | 'ü' | 'Ú' | 'Ù' | 'Û' | 'Ü' => 'u',
+            'ç' | 'Ç' => 'c',
+            other => other.to_ascii_lowercase(),
+        };
+        out.push(plain);
+    }
+    out
+}
+
 pub fn entry_json(entry: &Entry) -> String {
     serde_json::json!({
         "id": entry.id,
@@ -351,6 +408,60 @@ mod tests {
     fn an_unknown_id_is_refused() {
         let path = scratch("unknown");
         assert!(with_entry(&path, "nada", |_| {}).is_err());
+        tidy(&path);
+    }
+
+    #[test]
+    fn a_search_finds_a_word_and_ignores_accents() {
+        let path = scratch("search");
+        kept(&path, "o relatório ficou pronto");
+        kept(&path, "a reunião começa às dez");
+        assert_eq!(search_at(&path, "relatorio", 10).len(), 1);
+        assert_eq!(search_at(&path, "reuniao", 10).len(), 1);
+        assert_eq!(search_at(&path, "nada", 10).len(), 0);
+        tidy(&path);
+    }
+
+    #[test]
+    fn a_search_reads_the_program_and_the_translation() {
+        let path = scratch("search-app");
+        append_to(
+            &path,
+            &Entry::now("bom dia", "good morning", "pt", "en", "Notepad", "dictate"),
+        )
+        .unwrap();
+        assert_eq!(search_at(&path, "notepad", 10).len(), 1);
+        assert_eq!(search_at(&path, "good morning", 10).len(), 1);
+        tidy(&path);
+    }
+
+    #[test]
+    fn a_search_keeps_the_newest_first_and_respects_the_limit() {
+        let path = scratch("search-order");
+        kept(&path, "alpha one");
+        kept(&path, "alpha two");
+        let hits = search_at(&path, "alpha", 1);
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].text, "alpha two");
+        tidy(&path);
+    }
+
+    #[test]
+    fn a_restyle_rewrites_the_sentence_in_place() {
+        let path = scratch("restyle");
+        kept(&path, "bom dia como estas");
+        let id = entries_at(&path)[0].id.clone();
+        let changed = restyle_at(&path, &id, "formal").unwrap();
+        assert_eq!(changed.text, "Bom dia como estas.");
+        assert_eq!(entries_at(&path)[0].text, "Bom dia como estas.");
+        tidy(&path);
+    }
+
+    #[test]
+    fn an_empty_search_returns_the_recent_lines() {
+        let path = scratch("search-empty");
+        kept(&path, "uma");
+        assert_eq!(search_at(&path, "", 10).len(), 1);
         tidy(&path);
     }
 }
