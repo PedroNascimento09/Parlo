@@ -2411,14 +2411,16 @@ fn handle(
         let app = crate::insert::foreground()
             .map(|(_, name)| name)
             .unwrap_or_else(|_| "unknown".to_string());
-        if let Err(error) = crate::history::append(&crate::history::Entry::now(
+        let mut entry = crate::history::Entry::now(
             &text,
             &translation,
             &session.chosen().from,
             &target,
             &app,
             "dictate",
-        )) {
+        );
+        entry.seconds = f64::from(seconds);
+        if let Err(error) = crate::history::append(&entry) {
             println!("could not store the dictation: {error}");
         }
         println!(

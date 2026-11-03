@@ -3016,6 +3016,7 @@ function renderHistory() {
       (LANGUAGE_NAMES[entry.from] || entry.from) +
       " → " +
       (LANGUAGE_NAMES[entry.to] || entry.to) +
+      (entry.seconds > 0 ? " · " + entry.seconds.toFixed(1) + " s" : "") +
       (where ? " · " + where : "");
     const detail = document.createElement("dd");
     const reuse = document.createElement("button");

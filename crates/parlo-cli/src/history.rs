@@ -24,6 +24,8 @@ pub struct Entry {
     pub id: String,
     #[serde(default)]
     pub favourite: bool,
+    #[serde(default)]
+    pub seconds: f64,
 }
 
 impl Entry {
@@ -41,6 +43,7 @@ impl Entry {
             mode: mode.to_string(),
             id: String::new(),
             favourite: false,
+            seconds: 0.0,
         }
     }
 }
@@ -95,6 +98,7 @@ pub fn entry_json(entry: &Entry) -> String {
         "app": entry.app,
         "mode": entry.mode,
         "favourite": entry.favourite,
+        "seconds": entry.seconds,
     })
     .to_string()
 }
