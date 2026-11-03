@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A first open asks for a name, kept on this computer only, and Home greets you by it with total words, words per minute and the current streak in place of the transcript list.
+
 - Settings gained an Insights pane: words written, minutes spoken, words per minute, where the text landed and a four-week strip, all counted from the dictations on this computer.
 
 - Home is only the welcome card: the language pair, the microphone and the shortcut moved to a Setup tab in Settings, and the four running totals became one quiet line above the recent results.

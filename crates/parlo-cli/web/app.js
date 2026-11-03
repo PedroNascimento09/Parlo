@@ -1393,41 +1393,49 @@ let catalogLast = [];
 
 const historyList = document.getElementById("history-list");
 const homeGreeting = document.getElementById("home-greeting");
-const recentTotals = document.getElementById("recent-totals");
+
+function storedName() {
+  return (localStorage.getItem("parlo.name") || "").trim();
+}
+
+function streakDays() {
+  const dayKey = (ms) => {
+    const day = new Date(ms);
+    day.setHours(0, 0, 0, 0);
+    return day.getTime();
+  };
+  const days = new Set(historyEntries.map((entry) => dayKey((entry.at || 0) * 1000)));
+  let streak = 0;
+  let cursor = dayKey(Date.now());
+  while (days.has(cursor)) {
+    streak += 1;
+    cursor -= 86400000;
+  }
+  return streak;
+}
 
 function paintHome() {
+  const name = storedName();
   if (homeGreeting) {
     const hour = new Date().getHours();
-    homeGreeting.textContent =
+    const base =
       hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
+    homeGreeting.textContent = name ? "Welcome back, " + name : base;
   }
-  if (!recentTotals) {
+  const wordsEl = document.getElementById("home-words");
+  if (!wordsEl) {
     return;
   }
-  if (!historyEntries.length) {
-    recentTotals.hidden = true;
-    recentTotals.textContent = "";
-    return;
-  }
-  const words = historyEntries.reduce((total, entry) => {
-    const text = entry.translation || entry.text || "";
-    return total + text.split(/\s+/).filter(Boolean).length;
-  }, 0);
+  const textOf = (entry) => entry.translation || entry.text || "";
+  const words = historyEntries.reduce(
+    (total, entry) => total + textOf(entry).split(/\s+/).filter(Boolean).length,
+    0,
+  );
   const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
-  const favourites = historyEntries.filter((entry) => entry.favourite).length;
-  const parts = [];
-  if (seconds > 0) {
-    parts.push((seconds / 60).toFixed(1) + " min spoken");
-  }
-  if (words) {
-    parts.push(words + (words === 1 ? " word" : " words"));
-  }
-  parts.push(historyEntries.length + (historyEntries.length === 1 ? " dictation" : " dictations"));
-  if (favourites) {
-    parts.push(favourites + (favourites === 1 ? " favourite" : " favourites"));
-  }
-  recentTotals.textContent = parts.join(" · ");
-  recentTotals.hidden = false;
+  wordsEl.textContent = String(words);
+  document.getElementById("home-wpm").textContent =
+    seconds > 0 && words > 0 ? String(Math.round(words / (seconds / 60))) : "–";
+  document.getElementById("home-streak").textContent = String(streakDays());
 }
 
 const historyNote = document.getElementById("history-note");
@@ -1435,14 +1443,10 @@ const historySearch = document.getElementById("history-search");
 const historyApp = document.getElementById("history-app");
 const historyMode = document.getElementById("history-mode");
 const historyFavourite = document.getElementById("history-favourite");
-const recentAll = document.getElementById("recent-all");
 const statusModels = document.getElementById("status-models");
 let historyEntries = [];
 const historyClear = document.getElementById("history-clear");
 const historyFilters = document.getElementById("history-filters");
-const recentList = document.getElementById("recent-list");
-const recentEmpty = document.getElementById("recent-empty");
-const recentSection = document.getElementById("recent");
 
 function describePair(from, to) {
   return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
@@ -3235,121 +3239,9 @@ function matchesHistory(entry) {
   return true;
 }
 
-function renderRecent() {
-  recentList.replaceChildren();
-  const shown = historyEntries
-    .filter((entry) => (entry.translation || entry.text || "").trim())
-    .slice(0, 5);
-  recentEmpty.hidden = shown.length > 0;
-  recentSection.hidden = shown.length === 0;
-  for (const entry of shown) {
-    const item = document.createElement("li");
-    const text = document.createElement("p");
-    text.className = "recent-text";
-    text.textContent = entry.translation || entry.text;
-    const moment = new Date((entry.at || 0) * 1000);
-    const where = document.createElement("p");
-    where.className = "recent-meta";
-    where.textContent = [
-      moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      (LANGUAGE_NAMES[entry.from] || entry.from) + " to " + (LANGUAGE_NAMES[entry.to] || entry.to),
-      entry.app,
-    ]
-      .filter(Boolean)
-      .join(" · ");
-    item.append(text, where);
-    recentList.append(item);
-  }
-}
-
-function paintInsights() {
-  const wordsEl = document.getElementById("insights-words");
-  if (!wordsEl) {
-    return;
-  }
-  const textOf = (entry) => entry.translation || entry.text || "";
-  const countOf = (entry) => textOf(entry).split(/\s+/).filter(Boolean).length;
-  const words = historyEntries.reduce((total, entry) => total + countOf(entry), 0);
-  const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
-  wordsEl.textContent = String(words);
-  document.getElementById("insights-minutes").textContent = (seconds / 60).toFixed(1);
-  document.getElementById("insights-count").textContent = String(historyEntries.length);
-  document.getElementById("insights-rate").textContent =
-    seconds > 0 && words > 0 ? String(Math.round(words / (seconds / 60))) : "–";
-
-  const apps = new Map();
-  for (const entry of historyEntries) {
-    const words = countOf(entry);
-    if (!words) {
-      continue;
-    }
-    const raw = (entry.app || "").trim();
-    const name = raw && raw !== "unknown" ? raw : "Another app";
-    apps.set(name, (apps.get(name) || 0) + words);
-  }
-  const ranked = [...apps.entries()].sort((left, right) => right[1] - left[1]).slice(0, 4);
-  const best = ranked.length ? ranked[0][1] : 0;
-  const list = document.getElementById("insights-apps");
-  list.replaceChildren();
-  if (!ranked.length) {
-    const empty = document.createElement("li");
-    empty.className = "insights-empty";
-    empty.textContent = "No words written yet, so there is nowhere to point at.";
-    list.append(empty);
-  }
-  for (const [name, total] of ranked) {
-    const item = document.createElement("li");
-    const label = document.createElement("span");
-    label.className = "insights-app";
-    label.textContent = name;
-    const track = document.createElement("span");
-    track.className = "insights-track";
-    const fill = document.createElement("span");
-    fill.className = "insights-fill";
-    fill.style.width = Math.max(4, Math.round((100 * total) / best)) + "%";
-    track.append(fill);
-    const value = document.createElement("span");
-    value.className = "insights-value";
-    value.textContent = total + (total === 1 ? " word" : " words");
-    item.append(label, track, value);
-    list.append(item);
-  }
-
-  const days = document.getElementById("insights-days");
-  days.replaceChildren();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const perDay = new Map();
-  for (const entry of historyEntries) {
-    const when = new Date((entry.at || 0) * 1000);
-    when.setHours(0, 0, 0, 0);
-    const key = when.getTime();
-    perDay.set(key, (perDay.get(key) || 0) + 1);
-  }
-  const peak = Math.max(1, ...perDay.values());
-  let active = 0;
-  for (let back = 27; back >= 0; back -= 1) {
-    const day = new Date(today.getTime() - back * 86400000);
-    const hits = perDay.get(day.getTime()) || 0;
-    if (hits) {
-      active += 1;
-    }
-    const cell = document.createElement("span");
-    cell.className = "insights-day";
-    cell.dataset.level = hits === 0 ? "0" : hits >= peak * 0.66 ? "3" : hits >= peak * 0.33 ? "2" : "1";
-    cell.title = day.toLocaleDateString() + ": " + hits + (hits === 1 ? " dictation" : " dictations");
-    days.append(cell);
-  }
-  document.getElementById("insights-days-note").textContent =
-    active === 0
-      ? "No dictation in the last four weeks."
-      : active + (active === 1 ? " day" : " days") + " with at least one dictation in the last four weeks.";
-}
-
 function renderHistory() {
   paintHome();
   paintInsights();
-  renderRecent();
   historyList.replaceChildren();
   if (!historyEntries.length) {
     historyFilters.hidden = true;
@@ -3765,10 +3657,6 @@ historySearch.addEventListener("input", () => renderHistory());
 historyApp.addEventListener("change", () => renderHistory());
 historyMode.addEventListener("change", () => renderHistory());
 historyFavourite.addEventListener("change", () => renderHistory());
-recentAll.addEventListener("click", () => {
-  libraryTab = "history";
-  showLibraryTab(libraryTab);
-});
 
 window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {
@@ -4182,4 +4070,34 @@ loadFeatures();
 
 document.getElementById("welcome-setup").addEventListener("click", () => {
   showSettingsTab("setup");
+});
+
+const nameGate = document.getElementById("name-gate");
+const nameInput = document.getElementById("name-input");
+const nameSave = document.getElementById("name-save");
+const nameNote = document.getElementById("name-note");
+
+if (!storedName()) {
+  nameGate.hidden = false;
+  nameInput.focus();
+}
+
+nameSave.addEventListener("click", () => {
+  const value = nameInput.value.trim().replace(/\s+/g, " ").slice(0, 40);
+  if (value.length < 2) {
+    nameNote.textContent = "Two letters at least, so it reads like a name.";
+    nameInput.focus();
+    return;
+  }
+  localStorage.setItem("parlo.name", value);
+  nameGate.hidden = true;
+  nameNote.textContent = "";
+  paintHome();
+});
+
+nameInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    nameSave.click();
+  }
 });

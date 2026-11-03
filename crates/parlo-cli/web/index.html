@@ -101,6 +101,20 @@
 </section>
 
 <main>
+<section class="gate" id="name-gate" aria-labelledby="gate-title" hidden>
+  <div class="gate-card">
+    <p class="gate-kicker">Parlo</p>
+    <h1 id="gate-title">What should Parlo call you?</h1>
+    <p class="gate-note">A name for the greeting, nothing more. No account, no sign-in, and it never leaves this computer.</p>
+    <label class="field" for="name-input">
+      <span class="field-label">Your name</span>
+      <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Pedro">
+    </label>
+    <button id="name-save" class="install" type="button">That is me</button>
+    <p class="gate-note" id="name-note" aria-live="polite"></p>
+  </div>
+</section>
+
 
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title">Speak once. Be heard.</h1>
@@ -130,21 +144,25 @@
         <span id="status-state">Ready to dictate</span>
       </p>
     </div>
-    <button id="talk" class="talk" type="button" aria-pressed="false">
-      <span class="talk-label">Hold to talk</span>
-      <span class="talk-sub">Speak, let go, and the words land here.</span>
-      <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
-    </button>
-    <p class="stage-call">Or hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere on this computer.</p>
-    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
-  </section>
-
-  <section class="recent" id="recent" aria-labelledby="recent-title">
-    <h2 id="recent-title">Last three results</h2>
-    <p class="recent-totals" id="recent-totals" hidden></p>
-    <ol class="recent-list" id="recent-list"></ol>
-    <p class="recent-empty" id="recent-empty">Nothing dictated yet.</p>
-    <a class="recent-all" id="recent-all" href="#library">See every dictation</a>
+    <div class="home-body">
+      <div class="home-main">
+        <button id="talk" class="talk" type="button" aria-pressed="false">
+          <span class="talk-label">Hold to talk</span>
+          <span class="talk-sub">Speak, let go, and the words land here.</span>
+          <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
+        </button>
+        <p class="stage-call">Or hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere on this computer.</p>
+        <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
+      </div>
+      <aside class="home-panel" aria-label="Your totals">
+        <dl>
+          <div><dt>Total words</dt><dd id="home-words">0</dd></div>
+          <div><dt>Words per minute</dt><dd id="home-wpm">–</dd></div>
+          <div><dt>Day streak</dt><dd id="home-streak">0</dd></div>
+        </dl>
+        <a class="home-link" id="home-insights" href="#settings">See the details</a>
+      </aside>
+    </div>
   </section>
 
   
