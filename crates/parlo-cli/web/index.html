@@ -78,12 +78,11 @@
   <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
   <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
   <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
-  <a href="#progress" data-route="progress" aria-keyshortcuts="Alt+5">Progress</a>
-  <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6">Settings</a>
+  <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5">Settings</a>
 </nav>
 <div class="sidebar-foot">
   <p class="foot-line">Nothing leaves this computer.</p>
-  <p class="foot-line">Alt+1 to Alt+6 moves between sections.</p>
+  <p class="foot-line">Alt+1 to Alt+5 moves between sections.</p>
 </div>
 </aside>
 <div class="workspace">
@@ -169,6 +168,12 @@
 
   <section class="stage" id="status-list" aria-label="Right now">
     <h1 class="home-greeting" id="home-greeting">Hello again</h1>
+    <dl class="home-stats">
+      <div><dt>Minutes spoken</dt><dd id="progress-minutes">0.0</dd></div>
+      <div><dt>Words written</dt><dd id="progress-words">0</dd></div>
+      <div><dt>Dictations</dt><dd id="progress-count">0</dd></div>
+      <div><dt>Favourites</dt><dd id="progress-favourites">0</dd></div>
+    </dl>
     <p class="stage-state">
       <span class="dot" id="status-dot" aria-hidden="true"></span>
       <span id="status-state">Ready to dictate</span>
@@ -185,20 +190,7 @@
   </section>
 
   
-  <section class="settings" id="progress-section" aria-labelledby="progress-title">
-    <div class="settings-head">
-      <h2 id="progress-title">Progress</h2>
-      <p class="settings-note">Counted from the dictations kept on this computer, nothing else.</p>
-    </div>
-    <dl class="progress-facts">
-      <div><dt>Time spoken</dt><dd id="progress-minutes">0.0 min</dd></div>
-      <div><dt>Words written</dt><dd id="progress-words">0</dd></div>
-      <div><dt>Dictations</dt><dd id="progress-count">0</dd></div>
-      <div><dt>Favourites</dt><dd id="progress-favourites">0</dd></div>
-    </dl>
-  </section>
-
-<div class="settings-layout">
+  <div class="settings-layout">
 <nav class="settings-nav" id="settings-tabs" aria-label="Settings">
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
     <button type="button" class="tab" data-tab="languages">Languages</button>

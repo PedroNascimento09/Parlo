@@ -1299,10 +1299,50 @@ footer p {
 
 .stage {
   margin: 16px 0 0;
-  padding: 20px 22px 18px;
+  padding: 28px 30px 26px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: var(--surface);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 58%),
+    var(--surface);
+}
+
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 22px;
+}
+
+.home-stats > div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.home-stats dt {
+  color: var(--muted);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-stats dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .home-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .stage-state {
@@ -1554,8 +1594,8 @@ kbd {
 }
 
 .home-greeting {
-  margin: 0 0 4px;
-  font-size: 30px;
+  margin: 0 0 6px;
+  font-size: 34px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }

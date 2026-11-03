@@ -1412,7 +1412,7 @@ function paintHome() {
     return total + text.split(/\s+/).filter(Boolean).length;
   }, 0);
   const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
-  progressMinutes.textContent = (seconds / 60).toFixed(1) + " min";
+  progressMinutes.textContent = (seconds / 60).toFixed(1);
   progressWords.textContent = String(words);
   progressCount.textContent = String(historyEntries.length);
   progressFavourites.textContent = String(
@@ -3757,7 +3757,6 @@ refreshHealth();
 setInterval(refreshHealth, 5000);
 
 const ROUTES = {
-  progress: ["progress-section"],
   home: [
     "update",
     "onboarding",
@@ -3812,7 +3811,7 @@ function routeNow() {
   showRoute(route);
 }
 
-const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "progress", 6: "settings" };
+const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "settings" };
 
 document.addEventListener("keydown", (event) => {
   if (!event.altKey || event.ctrlKey || event.metaKey) {
