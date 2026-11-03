@@ -2960,9 +2960,11 @@ function catalogCard(entry, items) {
     card.append(facts);
   }
 
-  const languages = catalogLanguages(entry);
-  if (languages) {
-    card.append(languages);
+  if (!entry.pair) {
+    const languages = catalogLanguages(entry);
+    if (languages) {
+      card.append(languages);
+    }
   }
 
   const bars = document.createElement("div");
