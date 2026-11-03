@@ -1392,6 +1392,35 @@ let catalogTab = "dictation";
 let catalogLast = [];
 
 const historyList = document.getElementById("history-list");
+const homeGreeting = document.getElementById("home-greeting");
+const homeStats = document.getElementById("home-stats");
+
+function paintHome() {
+  if (!homeGreeting || !homeStats) {
+    return;
+  }
+  const hour = new Date().getHours();
+  homeGreeting.textContent =
+    hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
+  if (!historyEntries.length) {
+    homeStats.textContent = "Nothing dictated yet. Hold the shortcut and speak.";
+    return;
+  }
+  const words = historyEntries.reduce((total, entry) => {
+    const text = entry.translation || entry.text || "";
+    return total + text.split(/\s+/).filter(Boolean).length;
+  }, 0);
+  const minutes = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0) / 60;
+  homeStats.textContent =
+    minutes.toFixed(1) +
+    (minutes === 1 ? " minute spoken" : " minutes spoken") +
+    " · " +
+    words +
+    (words === 1 ? " word written" : " words written") +
+    " · " +
+    historyEntries.length +
+    (historyEntries.length === 1 ? " dictation" : " dictations");
+}
 const historyNote = document.getElementById("history-note");
 const historySearch = document.getElementById("history-search");
 const historyApp = document.getElementById("history-app");
@@ -3168,6 +3197,7 @@ function renderRecent() {
 }
 
 function renderHistory() {
+  paintHome();
   renderRecent();
   historyList.replaceChildren();
   if (!historyEntries.length) {
