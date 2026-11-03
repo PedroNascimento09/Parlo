@@ -1309,11 +1309,21 @@ async function loadModels() {
       return false;
     }
     const state = await response.json();
+    describeHomeModels(state);
     return describeModels(state);
   } catch (failure) {
     showModelsError("The model list could not be read. The translator still works if its models are already installed.");
     return false;
   }
+}
+
+function describeHomeModels(state) {
+  const installed = (state.models || []).filter((model) => model.installed);
+  const bytes = installed.reduce((total, model) => total + (model.bytes || 0), 0);
+  statusModels.textContent =
+    installed.length === 0
+      ? "none installed yet"
+      : installed.length + " installed · " + formatSize(bytes);
 }
 
 function showModelsError(message) {
@@ -1437,6 +1447,9 @@ const historyNote = document.getElementById("history-note");
 const historySearch = document.getElementById("history-search");
 const historyApp = document.getElementById("history-app");
 const historyMode = document.getElementById("history-mode");
+const historyFavourite = document.getElementById("history-favourite");
+const recentAll = document.getElementById("recent-all");
+const statusModels = document.getElementById("status-models");
 let historyEntries = [];
 const historyClear = document.getElementById("history-clear");
 const historyFilters = document.getElementById("history-filters");
@@ -2945,6 +2958,9 @@ function matchesHistory(entry) {
   if (mode && (entry.mode || "") !== mode) {
     return false;
   }
+  if (historyFavourite.checked && !entry.favourite) {
+    return false;
+  }
   if (needle) {
     const haystack = ((entry.text || "") + " " + (entry.translation || "")).toLowerCase();
     if (!haystack.includes(needle)) {
@@ -2956,7 +2972,7 @@ function matchesHistory(entry) {
 
 function renderRecent() {
   recentList.replaceChildren();
-  const shown = historyEntries.slice(0, 3);
+  const shown = historyEntries.slice(0, 5);
   recentEmpty.hidden = shown.length > 0;
   recentSection.hidden = shown.length === 0;
   for (const entry of shown) {
@@ -3008,7 +3024,29 @@ function renderHistory() {
     reuse.textContent = entry.translation || entry.text;
     reuse.title = "Copy this text again";
     reuse.addEventListener("click", () => copyHistory(reuse.textContent));
-    detail.append(reuse);
+    const actions = document.createElement("div");
+    actions.className = "history-actions";
+    const star = document.createElement("button");
+    star.type = "button";
+    star.className = "swap";
+    star.textContent = entry.favourite ? "Favourite ✓" : "Favourite";
+    star.setAttribute("aria-pressed", String(Boolean(entry.favourite)));
+    star.title = "Mark this dictation so the favourite filter keeps it";
+    star.addEventListener("click", () => setFavourite(entry));
+    const correct = document.createElement("button");
+    correct.type = "button";
+    correct.className = "swap";
+    correct.textContent = "Correct";
+    correct.title = "Replace the sentence Parlo wrote down";
+    correct.addEventListener("click", () => editHistory(entry));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "swap";
+    remove.textContent = "Delete";
+    remove.title = "Remove this dictation from this computer";
+    remove.addEventListener("click", () => deleteHistory(entry));
+    actions.append(star, correct, remove);
+    detail.append(reuse, actions);
     const card = document.createElement("div");
     card.className = "history-entry";
     card.append(term, detail);
@@ -3030,6 +3068,54 @@ async function copyHistory(text) {
     historyNote.textContent = "Copied to the clipboard. Paste it where you need it.";
   } catch (failure) {
     historyNote.textContent = "The clipboard refused the text. Select it here and copy by hand.";
+  }
+}
+
+async function historyPost(path, body) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify(body),
+  });
+  const detail = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(detail.error || "The dictation could not be changed.");
+  }
+  return detail;
+}
+
+async function setFavourite(entry) {
+  try {
+    await historyPost("/history/favourite", { id: entry.id, value: !entry.favourite });
+    await loadHistory();
+  } catch (failure) {
+    historyNote.textContent = failure.message;
+  }
+}
+
+async function editHistory(entry) {
+  const chosen = window.prompt("Correct what Parlo wrote down.", entry.text || "");
+  if (chosen === null) {
+    return;
+  }
+  try {
+    await historyPost("/history/edit", { id: entry.id, text: chosen });
+    await loadHistory();
+    historyNote.textContent = "Corrected on this computer. Nothing was sent anywhere.";
+  } catch (failure) {
+    historyNote.textContent = failure.message;
+  }
+}
+
+async function deleteHistory(entry) {
+  if (!window.confirm("Delete this dictation from this computer?")) {
+    return;
+  }
+  try {
+    await historyPost("/history/delete", { id: entry.id });
+    await loadHistory();
+  } catch (failure) {
+    historyNote.textContent = failure.message;
   }
 }
 
@@ -3333,6 +3419,11 @@ historyClear.addEventListener("click", () => clearHistory());
 historySearch.addEventListener("input", () => renderHistory());
 historyApp.addEventListener("change", () => renderHistory());
 historyMode.addEventListener("change", () => renderHistory());
+historyFavourite.addEventListener("change", () => renderHistory());
+recentAll.addEventListener("click", () => {
+  libraryTab = "history";
+  showLibraryTab(libraryTab);
+});
 
 window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {

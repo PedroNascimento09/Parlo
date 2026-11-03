@@ -67,7 +67,7 @@ Estimate: 5 hours.
 
 Check: find a dictation from last week by the application it went into.
 
-Built so far: the three parts share the Library destination, and the history keeps every entry in memory, lists the programs it has seen, and filters by program, mode and a word of the text. A row now reads the time, the language pair, the program and the mode. Models, Vocabulary, Files and History now sit behind four tabs over one Library destination.
+Built so far: the three parts share the Library destination, and the history keeps every entry in memory, lists the programs it has seen, and filters by program, mode and a word of the text. A row now reads the time, the language pair, the program and the mode. Models, Vocabulary, Files and History now sit behind four tabs over one Library destination. A history row carries the sentence, the program and the mode, and its own actions: **Favourite**, with a **Favourites only** filter that keeps the marked ones, **Correct**, which replaces the sentence Parlo wrote down, and **Delete**, which removes that one entry after asking; every entry has an id the local server knows, so a line written before ids existed is still found. Home lists the last five results with a link to the Library, and shows how many models are installed, their size and a manage link.
 
 Estimate: 4 hours.
 

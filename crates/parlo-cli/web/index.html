@@ -185,6 +185,10 @@
         <dt>Last translation</dt>
         <dd id="status-latency">nothing yet</dd>
       </div>
+      <div>
+        <dt>Models</dt>
+        <dd><span id="status-models">checking</span> <a id="status-models-manage" href="#library">manage</a></dd>
+      </div>
     </dl>
   </section>
 
@@ -192,6 +196,7 @@
     <h2 id="recent-title">Last three results</h2>
     <ol class="recent-list" id="recent-list"></ol>
     <p class="recent-empty" id="recent-empty">Nothing dictated yet.</p>
+    <a class="recent-all" id="recent-all" href="#library">See every dictation</a>
   </section>
 
   
@@ -533,6 +538,10 @@
       <label class="field" for="history-app">
         <span class="field-label">Program</span>
         <select id="history-app" class="field-input"></select>
+      </label>
+      <label class="check" for="history-favourite">
+        <input id="history-favourite" type="checkbox">
+        Favourites only
       </label>
       <label class="field" for="history-mode">
         <span class="field-label">Mode</span>

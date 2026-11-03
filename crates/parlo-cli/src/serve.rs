@@ -853,6 +853,49 @@ fn handle(
         };
     }
 
+    if method == "POST"
+        && (path == "/history/favourite" || path == "/history/edit" || path == "/history/delete")
+    {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let id = text_field(&request, "id");
+        if id.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"a dictation is named by its id\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let outcome: Result<String, String> = if path == "/history/favourite" {
+            let value = request
+                .get("value")
+                .and_then(|value| value.as_bool())
+                .unwrap_or(false);
+            crate::history::favourite(&id, value).map(|entry| crate::history::entry_json(&entry))
+        } else if path == "/history/edit" {
+            let text = text_field(&request, "text");
+            crate::history::edit(&id, &text).map(|entry| crate::history::entry_json(&entry))
+        } else {
+            crate::history::remove(&id).map(|()| "{\"deleted\":true}".to_string())
+        };
+        return match outcome {
+            Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "404 Not Found", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
     if method == "GET" && path == "/settings" {
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
     }
@@ -2727,6 +2770,15 @@ fn dictation_target(write: &str, from: &str) -> String {
     } else {
         write.to_string()
     }
+}
+
+fn text_field(request: &serde_json::Value, name: &str) -> String {
+    request
+        .get(name)
+        .and_then(|value| value.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string()
 }
 
 fn json_string(value: &str) -> String {

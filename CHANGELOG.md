@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Every dictation in **Library, History** can be acted on. **Favourite** marks an entry and a **Favourites only** filter keeps the marked ones, **Correct** replaces the sentence Parlo wrote down, and **Delete** removes that entry alone after asking; each entry carries an id the local server knows, including lines written before ids existed, and every change stays in the history file on this computer. Home lists the last five results with a link to the rest, and names how many models are installed, their size and a **manage** link.
+
 - Recording a meeting captures audio. The page fed the recogniser only while a dictation or a voice sample ran, so a meeting kept no lines at all; it now captures for as long as the meeting runs, and the same screen gained the middle of its lifecycle: **Pause** stops what is written down without ending the transcript, **Resume** carries on with the same meeting, every line's timestamp leaves the paused time out, and a **Note** typed while recording is kept at that moment, listed under the meeting and carried into search, questions and the Markdown copy. **Status: implemented, not yet run against a microphone on this machine.**
 
 - Read aloud speaks German and French: the German and French voices are in the library with their own Download button, the engine picks the voice by the language it is reading, and the download fetches that voice alone. A German translation is now spoken in German instead of falling back to the Portuguese voice. **Status: wired end to end, audio not heard here.** The files, units and mapping are tested; nobody has listened to the two voices on this machine yet.
