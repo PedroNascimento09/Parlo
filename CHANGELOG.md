@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Portuguese to German is no longer pivot-only on paper: an int8 ONNX build of a Romance-to-German checkpoint passes the gate's 20 sentences directly — numbers, clocks and negations 1.000, names 0.850, 601.6 ms median against 0.79 s for the two-stage route — and three sentences the pivot broke come back right. Nothing ships from it yet: the engine has no ONNX path, so the pair is measured, not installable.
+
 - `parlo doctor` ends with a **first session** check: every model on disk, the recogniser Settings chose, the shortcut, the settings file and a writable data folder, each pass or fail in one line, and it exits 1 while anything is missing.
 
 - The plan stops waiting for users it does not have. G2 is now the author's own first session on a clean install — models, one sentence, one dictation, reopen — and the external-user round starts when there is a first user; every release still states plainly what has not been validated.

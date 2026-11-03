@@ -450,6 +450,14 @@ ONNX does work, with a pinned toolchain. In its own environment — `torch` 2.4.
 
 Latency is the catch. The int8 build turns a sentence around in 1.42 s on four threads, against about 0.79 s for the pivot's two stages and 0.45 s for the CTranslate2 build of the same checkpoint, which is fast but repeats words. A direct pair is therefore reachable — the first one this project can run end to end from Portuguese — but it is not yet better than the pivot. The next steps are a decoder exported with past key values and a quantisation that keeps casing, since the current one is slower and rougher than the route it would replace.
 
+With the decoder exported **with past key values** (`text2text-generation-with-past`), the same int8 build runs the gate's 20 Portuguese to German sentences directly. Windows 11, four threads, beam 4, warm process, `Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa` as ONNX int8:
+
+| Numbers | Clock | Negation | Names | Complete | Gate |
+|---|---|---|---|---|---|
+| 1.000 | 1.000 | 1.000 | 0.850 | 1.000 | passes |
+
+Median **601.6 ms**, p95 **750.3 ms** per sentence, against about 0.79 s for the two-stage pivot. Three rows the pivot got wrong come back right: `Das Team hat 8 Personen und das Porto-Büro hat 5.` where the pivot produced `Das Büro in Porto ist 5`, `Die Zahlung erfolgte am 15. Oktober, nicht am 20.` and `Wir haben nie solche Beschwerden erhalten.` The one name miss is the same `John`/`Mary` row the PT→EN gate loses. The counts come from the gate's own metric functions, but this was a probe, not `mt_gate.py --pack`: the gate still refuses converted checkpoints, and the engine speaks CTranslate2, so the pair is measured and not yet installable. What remains is an ONNX path in the engine, or a conversion that stops repeating words.
+
 **And the finding that matters more than the German pair.** `mt.find_pack` searched the Argos application's own package folders before the folder Parlo installs into, so the two tables above described the Argos copy. `pack_roots` reads Parlo's folder first now. The stale folder at `engines/cascade/models/mt/pt-en` still decodes the first corpus sentence into `I set the meeting for 3 .30 pm p . m .30 on Thursday Thursday . .` and keeps going; its layout (`ct2/` and `hf/`) is not what `packs.install` writes, and `find_pack` ignores it by name. What it exposed was the decoder, not the model: joining the hypothesis pieces with spaces split `2026` into `20 26`. With that fixed, the folders the product installs pass the gate in both directions.
 
 The mechanical gate scored that output at numbers 0.950, clocks 0.950, negations 0.950, names 0.950, completeness 1.000, which is the clearest demonstration of what the gate is worth: it counts quantities and punctuation, and cannot hear that the sentence is broken. Nothing from that run is published as a result, and PT→DE still runs only through English.
