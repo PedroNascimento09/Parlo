@@ -102,7 +102,62 @@
 
 <main>
 
-  <section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
+  <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
+    <h1 id="welcome-title">Speak once. Be heard.</h1>
+    <p class="welcome-lede">Speak, and Parlo writes the other language. Everything stays on this computer.</p>
+    <div class="welcome-actions">
+      <button id="welcome-install" class="install welcome-install" type="button">Download the dictation model</button>
+      <a id="welcome-more" class="welcome-more" href="#library">More models</a>
+      <a id="welcome-setup" class="welcome-more" href="#settings">Finish setup</a>
+    </div>
+    <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
+    <ol class="welcome-steps">
+      <li><span class="step-number">01</span>Hold <kbd id="welcome-key">Ctrl+Alt+D</kbd> and speak in your language.</li>
+      <li><span class="step-number">02</span>Let go. The model listens only while the key is down.</li>
+      <li><span class="step-number">03</span>The text lands in the window you were typing in.</li>
+    </ol>
+  </section>
+
+  <p class="progress" id="progress" aria-live="polite" hidden></p>
+  <p class="error" id="error" role="alert" hidden></p>
+  <p class="translation" id="translation" aria-live="polite" hidden></p>
+
+  <section class="stage" id="status-list" aria-label="Right now">
+    <div class="stage-head">
+      <h1 class="home-greeting" id="home-greeting">Hello again</h1>
+      <p class="stage-state">
+        <span class="dot" id="status-dot" aria-hidden="true"></span>
+        <span id="status-state">Ready to dictate</span>
+      </p>
+    </div>
+    <button id="talk" class="talk" type="button" aria-pressed="false">
+      <span class="talk-label">Hold to talk</span>
+      <span class="talk-sub">Speak, let go, and the words land here.</span>
+      <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
+    </button>
+    <p class="stage-call">Or hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere on this computer.</p>
+    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
+  </section>
+
+  <section class="recent" id="recent" aria-labelledby="recent-title">
+    <h2 id="recent-title">Last three results</h2>
+    <p class="recent-totals" id="recent-totals" hidden></p>
+    <ol class="recent-list" id="recent-list"></ol>
+    <p class="recent-empty" id="recent-empty">Nothing dictated yet.</p>
+    <a class="recent-all" id="recent-all" href="#library">See every dictation</a>
+  </section>
+
+  
+  <div class="settings-layout">
+<nav class="settings-nav" id="settings-tabs" aria-label="Settings">
+    <button type="button" class="tab" data-tab="setup">Setup</button>
+    <button type="button" class="tab" data-tab="dictation">Dictation</button>
+    <button type="button" class="tab" data-tab="languages">Languages</button>
+    <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
+    <button type="button" class="tab" data-tab="advanced">Advanced</button>
+  </nav>
+  <div class="settings-panes">
+<section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
     <h1 id="onboarding-title">Two languages</h1>
     <p class="onboarding-note" id="onboarding-note">
       Parlo hears one language and speaks the other.
@@ -147,65 +202,7 @@
       <button id="onboarding-skip" class="swap" type="button">Skip this</button>
     </div>
   </section>
-  <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
-    <h1 id="welcome-title">Speak once. Be heard.</h1>
-    <p class="welcome-lede">Speak, and Parlo writes the other language. Everything stays on this computer.</p>
-    <div class="welcome-actions">
-      <button id="welcome-install" class="install welcome-install" type="button">Download the dictation model</button>
-      <a id="welcome-more" class="welcome-more" href="#library">More models</a>
-    </div>
-    <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
-    <ol class="welcome-steps">
-      <li><span class="step-number">01</span>Hold <kbd id="welcome-key">Ctrl+Alt+D</kbd> and speak in your language.</li>
-      <li><span class="step-number">02</span>Let go. The model listens only while the key is down.</li>
-      <li><span class="step-number">03</span>The text lands in the window you were typing in.</li>
-    </ol>
-  </section>
-
-  <p class="progress" id="progress" aria-live="polite" hidden></p>
-  <p class="error" id="error" role="alert" hidden></p>
-  <p class="translation" id="translation" aria-live="polite" hidden></p>
-
-  <section class="stage" id="status-list" aria-label="Right now">
-    <div class="stage-head">
-      <h1 class="home-greeting" id="home-greeting">Hello again</h1>
-      <p class="stage-state">
-        <span class="dot" id="status-dot" aria-hidden="true"></span>
-        <span id="status-state">Ready to dictate</span>
-      </p>
-    </div>
-    <button id="talk" class="talk" type="button" aria-pressed="false">
-      <span class="talk-label">Hold to talk</span>
-      <span class="talk-sub">Speak, let go, and the words land here.</span>
-      <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
-    </button>
-    <p class="stage-call">Or hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere on this computer.</p>
-    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
-    <dl class="home-stats">
-      <div><dt>Minutes spoken</dt><dd id="progress-minutes">0.0</dd></div>
-      <div><dt>Words written</dt><dd id="progress-words">0</dd></div>
-      <div><dt>Dictations</dt><dd id="progress-count">0</dd></div>
-      <div><dt>Favourites</dt><dd id="progress-favourites">0</dd></div>
-    </dl>
-  </section>
-
-  <section class="recent" id="recent" aria-labelledby="recent-title">
-    <h2 id="recent-title">Last three results</h2>
-    <ol class="recent-list" id="recent-list"></ol>
-    <p class="recent-empty" id="recent-empty">Nothing dictated yet.</p>
-    <a class="recent-all" id="recent-all" href="#library">See every dictation</a>
-  </section>
-
   
-  <div class="settings-layout">
-<nav class="settings-nav" id="settings-tabs" aria-label="Settings">
-    <button type="button" class="tab" data-tab="dictation">Dictation</button>
-    <button type="button" class="tab" data-tab="languages">Languages</button>
-    <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
-    <button type="button" class="tab" data-tab="advanced">Advanced</button>
-  </nav>
-  <div class="settings-panes">
-
 <section class="settings" id="settings" aria-labelledby="settings-title">
     <div class="settings-head">
       <h2 id="settings-title">How dictation runs</h2>

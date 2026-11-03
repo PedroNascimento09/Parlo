@@ -1334,48 +1334,6 @@ footer p {
   color: var(--muted);
 }
 
-.home-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0;
-  margin: 0 -24px;
-  padding: 16px 24px 18px;
-  border-top: 1px solid var(--line);
-}
-
-.home-stats > div {
-  display: grid;
-  gap: 3px;
-  padding: 0 16px;
-  border-left: 1px solid var(--line);
-}
-
-.home-stats > div:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
-
-.home-stats dt {
-  color: var(--muted);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-
-.home-stats dd {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 24px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 720px) {
-  .home-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 .stage-state {
   display: flex;
   align-items: center;
@@ -1629,13 +1587,6 @@ kbd {
   font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.02em;
-}
-
-.home-stats {
-  margin: 0 0 2px;
-  color: var(--muted);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
 }
 
 #library-tabs {
@@ -1991,7 +1942,6 @@ kbd {
   display: none;
 }
 
-
 .call-banner {
   display: grid;
   gap: 12px;
@@ -2216,4 +2166,11 @@ body.first-run #status-list {
     grid-template-columns: 1fr;
     gap: 14px;
   }
+}
+
+.recent-totals {
+  margin: 4px 0 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
 }

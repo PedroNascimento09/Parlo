@@ -1393,10 +1393,7 @@ let catalogLast = [];
 
 const historyList = document.getElementById("history-list");
 const homeGreeting = document.getElementById("home-greeting");
-const progressMinutes = document.getElementById("progress-minutes");
-const progressWords = document.getElementById("progress-words");
-const progressCount = document.getElementById("progress-count");
-const progressFavourites = document.getElementById("progress-favourites");
+const recentTotals = document.getElementById("recent-totals");
 
 function paintHome() {
   if (homeGreeting) {
@@ -1404,7 +1401,12 @@ function paintHome() {
     homeGreeting.textContent =
       hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
   }
-  if (!progressMinutes) {
+  if (!recentTotals) {
+    return;
+  }
+  if (!historyEntries.length) {
+    recentTotals.hidden = true;
+    recentTotals.textContent = "";
     return;
   }
   const words = historyEntries.reduce((total, entry) => {
@@ -1412,13 +1414,22 @@ function paintHome() {
     return total + text.split(/\s+/).filter(Boolean).length;
   }, 0);
   const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
-  progressMinutes.textContent = (seconds / 60).toFixed(1);
-  progressWords.textContent = String(words);
-  progressCount.textContent = String(historyEntries.length);
-  progressFavourites.textContent = String(
-    historyEntries.filter((entry) => entry.favourite).length,
-  );
+  const favourites = historyEntries.filter((entry) => entry.favourite).length;
+  const parts = [];
+  if (seconds > 0) {
+    parts.push((seconds / 60).toFixed(1) + " min spoken");
+  }
+  if (words) {
+    parts.push(words + (words === 1 ? " word" : " words"));
+  }
+  parts.push(historyEntries.length + (historyEntries.length === 1 ? " dictation" : " dictations"));
+  if (favourites) {
+    parts.push(favourites + (favourites === 1 ? " favourite" : " favourites"));
+  }
+  recentTotals.textContent = parts.join(" · ");
+  recentTotals.hidden = false;
 }
+
 const historyNote = document.getElementById("history-note");
 const historySearch = document.getElementById("history-search");
 const historyApp = document.getElementById("history-app");
@@ -3428,6 +3439,7 @@ function showOnboardingStage(step) {
   onboardingStage = step;
   localStorage.setItem("parlo.onboarding.stage", String(step));
   onboarding.hidden = false;
+  showSettingsTab("setup");
   onboardingTitle.textContent = ONBOARDING_TITLES[step - 1];
   onboardingPair.hidden = step !== 1;
   onboardingMic.hidden = step !== 2;
@@ -3710,7 +3722,6 @@ setInterval(refreshHealth, 5000);
 const ROUTES = {
   home: [
     "update",
-    "onboarding",
     "welcome",
     "progress",
     "error",
@@ -3723,6 +3734,7 @@ const ROUTES = {
   voice: ["voice"],
   settings: [
     "settings-tabs",
+    "onboarding",
     "settings-foot",
     "settings",
     "languages",
@@ -3821,6 +3833,7 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 }
 
 const SETTINGS_TABS = {
+  setup: ["onboarding"],
   dictation: ["settings"],
   languages: ["languages"],
   shortcuts: ["shortcuts"],
@@ -3831,6 +3844,7 @@ let settingsTab = "dictation";
 
 function showSettingsTab(name) {
   const chosen = SETTINGS_TABS[name] ? name : "dictation";
+  settingsTab = chosen;
   for (const [key, ids] of Object.entries(SETTINGS_TABS)) {
     for (const id of ids) {
       const element = document.getElementById(id);
@@ -4076,3 +4090,7 @@ for (const input of [featureTranslation, featureVoice, featureCaptions]) {
   input.addEventListener("change", () => saveFeatures());
 }
 loadFeatures();
+
+document.getElementById("welcome-setup").addEventListener("click", () => {
+  showSettingsTab("setup");
+});
