@@ -1299,41 +1299,72 @@ footer p {
 
 .stage {
   margin: 16px 0 0;
-  padding: 28px 30px 26px;
+  padding: 24px 24px 0;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent) 9%, transparent) 0%, transparent 58%),
-    var(--surface);
+  background: var(--surface);
+}
+
+.stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 0 0 18px;
+}
+
+.stage-head .stage-state {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+
+.stage .talk {
+  min-height: 156px;
+  margin: 0;
+}
+
+.stage .stage-call {
+  margin: 14px 0 20px;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .home-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin: 20px 0 22px;
+  gap: 0;
+  margin: 0 -24px;
+  padding: 16px 24px 18px;
+  border-top: 1px solid var(--line);
 }
 
 .home-stats > div {
   display: grid;
-  gap: 2px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  gap: 3px;
+  padding: 0 16px;
+  border-left: 1px solid var(--line);
+}
+
+.home-stats > div:first-child {
+  padding-left: 0;
+  border-left: 0;
 }
 
 .home-stats dt {
   color: var(--muted);
-  font-size: 10.5px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
 }
 
 .home-stats dd {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -1594,8 +1625,8 @@ kbd {
 }
 
 .home-greeting {
-  margin: 0 0 6px;
-  font-size: 34px;
+  margin: 0;
+  font-size: 28px;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
@@ -1687,7 +1718,6 @@ kbd {
 #history-list:empty {
   display: none;
 }
-
 
 .meeting-label {
   margin-right: 8px;
@@ -1875,7 +1905,6 @@ kbd {
   width: 100%;
 }
 
-
 .fit {
   display: inline-flex;
   align-items: center;
@@ -1962,11 +1991,6 @@ kbd {
   display: none;
 }
 
-.bench-source {
-  margin: 2px 0 0;
-  font-size: 10.5px;
-  color: var(--muted);
-}
 
 .call-banner {
   display: grid;
@@ -2108,4 +2132,54 @@ kbd {
 
 .metric .fill {
   min-width: 4px;
+}
+
+.fit[data-state="unknown"] {
+  color: var(--muted);
+}
+
+.fit[data-state="unknown"]::before {
+  background: var(--line);
+  box-shadow: none;
+}
+
+body.first-run #status-list {
+  display: none;
+}
+
+#welcome {
+  margin: 16px 0 0;
+  padding: 32px 30px 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+#welcome h1 {
+  margin: 0 0 10px;
+  font-size: clamp(30px, 4.2vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+#welcome .welcome-lede {
+  margin: 0 0 22px;
+  max-width: 46ch;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+#welcome .welcome-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+#welcome .welcome-install {
+  min-height: 54px;
+  padding: 0 24px;
+  font-size: 16px;
+  font-weight: 600;
 }

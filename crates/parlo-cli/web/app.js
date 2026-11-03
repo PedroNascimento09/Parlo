@@ -2873,13 +2873,23 @@ function fitBadge(entry) {
   if (!machine || !machine.memory_mb) {
     return null;
   }
-  const need = entry.memory_mb || (entry.size_mb ? Math.round(entry.size_mb * 2.2) : 0);
-  if (!need) {
-    return null;
-  }
   const gigabyte = 1024;
-  const memory = Math.round(machine.memory_mb / gigabyte);
   const disk = Math.round((machine.free_disk_mb || 0) / gigabyte);
+  const badge = document.createElement("span");
+  badge.className = "fit";
+  const need = entry.memory_mb;
+  const download = entry.size_mb ? (entry.size_mb / gigabyte).toFixed(1) + " GB" : "";
+  if (!need) {
+    if (!download) {
+      return null;
+    }
+    badge.dataset.state = "unknown";
+    badge.textContent = "Downloads " + download + " · " + disk + " GB free";
+    badge.title =
+      "The publisher does not say how much memory this one needs, so Parlo only checks the download against this disk. It does not claim the model will run well here.";
+    return badge;
+  }
+  const memory = Math.round(machine.memory_mb / gigabyte);
   const needed = (need / gigabyte).toFixed(1);
   let state = "green";
   let reason =
@@ -2907,49 +2917,10 @@ function fitBadge(entry) {
         "Tight on disk: the download is " + entry.size_mb + " MB and " + disk + " GB are free.";
     }
   }
-  const badge = document.createElement("span");
-  badge.className = "fit";
   badge.dataset.state = state;
+  badge.textContent = "Runs here";
   badge.title = reason;
-  badge.setAttribute("aria-label", reason);
-  badge.textContent = state === "green" ? "Runs here" : state === "yellow" ? "Tight" : "Too heavy";
   return badge;
-}
-
-async function loadCatalog() {
-  try {
-    const response = await fetch("/catalog", { cache: "no-store" });
-    if (!response.ok) {
-      return;
-    }
-    catalogEntries = await response.json();
-    await loadHardware();
-    renderCatalog(catalogEntries);
-  } catch (failure) {
-    catalogNote.textContent = "The catalogue could not be read.";
-  }
-}
-
-async function downloadCatalogModel(entry, button) {
-  button.disabled = true;
-  button.textContent = "Starting…";
-  try {
-    const response = await fetch("/models/download/" + encodeURIComponent(entry.unit), {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token },
-    });
-    if (!response.ok) {
-      const detail = await response.json().catch(() => ({}));
-      throw new Error(detail.error || "The download could not start.");
-    }
-    catalogNote.textContent =
-      "Downloading " + (entry.name || entry.id) + ". It appears in the model list when it arrives.";
-    setTimeout(loadCatalog, 4000);
-  } catch (failure) {
-    catalogNote.textContent = failure.message || "The download could not start.";
-    button.disabled = false;
-    button.textContent = "Download";
-  }
 }
 
 function catalogBar(label, score, value) {
@@ -2967,24 +2938,6 @@ function catalogBar(label, score, value) {
   readout.textContent = value;
   row.append(term, track, readout);
   return row;
-}
-
-function benchmarkBest(items, metric, pick) {
-  const values = items
-    .filter((item) => item.bench && item.bench.metric === metric)
-    .map(pick)
-    .filter((value) => typeof value === "number" && value > 0);
-  return values.length ? { low: Math.min(...values), high: Math.max(...values) } : null;
-}
-
-function benchmarkValue(bench) {
-  if (bench.metric === "WER") {
-    return bench.value + "% wrong words";
-  }
-  if (bench.metric === "MMLU") {
-    return bench.value + "% on MMLU";
-  }
-  return String(bench.value);
 }
 
 function catalogLanguages(entry) {
@@ -3091,43 +3044,6 @@ function catalogCard(entry, items) {
     if (languages) {
       card.append(languages);
     }
-  }
-
-  const bars = document.createElement("div");
-  bars.className = "model-bars";
-  const bench = entry.bench;
-  if (bench && typeof bench.value === "number") {
-    const scale = benchmarkBest(items, bench.metric, (item) => item.bench.value);
-    if (scale) {
-      const score =
-        bench.better === "lower" ? (100 * scale.low) / bench.value : (100 * bench.value) / scale.high;
-      bars.append(catalogBar("Accuracy", score, benchmarkValue(bench)));
-    }
-    if (typeof bench.speed === "number") {
-      const speeds = benchmarkBest(items, bench.metric, (item) => item.bench.speed);
-      if (speeds) {
-        bars.append(
-          catalogBar("Speed", (100 * bench.speed) / speeds.high, bench.speed + "× relative"),
-        );
-      }
-    }
-  }
-  if (bars.childElementCount) {
-    const source = document.createElement("p");
-    source.className = "bench-source";
-    source.textContent = bench.source;
-    bars.append(source);
-    card.append(bars);
-  } else {
-    const unmeasured = document.createElement("p");
-    unmeasured.className = "model-note";
-    unmeasured.textContent =
-      entry.kind === "voice" || entry.kind === "tts"
-        ? "Piper voices read faster than the audio they produce on a normal CPU, and nobody publishes a number for it."
-        : entry.kind === "mt"
-          ? "Pairs in this family answer a sentence in a few hundred milliseconds here; no publisher reports a figure."
-          : "No publisher reports a figure for this one yet.";
-    card.append(unmeasured);
   }
 
   if (entry.note) {

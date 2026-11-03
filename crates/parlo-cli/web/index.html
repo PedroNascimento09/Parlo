@@ -155,11 +155,6 @@
       <a id="welcome-more" class="welcome-more" href="#library">More models</a>
     </div>
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
-    <button id="talk" class="talk" type="button" aria-pressed="false">
-      <span class="talk-label">Try it once</span>
-      <span class="talk-sub">Hold, speak, release</span>
-      <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
-    </button>
   </section>
 
   <p class="progress" id="progress" aria-live="polite" hidden></p>
@@ -167,19 +162,26 @@
   <p class="translation" id="translation" aria-live="polite" hidden></p>
 
   <section class="stage" id="status-list" aria-label="Right now">
-    <h1 class="home-greeting" id="home-greeting">Hello again</h1>
+    <div class="stage-head">
+      <h1 class="home-greeting" id="home-greeting">Hello again</h1>
+      <p class="stage-state">
+        <span class="dot" id="status-dot" aria-hidden="true"></span>
+        <span id="status-state">Ready to dictate</span>
+      </p>
+    </div>
+    <button id="talk" class="talk" type="button" aria-pressed="false">
+      <span class="talk-label">Hold to talk</span>
+      <span class="talk-sub">Speak, let go, and the words land here.</span>
+      <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
+    </button>
+    <p class="stage-call">Or hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere on this computer.</p>
+    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
     <dl class="home-stats">
       <div><dt>Minutes spoken</dt><dd id="progress-minutes">0.0</dd></div>
       <div><dt>Words written</dt><dd id="progress-words">0</dd></div>
       <div><dt>Dictations</dt><dd id="progress-count">0</dd></div>
       <div><dt>Favourites</dt><dd id="progress-favourites">0</dd></div>
     </dl>
-    <p class="stage-state">
-      <span class="dot" id="status-dot" aria-hidden="true"></span>
-      <span id="status-state">Ready to dictate</span>
-    </p>
-    <p class="stage-call">Hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> and speak.</p>
-    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
   </section>
 
   <section class="recent" id="recent" aria-labelledby="recent-title">
