@@ -2093,8 +2093,16 @@ kbd {
   box-shadow: none;
 }
 
-body.first-run #status-list {
+body.first-run .home-main {
   display: none;
+}
+
+body.first-run .home-panel {
+  grid-column: 1 / -1;
+}
+
+body.first-run .home-panel dl {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 #welcome {
