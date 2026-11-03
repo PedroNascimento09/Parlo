@@ -112,6 +112,10 @@ Check the input device and its volume in Settings > System > Sound > Input, allo
 
 Unplugging a headset or a USB interface ends the audio stream the system gave Parlo. The command then fails with `the input device stopped: ...` instead of writing a short or silent file, and the app reports the same sentence. Plug the device back in, run `parlo record --list` to see the index that came back, and start again; a device that returns often gets a new index, which is why `parlo config --device N` exists.
 
+## `record --system` writes silence while sound is playing
+
+The command records the default speakers, so it hears nothing when the audio goes to another output, when that output is muted, or when the program you are watching owns the device in exclusive mode, which leaves the shared loopback stream empty. Check the output in Settings > System > Sound, unmute it, and run `parlo record --system out/system.wav --seconds 5` again while something plays. The printed peak should read about -20 dBFS or higher, and -120 dBFS means the shared stream heard nothing. Capturing the speakers works on Windows only, because it uses WASAPI loopback; macOS and Linux answer that the platform is missing.
+
 ## The output file is silent
 
 The voice gate closed because the input was below the threshold. Check the level:

@@ -21,6 +21,7 @@ mod history;
 mod insert;
 mod install;
 mod intelligence;
+mod loopback;
 mod mcp;
 mod meeting;
 mod mic;
@@ -875,12 +876,14 @@ fn record_command(args: &[String]) -> Result<(), String> {
     let mut device = None;
     let mut list = false;
     let mut probe = false;
+    let mut system = false;
     let mut index = 0;
 
     while index < args.len() {
         match args[index].as_str() {
             "--list" => list = true,
             "--probe" => probe = true,
+            "--system" => system = true,
             "--seconds" => {
                 index += 1;
                 seconds = args
@@ -904,6 +907,12 @@ fn record_command(args: &[String]) -> Result<(), String> {
         index += 1;
     }
 
+    if system && (list || probe) {
+        return Err(
+            "--system records the speakers, so --list and --probe do not apply".to_string(),
+        );
+    }
+
     if list {
         for (index, name) in record::devices()?.iter().enumerate() {
             println!("{index}  {name}");
@@ -925,7 +934,11 @@ fn record_command(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
 
-    let mut recording = record::capture(seconds, device)?;
+    let mut recording = if system {
+        loopback::capture(seconds)?
+    } else {
+        record::capture(seconds, device)?
+    };
     let rate = recording.format.sample_rate();
     let duration = recording.samples.len() as f32 / rate as f32;
     let peak = peak_amplitude(&recording.samples);
@@ -949,7 +962,11 @@ fn record_command(args: &[String]) -> Result<(), String> {
         println!("  gain             {:+.1} dB", 20.0 * gain.log10());
     }
     if peak < 0.001 {
-        println!("  warning          the microphone captured almost nothing, check the input device, mute and gain");
+        if system {
+            println!("  warning          the speakers played almost nothing, start some audio and record again");
+        } else {
+            println!("  warning          the microphone captured almost nothing, check the input device, mute and gain");
+        }
     }
     Ok(())
 }

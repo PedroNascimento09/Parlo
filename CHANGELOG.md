@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Parlo can record what the computer plays. `parlo record --system` captures the default speakers through WASAPI loopback and writes the same mono 16 kHz WAV the microphone path writes, so a call or a video can be transcribed without pointing a microphone at the speakers. `--list` and `--probe` are refused with `--system`, and a run that only heard silence prints what to check. **Status: run here, on Windows, with a 440 Hz tone played to the default speakers: the file measured -3.1 dBFS peak, and a second run with nothing playing measured -120.0 dBFS.** macOS and Linux have no system audio capture yet; the command says so.
 - The first start offers the dictation model in one line: the button carries the size it costs, and **More models** beside it opens Library, Models, where every other component is one press away. **Status: built and served; the download itself was not started here.**
 
 - The voice card starts with a name already in it, keeps the origin and the permission in front of you, and the button says **Create the profile**; the language, the purpose and the sealing stay behind **More options**. **Status: the page is built and served; the flow was not exercised against a microphone here.**

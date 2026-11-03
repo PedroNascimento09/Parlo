@@ -308,6 +308,7 @@ SBOM attached to each release.
 | nom | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/Geal/nom |
 | num-conv | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/jhpratt/num-conv |
 | num-derive | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-num/num-derive |
+| num-integer | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-num/num-integer |
 | num-traits | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-num/num-traits |
 | num_enum | Rust programs | BSD-3-Clause OR MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/illicitonion/num_enum |
 | num_enum_derive | Rust programs | BSD-3-Clause OR MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/illicitonion/num_enum |
@@ -474,6 +475,7 @@ SBOM attached to each release.
 | vswhom-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/nabijaczleweli/vswhom-sys.rs |
 | walkdir | Rust programs | Unlicense/MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/BurntSushi/walkdir |
 | want | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/seanmonstar/want |
+| wasapi | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/HEnquist/wasapi-rs |
 | wasi | Rust programs | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/bytecodealliance/wasi |
 | wasip2 | Rust programs | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/bytecodealliance/wasi-rs |
 | wasm-bindgen | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/wasm-bindgen/wasm-bindgen |

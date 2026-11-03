@@ -5836,6 +5836,28 @@
     },
     {
       "type": "library",
+      "name": "num-integer",
+      "version": "0.1.47",
+      "licenses": [
+        {
+          "expression": "MIT OR Apache-2.0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/rust-num/num-integer"
+        }
+      ]
+    },
+    {
+      "type": "library",
       "name": "num-traits",
       "version": "0.2.19",
       "licenses": [
@@ -9483,6 +9505,28 @@
         {
           "type": "website",
           "url": "https://github.com/seanmonstar/want"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "wasapi",
+      "version": "0.26.0",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "core"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/HEnquist/wasapi-rs"
         }
       ]
     },
