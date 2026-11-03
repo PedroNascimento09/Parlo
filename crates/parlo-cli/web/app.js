@@ -2922,6 +2922,41 @@ function fitBadge(entry) {
   badge.title = reason;
   return badge;
 }
+async function loadCatalog() {
+  try {
+    const response = await fetch("/catalog", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    catalogEntries = await response.json();
+    await loadHardware();
+    renderCatalog(catalogEntries);
+  } catch (failure) {
+    catalogNote.textContent = "The catalogue could not be read.";
+  }
+}
+
+async function downloadCatalogModel(entry, button) {
+  button.disabled = true;
+  button.textContent = "Starting…";
+  try {
+    const response = await fetch("/models/download/" + encodeURIComponent(entry.unit), {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "The download could not start.");
+    }
+    catalogNote.textContent =
+      "Downloading " + (entry.name || entry.id) + ". It appears in the model list when it arrives.";
+    setTimeout(loadCatalog, 4000);
+  } catch (failure) {
+    catalogNote.textContent = failure.message || "The download could not start.";
+    button.disabled = false;
+    button.textContent = "Download";
+  }
+}
 
 function catalogBar(label, score, value) {
   const row = document.createElement("div");
