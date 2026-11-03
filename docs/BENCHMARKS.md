@@ -70,6 +70,30 @@ The decisive test is ten recordings of a real voice, run through both recogniser
 python engines/cascade/scripts/compare.py out/voice --recognisers parakeet whisper --threads 4
 ```
 
+### What each model costs on this machine
+
+Size on disk says nothing about what a model does to the computer when it runs. `engines/cascade/scripts/model_memory.py` loads one unit, makes a warm call, then reports the memory the process gained and how long the work took. Measured on Windows 11, 4 threads, one process per unit, before and after a garbage collection:
+
+| Unit | On disk | In memory | Speed | Measured on |
+|---|---|---|---|---|
+| Parakeet TDT 0.6B v3 int8 | 671 MB | 746 MB | 0.206 real time | one 6.35 s FalAR parliamentary clip |
+| Whisper base int8 | 145 MB | 148 MB | 0.239 real time | the same clip |
+| Voice pt-PT (Tugão) | 63 MB | 2 MB | 0.157 real time | one 2.33 s sentence |
+| Voice en-US (Lessac) | 63 MB | 2 MB | 0.119 real time | one 3.58 s sentence |
+| OPUS-MT pt to en | 83 MB | 112 MB | 278 ms per sentence | one business sentence |
+| OPUS-MT en to pt | 83 MB | 111 MB | 510 ms per sentence | the same sentence, other direction |
+
+Reading: the recogniser is the only model that costs real memory, which is why the first-start suggestion treats it as the one that has to be affordable. The voices cost almost nothing to hold and little to run. The translation pairs sit in between, and the en to pt direction is nearly twice as slow as the other.
+
+The measurement is one warm call, so it is an order of magnitude and not a corpus average. Memory is the change in resident set size, not a peak. The clip is a real recording; the sentences are the project's own.
+
+That run also produced a visible failure worth keeping: en to pt turned *the delivery deadline is day 23 of March* into *o prato de entrega é dia vinte e três de março*, where "deadline" became "prato". The pair's gate scores stay where they are; the sentence is a reminder that a count is not a reading.
+
+```bash
+python engines/cascade/scripts/model_memory.py --unit parakeet
+python engines/cascade/scripts/model_memory.py --unit mt-en-pt
+```
+
 ### Memory
 
 Peak resident memory for one Portuguese to English run with Parakeet, 4 threads: **1302 MB across three processes** (the CLI, the sidecar, and its worker), including the 640 MB int8 recogniser. The recogniser is now the largest single allocation, which matters for the 8 GB machines this is meant to run on.
