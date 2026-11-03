@@ -137,6 +137,7 @@ pub fn run(request: &Value) -> Result<Value, String> {
 
 fn engine() -> Result<Command, String> {
     let directory = crate::models::cascade_dir();
+    let directory = directory.canonicalize().unwrap_or(directory);
     let entry = directory.join("parlo_engine.py");
     if !entry.is_file() {
         return Err(format!(
