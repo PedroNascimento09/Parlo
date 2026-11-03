@@ -17,7 +17,7 @@ pub struct Config {
     pub to: String,
     pub write: String,
     pub style: String,
-    pub profiles: BTreeMap<String, String>,
+    pub profiles: BTreeMap<String, Profile>,
     pub shortcut: String,
     pub hands_free: String,
     pub captions: String,
@@ -29,6 +29,39 @@ pub struct Config {
     pub models_dir: String,
     pub intelligence: Intelligence,
     pub features: Features,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct Profile {
+    pub style: String,
+    pub write: String,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum ProfileForm {
+    Style(String),
+    Fields {
+        #[serde(default)]
+        style: String,
+        #[serde(default)]
+        write: String,
+    },
+}
+
+impl<'de> Deserialize<'de> for Profile {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(match ProfileForm::deserialize(deserializer)? {
+            ProfileForm::Style(style) => Profile {
+                style,
+                write: String::new(),
+            },
+            ProfileForm::Fields { style, write } => Profile { style, write },
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

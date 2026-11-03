@@ -854,6 +854,45 @@ fn handle(
         };
     }
 
+    if method == "POST" && path == "/vocabulary/accept" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let heard = text_field(&request, "heard");
+        let written = text_field(&request, "written");
+        if heard.is_empty() || written.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"a suggestion names what was heard and what to write\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let payload = serde_json::json!({
+            "action": "vocabulary/add",
+            "kind": "term",
+            "wrong": heard,
+            "right": written,
+        });
+        return match crate::intelligence::run(&payload) {
+            Ok(reply) => match reply.get("error").and_then(serde_json::Value::as_str) {
+                Some(error) => respond_json(stream, "400 Bad Request", &error_json(error))
+                    .map(|()| Flow::Serve),
+                None => respond_json(stream, "200 OK", &reply.to_string()).map(|()| Flow::Serve),
+            },
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path == "/features" {
         let features = crate::config::load().features;
         let body = serde_json::to_string(&features).unwrap_or_else(|_| "{}".to_string());
@@ -938,6 +977,7 @@ fn handle(
             };
             let program = text_field(&request, "program").to_ascii_lowercase();
             let style = text_field(&request, "style").to_ascii_lowercase();
+            let write = text_field(&request, "write").to_ascii_lowercase();
             if program.is_empty() {
                 return respond_json(
                     stream,
@@ -954,10 +994,20 @@ fn handle(
                 )
                 .map(|()| Flow::Serve);
             }
-            if style.is_empty() {
+            if !write.is_empty() && !crate::config::check_language(&write) {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"write needs a two letter language code\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            if style.is_empty() && write.is_empty() {
                 config.profiles.remove(&program);
             } else {
-                config.profiles.insert(program, style);
+                config
+                    .profiles
+                    .insert(program, parlo_core::settings::Profile { style, write });
             }
             if let Err(error) = crate::config::save(&config) {
                 return respond_json(stream, "500 Internal Server Error", &error_json(&error))
@@ -980,24 +1030,13 @@ fn handle(
                     .map(|()| Flow::Serve);
             }
         };
-        let id = text_field(&request, "id");
-        let style = text_field(&request, "style").to_ascii_lowercase();
-        if id.is_empty() {
-            return respond_json(
-                stream,
-                "400 Bad Request",
-                "{\"error\":\"a dictation is named by its id\"}",
-            )
-            .map(|()| Flow::Serve);
-        }
-        if !crate::style::is_known(&style) {
-            return respond_json(
-                stream,
-                "400 Bad Request",
-                "{\"error\":\"style needs formal, casual or excited\"}",
-            )
-            .map(|()| Flow::Serve);
-        }
+        let (id, style) = match restyle_fields(&request) {
+            Ok(fields) => fields,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
         return match crate::history::restyle(&id, &style) {
             Ok(entry) => respond_json(stream, "200 OK", &crate::history::entry_json(&entry))
                 .map(|()| Flow::Serve),
@@ -1077,7 +1116,18 @@ fn handle(
             crate::history::favourite(&id, value).map(|entry| crate::history::entry_json(&entry))
         } else if path == "/history/edit" {
             let text = text_field(&request, "text");
-            crate::history::edit(&id, &text).map(|entry| crate::history::entry_json(&entry))
+            crate::history::edit_with_suggestions(&id, &text).map(|(entry, proposed)| {
+                let mut value: serde_json::Value =
+                    serde_json::from_str(&crate::history::entry_json(&entry)).unwrap_or_default();
+                value["suggestions"] = serde_json::json!(proposed
+                    .iter()
+                    .map(|(heard, written)| serde_json::json!({
+                        "heard": heard,
+                        "written": written
+                    }))
+                    .collect::<Vec<_>>());
+                value.to_string()
+            })
         } else {
             crate::history::remove(&id).map(|()| "{\"deleted\":true}".to_string())
         };
@@ -2684,14 +2734,26 @@ fn handle(
         let app = crate::insert::foreground()
             .map(|(_, name)| name)
             .unwrap_or_else(|_| "unknown".to_string());
+        let profile = stored.profiles.get(&app.to_ascii_lowercase());
         let style = if !style_header.is_empty() {
             style_header
-        } else if let Some(profile) = stored.profiles.get(&app.to_ascii_lowercase()) {
-            profile.clone()
+        } else if let Some(wanted) = profile.map(|profile| profile.style.clone()) {
+            if crate::style::is_known(&wanted) {
+                wanted
+            } else {
+                String::new()
+            }
         } else if crate::style::is_known(&stored.style) {
             stored.style.clone()
         } else {
             String::new()
+        };
+        let write = if !write.is_empty() {
+            write
+        } else {
+            profile
+                .map(|profile| profile.write.clone())
+                .unwrap_or_default()
         };
         let target = dictation_target(&write, &session.chosen().from);
         let started = Instant::now();
@@ -3095,40 +3157,20 @@ fn parameter(query: &str, name: &str) -> String {
         .split('&')
         .filter_map(|pair| pair.split_once('='))
         .find(|(key, _)| *key == name)
-        .map(|(_, value)| decode(value))
+        .map(|(_, value)| percent_decode(value))
         .unwrap_or_default()
 }
 
-fn decode(value: &str) -> String {
-    let bytes = value.as_bytes();
-    let mut out = Vec::with_capacity(bytes.len());
-    let mut index = 0;
-    while index < bytes.len() {
-        match bytes[index] {
-            b'+' => {
-                out.push(b' ');
-                index += 1;
-            }
-            b'%' if index + 2 < bytes.len() => {
-                let hex = std::str::from_utf8(&bytes[index + 1..index + 3]).unwrap_or("");
-                match u8::from_str_radix(hex, 16) {
-                    Ok(byte) => {
-                        out.push(byte);
-                        index += 3;
-                    }
-                    Err(_) => {
-                        out.push(bytes[index]);
-                        index += 1;
-                    }
-                }
-            }
-            byte => {
-                out.push(byte);
-                index += 1;
-            }
-        }
+fn restyle_fields(request: &serde_json::Value) -> Result<(String, String), String> {
+    let id = text_field(request, "id");
+    let style = text_field(request, "style").to_ascii_lowercase();
+    if id.is_empty() {
+        return Err("a dictation is named by its id".to_string());
     }
-    String::from_utf8_lossy(&out).to_string()
+    if !crate::style::is_known(&style) {
+        return Err("style needs formal, casual or excited".to_string());
+    }
+    Ok((id, style))
 }
 
 fn text_field(request: &serde_json::Value, name: &str) -> String {
@@ -3324,6 +3366,30 @@ mod tests {
         assert_eq!(dictation_target("", "pt"), "pt");
         assert_eq!(dictation_target("", "en"), "en");
         assert_eq!(dictation_target("en", "pt"), "en");
+    }
+
+    #[test]
+    fn a_restyle_needs_an_id_and_a_known_style() {
+        let good = serde_json::json!({ "id": "h1", "style": "Casual" });
+        assert_eq!(
+            restyle_fields(&good).unwrap(),
+            ("h1".to_string(), "casual".to_string())
+        );
+        let nameless = serde_json::json!({ "style": "casual" });
+        assert!(restyle_fields(&nameless)
+            .unwrap_err()
+            .contains("named by its id"));
+        let odd = serde_json::json!({ "id": "h1", "style": "shouty" });
+        assert!(restyle_fields(&odd)
+            .unwrap_err()
+            .contains("formal, casual or excited"));
+    }
+
+    #[test]
+    fn a_search_query_is_read_from_the_address() {
+        assert_eq!(parameter("q=bom+dia", "q"), "bom dia");
+        assert_eq!(parameter("q=bom%20dia", "q"), "bom dia");
+        assert_eq!(parameter("limit=5", "q"), "");
     }
 
     #[test]

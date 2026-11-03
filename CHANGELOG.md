@@ -4,6 +4,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A correction in the history proposes the words that changed, and one of them can be saved into the vocabulary as a term, so the recogniser stops missing the name.
+- A program profile now carries the language to write as well as the style, and a profile saved before this change still reads.
+
 - Spoken commands turn words into text: "comma", "period", "new line" and "scratch that" are applied before the style, in English and Portuguese.
 - The last dictation can be taken back: `POST /undo`, `parlo undo`, and it refuses when the window it wrote into is not in front or the sentence is older than five minutes.
 - The history has a search over what was said, what was written and the program it landed in, and a line can be rewritten in another style without speaking again.

@@ -68,12 +68,62 @@ pub fn favourite(id: &str, value: bool) -> Result<Entry, String> {
     with_entry(&path(), id, |entry| entry.favourite = value)
 }
 
-pub fn edit(id: &str, text: &str) -> Result<Entry, String> {
+pub fn edit_with_suggestions(
+    id: &str,
+    text: &str,
+) -> Result<(Entry, Vec<(String, String)>), String> {
     let spoken = text.trim();
     if spoken.is_empty() {
         return Err("a corrected sentence cannot be empty".to_string());
     }
-    with_entry(&path(), id, |entry| entry.text = spoken.to_string())
+    let path = path();
+    let heard = entries_at(&path)
+        .into_iter()
+        .find(|entry| entry.id == id)
+        .map(|entry| entry.text)
+        .ok_or_else(|| "no dictation carries that id".to_string())?;
+    let suggestions = suggestions(&heard, spoken);
+    let entry = with_entry(&path, id, |entry| entry.text = spoken.to_string())?;
+    Ok((entry, suggestions))
+}
+
+pub fn suggestions(heard: &str, written: &str) -> Vec<(String, String)> {
+    const MOST: usize = 3;
+    let heard_words = words(heard);
+    let written_words = words(written);
+    let lost: Vec<&String> = heard_words
+        .iter()
+        .filter(|word| !written_words.iter().any(|kept| fold(kept) == fold(word)))
+        .collect();
+    let gained: Vec<&String> = written_words
+        .iter()
+        .filter(|word| !heard_words.iter().any(|had| fold(had) == fold(word)))
+        .collect();
+    if lost.is_empty() || gained.is_empty() || lost.len() > MOST || gained.len() > MOST {
+        return Vec::new();
+    }
+    lost.iter()
+        .zip(gained.iter())
+        .map(|(wrong, right)| (wrong.to_string(), right.to_string()))
+        .collect()
+}
+
+fn words(text: &str) -> Vec<String> {
+    let mut kept: Vec<String> = Vec::new();
+    for word in text.split_whitespace() {
+        let plain: String = word
+            .chars()
+            .filter(|character| character.is_alphanumeric())
+            .collect();
+        if plain.chars().count() < 3 {
+            continue;
+        }
+        if kept.iter().any(|seen| fold(seen) == fold(&plain)) {
+            continue;
+        }
+        kept.push(plain);
+    }
+    kept
 }
 
 pub fn remove(id: &str) -> Result<(), String> {
@@ -369,7 +419,7 @@ mod tests {
 
     #[test]
     fn an_empty_correction_is_refused() {
-        assert!(edit("qualquer", "   ").is_err());
+        assert!(edit_with_suggestions("qualquer", "   ").is_err());
     }
 
     #[test]
@@ -454,6 +504,47 @@ mod tests {
         let changed = restyle_at(&path, &id, "formal").unwrap();
         assert_eq!(changed.text, "Bom dia como estas.");
         assert_eq!(entries_at(&path)[0].text, "Bom dia como estas.");
+        tidy(&path);
+    }
+
+    #[test]
+    fn a_correction_of_one_word_proposes_that_word() {
+        let proposed = suggestions("meet me on teusday", "meet me on Tuesday");
+        assert_eq!(
+            proposed,
+            vec![("teusday".to_string(), "Tuesday".to_string())]
+        );
+    }
+
+    #[test]
+    fn an_unchanged_word_proposes_nothing() {
+        assert!(suggestions("bom dia", "bom dia").is_empty());
+        assert!(suggestions("bom dia", "Bom dia.").is_empty());
+    }
+
+    #[test]
+    fn a_whole_rewrite_proposes_nothing() {
+        assert!(suggestions("one two three four five", "six seven eight nine ten").is_empty());
+    }
+
+    #[test]
+    fn short_words_are_never_proposed() {
+        assert!(suggestions("at it", "to it").is_empty());
+    }
+
+    #[test]
+    fn an_edit_returns_the_suggestions_it_found() {
+        let path = scratch("learn");
+        kept(&path, "meet me on teusday");
+        let id = entries_at(&path)[0].id.clone();
+        let heard = entries_at(&path)[0].text.clone();
+        let proposed = suggestions(&heard, "meet me on Tuesday");
+        assert_eq!(proposed.len(), 1);
+        with_entry(&path, &id, |entry| {
+            entry.text = "meet me on Tuesday".to_string()
+        })
+        .unwrap();
+        assert_eq!(entries_at(&path)[0].text, "meet me on Tuesday");
         tidy(&path);
     }
 
