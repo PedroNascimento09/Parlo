@@ -3757,7 +3757,7 @@ refreshHealth();
 setInterval(refreshHealth, 5000);
 
 const ROUTES = {
-  progress: ["progress"],
+  progress: ["progress-section"],
   home: [
     "update",
     "onboarding",
