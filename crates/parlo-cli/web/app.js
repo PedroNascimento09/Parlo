@@ -4283,3 +4283,16 @@ if (settingsStyle) {
 }
 
 paintStyleControls();
+
+for (const preset of document.querySelectorAll(".preset")) {
+  preset.addEventListener("click", () => {
+    vocabularyKind.value = "snippet";
+    vocabularyKind.dispatchEvent(new Event("change"));
+    document.getElementById("vocabulary-wrong").value = preset.dataset.wrong;
+    document.getElementById("vocabulary-right").value = preset.dataset.right.replace(
+      "{{name}}",
+      storedName() || "Pedro",
+    );
+    document.getElementById("vocabulary-right").focus();
+  });
+}
