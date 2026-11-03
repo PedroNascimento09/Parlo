@@ -240,7 +240,8 @@
         "de-DE"
       ],
       "size_mb": 63,
-      "note": "Listed; German has no translation pair in this build."
+      "note": "The engine reads a German translation aloud with it once installed.",
+      "unit": "voice-de"
     },
     {
       "id": "piper-voice-fr-fr-siwis",
@@ -256,7 +257,8 @@
         "fr-FR"
       ],
       "size_mb": 63,
-      "note": "Listed; French has no translation pair in this build."
+      "note": "The engine reads a French translation aloud with it once installed.",
+      "unit": "voice-fr"
     },
     {
       "id": "opus-mt-pt-de-direct",

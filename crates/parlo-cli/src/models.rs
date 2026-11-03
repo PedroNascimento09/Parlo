@@ -15,6 +15,8 @@ const PARAKEET_FILES: &[&str] = &[
 const VOICES: &[(&str, &str, &str)] = &[
     ("voice-pt", "pt_PT-tugão-medium.onnx", "Portuguese voice"),
     ("voice-en", "en_US-lessac-medium.onnx", "English voice"),
+    ("voice-de", "de_DE-thorsten-medium.onnx", "German voice"),
+    ("voice-fr", "fr_FR-siwis-medium.onnx", "French voice"),
 ];
 const TRANSLATION: &[(&str, &str, &str, &str)] = &[
     ("mt-pt-en", "pt", "en", "Portuguese to English"),
@@ -22,7 +24,9 @@ const TRANSLATION: &[(&str, &str, &str, &str)] = &[
 ];
 
 pub const DICTATION_UNITS: &[&str] = &["parakeet"];
-pub const REMAINING_UNITS: &[&str] = &["voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"];
+pub const REMAINING_UNITS: &[&str] = &[
+    "voice-pt", "voice-en", "voice-de", "voice-fr", "mt-pt-en", "mt-en-pt",
+];
 
 pub struct Model {
     pub id: &'static str,
@@ -51,7 +55,7 @@ impl Default for Lifecycle {
 pub fn unit_of(id: &str) -> Option<&'static str> {
     match id {
         "parakeet" | "whisper" => Some("recognition"),
-        "voice-pt" | "voice-en" => Some("voice"),
+        "voice-pt" | "voice-en" | "voice-de" | "voice-fr" => Some("voice"),
         "mt-pt-en" | "mt-en-pt" => Some("translation"),
         _ => None,
     }
@@ -246,6 +250,14 @@ fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
             root.join("en_US-lessac-medium.onnx"),
             root.join("en_US-lessac-medium.onnx.json"),
         ]),
+        "voice-de" => Some(vec![
+            root.join("de_DE-thorsten-medium.onnx"),
+            root.join("de_DE-thorsten-medium.onnx.json"),
+        ]),
+        "voice-fr" => Some(vec![
+            root.join("fr_FR-siwis-medium.onnx"),
+            root.join("fr_FR-siwis-medium.onnx.json"),
+        ]),
         "mt-pt-en" => Some(translation_paths(&root, "pt", "en")),
         "mt-en-pt" => Some(translation_paths(&root, "en", "pt")),
         "whisper" => {
@@ -341,7 +353,7 @@ pub fn cancel() -> Result<(), String> {
 
 fn feature_of(id: &str) -> Option<&'static str> {
     match id {
-        "voice-pt" | "voice-en" => Some("voice"),
+        "voice-pt" | "voice-en" | "voice-de" | "voice-fr" => Some("voice"),
         "mt-pt-en" | "mt-en-pt" => Some("translation"),
         _ => None,
     }
@@ -636,7 +648,10 @@ pub fn reason_for(model: &Model, machine: &str) -> String {
         "voice-pt" => "the Portuguese voice for read aloud",
         "mt-pt-en" => "the Portuguese to English translation pack",
         "mt-en-pt" => "the English to Portuguese translation pack",
-        _ => "the English voice for read aloud",
+        "voice-en" => "the English voice for read aloud",
+        "voice-de" => "the German voice for read aloud",
+        "voice-fr" => "the French voice for read aloud",
+        _ => "a voice for read aloud",
     };
     format!("{what}, and this machine has {machine}")
 }
@@ -815,6 +830,8 @@ mod tests {
     fn every_model_maps_to_the_unit_the_engine_reports() {
         assert_eq!(unit_of("parakeet"), Some("recognition"));
         assert_eq!(unit_of("voice-en"), Some("voice"));
+        assert_eq!(unit_of("voice-de"), Some("voice"));
+        assert_eq!(unit_of("voice-fr"), Some("voice"));
         assert_eq!(unit_of("mt-en-pt"), Some("translation"));
         assert_eq!(unit_of("nonsense"), None);
     }

@@ -28,6 +28,14 @@ VOICES = {
         "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium/pt_PT-tug%C3%A3o-medium.onnx",
         "pt/pt_PT/tugão/medium/pt_PT-tugão-medium.onnx",
     ),
+    "de_DE-thorsten-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+        "de/de_DE/thorsten/medium/de_DE-thorsten-medium.onnx",
+    ),
+    "fr_FR-siwis-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx",
+        "fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx",
+    ),
 }
 DEFAULT_VOICES = ("pt_PT-tugão-medium", "en_US-lessac-medium")
 OPTIONAL_VOICES = {"pt_br": ("pt_BR-faber-medium",)}
@@ -143,7 +151,16 @@ def warm_translation(source: str, target: str) -> None:
     print(f"cached    sentence model for {source}->{target}")
 
 
-UNITS = ("parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt", "whisper")
+UNITS = (
+    "parakeet",
+    "voice-pt",
+    "voice-en",
+    "voice-de",
+    "voice-fr",
+    "mt-pt-en",
+    "mt-en-pt",
+    "whisper",
+)
 
 
 def main(argv=None) -> int:
@@ -171,6 +188,10 @@ def main(argv=None) -> int:
             voices.append("pt_PT-tugão-medium")
         if "voice-en" in only:
             voices.append("en_US-lessac-medium")
+        if "voice-de" in only:
+            voices.append("de_DE-thorsten-medium")
+        if "voice-fr" in only:
+            voices.append("fr_FR-siwis-medium")
     install_voices(voices)
 
     if only is None:

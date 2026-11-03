@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Read aloud speaks German and French: the German and French voices are in the library with their own Download button, the engine picks the voice by the language it is reading, and the download fetches that voice alone. A German translation is now spoken in German instead of falling back to the Portuguese voice. **Status: wired end to end, audio not heard here.** The files, units and mapping are tested; nobody has listened to the two voices on this machine yet.
 - `docs/MODEL_MANAGER.md` lays out the folder an exported pair needs, its tag table and its refusals, and points at `engines/cascade/scripts/export_pair.py`, so the German pair is reachable on a machine that builds it. The status is written beside it: implemented, not verified in an installed build.
 - The engine can load a direct ONNX pair. A folder named `<source>-<target>-onnx` under `models/mt` with the exported encoder, decoder, decoder-with-past, vocabulary and sentencepiece files is used before any translation package, with the language tag read from a table; the decoding loop is tested, and the runtime path is **implemented, not verified** because no weights are installed here.
 

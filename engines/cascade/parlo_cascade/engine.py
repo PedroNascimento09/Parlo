@@ -27,6 +27,8 @@ PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", 
 VOICES = {
     "pt": "pt_PT-tugão-medium.onnx",
     "en": "en_US-lessac-medium.onnx",
+    "de": "de_DE-thorsten-medium.onnx",
+    "fr": "fr_FR-siwis-medium.onnx",
 }
 GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"
 UNLOAD_DEFAULT_MINUTES = 30
