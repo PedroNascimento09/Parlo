@@ -64,9 +64,72 @@ pub fn find_module(listing: &str) -> Option<u32> {
     })
 }
 
+pub fn cable_for(device: &str) -> Option<&'static str> {
+    let folded = device.to_lowercase();
+    if folded.contains("cable input") {
+        return Some("VB-CABLE");
+    }
+    if folded.contains("voicemeeter input") || folded.contains("voicemeeter aux input") {
+        return Some("VoiceMeeter");
+    }
+    if folded.contains("scream") {
+        return Some("Scream");
+    }
+    None
+}
+
+pub fn windows_guidance(devices: &[String]) -> String {
+    for (index, device) in devices.iter().enumerate() {
+        if let Some(cable) = cable_for(device) {
+            return format!(
+                "virtual microphone  {device} ({cable}), output device {index}\noutput              parlo listen --play --speaker {index} sends the translation into it\nmicrophone          the calling app picks the {cable} recording side, not the one above"
+            );
+        }
+    }
+    "virtual microphone  none installed\nnext                Windows gives no program a microphone of its own without a signed driver. Install VB-CABLE, restart, then run parlo mic status again; Parlo never installs a driver by itself".to_string()
+}
+
+pub const WINDOWS_REMOVE: &str = "Parlo installed no driver on this computer: remove the virtual cable with its own uninstaller, and Parlo stops using it";
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_vb_cable_output_is_named_with_its_index() {
+        let devices = vec![
+            "Speakers (Realtek(R) Audio)".to_string(),
+            "CABLE Input (VB-Audio Virtual Cable)".to_string(),
+        ];
+        let guidance = windows_guidance(&devices);
+        assert!(
+            guidance.contains("CABLE Input (VB-Audio Virtual Cable) (VB-CABLE)"),
+            "{guidance}"
+        );
+        assert!(guidance.contains("--speaker 1"), "{guidance}");
+    }
+
+    #[test]
+    fn voicemeeter_is_recognised_too() {
+        let devices = vec!["VoiceMeeter Input (VB-Audio VoiceMeeter VAIO)".to_string()];
+        assert_eq!(cable_for(&devices[0]), Some("VoiceMeeter"));
+        assert!(windows_guidance(&devices).contains("output device 0"));
+    }
+
+    #[test]
+    fn without_a_cable_the_guide_names_the_driver_and_what_parlo_does_not_do() {
+        let devices = vec!["Speakers (Realtek(R) Audio)".to_string()];
+        let guidance = windows_guidance(&devices);
+        assert!(guidance.contains("none installed"), "{guidance}");
+        assert!(guidance.contains("VB-CABLE"), "{guidance}");
+        assert!(guidance.contains("never installs a driver"), "{guidance}");
+    }
+
+    #[test]
+    fn a_plain_speaker_is_not_a_virtual_microphone() {
+        assert_eq!(cable_for("Speakers (Realtek(R) Audio)"), None);
+        assert_eq!(cable_for("Headphones"), None);
+    }
 
     #[test]
     fn setup_creates_a_named_null_sink() {

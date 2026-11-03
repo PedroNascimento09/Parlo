@@ -97,7 +97,7 @@ fn print_help() {
     println!("            [--from pt --to en] [--stt parakeet|whisper] [--chunk MS]");
     println!("  dub <video|audio>                  dub a file into another language, offline");
     println!("            [--from pt --to en] [--out PATH] [--srt PATH] [--keep-background]");
-    println!("  mic setup|status|remove            manage the virtual microphone (linux)");
+    println!("  mic setup|status|remove            the virtual microphone: linux sets it up, windows routes a cable");
     println!("  record [out.wav] [--seconds N]     capture the microphone (--list for devices)");
     println!("  listen [out.wav] [--seconds N]     translate the microphone live");
     println!("            [--play --speaker N]            play it to an output device");
@@ -1480,6 +1480,11 @@ fn require_linux() -> Result<(), String> {
 }
 
 fn mic_setup() -> Result<(), String> {
+    if cfg!(windows) {
+        let devices = playback::devices()?;
+        println!("{}", mic::windows_guidance(&devices));
+        return Ok(());
+    }
     require_linux()?;
     let listing = mic::list_command().run()?;
     if let Some(id) = mic::find_module(&listing) {
@@ -1493,6 +1498,11 @@ fn mic_setup() -> Result<(), String> {
 }
 
 fn mic_status() -> Result<(), String> {
+    if cfg!(windows) {
+        let devices = playback::devices()?;
+        println!("{}", mic::windows_guidance(&devices));
+        return Ok(());
+    }
     require_linux()?;
     let listing = mic::list_command().run()?;
     match mic::find_module(&listing) {
@@ -1503,6 +1513,10 @@ fn mic_status() -> Result<(), String> {
 }
 
 fn mic_remove() -> Result<(), String> {
+    if cfg!(windows) {
+        println!("{}", mic::WINDOWS_REMOVE);
+        return Ok(());
+    }
     require_linux()?;
     let listing = mic::list_command().run()?;
     let id = mic::find_module(&listing).ok_or("Parlo microphone is not loaded")?;

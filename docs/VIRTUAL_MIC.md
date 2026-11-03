@@ -35,7 +35,17 @@ The second option ships this month; the first ships with a signed installer.
 
 ## Windows: signed driver
 
-Windows needs a virtual audio driver with a valid signature. VB-Cable is proprietary and cannot be redistributed. Until a signed open-source driver exists, Parlo documents a guided setup with an existing virtual cable, clearly labelled as a temporary step. This is a known trade-off, not an oversight.
+Windows needs a virtual audio driver with a valid signature, and no program can create a microphone device in user space: the driver has to be signed with an EV certificate and attested by Microsoft. Parlo therefore ships no driver and never offers to install one.
+
+What `parlo mic status` and `parlo mic setup` do instead is the guided setup with a cable that is already signed and installed:
+
+1. Install [VB-CABLE](https://vb-audio.com/Cable/) (donationware), VoiceMeeter or Scream, and restart.
+2. Run `parlo mic status`. It lists the output devices, names the cable it found and its index, so the command is literally printed: `parlo listen --play --speaker 2`.
+3. In Zoom, Teams or Meet, choose the cable's **recording** side (`CABLE Output`) as the microphone; the device Parlo plays into (`CABLE Input`) is not the one the call listens to.
+
+Without a cable, the same command says so in one sentence and names what to install, instead of failing. `parlo mic remove` on Windows says plainly that Parlo installed no driver and that the cable is removed by its own uninstaller.
+
+This keeps the interface identical to Linux — `setup`, `status`, `remove` — with the honest difference that on Windows Parlo routes an existing device rather than creating one. **Status: the matching and the sentences are covered by tests; nothing was routed into a real cable here.**
 
 ## Feedback loops
 
