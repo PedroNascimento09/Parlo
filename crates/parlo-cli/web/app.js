@@ -2854,11 +2854,58 @@ function catalogBar(label, score, value) {
   return row;
 }
 
-function bestOf(items, key) {
+function benchmarkBest(items, metric, pick) {
   const values = items
-    .map((item) => item[key])
+    .filter((item) => item.bench && item.bench.metric === metric)
+    .map(pick)
     .filter((value) => typeof value === "number" && value > 0);
-  return values.length ? Math.min(...values) : 0;
+  return values.length ? { low: Math.min(...values), high: Math.max(...values) } : null;
+}
+
+function benchmarkValue(bench) {
+  if (bench.metric === "WER") {
+    return bench.value + "% wrong words";
+  }
+  if (bench.metric === "MMLU") {
+    return bench.value + "% on MMLU";
+  }
+  return String(bench.value);
+}
+
+function catalogLanguages(entry) {
+  const languages = Array.isArray(entry.languages) ? entry.languages : [];
+  if (!languages.length) {
+    return null;
+  }
+  const row = document.createElement("div");
+  row.className = "model-langs";
+  const label = document.createElement("span");
+  label.textContent =
+    languages.length > 1
+      ? languages[0].toUpperCase() + " + " + (languages.length - 1) + " more"
+      : languages[0].toUpperCase();
+  row.append(label);
+  if (languages.length > 1) {
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "langs-more";
+    more.textContent = "info";
+    more.setAttribute("aria-expanded", "false");
+    const list = document.createElement("ul");
+    list.className = "langs-list";
+    list.hidden = true;
+    for (const language of languages) {
+      const item = document.createElement("li");
+      item.textContent = language;
+      list.append(item);
+    }
+    more.addEventListener("click", () => {
+      list.hidden = !list.hidden;
+      more.setAttribute("aria-expanded", String(!list.hidden));
+    });
+    row.append(more, list);
+  }
+  return row;
 }
 
 function catalogCard(entry, items) {
@@ -2872,10 +2919,17 @@ function catalogCard(entry, items) {
   const version = (entry.version || "").trim();
   name.textContent =
     version && !base.toLowerCase().includes(version.toLowerCase()) ? base + " " + version : base;
+  head.append(name);
+  if (entry.pair) {
+    const pair = document.createElement("span");
+    pair.className = "pair-chip";
+    pair.textContent = entry.pair.toUpperCase();
+    head.append(pair);
+  }
   const licence = document.createElement("span");
   licence.className = "model-licence";
   licence.textContent = entry.license || "licence unknown";
-  head.append(name, licence);
+  head.append(licence);
 
   const purpose = document.createElement("p");
   purpose.className = "model-purpose";
@@ -2896,31 +2950,50 @@ function catalogCard(entry, items) {
   };
   fact("Size", entry.size_mb ? entry.size_mb + " MB" : "");
   fact("Memory", entry.memory_mb ? entry.memory_mb + " MB" : "");
-  fact("Languages", Array.isArray(entry.languages) ? entry.languages.join(", ") : "");
+  if (entry.rtf) {
+    fact("Measured", entry.rtf.toFixed(2) + "× realtime here");
+  }
+  if (entry.latency_ms) {
+    fact("Measured", entry.latency_ms + " ms a sentence here");
+  }
   if (facts.childElementCount) {
     card.append(facts);
   }
 
+  const languages = catalogLanguages(entry);
+  if (languages) {
+    card.append(languages);
+  }
+
   const bars = document.createElement("div");
   bars.className = "model-bars";
-  if (typeof entry.rtf === "number") {
-    const best = bestOf(items, "rtf");
-    bars.append(catalogBar("Speed", (100 * best) / entry.rtf, entry.rtf.toFixed(2) + "× realtime"));
-  }
-  if (typeof entry.wer === "number") {
-    const best = bestOf(items, "wer");
-    bars.append(catalogBar("Accuracy", (100 * best) / entry.wer, entry.wer.toFixed(3) + " word error"));
-  }
-  if (typeof entry.latency_ms === "number") {
-    const best = bestOf(items, "latency_ms");
-    bars.append(catalogBar("Speed", (100 * best) / entry.latency_ms, entry.latency_ms + " ms a sentence"));
+  const bench = entry.bench;
+  if (bench && typeof bench.value === "number") {
+    const scale = benchmarkBest(items, bench.metric, (item) => item.bench.value);
+    if (scale) {
+      const score =
+        bench.better === "lower" ? (100 * scale.low) / bench.value : (100 * bench.value) / scale.high;
+      bars.append(catalogBar("Accuracy", score, benchmarkValue(bench)));
+    }
+    if (typeof bench.speed === "number") {
+      const speeds = benchmarkBest(items, bench.metric, (item) => item.bench.speed);
+      if (speeds) {
+        bars.append(
+          catalogBar("Speed", (100 * bench.speed) / speeds.high, bench.speed + "× relative"),
+        );
+      }
+    }
   }
   if (bars.childElementCount) {
+    const source = document.createElement("p");
+    source.className = "bench-source";
+    source.textContent = bench.source;
+    bars.append(source);
     card.append(bars);
   } else {
     const unmeasured = document.createElement("p");
     unmeasured.className = "model-note";
-    unmeasured.textContent = "Not measured on this machine yet.";
+    unmeasured.textContent = "No published figure for this one yet.";
     card.append(unmeasured);
   }
 
@@ -2967,6 +3040,13 @@ function renderCatalog(entries) {
     }
     sections.get(key).push(entry);
   }
+  for (const items of sections.values()) {
+    items.sort(
+      (left, right) =>
+        Number(Boolean(right.bench)) - Number(Boolean(left.bench)) ||
+        (left.name || left.id).localeCompare(right.name || right.id),
+    );
+  }
   const known = CATALOG_CATEGORIES.filter(([key]) => sections.has(key));
   if (!sections.has(catalogTab)) {
     catalogTab = known.length ? known[0][0] : "other";
@@ -2995,7 +3075,7 @@ function renderCatalog(entries) {
     label +
     ", " +
     entries.length +
-    " in this build. A bar compares models measured on this machine; a model with no measurement says so.";
+    " in this build. A bar compares published figures with the best in the same category; the line under it names where the figure comes from.";
 }
 
 async function loadHistory() {

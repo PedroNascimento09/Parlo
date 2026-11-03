@@ -46,6 +46,8 @@ pub fn as_json() -> String {
                 "speed": optional("speed"),
                 "quality": optional("quality"),
                 "rtf": optional("rtf"),
+                "pair": optional("pair"),
+                "bench": optional("bench"),
                 "wer": optional("wer"),
                 "latency_ms": optional("latency_ms"),
                 "unit": optional("unit"),
