@@ -155,7 +155,31 @@ python engines/cascade/scripts/setup_models.py --voice pt_pt
 python engines/cascade/scripts/stream_bench.py --voice pt_PT-tugão-medium.onnx --out out/stream.json
 ```
 
-Limits: synthetic speech from one voice, no noise, no accents, no real speakers. G0 asks for streaming recognition of real PT-PT speech without accumulating delay; what is measured here is a windowed reprocessing pipeline on synthetic audio. Nemotron 3.5 ASR and Qwen3-ASR are untested, so the plan's streaming-native candidate is still open.
+Limits: synthetic speech from one voice, no noise, no accents, no real speakers. The next section repeats the measurement on recordings.
+
+### Recorded European Portuguese speech
+
+Every number above replays one synthetic voice. This is the first measurement on people speaking. The recordings are **FalAR** (`inesc-id/FalAR`, CC-BY-4.0), European Portuguese parliamentary sessions: `scripts/falar_clips.py` takes a parquet shard, keeps the segments whose corpus character error rate is at or below 0.05 and whose duration sits between 2 and 12 s, and writes 16 kHz mono clips with a manifest. Ten segments, 66.6 s, four speakers.
+
+Windows 11, 4 threads, decode every 0.4 s, segment window raised to 30 s so a long clip is not cut, Parakeet TDT 0.6B v3 int8 against Whisper base int8:
+
+| Recogniser | First partial | First stable | Final | p95 final | Final WER | Stable coverage | Real time factor | Corrections |
+|---|---|---|---|---|---|---|---|---|
+| **Parakeet TDT 0.6B v3 int8** | 1077 ms | 2419 ms | 6506 ms | 11 949 ms | **0.243** | 84.4% | **1.023** | 2 |
+| Whisper base int8 | 3530 ms | 2995 ms | 6841 ms | 11 818 ms | 0.377 | 78.3% | 3.274 | 7 |
+
+Reading: parliamentary speech is cleaner than an office and harder than a read corpus. One voice at a time and no crosstalk, but long clauses, names, numbers and dates. Parakeet transcribes at about real time on this machine (1.023) and stays usable; Whisper base at 3.274 cannot keep up, and its first partial appears only at 3.5 s, later than its first stable words at 2.4 s, because its first decode outlasts the audio it is reading.
+
+The mean hides a wide spread. Parakeet's per clip rate runs from 0.00 to 0.96 with a median of 0.125, so most segments are near perfect and two carry nearly all the error: a 11.7 s clip came back as one wrong phrase, and Whisper turned the same clip into a single phrase of its own. Whisper's median is 0.455, which summarises its run better than its mean.
+
+Nothing accumulates for the recogniser that keeps up: Parakeet's decode time over the last third of the run is x0.84 of the first and its real time factor x0.80, both below one. Whisper's grew slightly (x1.095 and x1.136), which is the backlog of a recogniser already past real time.
+
+```bash
+python engines/cascade/scripts/falar_clips.py --parquet test-00000-of-00024.parquet --out out/falar/clips
+python engines/cascade/scripts/stream_bench.py --audio-dir out/falar/clips --segment 30 --out out/falar/real.json
+```
+
+Limits: ten segments from one shard, one parliamentary register, one recording setup, no added noise and no office acoustics. The corpus transcripts carry no punctuation, which suits a word error rate and says nothing about capitalisation. The 30 s segment window is not the 12 s the product uses, so these real time factors compare inside this table and not with the synthetic ones above. G0 still needs Nemotron 3.5 ASR and Qwen3-ASR on the same clips, and the decision between reprocessing and a native streaming model.
 
 ### Latency across a whole stream
 
