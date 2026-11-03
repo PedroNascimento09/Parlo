@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Dictation can write into another window on Linux and macOS. On X11 the text goes through `xdotool type` after checking that the same window is still in front, on macOS through System Events after checking that the same program is still frontmost, and Wayland refuses with a sentence that puts the text on the clipboard instead of pretending. **Status: implemented, not verified on either system here; the clipboard fallback is unchanged.**
+
 - A failed translation no longer loses the sentence. When the translation stage cannot run, the engine keeps the words it heard and answers with them as the text and an empty translation, so the island inserts what was said instead of reporting an error and dropping it; the reason goes to the engine log. **Status: covered by a test, not run against a live translation failure here.**
 
 - The window is reachable from the keyboard alone: **Alt+1** to **Alt+5** open Home, Library, Meetings, Voice and Settings, **Alt+Left** goes back within the app, the rail names each shortcut to a screen reader, and the section someone was on is remembered, so reopening the window returns there instead of starting at Home.

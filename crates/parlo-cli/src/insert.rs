@@ -163,9 +163,21 @@ pub fn foreground() -> Result<(usize, String), String> {
     Ok((window, app))
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "linux")]
 pub fn foreground() -> Result<(usize, String), String> {
-    Err("writing into the active field is windows only for now".to_string())
+    let window = x11::active_window()?;
+    Ok((window, x11::window_name(window)))
+}
+
+#[cfg(target_os = "macos")]
+pub fn foreground() -> Result<(usize, String), String> {
+    let app = mac::frontmost()?;
+    Ok((0, app))
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+pub fn foreground() -> Result<(usize, String), String> {
+    Err(NO_FIELD.to_string())
 }
 
 #[cfg(windows)]
@@ -214,14 +226,168 @@ fn send(batch: &[win::Input]) -> Result<(), String> {
     }
 }
 
-#[cfg(not(windows))]
-pub fn capture_target() -> Result<usize, String> {
-    Err("writing into the active field is windows only for now".to_string())
+#[cfg(target_os = "linux")]
+mod x11 {
+    use std::ffi::OsStr;
+    use std::process::Command;
+
+    pub fn run(program: &str, arguments: &[&OsStr]) -> Result<String, String> {
+        let output = Command::new(program)
+            .args(arguments)
+            .output()
+            .map_err(|error| match error.kind() {
+                std::io::ErrorKind::NotFound => {
+                    format!("{program} is not installed, so the text goes to the clipboard instead")
+                }
+                _ => format!("{program} could not run: {error}"),
+            })?;
+        if !output.status.success() {
+            let reason = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(if reason.is_empty() {
+                format!("{program} refused the command")
+            } else {
+                format!("{program} says {reason}")
+            });
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    }
+
+    pub fn active_window() -> Result<usize, String> {
+        if std::env::var("WAYLAND_DISPLAY")
+            .map(|value| !value.trim().is_empty())
+            .unwrap_or(false)
+        {
+            return Err(
+                "Wayland does not let one program type into another window, so the text goes to the clipboard"
+                    .to_string(),
+            );
+        }
+        let named = run("xdotool", &[OsStr::new("getactivewindow")])?;
+        named
+            .parse::<usize>()
+            .map_err(|_| "xdotool did not name the active window".to_string())
+    }
+
+    pub fn window_name(window: usize) -> String {
+        let id = window.to_string();
+        run("xdotool", &[OsStr::new("getwindowname"), OsStr::new(&id)])
+            .unwrap_or_else(|_| "another program".to_string())
+    }
+
+    pub fn write(text: &str) -> Result<(), String> {
+        run(
+            "xdotool",
+            &[
+                OsStr::new("type"),
+                OsStr::new("--clearmodifiers"),
+                OsStr::new("--delay"),
+                OsStr::new("0"),
+                OsStr::new("--"),
+                OsStr::new(text),
+            ],
+        )
+        .map(|_| ())
+    }
 }
 
-#[cfg(not(windows))]
+#[cfg(target_os = "macos")]
+mod mac {
+    use std::ffi::OsStr;
+    use std::process::Command;
+
+    pub fn run(script: &str) -> Result<String, String> {
+        let output = Command::new("osascript")
+            .args([OsStr::new("-e"), OsStr::new(script)])
+            .output()
+            .map_err(|error| format!("osascript could not run: {error}"))?;
+        if !output.status.success() {
+            let reason = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            return Err(if reason.is_empty() {
+                "macOS refused the keystroke; allow Parlo under Accessibility".to_string()
+            } else {
+                format!("macOS refused the keystroke: {reason}")
+            });
+        }
+        Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+    }
+
+    pub fn frontmost() -> Result<String, String> {
+        run("tell application \"System Events\" to get name of first application process whose frontmost is true")
+    }
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn applescript_for(text: &str) -> String {
+    let mut body = String::new();
+    for (index, line) in text.split('\n').enumerate() {
+        if index > 0 {
+            body.push_str("key code 36\n");
+        }
+        body.push_str("keystroke \"");
+        for character in line.chars() {
+            if character == '\\' || character == '"' {
+                body.push('\\');
+            }
+            body.push(character);
+        }
+        body.push_str("\"\n");
+    }
+    format!(
+        "tell application \"System Events\"\n{}\nend tell",
+        body.trim_end()
+    )
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+const NO_FIELD: &str =
+    "this platform has no way to type into another window yet; the text goes to the clipboard";
+
+#[cfg(target_os = "linux")]
+pub fn capture_target() -> Result<usize, String> {
+    x11::active_window()
+}
+
+#[cfg(target_os = "macos")]
+static CAPTURED_APP: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
+#[cfg(target_os = "macos")]
+pub fn capture_target() -> Result<usize, String> {
+    let app = mac::frontmost()?;
+    *CAPTURED_APP
+        .lock()
+        .map_err(|_| "the program in front could not be remembered".to_string())? = Some(app);
+    Ok(0)
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+pub fn capture_target() -> Result<usize, String> {
+    Err(NO_FIELD.to_string())
+}
+
+#[cfg(target_os = "linux")]
+pub fn type_text(target: usize, text: &str) -> Result<(), String> {
+    if x11::active_window()? != target {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    x11::write(text)
+}
+
+#[cfg(target_os = "macos")]
+pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
+    let app = mac::frontmost()?;
+    let held = CAPTURED_APP
+        .lock()
+        .map_err(|_| "the program in front could not be read".to_string())?
+        .clone();
+    if held.as_deref() != Some(app.as_str()) {
+        return Err("the program you were writing in is not in front any more".to_string());
+    }
+    mac::run(&applescript_for(text)).map(|_| ())
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 pub fn type_text(_target: usize, _text: &str) -> Result<(), String> {
-    Err("writing into the active field is windows only for now".to_string())
+    Err(NO_FIELD.to_string())
 }
 
 #[cfg(test)]
@@ -252,10 +418,24 @@ mod tests {
         });
     }
 
-    #[cfg(not(windows))]
+    #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     #[test]
     fn other_platforms_say_what_is_missing() {
         let error = type_text(0, "olá").unwrap_err();
-        assert!(error.contains("windows only"));
+        assert!(error.contains("no way to type"));
+    }
+
+    #[test]
+    fn an_applescript_keystroke_escapes_quotes_and_backslashes() {
+        let script = applescript_for("Diz \"olá\" \\ adeus");
+        assert!(script.starts_with("tell application \"System Events\""));
+        assert!(script.contains("keystroke \"Diz \\\"olá\\\" \\\\ adeus\""));
+    }
+
+    #[test]
+    fn a_newline_becomes_a_return_key() {
+        let script = applescript_for("primeira\nsegunda");
+        assert_eq!(script.matches("keystroke").count(), 2);
+        assert!(script.contains("key code 36"));
     }
 }
