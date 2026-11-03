@@ -36,7 +36,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 |---|---|---|---|
 | v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
 | v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current:** recorded speech measured, Parakeet keeps real time without accumulating delay, and the decision to keep reprocessing for now is recorded in [docs/ENGINES.md](docs/ENGINES.md) with the blockers of both native streaming candidates |
-| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** one presence — a tray menu with the three modes and the five destinations — a floating island on a shortcut or a tray click, insertion into the window that had the focus, with the clipboard as fallback, dictation that writes in another language, and a shortcut the user changes in the settings, which validates it and says a restart is what registers it. Missing: macOS or Linux insertion, and the five external users G2 asks for |
+| v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** one presence — a tray menu with the three modes and the five destinations — a floating island on a shortcut or a tray click, insertion into the window that had the focus, with the clipboard as fallback, dictation that writes in another language, and a shortcut the user changes in the settings, which validates it and says a restart is what registers it. Missing: macOS or Linux insertion; the external-user round is deferred until there is a first user, and until then G2 is the internal first-session check |
 | v0.5 Escrever noutra língua | Speak one language, write another in the active field | G1 + G2 | Planned, not complete; the MT stage exists, the dictation surfaces do not |
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead, and a session now saves an SRT in the data folder; system audio not captured yet |
 | v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks, a model panel that names each model's state and measured quality, feature switches, per-model removal, and the memory lifecycle (a delay per model, `Load`, `Unload now`, automatic management that can be turned off). The model library now lists every component this build knows, grouped into sections by what it does — speech to text, read aloud, translation and synthesis — with the languages it covers, its size where one was measured and its licence, and downloads one model at a time; a row this build cannot run says so instead of offering a button. Only what ships or is claimed is measured, so the catalogue can grow without a test per row. A second recogniser, Whisper base, is downloadable and offered when the larger model would not leave headroom; a model keeps the copy it replaced and can restore it, a move shows its size before copying and adopts a folder that already matches, and the first-start screen shows the measured memory and speed beside every feature. The intended behaviour, including first-start recommendation, feature switches and per-model removal, is written in [docs/MODEL_MANAGER.md](docs/MODEL_MANAGER.md) |
@@ -60,9 +60,11 @@ A release declares the gate it has to pass. If the gate fails the release does n
 |---|---|---|
 | G0 · Viabilidade | Streaming recognition of real PT-PT speech without accumulating delay; licence verified; stable capture | v0.3 |
 | G1 · Pipeline de texto | STT→MT for 30 minutes; p95 latency published; an engine failure loses no text. Extends to STT→MT→TTS | v0.5, v0.9 |
-| G2 · Produto | 5 external users install and finish a first session without critical help | v0.4, v0.5 |
+| G2 · First session | A clean install finishes a first session without help — models, one sentence, one dictation — checked by the person building it; the external round starts when there is a first user | v0.4, v0.5 |
 | G3 · Beta | 2 hours without a crash; no sustained queue growth; zero critical bugs; local network audit | v0.9 |
 | G4 · Release | Signed installers, SBOM, licences, documentation, rollback and a compatibility matrix | v1.0 onward |
+
+Until there is a first external user, G2 is the author's own first session on a clean install: download the recommended set, say one sentence, dictate into another application, quit and reopen. That check is run for every release and written into its notes. A release never claims user validation it does not have.
 
 Section 48 of the plan lists a second, differently numbered set of gates, reusing G1 and G2 for dictation and translation and adding two that the table above does not carry:
 
@@ -104,7 +106,7 @@ Out of scope for this milestone: translation changes, voice, system audio, a pub
 
 ## Definition of done, for any release
 
-Installer tested on a clean machine and as an upgrade, with rollback proven; the corpus benchmark updated and published with hardware and versions; licence matrix reviewed for everything the release contains, with third party notices updated; local network audit showing no external connection during use; changelog, known limitations and the state of each language pair; feedback from at least five external users before the next one is announced.
+Installer tested on a clean machine and as an upgrade, with rollback proven; the corpus benchmark updated and published with hardware and versions; licence matrix reviewed for everything the release contains, with third party notices updated; local network audit showing no external connection during use; changelog, known limitations and the state of each language pair; the first-session check on a clean install, and feedback from the first external user once one exists, recorded in the release notes; the absence of users is stated, never hidden.
 
 ## Deliberately out of scope
 

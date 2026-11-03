@@ -1,6 +1,6 @@
 # Testing Parlo from outside
 
-This is the kit for someone who is not the author and is willing to use Parlo for a while and say what broke. It exists because no external tester has used this build yet, and nothing here replaces that: G2 stays pending until real people have run it.
+This is the kit for someone who is not the author and is willing to use Parlo for a while and say what broke. No external tester has used this build yet, so G2 is the author's own first session on a clean install for now; this kit is ready for the first person who does run it, and a release never claims validation by users it has not had.
 
 ## What you need
 

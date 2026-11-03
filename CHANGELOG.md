@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The plan stops waiting for users it does not have. G2 is now the author's own first session on a clean install — models, one sentence, one dictation, reopen — and the external-user round starts when there is a first user; every release still states plainly what has not been validated.
+
 - Captions can be saved. A session keeps the lines it showed, and **Save** writes an SRT with timing into the data folder and names the file it wrote, so a meeting can be read afterwards without another tool.
 
 - A model keeps the copy it replaced. When a model is downloaded again, the build in place is set aside beside it, and a **Restore** row puts it back if the new copy is worse; nothing is deleted until the new download finishes.
