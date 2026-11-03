@@ -150,7 +150,6 @@
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title">Speak once. Be heard.</h1>
     <p class="welcome-lede">Speak, and Parlo writes the other language. Everything stays on this computer.</p>
-    <dl class="status" id="welcome-plan"></dl>
     <button id="welcome-install" class="install welcome-install" type="button">Download the dictation model</button>
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
     <button id="talk" class="talk" type="button" aria-pressed="false">
@@ -171,24 +170,6 @@
     </p>
     <p class="stage-call">Hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> and speak.</p>
     <p class="stage-sub"><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
-    <dl class="stage-facts">
-      <div>
-        <dt>Microphone</dt>
-        <dd id="status-mic">not opened yet</dd>
-      </div>
-      <div>
-        <dt>Engine</dt>
-        <dd id="status-engine">starting</dd>
-      </div>
-      <div>
-        <dt>Last translation</dt>
-        <dd id="status-latency">nothing yet</dd>
-      </div>
-      <div>
-        <dt>Models</dt>
-        <dd><span id="status-models">checking</span> <a id="status-models-manage" href="#library">manage</a></dd>
-      </div>
-    </dl>
   </section>
 
   <section class="recent" id="recent" aria-labelledby="recent-title">
@@ -256,6 +237,24 @@
         </select>
       </label>
     </div>
+    <dl class="stage-facts" id="settings-facts">
+      <div>
+        <dt>Microphone</dt>
+        <dd id="status-mic">not opened yet</dd>
+      </div>
+      <div>
+        <dt>Engine</dt>
+        <dd id="status-engine">starting</dd>
+      </div>
+      <div>
+        <dt>Last translation</dt>
+        <dd id="status-latency">nothing yet</dd>
+      </div>
+      <div>
+        <dt>Models</dt>
+        <dd><span id="status-models">checking</span> <a id="status-models-manage" href="#library">manage</a></dd>
+      </div>
+    </dl>
   </section>
 
   <section class="settings" id="languages" aria-labelledby="languages-title">

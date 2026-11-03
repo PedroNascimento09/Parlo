@@ -777,42 +777,6 @@ function stopWelcomeClock() {
   welcomeTimer = null;
 }
 
-const WELCOME_FEATURES = [
-  { id: "dictation", label: "Dictation", units: ["parakeet"] },
-  { id: "translation", label: "Write in another language", units: ["mt-pt-en", "mt-en-pt"] },
-  { id: "read-aloud", label: "Read text aloud", units: ["voice-pt", "voice-en"] },
-];
-
-function catalogEntry(unit) {
-  return catalogEntries.find((item) => item.unit === unit);
-}
-
-function catalogSize(unit) {
-  const entry = catalogEntry(unit);
-  return entry && entry.size_mb ? entry.size_mb : 0;
-}
-
-function collectWelcomeUnits() {
-  const plan = document.getElementById("welcome-plan");
-  const units = [];
-  if (!plan) {
-    return units;
-  }
-  for (const box of plan.querySelectorAll("input[type=checkbox]")) {
-    if (box.checked && box.dataset.units) {
-      units.push(...box.dataset.units.split(",").filter(Boolean));
-    }
-  }
-  return units;
-}
-
-function refreshWelcomeTotal() {
-  const units = collectWelcomeUnits();
-  const total = units.reduce((sum, unit) => sum + catalogSize(unit), 0);
-  welcomeInstall.textContent = total ? "Download " + total + " MB" : "Everything is here";
-  welcomeInstall.disabled = units.length === 0 || modelsPolling;
-}
-
 async function downloadChosenModels(units) {
   if (!units.length) {
     return;
@@ -834,96 +798,6 @@ async function downloadChosenModels(units) {
     setWelcomeStatus(failure.message || "The download could not start.");
     welcomeInstall.disabled = false;
   }
-}
-
-let welcomePlanKey = "";
-
-async function renderWelcomePlan(state) {
-  const plan = document.getElementById("welcome-plan");
-  if (!plan) {
-    return;
-  }
-  if (!catalogEntries.length) {
-    try {
-      const response = await fetch("/catalog", { cache: "no-store" });
-      if (response.ok) {
-        catalogEntries = await response.json();
-      }
-    } catch (failure) {
-      catalogEntries = [];
-    }
-  }
-  const memory = (state.machine && state.machine.memory_gb) || 0;
-  const parakeet = catalogEntry("parakeet");
-  const headroom =
-    memory * 1024 - (parakeet && parakeet.memory_mb ? parakeet.memory_mb : 0);
-  const features = WELCOME_FEATURES.map((feature) =>
-    feature.id === "dictation"
-      ? { ...feature, units: [headroom < 700 ? "whisper" : "parakeet"] }
-      : feature,
-  );
-  const key =
-    memory +
-    "|" +
-    state.models.map((model) => model.id + (model.installed ? "+" : "-")).join(",") +
-    "|" +
-    catalogEntries.length;
-  if (plan.childElementCount && key === welcomePlanKey) {
-    refreshWelcomeTotal();
-    return;
-  }
-  welcomePlanKey = key;
-  plan.replaceChildren();
-  for (const feature of features) {
-    const missing = feature.units.filter(
-      (unit) => !state.models.some((model) => model.id === unit && model.installed),
-    );
-    const size = missing.reduce((sum, unit) => sum + catalogSize(unit), 0);
-    const suggested =
-      feature.id === "dictation"
-        ? true
-        : feature.id === "translation"
-          ? memory >= 8
-          : memory >= 16;
-    const term = document.createElement("dt");
-    const label = document.createElement("label");
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.checked = suggested && missing.length > 0;
-    box.disabled = missing.length === 0;
-    box.dataset.units = missing.join(",");
-    box.addEventListener("change", refreshWelcomeTotal);
-    label.append(box, " " + feature.label);
-    term.append(label);
-    const detail = document.createElement("dd");
-    if (!missing.length) {
-      detail.textContent = "already here";
-    } else {
-      const first = catalogEntry(feature.units[0]);
-      const cost =
-        first && first.memory_mb
-          ? first.name +
-            ": " +
-            first.memory_mb +
-            " MB in memory" +
-            (first.speed ? ", " + first.speed : "")
-          : "";
-      detail.textContent =
-        (size ? size + " MB to download" : "size not measured yet") +
-        " · " +
-        (suggested ? "suggested here" : "optional here") +
-        (cost ? " · " + cost : "");
-    }
-    plan.append(term, detail);
-  }
-  refreshWelcomeTotal();
-  setWelcomeStatus(
-    memory
-      ? "This machine reports " +
-          memory +
-          " GB of memory. Nothing downloads until you press the button, and everything works offline once it is here."
-      : "Nothing downloads until you press the button, and everything works offline once it is here.",
-  );
 }
 
 function reflectFirstRun(ready, dictation, downloading) {
@@ -957,7 +831,7 @@ function reflectFirstRun(ready, dictation, downloading) {
   stopWelcomeClock();
   welcomeInstall.hidden = false;
   welcomeInstall.disabled = modelsPolling;
-  renderWelcomePlan(modelState);
+  welcomeInstall.textContent = "Download the dictation model";
 }
 
 let modelState = { models: [], ready: false, dictation: false, downloading: false };
@@ -1414,7 +1288,7 @@ async function downloadModels(path = "/models") {
 }
 
 modelsInstall.addEventListener("click", () => downloadModels());
-welcomeInstall.addEventListener("click", () => downloadChosenModels(collectWelcomeUnits()));
+welcomeInstall.addEventListener("click", () => downloadChosenModels(["parakeet"]));
 modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 
 const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };

@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Home says one thing. The three-feature download plan with its sizes, memory figures and speed per model is gone: the first start offers **Download the dictation model**, and everything else waits in Library, Models. The microphone, engine, last translation and model count left the Home card and now sit at the bottom of Settings, Dictation, where they belong. **Status: built and opened in light mode; the buttons still call the same endpoints.**
+
 - A meeting shows the day it happened. The page multiplied a timestamp that is already in milliseconds by a thousand, so the list and the search results printed years like 58807; both now read the stored value as it is. **Status: the fix is a number on screen, checked against the meeting file on this computer.**
 
 - Settings has four sections instead of eight: **Dictation**, **Languages**, **Shortcuts**, and **Advanced**, which holds the cleanup engine, the cloud provider, the privacy statement and the version together. Voice creation keeps the name, the origin and the permission in front of you and moves the language, the purpose and the sealing behind **More options**; the paragraph above it no longer repeats the same sentence twice. **Status: built and opened at 1000 px in light and dark; the buttons still call the same endpoints, so no behaviour changed.**
