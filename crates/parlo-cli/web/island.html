@@ -96,6 +96,27 @@
     color: var(--muted);
     font-variant-numeric: tabular-nums;
   }
+  .actions { display: none; align-items: center; gap: 8px; }
+  body.ready .actions { display: flex; }
+  body.ready .clock { display: none; }
+  .actions button {
+    font: inherit;
+    font-size: 12px;
+    padding: 5px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .actions button:hover { color: var(--ink); border-color: var(--muted); }
+  .actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .actions .switch[aria-pressed="true"] {
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .actions .record { color: var(--ink); border-color: var(--ink); }
   .hint {
     margin: 2px 0 0;
     font-size: 11.5px;
@@ -131,6 +152,10 @@
       <p class="hint" id="hint">Text goes to the clipboard when you stop.</p>
     </div>
     <span class="clock" id="clock">0.0 s</span>
+    <div class="actions" id="actions">
+      <button type="button" class="switch" id="translate" aria-pressed="true">Translate</button>
+      <button type="button" class="record" id="record">Record</button>
+    </div>
   </div>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";
@@ -156,6 +181,8 @@ let lastText = "";
 let target = false;
 let writeTarget = "";
 let shortcut = "Ctrl+Alt+D";
+let sourceLanguage = "";
+let translate = localStorage.getItem("parlo-translate") !== "off";
 let controller = null;
 let sentChunks = 0;
 let partials = null;
@@ -412,6 +439,7 @@ async function loadWriteTarget() {
     }
     const values = await response.json();
     writeTarget = (values.write || "").toLowerCase();
+    sourceLanguage = (values.from || "").toLowerCase();
     shortcut = values.shortcut || shortcut;
   } catch (failure) {
     writeTarget = "";
@@ -493,8 +521,9 @@ async function stop() {
   const { signal } = controller;
   try {
     const headers = { "Content-Type": "audio/wav", Authorization: "Bearer " + token };
-    if (writeTarget) {
-      headers["x-parlo-write"] = writeTarget;
+    const target = translate ? writeTarget : sourceLanguage;
+    if (target) {
+      headers["x-parlo-write"] = target;
     }
     const response = await fetch("/dictate", {
       method: "POST",
@@ -550,6 +579,46 @@ function handsFree() {
   setState("Listening", "Hands free. Press the shortcut again to stop, Escape to cancel.", true);
 }
 
+function paintTranslate() {
+  translateEl.setAttribute("aria-pressed", String(translate));
+  translateEl.textContent = translate ? "Translate on" : "Translate off";
+}
+
+function arm() {
+  document.body.classList.remove("ready", "listening", "showing-hint");
+  setState("Ready", "Hold the shortcut to talk.", true);
+  clockEl.textContent = "0.0 s";
+  report("armed");
+}
+
+function ready() {
+  if (stream || busy) {
+    return;
+  }
+  document.body.classList.add("ready");
+  document.body.classList.remove("listening", "showing-hint");
+  setState("Ready", lastText || "Choose, then record.", !lastText);
+  report("armed");
+}
+
+const translateEl = document.getElementById("translate");
+const recordEl = document.getElementById("record");
+
+translateEl.addEventListener("click", () => {
+  translate = !translate;
+  localStorage.setItem("parlo-translate", translate ? "on" : "off");
+  paintTranslate();
+});
+
+recordEl.addEventListener("click", () => {
+  document.body.classList.remove("ready");
+  begin();
+});
+
+paintTranslate();
+
+window.parloArm = arm;
+window.parloReady = ready;
 window.parloBegin = begin;
 window.parloStop = stop;
 window.parloCancel = cancel;
@@ -557,7 +626,7 @@ window.parloHandsFree = handsFree;
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
-    begin();
+    ready();
   }
 });
 
@@ -571,7 +640,7 @@ window.addEventListener("keydown", (event) => {
 loadVersion();
 loadWriteTarget();
 if (!document.hidden) {
-  begin();
+  ready();
 }
 </script>
 </body>

@@ -57,7 +57,7 @@ pub fn listen(handle: AppHandle) {
     const MOD_CONTROL: u32 = 0x0002;
     const MOD_SHIFT: u32 = 0x0004;
     const MOD_WIN: u32 = 0x0008;
-    const TAP_MS: u128 = 250;
+    const HOLD_MS: u128 = 1_000;
 
     static APP: Mutex<Option<AppHandle>> = Mutex::new(None);
     static KEY: AtomicU32 = AtomicU32::new(0);
@@ -67,9 +67,9 @@ pub fn listen(handle: AppHandle) {
     static CAPTIONS_KEY: AtomicU32 = AtomicU32::new(0);
     static CAPTIONS_MODS: AtomicU32 = AtomicU32::new(0);
     static HELD: AtomicBool = AtomicBool::new(false);
+    static RECORDING: AtomicBool = AtomicBool::new(false);
     static FREE_LATCH: AtomicBool = AtomicBool::new(false);
     static CAPTIONS_LATCH: AtomicBool = AtomicBool::new(false);
-    static HANDS_FREE: AtomicBool = AtomicBool::new(false);
     static PRESSED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
     #[repr(C)]
@@ -137,13 +137,26 @@ pub fn listen(handle: AppHandle) {
         }
     }
 
-    fn began() {
+    fn armed() {
         if let Ok(mut slot) = PRESSED_AT.lock() {
             *slot = Some(Instant::now());
         }
         with_app(|handle| {
             show(handle);
-            tell(handle, "window.parloBegin && window.parloBegin()");
+            tell(handle, "window.parloArm && window.parloArm()");
+        });
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_millis(HOLD_MS as u64));
+            let still_down = PRESSED_AT
+                .lock()
+                .map(|slot| slot.is_some())
+                .unwrap_or(false);
+            if !still_down || RECORDING.swap(true, Ordering::Relaxed) {
+                return;
+            }
+            with_app(|handle| {
+                tell(handle, "window.parloBegin && window.parloBegin()");
+            });
         });
     }
 
@@ -154,24 +167,15 @@ pub fn listen(handle: AppHandle) {
         });
     }
 
-    fn ended() {
-        let held = PRESSED_AT
-            .lock()
-            .ok()
-            .and_then(|mut slot| slot.take())
-            .map(|at| at.elapsed())
-            .unwrap_or_default();
+    fn key_up() {
+        if let Ok(mut slot) = PRESSED_AT.lock() {
+            *slot = None;
+        }
         with_app(|handle| {
-            if held.as_millis() < TAP_MS {
-                if HANDS_FREE.swap(false, Ordering::Relaxed) {
-                    tell(handle, "window.parloStop && window.parloStop()");
-                } else {
-                    HANDS_FREE.store(true, Ordering::Relaxed);
-                    tell(handle, "window.parloHandsFree && window.parloHandsFree()");
-                }
-            } else {
-                HANDS_FREE.store(false, Ordering::Relaxed);
+            if RECORDING.swap(false, Ordering::Relaxed) {
                 tell(handle, "window.parloStop && window.parloStop()");
+            } else {
+                tell(handle, "window.parloReady && window.parloReady()");
             }
         });
     }
@@ -188,9 +192,9 @@ pub fn listen(handle: AppHandle) {
                 };
                 if matches(KEY.load(Ordering::Relaxed), MODS.load(Ordering::Relaxed)) {
                     if pressed && !HELD.swap(true, Ordering::Relaxed) {
-                        began();
+                        armed();
                     } else if released && HELD.swap(false, Ordering::Relaxed) {
-                        ended();
+                        key_up();
                     }
                 } else if matches(
                     FREE_KEY.load(Ordering::Relaxed),
@@ -261,7 +265,7 @@ pub fn listen(handle: AppHandle) {
             return;
         }
         crate::note(&format!(
-            "shortcuts listening: {} dictates with press and release, {} stays listening, {} toggles captions",
+            "shortcuts listening: {} opens the panel on a tap and records while held, {} stays listening, {} toggles captions",
             shortcut.text(),
             free.text(),
             captions.text()
