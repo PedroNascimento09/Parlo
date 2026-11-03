@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Settings gained an Insights pane: words written, minutes spoken, words per minute, where the text landed and a four-week strip, all counted from the dictations on this computer.
+
 - Home is only the welcome card: the language pair, the microphone and the shortcut moved to a Setup tab in Settings, and the four running totals became one quiet line above the recent results.
 
 - The library no longer shows the wrong-words and MMLU figures: those numbers came from a Portuguese test run and from published English benchmarks, so they measured something other than what the card implied. Cards say what a publisher states and what this machine can hold.

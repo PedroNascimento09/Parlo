@@ -3262,8 +3262,93 @@ function renderRecent() {
   }
 }
 
+function paintInsights() {
+  const wordsEl = document.getElementById("insights-words");
+  if (!wordsEl) {
+    return;
+  }
+  const textOf = (entry) => entry.translation || entry.text || "";
+  const countOf = (entry) => textOf(entry).split(/\s+/).filter(Boolean).length;
+  const words = historyEntries.reduce((total, entry) => total + countOf(entry), 0);
+  const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
+  wordsEl.textContent = String(words);
+  document.getElementById("insights-minutes").textContent = (seconds / 60).toFixed(1);
+  document.getElementById("insights-count").textContent = String(historyEntries.length);
+  document.getElementById("insights-rate").textContent =
+    seconds > 0 && words > 0 ? String(Math.round(words / (seconds / 60))) : "–";
+
+  const apps = new Map();
+  for (const entry of historyEntries) {
+    const words = countOf(entry);
+    if (!words) {
+      continue;
+    }
+    const raw = (entry.app || "").trim();
+    const name = raw && raw !== "unknown" ? raw : "Another app";
+    apps.set(name, (apps.get(name) || 0) + words);
+  }
+  const ranked = [...apps.entries()].sort((left, right) => right[1] - left[1]).slice(0, 4);
+  const best = ranked.length ? ranked[0][1] : 0;
+  const list = document.getElementById("insights-apps");
+  list.replaceChildren();
+  if (!ranked.length) {
+    const empty = document.createElement("li");
+    empty.className = "insights-empty";
+    empty.textContent = "No words written yet, so there is nowhere to point at.";
+    list.append(empty);
+  }
+  for (const [name, total] of ranked) {
+    const item = document.createElement("li");
+    const label = document.createElement("span");
+    label.className = "insights-app";
+    label.textContent = name;
+    const track = document.createElement("span");
+    track.className = "insights-track";
+    const fill = document.createElement("span");
+    fill.className = "insights-fill";
+    fill.style.width = Math.max(4, Math.round((100 * total) / best)) + "%";
+    track.append(fill);
+    const value = document.createElement("span");
+    value.className = "insights-value";
+    value.textContent = total + (total === 1 ? " word" : " words");
+    item.append(label, track, value);
+    list.append(item);
+  }
+
+  const days = document.getElementById("insights-days");
+  days.replaceChildren();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const perDay = new Map();
+  for (const entry of historyEntries) {
+    const when = new Date((entry.at || 0) * 1000);
+    when.setHours(0, 0, 0, 0);
+    const key = when.getTime();
+    perDay.set(key, (perDay.get(key) || 0) + 1);
+  }
+  const peak = Math.max(1, ...perDay.values());
+  let active = 0;
+  for (let back = 27; back >= 0; back -= 1) {
+    const day = new Date(today.getTime() - back * 86400000);
+    const hits = perDay.get(day.getTime()) || 0;
+    if (hits) {
+      active += 1;
+    }
+    const cell = document.createElement("span");
+    cell.className = "insights-day";
+    cell.dataset.level = hits === 0 ? "0" : hits >= peak * 0.66 ? "3" : hits >= peak * 0.33 ? "2" : "1";
+    cell.title = day.toLocaleDateString() + ": " + hits + (hits === 1 ? " dictation" : " dictations");
+    days.append(cell);
+  }
+  document.getElementById("insights-days-note").textContent =
+    active === 0
+      ? "No dictation in the last four weeks."
+      : active + (active === 1 ? " day" : " days") + " with at least one dictation in the last four weeks.";
+}
+
 function renderHistory() {
   paintHome();
+  paintInsights();
   renderRecent();
   historyList.replaceChildren();
   if (!historyEntries.length) {
@@ -3736,6 +3821,7 @@ const ROUTES = {
   voice: ["voice"],
   settings: [
     "settings-tabs",
+    "insights",
     "onboarding",
     "settings-foot",
     "settings",
@@ -3836,6 +3922,7 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 
 const SETTINGS_TABS = {
   setup: ["onboarding"],
+  insights: ["insights"],
   dictation: ["settings"],
   languages: ["languages"],
   shortcuts: ["shortcuts"],

@@ -2455,3 +2455,123 @@ body.first-run #status-list {
 .history-actions .swap {
   padding-inline: 14px;
 }
+
+.insights-numbers {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+}
+
+.insights-numbers > div {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-sunken);
+}
+
+.insights-numbers dt {
+  color: var(--muted);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+
+.insights-numbers dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.insights-apps {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insights-apps li {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) 7rem;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.insights-app {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-soft);
+}
+
+.insights-track {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+}
+
+.insights-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.insights-value {
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.insights-empty {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.insights-days {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  gap: 6px;
+  margin: 12px 0 10px;
+  max-width: 420px;
+}
+
+.insights-day {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+}
+
+.insights-day[data-level="1"] {
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  border-color: transparent;
+}
+
+.insights-day[data-level="2"] {
+  background: color-mix(in srgb, var(--accent) 52%, transparent);
+  border-color: transparent;
+}
+
+.insights-day[data-level="3"] {
+  background: var(--accent);
+  border-color: transparent;
+}
+
+@media (max-width: 720px) {
+  .insights-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .insights-apps li {
+    grid-template-columns: 7rem minmax(0, 1fr) 6rem;
+  }
+}

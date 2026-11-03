@@ -155,6 +155,7 @@
     <button type="button" class="tab" data-tab="languages">Languages</button>
     <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
     <button type="button" class="tab" data-tab="advanced">Advanced</button>
+    <button type="button" class="tab" data-tab="insights">Insights</button>
   </nav>
   <div class="settings-panes">
 <section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
@@ -329,6 +330,24 @@
       </label>
       <button id="settings-captions-save" class="install" type="button">Save captions</button>
     </div>
+  </section>
+
+  <section class="settings" id="insights" aria-labelledby="insights-title">
+    <div class="settings-head">
+      <h2 id="insights-title">What you have dictated</h2>
+      <p class="settings-note">Counted from the dictations kept on this computer, nothing else.</p>
+    </div>
+    <dl class="insights-numbers">
+      <div><dt>Words written</dt><dd id="insights-words">0</dd></div>
+      <div><dt>Minutes spoken</dt><dd id="insights-minutes">0.0</dd></div>
+      <div><dt>Dictations</dt><dd id="insights-count">0</dd></div>
+      <div><dt>Words per minute</dt><dd id="insights-rate">–</dd></div>
+    </dl>
+    <h3 class="meeting-group">Where the text landed</h3>
+    <ul class="insights-apps" id="insights-apps"></ul>
+    <h3 class="meeting-group">The last four weeks</h3>
+    <div class="insights-days" id="insights-days" aria-hidden="true"></div>
+    <p class="settings-note" id="insights-days-note"></p>
   </section>
 
   <section class="settings" id="intelligence" aria-labelledby="intelligence-title">
