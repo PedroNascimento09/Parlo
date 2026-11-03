@@ -44,7 +44,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v0.9 Live | Spoken two-way conversation through a virtual microphone, in the speaker's own voice | G1 + G3 | Not started; no virtual microphone, no echo cancellation. The objective the plan is built towards, sequenced after captions and voice |
 | v1.0 Estável | Dictate, Captions, Live and Models stable, PT↔EN validated, signed installers | G4 | Not started |
 | v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Not started |
-| v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Partly: a transcript's action items are named with an owner and the due phrase it used, by rule and with no model; live transcription and the summary wait for G4 |
+| v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Partly: action items (owner and the due phrase used) and decisions with supersession are read from a transcript by rule; live transcription and the summary wait for G4 |
 | v1.3 Meeting Chat | Ask the meetings, with verifiable citations | G4 | Not started |
 | v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Not started; the contract a plugin will meet is written in [docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) |
 | v1.5 Dub e Voz própria | Dub files, clone your own voice with consent | G4 | Dubbing shipped ahead; voice cloning not started |

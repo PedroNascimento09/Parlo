@@ -12,6 +12,7 @@ mod ask;
 mod captions;
 mod catalog;
 mod config;
+mod decisions;
 mod dictate;
 mod dub;
 mod engines;

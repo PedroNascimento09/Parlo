@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A meeting keeps its decisions, and a later one replaces an earlier one on the same topic. A line that closes a decision ("combinado", "decidimos", "aprovado", "agreed") is kept with its speaker; when a later line shares a content word with it, the later line is the decision and the page says which one it replaced, so a meeting that changes its mind reads as one decision instead of two. A hedge ("talvez", "acho que", "maybe") is not a decision. **Status: deterministic rules with tests; it judges wording, not meaning.**
 - A meeting names its action items. Every line of a transcript is read for a promise ("vou", "fica de", "envio", "I'll", "will send" and the rest of a fixed table), the owner is the speaker or the person named right before the verb, and the due phrase is the one the line used ("amanhã", "sexta", "até dia 5", "tomorrow"), shown beside the meeting with no date invented. A denial ("não vou") is not a promise, and the same sentence is kept once. **Status: deterministic rules with tests, no model and no reading of the meeting; it is not on the level of a human summary.**
 
 - A moved model folder is adopted only when every file matches byte for byte. The comparison used names and sizes, so a file of the same length but different content counted as a copy; it now reads both files in 64 KB blocks and refuses at the first difference, and an empty file never counts as a match, so a truncated copy is copied again instead of adopted.

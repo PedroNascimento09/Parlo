@@ -133,7 +133,7 @@ pub fn ask(question: &str, meetings: &[Meeting]) -> Answer {
     }
 }
 
-fn fold(text: &str) -> String {
+pub(crate) fn fold(text: &str) -> String {
     let mut folded = String::with_capacity(text.len());
     for character in text.chars() {
         let plain = match character {

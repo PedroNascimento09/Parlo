@@ -2677,6 +2677,7 @@ fn meeting_json(meeting: crate::meeting::Meeting) -> serde_json::Value {
         "speakers": meeting.speakers(),
         "segments": segments,
         "actions": crate::actions::for_meeting(&meeting),
+        "decisions": crate::decisions::for_meeting(&meeting),
     })
 }
 
