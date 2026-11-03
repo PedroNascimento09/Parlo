@@ -204,7 +204,7 @@ async function ensureAudio() {
     source.connect(analyser);
     processor = context.createScriptProcessor(4096, 1, 1);
     processor.onaudioprocess = (event) => {
-      if (!recording && !sampling) {
+      if (!recording && !sampling && (!meetingRecording || meetingPaused)) {
         return;
       }
       chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
@@ -1416,6 +1416,10 @@ const vocabularyList = document.getElementById("vocabulary-list");
 const vocabularyNote = document.getElementById("vocabulary-note");
 const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
+const meetingPause = document.getElementById("meeting-pause");
+const meetingNotesRow = document.getElementById("meeting-notes-row");
+const meetingNotes = document.getElementById("meeting-notes");
+const meetingNoteAdd = document.getElementById("meeting-note-add");
 const meetingExport = document.getElementById("meeting-export");
 const meetingSearch = document.getElementById("meeting-search");
 const meetingSummary = document.getElementById("meeting-summary");
@@ -2126,7 +2130,7 @@ function renderMeetings(meetings) {
       meeting.segments.length +
       " lines";
     const detail = document.createElement("dd");
-    for (const speaker of meeting.speakers) {
+    for (const speaker of meeting.speakers.filter((name) => name !== "Note")) {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "swap";
@@ -2141,6 +2145,12 @@ function renderMeetings(meetings) {
     remove.textContent = "Delete";
     remove.addEventListener("click", () => deleteMeeting(meeting.id));
     detail.append(remove);
+    for (const note of (meeting.segments || []).filter((segment) => segment.speaker === "Note")) {
+      const line = document.createElement("p");
+      line.className = "meeting-note";
+      line.textContent = "Note · " + meetingClock(note.at_ms) + " · " + note.text;
+      detail.append(line);
+    }
     meetingList.append(term, detail);
   }
   meetingNote.textContent =
@@ -2376,6 +2386,9 @@ const MEETING_SECONDS = 5;
 let meetingRecording = false;
 let meetingId = "";
 let meetingStarted = 0;
+let meetingPaused = false;
+let meetingPausedAt = 0;
+let meetingPausedTotal = 0;
 let meetingTimer = null;
 let meetingLines = 0;
 let meetingFailures = 0;
@@ -2387,7 +2400,22 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function meetingElapsed() {
+  const reached = meetingPaused ? meetingPausedAt : performance.now();
+  return Math.max(0, Math.round(reached - meetingStarted - meetingPausedTotal));
+}
+
 function meetingStatus(last) {
+  if (meetingRecording && meetingPaused) {
+    const kept = meetingLines === 1 ? "1 line kept" : meetingLines + " lines kept";
+    meetingLiveNote.textContent =
+      "Paused at " +
+      meetingClock(meetingElapsed()) +
+      ", " +
+      kept +
+      ". Nothing is written down until you resume.";
+    return;
+  }
   if (!meetingRecording) {
     meetingLiveNote.textContent =
       "Records the microphone into a meeting transcript, a few seconds behind. Sound from another application is not captured yet.";
@@ -2420,7 +2448,7 @@ async function meetingSegment(wav) {
       id: meetingId,
       speaker: "Me",
       text,
-      at_ms: Math.max(0, Math.round(performance.now() - meetingStarted)),
+      at_ms: meetingElapsed(),
     }),
   });
   if (!saved.ok) {
@@ -2433,6 +2461,9 @@ async function meetingSegment(wav) {
 async function meetingStep() {
   meetingTimer = null;
   if (!meetingRecording) {
+    return;
+  }
+  if (meetingPaused) {
     return;
   }
   const wav = takeWindow(MEETING_SECONDS);
@@ -2498,6 +2529,14 @@ async function startMeeting() {
     return;
   }
   meetingRecording = true;
+  meetingPaused = false;
+  meetingPausedAt = 0;
+  meetingPausedTotal = 0;
+  meetingPause.textContent = "Pause";
+  meetingPause.setAttribute("aria-pressed", "false");
+  meetingPause.disabled = false;
+  meetingNotesRow.hidden = false;
+  meetingNotes.value = "";
   meetingStarted = performance.now();
   meetingLines = 0;
   meetingFailures = 0;
@@ -2509,6 +2548,63 @@ async function startMeeting() {
   meetingTimer = setTimeout(meetingStep, 200);
 }
 
+function pauseMeeting() {
+  if (!meetingRecording || meetingPaused) {
+    return;
+  }
+  clearTimeout(meetingTimer);
+  meetingTimer = null;
+  meetingPaused = true;
+  meetingPausedAt = performance.now();
+  chunks = [];
+  meetingPause.textContent = "Resume";
+  meetingPause.setAttribute("aria-pressed", "true");
+  meetingStatus("");
+}
+
+function resumeMeeting() {
+  if (!meetingRecording || !meetingPaused) {
+    return;
+  }
+  meetingPausedTotal += performance.now() - meetingPausedAt;
+  meetingPaused = false;
+  meetingPausedAt = 0;
+  chunks = [];
+  meetingPause.textContent = "Pause";
+  meetingPause.setAttribute("aria-pressed", "false");
+  meetingStatus("");
+  clearTimeout(meetingTimer);
+  meetingTimer = setTimeout(meetingStep, 200);
+}
+
+async function addMeetingNote() {
+  const text = meetingNotes.value.trim();
+  if (!meetingRecording) {
+    return;
+  }
+  if (!text) {
+    meetingLiveNote.textContent = "Write the note before adding it.";
+    return;
+  }
+  const at = meetingElapsed();
+  try {
+    const response = await fetch("/meeting/segment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ id: meetingId, speaker: "Note", text, at_ms: at }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The note could not be kept.");
+    }
+    meetingNotes.value = "";
+    await loadMeetings();
+    meetingLiveNote.textContent = "Note kept at " + meetingClock(at) + ".";
+  } catch (failure) {
+    meetingLiveNote.textContent = failure.message || "The note could not be kept.";
+  }
+}
+
 async function stopMeeting(message) {
   if (!meetingRecording) {
     if (message) {
@@ -2517,6 +2613,13 @@ async function stopMeeting(message) {
     return;
   }
   meetingRecording = false;
+  meetingPaused = false;
+  meetingPausedAt = 0;
+  meetingPause.textContent = "Pause";
+  meetingPause.setAttribute("aria-pressed", "false");
+  meetingPause.disabled = true;
+  meetingNotesRow.hidden = true;
+  meetingNotes.value = "";
   clearTimeout(meetingTimer);
   meetingTimer = null;
   meetingLive.setAttribute("aria-pressed", "false");
@@ -2532,6 +2635,7 @@ async function stopMeeting(message) {
     }
   }
   await loadMeetings();
+  meetingPausedTotal = 0;
   if (message) {
     showError(message);
   }
@@ -2658,6 +2762,22 @@ meetingLive.addEventListener("click", () => {
 });
 
 meetingImport.addEventListener("click", () => importMeeting());
+
+meetingPause.addEventListener("click", () => {
+  if (meetingPaused) {
+    resumeMeeting();
+  } else {
+    pauseMeeting();
+  }
+});
+
+meetingNoteAdd.addEventListener("click", () => addMeetingNote());
+meetingNotes.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    addMeetingNote();
+  }
+});
 
 const CATALOG_KINDS = {
   asr: "Speech recognition",

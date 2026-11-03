@@ -1511,6 +1511,11 @@ kbd {
   align-items: center;
 }
 
+.meeting-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
 .meeting-compose .field,
 .meeting-compose .field-wide {
   width: 100%;

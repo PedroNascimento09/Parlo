@@ -499,7 +499,15 @@
         <span class="live-dot" aria-hidden="true"></span>
         <span>Record a meeting</span>
       </button>
+      <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled>Pause</button>
       <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone into a meeting transcript, a few seconds behind. Sound from another application is not captured yet.</p>
+    </div>
+    <div class="settings-row" id="meeting-notes-row" hidden>
+      <label class="field field-wide" for="meeting-notes">
+        <span class="field-label">Note</span>
+        <input id="meeting-notes" class="field-input" type="text" maxlength="280" autocomplete="off" spellcheck="false" placeholder="Something worth keeping beside the transcript">
+      </label>
+      <button id="meeting-note-add" class="install" type="button">Add note</button>
     </div>
     <dl class="status" id="meeting-list"></dl>
   </section>
