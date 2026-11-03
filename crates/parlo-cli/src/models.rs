@@ -50,7 +50,7 @@ impl Default for Lifecycle {
 
 pub fn unit_of(id: &str) -> Option<&'static str> {
     match id {
-        "parakeet" => Some("recognition"),
+        "parakeet" | "whisper" => Some("recognition"),
         "voice-pt" | "voice-en" => Some("voice"),
         "mt-pt-en" | "mt-en-pt" => Some("translation"),
         _ => None,
@@ -113,6 +113,15 @@ pub fn status() -> Vec<Model> {
         installed: parakeet_installed,
         bytes: parakeet_bytes,
     }];
+    let whisper_bytes = whisper_cache().and_then(|cache| whisper_installed(&cache));
+    models.push(Model {
+        id: "whisper",
+        name: "Whisper base".to_string(),
+        kind: "recogniser",
+        feature: "Dictation",
+        installed: whisper_bytes.is_some(),
+        bytes: whisper_bytes.unwrap_or(0),
+    });
     for (id, file, label) in VOICES {
         let (installed, bytes) = voice_size(&root, file);
         models.push(Model {
@@ -139,14 +148,46 @@ pub fn status() -> Vec<Model> {
 }
 
 pub fn ready(models: &[Model]) -> bool {
-    models.iter().all(|model| model.installed)
+    models
+        .iter()
+        .filter(|model| model.id != "whisper")
+        .all(|model| model.installed)
 }
 
 pub fn dictation_ready(models: &[Model]) -> bool {
     models
         .iter()
-        .find(|model| model.id == "parakeet")
-        .is_some_and(|model| model.installed)
+        .any(|model| model.installed && matches!(model.id, "parakeet" | "whisper"))
+}
+
+pub fn whisper_cache() -> Option<PathBuf> {
+    if let Ok(cache) = env::var("HF_HUB_CACHE") {
+        return Some(PathBuf::from(cache));
+    }
+    if let Ok(home) = env::var("HF_HOME") {
+        return Some(PathBuf::from(home).join("hub"));
+    }
+    env::var("USERPROFILE")
+        .or_else(|_| env::var("HOME"))
+        .ok()
+        .map(|home| {
+            PathBuf::from(home)
+                .join(".cache")
+                .join("huggingface")
+                .join("hub")
+        })
+}
+
+pub fn whisper_installed(cache: &Path) -> Option<u64> {
+    let folder = cache.join("models--Systran--faster-whisper-base");
+    let snapshots = fs::read_dir(folder.join("snapshots")).ok()?;
+    for entry in snapshots.flatten() {
+        let model = entry.path().join("model.bin");
+        if let Ok(metadata) = fs::metadata(&model) {
+            return Some(metadata.len());
+        }
+    }
+    None
 }
 
 fn translation_folder(root: &Path, source: &str, target: &str) -> Option<PathBuf> {
@@ -587,6 +628,45 @@ mod tests {
                 policy_origin: "global".to_string(),
             })
             .collect()
+    }
+
+    #[test]
+    fn whisper_counts_as_dictation_but_not_as_a_complete_set() {
+        let models = vec![
+            Model {
+                id: "whisper",
+                name: "Whisper base".into(),
+                kind: "recogniser",
+                feature: "Dictation",
+                installed: true,
+                bytes: 145,
+            },
+            Model {
+                id: "parakeet",
+                name: "Parakeet".into(),
+                kind: "recogniser",
+                feature: "Dictation",
+                installed: false,
+                bytes: 0,
+            },
+        ];
+        assert!(dictation_ready(&models));
+        assert!(!ready(&models));
+    }
+
+    #[test]
+    fn whisper_is_installed_only_when_the_weights_are_there() {
+        let root = std::env::temp_dir().join(format!("parlo-whisper-{}", std::process::id()));
+        let cache = root.join("hub");
+        let folder = cache
+            .join("models--Systran--faster-whisper-base")
+            .join("snapshots")
+            .join("abc");
+        fs::create_dir_all(&folder).unwrap();
+        assert_eq!(whisper_installed(&cache), None);
+        fs::write(folder.join("model.bin"), vec![0u8; 2048]).unwrap();
+        assert_eq!(whisper_installed(&cache), Some(2048));
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

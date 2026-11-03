@@ -1692,7 +1692,11 @@ fn handle(
                 .map(|()| Flow::Serve);
         }
         let id = &path["/models/download/".len()..];
-        if !["parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"].contains(&id) {
+        if ![
+            "parakeet", "whisper", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt",
+        ]
+        .contains(&id)
+        {
             return respond_json(stream, "404 Not Found", "{\"error\":\"unknown model\"}")
                 .map(|()| Flow::Serve);
         }
@@ -1737,7 +1741,9 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        let known = ["parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"];
+        let known = [
+            "parakeet", "whisper", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt",
+        ];
         if let Some(unknown) = units.iter().find(|unit| !known.contains(&unit.as_str())) {
             return respond_json(
                 stream,

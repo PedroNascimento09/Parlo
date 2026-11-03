@@ -529,6 +529,7 @@ from the original source and each one keeps its own licence.
 
 | Artifact | Kind | Licence | Status | Source |
 |---|---|---|---|---|
+| whisper-base | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-base |
 | piper-voice-pt-pt-tugao | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
 | piper-voice-pt-br-faber | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
 | piper-voice-en-us-lessac | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium |

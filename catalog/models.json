@@ -2,6 +2,25 @@
   "schema": 1,
   "artifacts": [
     {
+      "id": "whisper-base",
+      "kind": "asr",
+      "version": "base",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/Systran/faster-whisper-base",
+      "attribution": "Whisper base, MIT, converted by Systran for faster-whisper",
+      "name": "Whisper base",
+      "purpose": "Speech to text",
+      "languages": [
+        "99 languages"
+      ],
+      "size_mb": 145,
+      "memory_mb": 148,
+      "speed": "0.24 realtime here",
+      "quality": "0.377 word error on recorded Portuguese speech",
+      "unit": "whisper"
+    },
+    {
       "id": "piper-voice-pt-pt-tugao",
       "kind": "voice",
       "version": "medium",

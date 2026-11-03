@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "parlo",
-      "version": "0.1.7"
+      "version": "0.2.2"
     }
   },
   "components": [
@@ -11067,6 +11067,32 @@
         {
           "type": "website",
           "url": "https://github.com/dtolnay/zmij"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "whisper-base",
+      "version": "base",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/Systran/faster-whisper-base"
         }
       ]
     },

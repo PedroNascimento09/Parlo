@@ -850,8 +850,16 @@ async function renderWelcomePlan(state) {
     }
   }
   const memory = (state.machine && state.machine.memory_gb) || 0;
+  const parakeet = catalogEntry("parakeet");
+  const headroom =
+    memory * 1024 - (parakeet && parakeet.memory_mb ? parakeet.memory_mb : 0);
+  const features = WELCOME_FEATURES.map((feature) =>
+    feature.id === "dictation"
+      ? { ...feature, units: [headroom < 700 ? "whisper" : "parakeet"] }
+      : feature,
+  );
   plan.replaceChildren();
-  for (const feature of WELCOME_FEATURES) {
+  for (const feature of features) {
     const missing = feature.units.filter(
       (unit) => !state.models.some((model) => model.id === unit && model.installed),
     );
