@@ -2428,3 +2428,30 @@ body.first-run #status-list {
   padding-top: 0;
   border-top: 0;
 }
+
+#library-tabs {
+  margin: 20px 0 18px;
+}
+
+#settings-tabs .tab,
+#library-tabs .tab,
+.install,
+.swap,
+.live,
+.history-actions .swap,
+.history-entry dd .history-actions .swap {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#library-tabs .tab,
+#settings-tabs .tab {
+  min-height: 40px;
+}
+
+#records .swap,
+.history-actions .swap {
+  padding-inline: 14px;
+}
