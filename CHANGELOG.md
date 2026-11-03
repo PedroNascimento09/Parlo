@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The model library shows what exists before anything is installed. Every component the build knows carries its name, what it does, the languages it covers, the size measured on this machine or a plain **size not measured**, its licence and its measured quality where one exists, and the two translation pairs can now be downloaded from that list. A row fetches one model and nothing else, and a component this build cannot install says so instead of offering a button that would fail.
+
 - Streaming keeps its windowed pipeline, and the decision is written down. On recorded speech Parakeet holds a real time factor of 1.023 with flat drift across the run, so the current design meets the latency target on the reference machine. Both native streaming candidates are blocked: `nvidia/nemotron-3.5-asr-streaming-0.6b` carries OpenMDW-1.1, which the licence gate does not approve, and its RNNT weights have no decode path in this repository's transformers build, while `Qwen/Qwen3-ASR-0.6B` streams only through vLLM and its Portuguese tag does not separate Portugal from Brazil. `docs/ENGINES.md` records what would change the decision.
 
 - The last two documents the plan makes mandatory exist. `docs/MODEL_POLICY.md` states which licences may enter the product, what a quality claim needs before it is published, and how a model is added; `docs/PLUGIN_DEVELOPMENT.md` records the local API as the extension point and the contract a plugin will have to meet, and says plainly that no plugin runtime ships today.
