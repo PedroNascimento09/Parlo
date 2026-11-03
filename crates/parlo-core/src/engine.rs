@@ -95,6 +95,7 @@ pub trait Engine: Send {
         &mut self,
         _pcm16: &[u8],
         _target: Option<&str>,
+        _clean: Option<&str>,
     ) -> Result<(String, String), EngineError> {
         Err(EngineError::Rejected(
             "this engine cannot write in another language".to_string(),

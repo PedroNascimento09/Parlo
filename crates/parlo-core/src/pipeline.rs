@@ -136,8 +136,9 @@ impl Pipeline {
         &mut self,
         pcm16: &[u8],
         target: Option<&str>,
+        clean: Option<&str>,
     ) -> Result<(String, String), EngineError> {
-        self.engine.write(pcm16, target)
+        self.engine.write(pcm16, target, clean)
     }
 
     pub fn stream(

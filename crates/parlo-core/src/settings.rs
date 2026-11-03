@@ -80,8 +80,8 @@ impl Default for Config {
         Self {
             engine: "cascade".to_string(),
             stt: "parakeet".to_string(),
-            from: "pt".to_string(),
-            to: "en".to_string(),
+            from: system_language(),
+            to: partner_language(&system_language()),
             write: String::new(),
             shortcut: DEFAULT_SHORTCUT.to_string(),
             hands_free: DEFAULT_HANDS_FREE.to_string(),
@@ -96,6 +96,56 @@ impl Default for Config {
             features: Features::default(),
         }
     }
+}
+
+pub fn partner_language(language: &str) -> String {
+    if language.eq_ignore_ascii_case("en") {
+        "pt".to_string()
+    } else {
+        "en".to_string()
+    }
+}
+
+pub fn system_language() -> String {
+    #[cfg(windows)]
+    {
+        extern "system" {
+            fn GetUserDefaultUILanguage() -> u16;
+        }
+        let language = unsafe { GetUserDefaultUILanguage() } as u32;
+        if let Some(code) = language_code(language & 0x3ff) {
+            return code.to_string();
+        }
+    }
+    for name in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+        if let Ok(value) = env::var(name) {
+            let code = value
+                .split(['_', '.', '-', '@'])
+                .next()
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            if code.len() == 2 && code.chars().all(|letter| letter.is_ascii_alphabetic()) {
+                return code;
+            }
+        }
+    }
+    "en".to_string()
+}
+
+fn language_code(primary: u32) -> Option<&'static str> {
+    Some(match primary {
+        0x09 => "en",
+        0x07 => "de",
+        0x0a => "es",
+        0x0c => "fr",
+        0x10 => "it",
+        0x13 => "nl",
+        0x15 => "pl",
+        0x16 => "pt",
+        0x19 => "ru",
+        0x1d => "sv",
+        _ => return None,
+    })
 }
 
 pub fn data_root() -> PathBuf {
@@ -191,6 +241,15 @@ mod tests {
         let config: Config = serde_json::from_str("{\"port\": 9000}").unwrap();
         assert_eq!(config.port, 9000);
         assert_eq!(config.shortcut, DEFAULT_SHORTCUT);
+    }
+
+    #[test]
+    fn a_fresh_install_speaks_the_language_of_this_machine() {
+        let config = Config::default();
+        assert_eq!(config.from, system_language());
+        assert_eq!(config.to, partner_language(&system_language()));
+        assert_ne!(config.from, config.to);
+        assert_eq!(config.from.len(), 2);
     }
 
     #[test]

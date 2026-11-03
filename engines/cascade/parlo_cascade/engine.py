@@ -378,11 +378,22 @@ class CascadeEngine:
             return ""
         return self._transcribe(samples)
 
-    def write(self, pcm16: bytes, target: str | None = None) -> tuple[str, str]:
+    def write(
+        self, pcm16: bytes, target: str | None = None, clean_mode: str | None = None
+    ) -> tuple[str, str]:
         self.last_warning = ""
         text = self.transcribe(pcm16)
         if not text:
             return "", ""
+        mode = clean_mode if clean_mode in CLEAN_MODES else self.clean_mode
+        if mode in CLEAN_MODES:
+            self.intelligence = Intelligence(settings_from_config(mode), self.source)
+            edit = self.intelligence.edit(text)
+            self.last_original = edit.original
+            self.last_engine = edit.engine
+            text = edit.text
+            if not text:
+                return "", ""
         language = (target or self.target).lower()
         if language == self.source:
             return text, text

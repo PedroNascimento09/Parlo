@@ -49,8 +49,11 @@ mod tests {
     fn defaults_match_the_documented_pair() {
         let config = Config::default();
         assert_eq!(config.engine, "cascade");
-        assert_eq!(config.from, "pt");
-        assert_eq!(config.to, "en");
+        assert_eq!(config.from, parlo_core::settings::system_language());
+        assert_eq!(
+            config.to,
+            parlo_core::settings::partner_language(&config.from)
+        );
         assert_eq!(config.port, 8787);
     }
 

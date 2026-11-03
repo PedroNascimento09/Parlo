@@ -11,17 +11,17 @@
     --shell: rgba(13, 18, 14, 0.94);
     --ink: #f0f3ea;
     --muted: #8d968a;
-    --line: rgba(240, 243, 234, 0.12);
+    --line: rgba(240, 243, 234, 0.14);
     --accent: #c9f26b;
     --accent-ink: #0a0e0b;
     color-scheme: light dark;
   }
   @media (prefers-color-scheme: light) {
     :root {
-      --shell: rgba(255, 255, 255, 0.95);
+      --shell: rgba(255, 255, 255, 0.96);
       --ink: #0e120f;
       --muted: #5e665c;
-      --line: rgba(14, 18, 15, 0.12);
+      --line: rgba(14, 18, 15, 0.14);
       --accent: #3d5a12;
       --accent-ink: #ffffff;
     }
@@ -31,6 +31,7 @@
   body {
     display: grid;
     align-items: center;
+    justify-items: center;
     padding: 8px;
     font: 13px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
@@ -38,122 +39,136 @@
     user-select: none;
   }
   .island {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    gap: 10px;
+    width: max-content;
+    max-width: 100%;
+    padding: 9px 12px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 999px;
     background: var(--shell);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(18px) saturate(140%);
-    animation: settle 160ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+    animation: settle 140ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
   }
+  body.ready .island { border-radius: 16px; padding: 10px 12px 10px 14px; }
   .wave {
     display: flex;
     align-items: center;
     gap: 2px;
-    height: 16px;
-    width: 18px;
+    height: 18px;
+    width: 24px;
+    transition: width 140ms ease;
   }
   .wave i {
     display: block;
-    width: 2px;
-    height: 4px;
+    width: 2.5px;
+    height: 3px;
     border-radius: 2px;
     background: var(--muted);
-    transition: height 120ms ease, background 160ms ease;
+    transition: height 80ms linear, background 160ms ease;
   }
-  .wave i:nth-child(2) { height: 8px; }
-  .wave i:nth-child(3) { height: 6px; }
-  body.listening .wave i {
-    background: var(--accent);
-    animation: speak 900ms ease-in-out infinite;
+  body.listening .wave { width: 46px; gap: 3px; }
+  body.listening .wave i { background: var(--accent); }
+  .readout {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+    max-width: 320px;
   }
-  body.listening .wave i:nth-child(2) { animation-delay: 90ms; }
-  body.listening .wave i:nth-child(3) { animation-delay: 180ms; }
-  body.listening .wave i:nth-child(4) { animation-delay: 270ms; }
-  .readout { min-width: 0; display: grid; gap: 1px; }
+  body.ready .readout,
+  body.listening .readout,
+  body.listening .actions { display: none; }
   .state {
     font-size: 10.5px;
     letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--muted);
   }
-  body.listening .state { color: var(--accent); }
   .line {
-    font-size: 13.5px;
-    line-height: 1.4;
+    font-size: 13px;
+    line-height: 1.35;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   .line.pending { color: var(--muted); }
-  .clock {
-    font-family: "Cascadia Mono", ui-monospace, monospace;
-    font-size: 11.5px;
-    color: var(--muted);
-    font-variant-numeric: tabular-nums;
+  .actions {
+    display: none;
+    align-items: center;
+    gap: 10px;
   }
-  .actions { display: none; align-items: center; gap: 8px; }
   body.ready .actions { display: flex; }
-  body.ready .clock { display: none; }
-  .actions button {
-    font: inherit;
+  .switch-label {
     font-size: 12px;
-    padding: 5px 10px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: transparent;
     color: var(--muted);
-    cursor: pointer;
   }
-  .actions button:hover { color: var(--ink); border-color: var(--muted); }
-  .actions button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .actions .switch[aria-pressed="true"] {
-    color: var(--accent-ink);
+  .switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--muted) 30%, transparent);
+    cursor: pointer;
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .switch[aria-checked="true"] {
     background: var(--accent);
     border-color: var(--accent);
   }
-  .actions .record { color: var(--ink); border-color: var(--ink); }
-  .hint {
-    margin: 2px 0 0;
-    font-size: 11.5px;
-    line-height: 1.35;
-    color: var(--muted);
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transition: opacity 160ms ease, max-height 160ms ease;
+  .switch .knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink);
+    transition: transform 160ms cubic-bezier(0.2, 0.9, 0.3, 1), background 160ms ease;
   }
-  body.showing-hint .hint { opacity: 1; max-height: 3.4rem; }
-  body.listening .hint { opacity: 0; max-height: 0; }
+  .switch[aria-checked="true"] .knob {
+    transform: translateX(18px);
+    background: var(--accent-ink);
+  }
+  .switch:focus-visible,
+  .record:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .record {
+    font: inherit;
+    font-size: 12.5px;
+    padding: 6px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+  }
   @keyframes settle {
-    from { opacity: 0; transform: translateY(6px) scale(0.99); }
+    from { opacity: 0; transform: translateY(6px) scale(0.98); }
     to { opacity: 1; transform: none; }
   }
-  @keyframes speak {
-    0%, 100% { height: 4px; }
-    50% { height: 16px; }
-  }
   @media (prefers-reduced-motion: reduce) {
-    .island { animation: none; }
-    body.listening .wave i { animation: none; height: 10px; }
+    .island, .switch, .switch .knob, .wave, .wave i { animation: none; transition: none; }
   }
 </style>
 </head>
 <body>
   <div class="island">
-    <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <div class="readout">
       <span class="state" id="state">Ready</span>
-      <span class="line pending" id="line">Press the shortcut and speak.</span>
-      <p class="hint" id="hint">Text goes to the clipboard when you stop.</p>
+      <span class="line pending" id="line">Hold the shortcut to talk.</span>
     </div>
-    <span class="clock" id="clock">0.0 s</span>
-    <div class="actions" id="actions">
-      <button type="button" class="switch" id="translate" aria-pressed="true">Translate</button>
+    <div class="actions">
+      <span class="switch-label" id="switch-label">Tidy</span>
+      <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="switch-label">
+        <span class="knob"></span>
+      </button>
       <button type="button" class="record" id="record">Record</button>
     </div>
   </div>
@@ -161,11 +176,13 @@
 const token = new URLSearchParams(location.search).get("t") || "";
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 60;
+const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
 const stateEl = document.getElementById("state");
 const lineEl = document.getElementById("line");
-const clockEl = document.getElementById("clock");
-const hintEl = document.getElementById("hint");
+const tidyEl = document.getElementById("tidy");
+const recordEl = document.getElementById("record");
+const bars = [...document.querySelectorAll(".wave i")];
 const version = document.querySelector('meta[name="parlo-version"]').content;
 
 let stream = null;
@@ -180,12 +197,10 @@ let busy = false;
 let lastText = "";
 let target = false;
 let writeTarget = "";
-let shortcut = "Ctrl+Alt+D";
-let sourceLanguage = "";
-let translate = localStorage.getItem("parlo-translate") !== "off";
 let controller = null;
 let sentChunks = 0;
 let partials = null;
+let tidy = localStorage.getItem("parlo-tidy") !== "off";
 
 function setState(text, line, pending) {
   stateEl.textContent = text;
@@ -193,11 +208,6 @@ function setState(text, line, pending) {
     lineEl.textContent = line;
     lineEl.classList.toggle("pending", Boolean(pending));
   }
-}
-
-function setHint(text) {
-  hintEl.textContent = text;
-  document.body.classList.add("showing-hint");
 }
 
 function report(state) {
@@ -269,11 +279,22 @@ function encodeWav(samples, rate) {
   return new Blob([buffer], { type: "audio/wav" });
 }
 
-async function begin() {
-  if (busy || document.hidden) {
-    return;
+function paintLevel(block) {
+  let peak = 0;
+  for (let index = 0; index < block.length; index += 1) {
+    const value = Math.abs(block[index]);
+    if (value > peak) {
+      peak = value;
+    }
   }
-  if (stream) {
+  bars.forEach((bar, index) => {
+    const height = Math.min(18, 3 + peak * 90 * WEIGHTS[index]);
+    bar.style.height = height.toFixed(1) + "px";
+  });
+}
+
+async function begin() {
+  if (busy || document.hidden || stream) {
     return;
   }
   const app = await beginTarget();
@@ -283,7 +304,9 @@ async function begin() {
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
     });
   } catch (failure) {
+    document.body.classList.remove("ready");
     setState("Microphone blocked", describeMicrophone(failure), true);
+    report("error");
     return;
   }
   context = new (window.AudioContext || window.webkitAudioContext)();
@@ -297,6 +320,7 @@ async function begin() {
   partials = setInterval(sendPartial, 800);
   processor.onaudioprocess = (event) => {
     const block = event.inputBuffer.getChannelData(0);
+    paintLevel(block);
     const copy = new Float32Array(block.length);
     copy.set(block);
     chunks.push(copy);
@@ -308,20 +332,9 @@ async function begin() {
   processor.connect(sink);
   sink.connect(context.destination);
   started = performance.now();
+  document.body.classList.remove("ready");
   document.body.classList.add("listening");
-  document.body.classList.remove("showing-hint");
-  setState(
-    "Listening",
-    app
-      ? "Into " + app + ". Release to write it down, Escape to cancel."
-      : "No text field in front, so the words go to the clipboard.",
-    true,
-  );
   report("listening");
-  clearInterval(ticker);
-  ticker = setInterval(() => {
-    clockEl.textContent = ((performance.now() - started) / 1000).toFixed(1) + " s";
-  }, 100);
 }
 
 function endStream() {
@@ -362,8 +375,7 @@ async function sendPartial() {
     const pieces = await response.json();
     const last = pieces.filter((piece) => piece.text).pop();
     if (last && !busy) {
-      lineEl.textContent = last.text;
-      lineEl.classList.toggle("pending", last.state !== "final");
+      lastText = last.text;
     }
   } catch (failure) {
     return;
@@ -375,6 +387,9 @@ function release() {
   clearInterval(ticker);
   ticker = null;
   document.body.classList.remove("listening");
+  bars.forEach((bar) => {
+    bar.style.height = "3px";
+  });
   if (processor) {
     processor.onaudioprocess = null;
     processor.disconnect();
@@ -431,7 +446,7 @@ async function beginTarget() {
   }
 }
 
-async function loadWriteTarget() {
+async function loadSettings() {
   try {
     const response = await fetch("/settings", { cache: "no-store" });
     if (!response.ok) {
@@ -439,8 +454,6 @@ async function loadWriteTarget() {
     }
     const values = await response.json();
     writeTarget = (values.write || "").toLowerCase();
-    sourceLanguage = (values.from || "").toLowerCase();
-    shortcut = values.shortcut || shortcut;
   } catch (failure) {
     writeTarget = "";
   }
@@ -456,7 +469,7 @@ async function loadVersion() {
     if (!update.available || !update.latest) {
       return;
     }
-    setHint("v" + update.latest + " is available, you are on v" + version + ". Open the window to update.");
+    setState("Ready", "v" + update.latest + " is available, you are on v" + version + ".", true);
   } catch (failure) {
     return;
   }
@@ -489,14 +502,11 @@ function cancel() {
     release();
   }
   busy = false;
-  clearInterval(ticker);
-  ticker = null;
-  clockEl.textContent = "0.0 s";
-  document.body.classList.remove("listening", "showing-hint");
+  document.body.classList.remove("listening", "ready");
   if (hadSomething) {
-    setState("Ready", "Cancelled. Nothing was inserted.", true);
+    setState("Cancelled", "Nothing was inserted.", true);
   } else {
-    setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
+    setState("Ready", lastText || "Hold the shortcut to talk.", !lastText);
   }
   report("cancelled");
 }
@@ -508,9 +518,8 @@ async function stop() {
   busy = true;
   let failed = false;
   const captured = release();
-  clockEl.textContent = "0.0 s";
   if (!captured) {
-    setState("Ready", lastText || "Press the shortcut and speak.", !lastText);
+    setState("Ready", lastText || "Hold the shortcut to talk.", !lastText);
     busy = false;
     report("idle");
     return;
@@ -520,10 +529,13 @@ async function stop() {
   controller = new AbortController();
   const { signal } = controller;
   try {
-    const headers = { "Content-Type": "audio/wav", Authorization: "Bearer " + token };
-    const target = translate ? writeTarget : sourceLanguage;
-    if (target) {
-      headers["x-parlo-write"] = target;
+    const headers = {
+      "Content-Type": "audio/wav",
+      Authorization: "Bearer " + token,
+      "x-parlo-clean": tidy ? "on" : "off",
+    };
+    if (writeTarget) {
+      headers["x-parlo-write"] = writeTarget;
     }
     const response = await fetch("/dictate", {
       method: "POST",
@@ -546,29 +558,21 @@ async function stop() {
     }
     lastText = text;
     const inserted = await writeIntoField(text, signal);
-    const translated = Boolean(spoken) && spoken !== text;
     setState(inserted ? "Inserted" : "Copied", text, false);
-    setHint(
-      (inserted
-        ? "Written into the field you were in."
-        : "Copied to the clipboard. Paste it where you need it.") +
-        (translated ? " Heard: " + spoken : ""),
-    );
     if (!inserted) {
       try {
         await navigator.clipboard.writeText(text);
       } catch (failure) {
-        setHint("The clipboard refused the text. Select it here and copy by hand.");
+        setState("Copied", "The clipboard refused the text, select it here and copy by hand.", true);
       }
     }
   } catch (failure) {
     if (signal.aborted) {
       setState("Ready", "Cancelled. Nothing was inserted.", true);
-      failed = true;
     } else {
       setState("Failed", failure.message || "The dictation failed.", true);
-      failed = true;
     }
+    failed = true;
   }
   controller = null;
   busy = false;
@@ -576,18 +580,12 @@ async function stop() {
 }
 
 function handsFree() {
-  setState("Listening", "Hands free. Press the shortcut again to stop, Escape to cancel.", true);
-}
-
-function paintTranslate() {
-  translateEl.setAttribute("aria-pressed", String(translate));
-  translateEl.textContent = translate ? "Translate on" : "Translate off";
+  begin();
 }
 
 function arm() {
-  document.body.classList.remove("ready", "listening", "showing-hint");
+  document.body.classList.remove("ready", "listening");
   setState("Ready", "Hold the shortcut to talk.", true);
-  clockEl.textContent = "0.0 s";
   report("armed");
 }
 
@@ -596,26 +594,25 @@ function ready() {
     return;
   }
   document.body.classList.add("ready");
-  document.body.classList.remove("listening", "showing-hint");
-  setState("Ready", lastText || "Choose, then record.", !lastText);
+  document.body.classList.remove("listening");
   report("armed");
 }
 
-const translateEl = document.getElementById("translate");
-const recordEl = document.getElementById("record");
+function paintTidy() {
+  tidyEl.setAttribute("aria-checked", String(tidy));
+}
 
-translateEl.addEventListener("click", () => {
-  translate = !translate;
-  localStorage.setItem("parlo-translate", translate ? "on" : "off");
-  paintTranslate();
+tidyEl.addEventListener("click", () => {
+  tidy = !tidy;
+  localStorage.setItem("parlo-tidy", tidy ? "on" : "off");
+  paintTidy();
 });
 
 recordEl.addEventListener("click", () => {
-  document.body.classList.remove("ready");
   begin();
 });
 
-paintTranslate();
+paintTidy();
 
 window.parloArm = arm;
 window.parloReady = ready;
@@ -638,7 +635,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 loadVersion();
-loadWriteTarget();
+loadSettings();
 if (!document.hidden) {
   ready();
 }

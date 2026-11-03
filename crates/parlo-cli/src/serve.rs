@@ -246,7 +246,12 @@ impl Session {
         insert::type_text(target, text)
     }
 
-    fn write(&self, pcm16: &[u8], target: &str) -> Result<(String, String), String> {
+    fn write(
+        &self,
+        pcm16: &[u8],
+        target: &str,
+        clean: Option<&str>,
+    ) -> Result<(String, String), String> {
         let _working = self.working();
         let target = if target.is_empty() {
             None
@@ -254,7 +259,7 @@ impl Session {
             Some(target)
         };
         self.pipeline()
-            .write(pcm16, target)
+            .write(pcm16, target, clean)
             .map_err(|error| error.to_string())
     }
 
@@ -2484,10 +2489,27 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        let clean_header = header(&headers, "x-parlo-clean")
+            .unwrap_or_default()
+            .trim()
+            .to_ascii_lowercase();
+        if !clean_header.is_empty() && !["on", "off"].contains(&clean_header.as_str()) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"x-parlo-clean needs on or off\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let clean = if clean_header == "off" {
+            Some("original".to_string())
+        } else {
+            Some(crate::config::load().intelligence.clean)
+        };
         let target = dictation_target(&write, &session.chosen().from);
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
-        let (text, translation) = match session.write(&pcm16, &target) {
+        let (text, translation) = match session.write(&pcm16, &target, clean.as_deref()) {
             Ok(pair) => pair,
             Err(error) => {
                 return respond_json(

@@ -138,8 +138,13 @@ def write(request: dict, engine) -> dict:
     if error is not None:
         return error
     target = request.get("target")
+    clean = request.get("clean")
     try:
-        text, translation = engine.write(pcm16, target if isinstance(target, str) else None)
+        text, translation = engine.write(
+            pcm16,
+            target if isinstance(target, str) else None,
+            clean if isinstance(clean, str) else None,
+        )
     except EngineUnavailable as failure:
         return {"op": "error", "seq": seq, "error": str(failure)}
     return {

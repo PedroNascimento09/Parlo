@@ -18,6 +18,8 @@ struct Request<'a> {
     pcm16: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     target: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    clean: Option<&'a str>,
 }
 
 #[derive(Serialize)]
@@ -194,6 +196,7 @@ impl SidecarEngine {
             seq: None,
             pcm16: None,
             target: None,
+            clean: None,
         })?;
         if hello.op == "error" {
             return Err(EngineError::Unavailable(
@@ -227,6 +230,7 @@ impl SidecarEngine {
             seq: Some(self.seq),
             pcm16: Some(BASE64.encode(pcm16)),
             target: None,
+            clean: None,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(
@@ -242,6 +246,7 @@ impl SidecarEngine {
         &mut self,
         pcm16: &[u8],
         target: Option<&str>,
+        clean: Option<&str>,
     ) -> Result<(String, String), EngineError> {
         self.seq += 1;
         let response = self.request(&Request {
@@ -249,6 +254,7 @@ impl SidecarEngine {
             seq: Some(self.seq),
             pcm16: Some(BASE64.encode(pcm16)),
             target,
+            clean,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(
@@ -272,6 +278,7 @@ impl SidecarEngine {
             seq: None,
             pcm16: None,
             target: None,
+            clean: None,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(response.error.unwrap_or_else(
@@ -291,6 +298,7 @@ impl SidecarEngine {
             seq: None,
             pcm16: None,
             target: None,
+            clean: None,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(response.error.unwrap_or_else(
@@ -336,6 +344,7 @@ impl SidecarEngine {
             seq: Some(self.seq),
             pcm16,
             target: None,
+            clean: None,
         })?;
         if response.op == "error" {
             return Err(EngineError::Unavailable(
@@ -394,8 +403,9 @@ impl Engine for SidecarEngine {
         &mut self,
         pcm16: &[u8],
         target: Option<&str>,
+        clean: Option<&str>,
     ) -> Result<(String, String), EngineError> {
-        SidecarEngine::write(self, pcm16, target)
+        SidecarEngine::write(self, pcm16, target, clean)
     }
 
     fn stream(
@@ -432,6 +442,7 @@ impl Engine for SidecarEngine {
             seq: Some(self.seq),
             pcm16: Some(encode_pcm16(input.samples())),
             target: None,
+            clean: None,
         })?;
 
         if response.op == "error" {
@@ -536,6 +547,7 @@ mod tests {
             seq: None,
             pcm16: None,
             target: None,
+            clean: None,
         })
         .unwrap();
         assert_eq!(line, "{\"op\":\"hello\"}");
@@ -548,6 +560,7 @@ mod tests {
             seq: Some(2),
             pcm16: Some("AAA=".to_string()),
             target: Some("en"),
+            clean: None,
         })
         .unwrap();
         assert!(line.contains("\"target\":\"en\""));
