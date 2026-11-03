@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The last two documents the plan makes mandatory exist. `docs/MODEL_POLICY.md` states which licences may enter the product, what a quality claim needs before it is published, and how a model is added; `docs/PLUGIN_DEVELOPMENT.md` records the local API as the extension point and the contract a plugin will have to meet, and says plainly that no plugin runtime ships today.
+
 - Streaming is measured on recorded speech, not only on a synthetic voice. `stream_bench.py --audio-dir` reads a folder of 16 kHz recordings with a manifest, and `scripts/falar_clips.py` builds that folder from a FalAR shard, keeping the segments the corpus scores at or below 0.05 character error rate. On ten segments of Portuguese parliamentary speech (66.6 s, four speakers), Parakeet reaches 0.243 final word error rate with 84.4% of the sentence confirmed when the segment closes and a real time factor of **1.023**; Whisper base reaches 0.377 and **3.274**. The harness had been ignoring `--stt`, `--model` and `--threads`, so both recognisers were measured as the default one; it now applies all three before it builds the engine.
 
 - Meetings answer questions from the transcript alone. **Ask this meeting** and **Ask every meeting** post to `/meeting/ask` and `/memory/ask`, and the answer is assembled only from stored lines: every answer carries the meeting, the speaker and the time behind each line it used, and a question the transcript does not answer gets one sentence saying so instead of a guess. Deterministic rules, with no model and no network, and a decision is only called a decision when the line closes it.

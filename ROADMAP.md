@@ -46,7 +46,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v1.1 Meeting Lite | Import a recording, get a transcript with speakers, export it | G4 | Not started |
 | v1.2 Meeting Live | Transcribe meetings live, summary, decisions, tasks | G4 | Not started |
 | v1.3 Meeting Chat | Ask the meetings, with verifiable citations | G4 | Not started |
-| v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Not started |
+| v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Not started; the contract a plugin will meet is written in [docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) |
 | v1.5 Dub e Voz própria | Dub files, clone your own voice with consent | G4 | Dubbing shipped ahead; voice cloning not started |
 | v1.6 Equipa e áudio pro | Workspaces, retention, advanced denoise and echo cancellation, public benchmark | G4 | Not started |
 
