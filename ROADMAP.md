@@ -37,7 +37,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v0.2 Foundation | Offline PT↔EN cascade in a prototype | — | Met |
 | v0.3 Ouvir | Nothing new; the milestone decides with data | G0 | **Current:** recorded speech measured, Parakeet keeps real time without accumulating delay, and the decision to keep reprocessing for now is recorded in [docs/ENGINES.md](docs/ENGINES.md) with the blockers of both native streaming candidates |
 | v0.4 Ditar | Dictate PT/EN in any application, floating bar, live partials | G2 | **Started:** one presence — a tray menu with the three modes and the five destinations — a floating island on a shortcut or a tray click, insertion into the window that had the focus, with the clipboard as fallback, dictation that writes in another language, and a shortcut the user changes in the settings, which validates it and says a restart is what registers it. Missing: macOS or Linux insertion; the external-user round is deferred until there is a first user, and until then G2 is the internal first-session check |
-| v0.5 Escrever noutra língua | Speak one language, write another in the active field | G1 + G2 | Planned, not complete; the MT stage exists, the dictation surfaces do not |
+| v0.5 Escrever noutra língua | Speak one language, write another in the active field | G1 + G2 | Started: the MT stage and the dictation surfaces exist; PT→DE has no build that runs, so the pair is not validated |
 | v0.6 Legendas | Live captions from the microphone and the system audio, translated, exported | G1 | Captions and translation shipped ahead, and a session now saves an SRT in the data folder; system audio not captured yet |
 | v0.7 Modelos | Choose, compare and switch models safely, recommended by hardware | — | Partial: download with integrity checks, a model panel that names each model's state and measured quality, feature switches, per-model removal, and the memory lifecycle (a delay per model, `Load`, `Unload now`, automatic management that can be turned off). The model library now lists every component this build knows, grouped into sections by what it does — speech to text, read aloud, translation and synthesis — with the languages it covers, its size where one was measured and its licence, and downloads one model at a time; a row this build cannot run says so instead of offering a button. Only what ships or is claimed is measured, so the catalogue can grow without a test per row. A second recogniser, Whisper base, is downloadable and offered when the larger model would not leave headroom; a model keeps the copy it replaced and can restore it, a move shows its size before copying and adopts a folder that already matches, and the first-start screen shows the measured memory and speed beside every feature. The intended behaviour, including first-start recommendation, feature switches and per-model removal, is written in [docs/MODEL_MANAGER.md](docs/MODEL_MANAGER.md) |
 | v0.8 Voz | Read text in a neutral voice, read translations aloud | — | Partial: a voice in the cascade, no picker, no blind MOS; not an immediate commitment |
@@ -51,6 +51,15 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v1.6 Equipa e áudio pro | Workspaces, retention, advanced denoise and echo cancellation, public benchmark | G4 | Not started |
 
 Windows first, up to v1.0. macOS and Linux arrive after it, first with dictation and captions and only later with Live; on Linux, X11 and Wayland are separate problems.
+
+## Decisions taken for this build
+
+These are choices made while the product has no users yet. They narrow the plan rather than replace it, and each one says what it costs.
+
+- **Code first, audio later.** Capture code lands before anyone has heard it, and a capture path that has not been listened to is written down as **implemented, not verified**. No release notes call a capture path tested because it compiles.
+- **No user gate while there are no users.** G2 is the author's own first session on a clean install, run with `parlo doctor`, and the external round begins with the first external user. A release never claims user validation it does not have.
+- **The catalogue is a choice, not a curriculum.** The library is grouped by what a model does, entries are not tested to exist, and only what ships or is claimed carries a measured number.
+- **A decision is recorded once.** When this section and an older document disagree, this section wins and the older document is corrected in the same commit.
 
 ## Gates
 
