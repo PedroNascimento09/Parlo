@@ -2485,6 +2485,28 @@ async function loadCatalog() {
   }
 }
 
+async function downloadCatalogModel(entry, button) {
+  button.disabled = true;
+  button.textContent = "Starting…";
+  try {
+    const response = await fetch("/models/download/" + encodeURIComponent(entry.unit), {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "The download could not start.");
+    }
+    catalogNote.textContent =
+      "Downloading " + (entry.name || entry.id) + ". It appears in the model list when it arrives.";
+    setTimeout(loadCatalog, 4000);
+  } catch (failure) {
+    catalogNote.textContent = failure.message || "The download could not start.";
+    button.disabled = false;
+    button.textContent = "Download";
+  }
+}
+
 function renderCatalog(entries) {
   catalogList.replaceChildren();
   if (!entries.length) {
@@ -2493,16 +2515,45 @@ function renderCatalog(entries) {
   }
   for (const entry of entries) {
     const term = document.createElement("dt");
-    const kind = CATALOG_KINDS[entry.kind] || entry.kind;
-    term.textContent = entry.id + (entry.version ? " · " + entry.version : "") + " · " + kind;
+    term.textContent = (entry.name || entry.id) + (entry.version ? " · " + entry.version : "");
     const detail = document.createElement("dd");
-    const verified = entry.status === "verified" ? "licence checked" : entry.status;
-    detail.textContent = entry.license + " · " + verified;
+    const parts = [entry.purpose || CATALOG_KINDS[entry.kind] || entry.kind];
+    if (Array.isArray(entry.languages) && entry.languages.length) {
+      parts.push(entry.languages.join(", "));
+    }
+    parts.push(entry.size_mb ? entry.size_mb + " MB" : "size not measured");
+    parts.push(
+      entry.license + (entry.status === "verified" ? ", licence checked" : ", " + entry.status),
+    );
+    if (entry.quality) {
+      parts.push(entry.quality);
+    }
+    if (entry.note) {
+      parts.push(entry.note);
+    }
+    detail.textContent = parts.join(" · ");
+    const installed =
+      Boolean(entry.unit) &&
+      modelState.models.some((model) => model.id === entry.unit && model.installed);
+    if (installed) {
+      const badge = document.createElement("span");
+      badge.className = "models-kind";
+      badge.textContent = "On disk";
+      detail.append(" ", badge);
+    }
+    if (entry.unit && !installed) {
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "models-action";
+      action.textContent = "Download";
+      action.addEventListener("click", () => downloadCatalogModel(entry, action));
+      detail.append(" ", action);
+    }
     catalogList.append(term, detail);
   }
   catalogNote.textContent =
     entries.length +
-    " components this build knows, with their licence and its state. Installing from here is not in this build yet.";
+    " components this build knows, with what each does, the languages it covers and its licence. Download brings that model alone.";
 }
 
 async function loadHistory() {

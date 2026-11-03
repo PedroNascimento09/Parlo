@@ -16,21 +16,30 @@ pub fn as_json() -> String {
     let entries: Vec<serde_json::Value> = artifacts()
         .into_iter()
         .map(|artifact| {
-            let field = |name: &str| {
+            let text = |name: &str| {
                 artifact
                     .get(name)
                     .and_then(|value| value.as_str())
                     .unwrap_or("")
                     .to_string()
             };
+            let optional =
+                |name: &str| artifact.get(name).cloned().unwrap_or(serde_json::Value::Null);
             serde_json::json!({
-                "id": field("id"),
-                "kind": field("kind"),
-                "version": field("version"),
-                "license": field("license"),
-                "status": field("status"),
-                "source": field("source"),
-                "attribution": field("attribution"),
+                "id": text("id"),
+                "name": text("name"),
+                "kind": text("kind"),
+                "purpose": text("purpose"),
+                "version": text("version"),
+                "license": text("license"),
+                "status": text("status"),
+                "source": text("source"),
+                "attribution": text("attribution"),
+                "languages": optional("languages"),
+                "size_mb": optional("size_mb"),
+                "quality": optional("quality"),
+                "unit": optional("unit"),
+                "note": optional("note"),
             })
         })
         .collect();
@@ -61,12 +70,30 @@ mod tests {
     }
 
     #[test]
+    fn every_artifact_says_what_it_does_and_which_languages_it_covers() {
+        for artifact in artifacts() {
+            for name in ["name", "purpose"] {
+                let value = artifact.get(name).and_then(|field| field.as_str());
+                assert!(
+                    value.map(|text| !text.trim().is_empty()).unwrap_or(false),
+                    "{name} is missing on {artifact:?}"
+                );
+            }
+            let languages = artifact.get("languages").and_then(|value| value.as_array());
+            assert!(
+                languages.map(|list| !list.is_empty()).unwrap_or(false),
+                "languages are missing on {artifact:?}"
+            );
+        }
+    }
+
+    #[test]
     fn the_page_receives_id_kind_and_licence_for_every_entry() {
         let entries: Vec<serde_json::Value> =
             serde_json::from_str(&as_json()).expect("the catalogue is valid json");
         assert!(!entries.is_empty());
         for entry in entries {
-            for name in ["id", "kind", "license", "status"] {
+            for name in ["id", "kind", "license", "status", "purpose", "languages"] {
                 assert!(entry.get(name).is_some(), "{name} is missing on {entry:?}");
             }
         }

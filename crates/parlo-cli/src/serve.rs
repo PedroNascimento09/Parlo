@@ -1692,7 +1692,7 @@ fn handle(
                 .map(|()| Flow::Serve);
         }
         let id = &path["/models/download/".len()..];
-        if !["parakeet", "voice-pt", "voice-en"].contains(&id) {
+        if !["parakeet", "voice-pt", "voice-en", "mt-pt-en", "mt-en-pt"].contains(&id) {
             return respond_json(stream, "404 Not Found", "{\"error\":\"unknown model\"}")
                 .map(|()| Flow::Serve);
         }

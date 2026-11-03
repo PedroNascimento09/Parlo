@@ -8,7 +8,14 @@
       "license": "MIT",
       "status": "verified",
       "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium",
-      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT"
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Portuguese voice (Tugão)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "pt-PT"
+      ],
+      "size_mb": 63,
+      "unit": "voice-pt"
     },
     {
       "id": "piper-voice-pt-br-faber",
@@ -17,7 +24,14 @@
       "license": "MIT",
       "status": "verified",
       "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium",
-      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT"
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Brazilian voice (Faber)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "pt-BR"
+      ],
+      "size_mb": 63,
+      "note": "Listed for reference: the app installs the European voice."
     },
     {
       "id": "piper-voice-en-us-lessac",
@@ -26,7 +40,14 @@
       "license": "MIT",
       "status": "verified",
       "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium",
-      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT"
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "English voice (Lessac)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "en-US"
+      ],
+      "size_mb": 63,
+      "unit": "voice-en"
     },
     {
       "id": "parakeet-tdt-0.6b-v3",
@@ -35,7 +56,18 @@
       "license": "CC-BY-4.0",
       "status": "verified",
       "source": "https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3",
-      "attribution": "NVIDIA Parakeet TDT 0.6B v3, licensed CC BY 4.0"
+      "attribution": "NVIDIA Parakeet TDT 0.6B v3, licensed CC BY 4.0",
+      "name": "Parakeet TDT 0.6B v3",
+      "purpose": "Speech to text",
+      "languages": [
+        "pt-PT",
+        "pt-BR",
+        "en",
+        "22 more"
+      ],
+      "size_mb": 671,
+      "quality": "0.243 word error on recorded Portuguese speech",
+      "unit": "parakeet"
     },
     {
       "id": "qwen3-asr-0.6b",
@@ -44,7 +76,15 @@
       "license": "Apache-2.0",
       "status": "verified",
       "source": "https://huggingface.co/Qwen/Qwen3-ASR-0.6B",
-      "attribution": "Qwen3-ASR 0.6B, licensed Apache 2.0, experimental in Parlo"
+      "attribution": "Qwen3-ASR 0.6B, licensed Apache 2.0, experimental in Parlo",
+      "name": "Qwen3-ASR 0.6B",
+      "purpose": "Speech to text",
+      "languages": [
+        "pt",
+        "en",
+        "28 more"
+      ],
+      "note": "Experimental: this project has no working Windows build for it yet."
     },
     {
       "id": "kokoro-82m",
@@ -53,7 +93,14 @@
       "license": "Apache-2.0",
       "status": "verified",
       "source": "https://huggingface.co/hexgrad/Kokoro-82M",
-      "attribution": "Kokoro-82M, licensed Apache 2.0"
+      "attribution": "Kokoro-82M, licensed Apache 2.0",
+      "name": "Kokoro 82M",
+      "purpose": "Speech synthesis",
+      "languages": [
+        "en",
+        "pt-BR"
+      ],
+      "note": "No European Portuguese voice, so it is not offered."
     },
     {
       "id": "whisper-large-v3",
@@ -62,7 +109,13 @@
       "license": "MIT",
       "status": "verified",
       "source": "https://huggingface.co/openai/whisper-large-v3",
-      "attribution": "Whisper large-v3, licensed MIT"
+      "attribution": "Whisper large-v3, licensed MIT",
+      "name": "Whisper large-v3",
+      "purpose": "Speech to text",
+      "languages": [
+        "99 languages"
+      ],
+      "note": "Settings offers Whisper base, 145 MB int8, instead."
     },
     {
       "id": "opus-mt-pt-en",
@@ -71,7 +124,15 @@
       "license": "CC-BY-4.0",
       "status": "verified",
       "source": "https://github.com/argosopentech/argospm-index",
-      "attribution": "OPUS-MT Portuguese to English 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech"
+      "attribution": "OPUS-MT Portuguese to English 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech",
+      "name": "Portuguese to English",
+      "purpose": "Translation",
+      "languages": [
+        "pt to en"
+      ],
+      "size_mb": 83,
+      "quality": "numbers, clocks and negations 1.000; names 0.980",
+      "unit": "mt-pt-en"
     },
     {
       "id": "opus-mt-en-pt",
@@ -80,7 +141,15 @@
       "license": "CC-BY-4.0",
       "status": "verified",
       "source": "https://github.com/argosopentech/argospm-index",
-      "attribution": "OPUS-MT English to Portuguese 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech"
+      "attribution": "OPUS-MT English to Portuguese 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech",
+      "name": "English to Portuguese",
+      "purpose": "Translation",
+      "languages": [
+        "en to pt"
+      ],
+      "size_mb": 83,
+      "quality": "numbers and negations 1.000; clocks and names 0.980",
+      "unit": "mt-en-pt"
     }
   ]
 }
