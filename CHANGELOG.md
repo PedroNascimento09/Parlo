@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The window is reachable from the keyboard alone: **Alt+1** to **Alt+5** open Home, Library, Meetings, Voice and Settings, **Alt+Left** goes back within the app, the rail names each shortcut to a screen reader, and the section someone was on is remembered, so reopening the window returns there instead of starting at Home.
+
 - Every dictation in **Library, History** can be acted on. **Favourite** marks an entry and a **Favourites only** filter keeps the marked ones, **Correct** replaces the sentence Parlo wrote down, and **Delete** removes that entry alone after asking; each entry carries an id the local server knows, including lines written before ids existed, and every change stays in the history file on this computer. Home lists the last five results with a link to the rest, and names how many models are installed, their size and a **manage** link.
 
 - Recording a meeting captures audio. The page fed the recogniser only while a dictation or a voice sample ran, so a meeting kept no lines at all; it now captures for as long as the meeting runs, and the same screen gained the middle of its lifecycle: **Pause** stops what is written down without ending the transcript, **Resume** carries on with the same meeting, every line's timestamp leaves the paused time out, and a **Note** typed while recording is kept at that moment, listed under the meeting and carried into search, questions and the Markdown copy. **Status: implemented, not yet run against a microphone on this machine.**

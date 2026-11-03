@@ -3511,8 +3511,37 @@ function showRoute(name) {
 }
 
 function routeNow() {
-  showRoute((location.hash || "#home").slice(1));
+  const route = (location.hash || "#home").slice(1);
+  localStorage.setItem("parlo.route", route);
+  showRoute(route);
 }
+
+const ROUTE_KEYS = { 1: "home", 2: "library", 3: "meetings", 4: "voice", 5: "settings" };
+
+document.addEventListener("keydown", (event) => {
+  if (!event.altKey || event.ctrlKey || event.metaKey) {
+    return;
+  }
+  const target = event.target;
+  if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
+    return;
+  }
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    window.history.back();
+    return;
+  }
+  const route = ROUTE_KEYS[event.key];
+  if (!route) {
+    return;
+  }
+  event.preventDefault();
+  if (location.hash === "#" + route) {
+    showRoute(route);
+  } else {
+    location.hash = "#" + route;
+  }
+});
 
 const LIBRARY_TABS = {
   history: ["history"],
@@ -3581,6 +3610,12 @@ for (const button of document.querySelectorAll("#settings-tabs .tab")) {
 }
 
 window.addEventListener("hashchange", routeNow);
+if (!location.hash) {
+  const remembered = localStorage.getItem("parlo.route");
+  if (remembered) {
+    location.hash = "#" + remembered;
+  }
+}
 routeNow();
 checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
 loadModels();
