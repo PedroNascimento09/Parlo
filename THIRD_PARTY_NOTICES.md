@@ -539,3 +539,9 @@ from the original source and each one keeps its own licence.
 | whisper-large-v3 | asr | MIT | verified | https://huggingface.co/openai/whisper-large-v3 |
 | opus-mt-pt-en | mt | CC-BY-4.0 | verified | https://github.com/argosopentech/argospm-index |
 | opus-mt-en-pt | mt | CC-BY-4.0 | verified | https://github.com/argosopentech/argospm-index |
+| whisper-small | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-small |
+| whisper-medium | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-medium |
+| piper-voice-en-gb-alba | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alba/medium |
+| piper-voice-de-de-thorsten | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium |
+| piper-voice-fr-fr-siwis | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium |
+| opus-mt-pt-de-direct | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa |

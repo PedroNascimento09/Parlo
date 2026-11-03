@@ -571,6 +571,9 @@ as if its terms were known.
 | whisper-large-v3 | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper large-v3, licensed MIT | External | Confirmed | See the licence text | https://huggingface.co/openai/whisper-large-v3 |
 | opus-mt-pt-en | Downloaded, never shipped | See the runtime dependencies | CC-BY-4.0 | OPUS-MT Portuguese to English 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech | External | Confirmed | Credit the author | https://github.com/argosopentech/argospm-index |
 | opus-mt-en-pt | Downloaded, never shipped | See the runtime dependencies | CC-BY-4.0 | OPUS-MT English to Portuguese 1.9, Jörg Tiedemann and Santhosh Thottingal, EAMT 2020, licensed CC BY 4.0, repackaged by Argos Open Tech | External | Confirmed | Credit the author | https://github.com/argosopentech/argospm-index |
+| whisper-small | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper small, MIT, converted by Systran for faster-whisper | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-small |
+| whisper-medium | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper medium, MIT, converted by Systran for faster-whisper | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-medium |
+| opus-mt-pt-de-direct | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | OPUS-MT Romance to German, Jörg Tiedemann and Santhosh Thottingal, licensed Apache 2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa |
 
 ## 5. Voices and datasets
 
@@ -582,6 +585,9 @@ of the synthesizer that reads it. No dataset is redistributed by Parlo.
 | piper-voice-pt-pt-tugao | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
 | piper-voice-pt-br-faber | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
 | piper-voice-en-us-lessac | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium |
+| piper-voice-en-gb-alba | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alba/medium |
+| piper-voice-de-de-thorsten | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium |
+| piper-voice-fr-fr-siwis | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium |
 
 ## 6. Optional components under copyleft
 
