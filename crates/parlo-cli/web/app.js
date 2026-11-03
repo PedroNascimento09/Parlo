@@ -1317,13 +1317,25 @@ async function loadModels() {
   }
 }
 
+function formatFree(bytes) {
+  if (!bytes) {
+    return "";
+  }
+  if (bytes >= 1024 * 1024 * 1024) {
+    return (bytes / (1024 * 1024 * 1024)).toFixed(0) + " GB free";
+  }
+  return formatSize(bytes) + " free";
+}
+
 function describeHomeModels(state) {
   const installed = (state.models || []).filter((model) => model.installed);
   const bytes = installed.reduce((total, model) => total + (model.bytes || 0), 0);
-  statusModels.textContent =
+  const free = formatFree(state.free_bytes);
+  const talking =
     installed.length === 0
       ? "none installed yet"
       : installed.length + " installed · " + formatSize(bytes);
+  statusModels.textContent = free ? talking + " · " + free : talking;
 }
 
 function showModelsError(message) {

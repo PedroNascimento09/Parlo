@@ -577,6 +577,47 @@ fn relocate_target(target: &str) -> Result<(PathBuf, PathBuf), String> {
     Ok((source, destination))
 }
 
+#[cfg(windows)]
+fn free_bytes(path: &Path) -> Option<u64> {
+    use std::os::windows::ffi::OsStrExt;
+    let mut wide: Vec<u16> = path.as_os_str().encode_wide().collect();
+    wide.push(0);
+    let mut available: u64 = 0;
+    let answered = unsafe {
+        GetDiskFreeSpaceExW(
+            wide.as_ptr(),
+            &mut available,
+            std::ptr::null_mut(),
+            std::ptr::null_mut(),
+        )
+    };
+    if answered == 0 {
+        None
+    } else {
+        Some(available)
+    }
+}
+
+#[cfg(windows)]
+#[link(name = "kernel32")]
+extern "system" {
+    fn GetDiskFreeSpaceExW(
+        directory: *const u16,
+        available: *mut u64,
+        total: *mut u64,
+        free: *mut u64,
+    ) -> i32;
+}
+
+#[cfg(not(windows))]
+fn free_bytes(_path: &Path) -> Option<u64> {
+    None
+}
+
+pub fn free_space() -> Option<u64> {
+    free_bytes(&models_root())
+}
+
 pub fn describe_bytes(bytes: u64) -> String {
     if bytes >= 1024 * 1024 {
         format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
@@ -728,6 +769,7 @@ pub fn as_json(models: &[Model], lifecycle: &Lifecycle, pair: &str, working: boo
         "downloading": downloading(models),
         "manage_memory": lifecycle.manage,
         "folder": models_root().display().to_string(),
+        "free_bytes": free_space(),
         "recommendation": if machine.memory_gb as i64 * 1024 - 746 >= 700 {
             "Parakeet 0.6B v3 at 0.21 of real time here, because this machine leaves room for its 746 MB."
         } else {
