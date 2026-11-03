@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
+<div class="shell">
+<aside class="sidebar">
 <header class="bar">
   <div class="brand">
                   <svg class="wordmark-mark" viewBox="0 0 144.19 64" role="img" aria-label="Parlo">
@@ -73,11 +75,17 @@
 
 <nav class="rail" aria-label="Sections">
   <a href="#home" data-route="home" aria-keyshortcuts="Alt+1">Home</a>
-  <a href="#library" data-route="library" aria-keyshortcuts="Alt+2">Library</a>
-  <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+3">Meetings</a>
-  <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+4">Voice</a>
+  <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
+  <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
+  <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
   <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5">Settings</a>
 </nav>
+<div class="sidebar-foot">
+  <p class="foot-line">Nothing leaves this computer.</p>
+  <p class="foot-line">Alt+1 to Alt+5 moves between sections.</p>
+</div>
+</aside>
+<div class="workspace">
 
 <section class="update" id="update" aria-live="polite" hidden>
   <p id="update-text">Parlo <strong id="update-version"></strong> is available.</p>
@@ -667,6 +675,9 @@
 <footer>
   <p>Parlo works on this computer. Your voice is never uploaded, and there is no account and no telemetry.</p>
 </footer>
+
+</div>
+</div>
 
 <script src="/app.js"></script>
 </body>

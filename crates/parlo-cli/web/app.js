@@ -3625,7 +3625,7 @@ function routeNow() {
   showRoute(route);
 }
 
-const ROUTE_KEYS = { 1: "home", 2: "library", 3: "meetings", 4: "voice", 5: "settings" };
+const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "settings" };
 
 document.addEventListener("keydown", (event) => {
   if (!event.altKey || event.ctrlKey || event.metaKey) {
