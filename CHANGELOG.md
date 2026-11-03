@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- First open asks for a name and a writing style in one card, with a serif display face across headings, and Home drops the download card for a quieter greeting with totals.
+
 - Snippets join terms and short forms: a spoken phrase can become a long piece of text such as a URL, and the Insights pane now lists the words you reach for most.
 
 - A first open asks for a name, kept on this computer only, and Home greets you by it with total words, words per minute and the current streak in place of the transcript list.

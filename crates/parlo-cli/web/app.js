@@ -4197,9 +4197,43 @@ const nameGate = document.getElementById("name-gate");
 const nameInput = document.getElementById("name-input");
 const nameSave = document.getElementById("name-save");
 const nameNote = document.getElementById("name-note");
+const gateName = document.getElementById("gate-name");
+const gateStyle = document.getElementById("gate-style");
+const styleCards = [...document.querySelectorAll(".style-card")];
+const settingsStyle = document.getElementById("settings-style");
+const STYLES = ["formal", "casual", "excited"];
+
+function storedStyle() {
+  const value = localStorage.getItem("parlo.style");
+  return STYLES.includes(value) ? value : "";
+}
+
+function paintStyleControls() {
+  const chosen = storedStyle();
+  for (const card of styleCards) {
+    card.setAttribute("aria-pressed", String(card.dataset.style === chosen));
+  }
+  if (settingsStyle) {
+    settingsStyle.value = chosen || "formal";
+  }
+}
+
+function chooseStyle(style) {
+  localStorage.setItem("parlo.style", style);
+  paintStyleControls();
+}
+
+function closeGate() {
+  nameGate.hidden = true;
+  gateName.hidden = false;
+  gateStyle.hidden = true;
+  paintHome();
+}
 
 if (!storedName()) {
   nameGate.hidden = false;
+  gateName.hidden = false;
+  gateStyle.hidden = true;
   nameInput.focus();
 }
 
@@ -4211,9 +4245,10 @@ nameSave.addEventListener("click", () => {
     return;
   }
   localStorage.setItem("parlo.name", value);
-  nameGate.hidden = true;
   nameNote.textContent = "";
-  paintHome();
+  gateName.hidden = true;
+  gateStyle.hidden = false;
+  paintStyleControls();
 });
 
 nameInput.addEventListener("keydown", (event) => {
@@ -4223,19 +4258,24 @@ nameInput.addEventListener("keydown", (event) => {
   }
 });
 
-const vocabularyHint = document.getElementById("vocabulary-hint");
-if (vocabularyHint) {
-  const examples = {
-    term: 'A name Parlo keeps getting wrong: hear "parlo" and write "Parlo".',
-    abbreviation: 'A short form you say out loud: "qr" becomes "quarta-feira".',
-    snippet: 'A phrase that becomes longer text: say "my channel" and Parlo writes https://www.youtube.com/@example.',
-  };
-  const paintHint = () => {
-    const kind = vocabularyKind.value;
-    vocabularyHint.textContent = examples[kind] || examples.term;
-    vocabularyRight.placeholder =
-      kind === "snippet" ? "https://www.youtube.com/@example" : "Parlo";
-  };
-  vocabularyKind.addEventListener("change", paintHint);
-  paintHint();
+for (const card of styleCards) {
+  card.addEventListener("click", () => {
+    chooseStyle(card.dataset.style);
+  });
 }
+
+document.getElementById("style-save").addEventListener("click", closeGate);
+document.getElementById("style-skip").addEventListener("click", () => {
+  if (!storedStyle()) {
+    chooseStyle("formal");
+  }
+  closeGate();
+});
+
+if (settingsStyle) {
+  settingsStyle.addEventListener("change", () => {
+    chooseStyle(settingsStyle.value);
+  });
+}
+
+paintStyleControls();

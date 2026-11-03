@@ -103,15 +103,43 @@
 <main>
 <section class="gate" id="name-gate" aria-labelledby="gate-title" hidden>
   <div class="gate-card">
-    <p class="gate-kicker">Parlo</p>
-    <h1 id="gate-title">What should Parlo call you?</h1>
-    <p class="gate-note">Stays on this computer.</p>
-    <label class="field" for="name-input">
-      <span class="field-label">Your name</span>
-      <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Pedro">
-    </label>
-    <button id="name-save" class="install" type="button">Continue</button>
-    <p class="gate-note" id="name-note" aria-live="polite"></p>
+    <div class="gate-step" id="gate-name">
+      <p class="gate-kicker">Parlo</p>
+      <h1 id="gate-title">What should Parlo call you?</h1>
+      <p class="gate-note">Stays on this computer.</p>
+      <label class="field" for="name-input">
+        <span class="field-label">Your name</span>
+        <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Pedro">
+      </label>
+      <button id="name-save" class="install" type="button">Continue</button>
+      <p class="gate-note" id="name-note" aria-live="polite"></p>
+    </div>
+    <div class="gate-step" id="gate-style" hidden>
+      <p class="gate-kicker">Almost there</p>
+      <h1>How do you write?</h1>
+      <p class="gate-note">Parlo shapes punctuation to match. You can change it any time.</p>
+      <div class="style-cards" role="group" aria-label="Writing style">
+        <button class="style-card" data-style="formal" type="button">
+          <span class="style-title">Formal.</span>
+          <span class="style-sub">Full punctuation</span>
+          <span class="style-sample">Hey, if you are free, let us talk about the results.</span>
+        </button>
+        <button class="style-card" data-style="casual" type="button">
+          <span class="style-title">Casual</span>
+          <span class="style-sub">Lighter punctuation</span>
+          <span class="style-sample">hey if you're free let's talk about the results</span>
+        </button>
+        <button class="style-card" data-style="excited" type="button">
+          <span class="style-title">Excited!</span>
+          <span class="style-sub">Keeps the energy</span>
+          <span class="style-sample">Hey, if you're free, let's talk about the results!</span>
+        </button>
+      </div>
+      <div class="gate-actions">
+        <button id="style-skip" class="swap" type="button">Skip</button>
+        <button id="style-save" class="install" type="button">Done</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -161,6 +189,7 @@
           <div><dt>Day streak</dt><dd id="home-streak">0</dd></div>
         </dl>
         <a class="home-link" id="home-insights" href="#settings">See the details</a>
+        <a class="home-link" href="#library">Add a model</a>
       </aside>
     </div>
   </section>
@@ -243,6 +272,14 @@
     </div>
     <p class="settings-note" id="features-note" aria-live="polite"></p>
     <div class="settings-row">
+      <label class="field" for="settings-style">
+        <span class="field-label">Writing style</span>
+        <select id="settings-style" class="field-input">
+          <option value="formal">Formal</option>
+          <option value="casual">Casual</option>
+          <option value="excited">Excited</option>
+        </select>
+      </label>
       <label class="check" for="settings-manage-memory">
         <input id="settings-manage-memory" type="checkbox">
         <span>Let Parlo manage model memory</span>
