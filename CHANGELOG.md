@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The library shows what each model costs on this machine. A new `engines/cascade/scripts/model_memory.py` loads one unit, warms it, then reports the memory it added and how fast it ran: Parakeet 746 MB at 0.21 of real time, Whisper base 148 MB at 0.24, each voice about 2 MB, each translation pair about 112 MB at roughly 280 and 400 ms per sentence. Rows carry those numbers beside the size on disk, measured here rather than quoted from a model card.
+
 - The first start asks before it downloads. Each feature is offered with the size of the models behind it, the ones this machine's memory suggests are already ticked, and one button fetches only what is ticked through `POST /models/download` with the units it was given. A machine with 8 GB is offered dictation, 8 GB or more adds the translation pair, 16 GB adds the voices, and nothing is fetched until someone presses the button.
 
 - The model library shows what exists before anything is installed. Every component the build knows carries its name, what it does, the languages it covers, the size measured on this machine or a plain **size not measured**, its licence and its measured quality where one exists, and the two translation pairs can now be downloaded from that list. A row fetches one model and nothing else, and a component this build cannot install says so instead of offering a button that would fail.
