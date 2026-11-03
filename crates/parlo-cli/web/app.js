@@ -4230,6 +4230,11 @@ function paintStyleControls() {
 function chooseStyle(style) {
   localStorage.setItem("parlo.style", style);
   paintStyleControls();
+  fetch("/style", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ style }),
+  }).catch(() => {});
 }
 
 function closeGate() {

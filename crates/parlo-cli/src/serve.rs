@@ -882,6 +882,42 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/style" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve)
+            }
+        };
+        let style = request
+            .get("style")
+            .and_then(|value| value.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_ascii_lowercase();
+        if !style.is_empty() && !crate::style::is_known(&style) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"style needs formal, casual or excited\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let mut config = crate::config::load();
+        config.style = style;
+        if let Err(error) = crate::config::save(&config) {
+            return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        let body = format!("{{\"style\":\"{}\"}}", json_string(&config.style));
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/hardware" {
         return respond_json(stream, "200 OK", &crate::hardware::detect().as_json())
             .map(|()| Flow::Serve);
@@ -2523,6 +2559,14 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        let stored_style = crate::config::load().style;
+        let style = if !style_header.is_empty() {
+            style_header
+        } else if crate::style::is_known(&stored_style) {
+            stored_style
+        } else {
+            String::new()
+        };
         let target = dictation_target(&write, &session.chosen().from);
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
@@ -2538,7 +2582,7 @@ fn handle(
             }
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        let text = crate::style::shape(&text, &style_header);
+        let text = crate::style::shape(&text, &style);
         let app = crate::insert::foreground()
             .map(|(_, name)| name)
             .unwrap_or_else(|_| "unknown".to_string());

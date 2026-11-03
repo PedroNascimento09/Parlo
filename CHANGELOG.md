@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The writing style is saved beside the app, not only in the browser, so dictation from the shortcut or the tray uses it too; the API refuses a style it does not know with 400.
+
 - Settings reach the engine again: the local API used to spawn the bundled recogniser for anything that was not a dictation, so every save answered `unknown op`, and now it runs the engine module directly with the folder it lives in. Snippets and names can be saved from the app.
 
 - Three snippet examples sit under the vocabulary form: pressing one fills the kind, the phrase and the text, with the sign-off carrying the name you gave Parlo.
