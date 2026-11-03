@@ -3032,8 +3032,8 @@ function catalogCard(entry, items) {
   const name = document.createElement("h3");
   const base = entry.name || entry.id;
   const version = (entry.version || "").trim();
-  name.textContent =
-    version && !base.toLowerCase().includes(version.toLowerCase()) ? base + " " + version : base;
+  const squash = (text) => text.toLowerCase().replace(/[\s-]+/g, "");
+  name.textContent = version && !squash(base).includes(squash(version)) ? base + " " + version : base;
   head.append(name);
   if (entry.pair) {
     const pair = document.createElement("span");
