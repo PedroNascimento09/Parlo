@@ -269,6 +269,21 @@ fn python() -> PathBuf {
 }
 
 pub fn install(units: &[&str]) -> Result<(), String> {
+    for unit in units {
+        for path in paths_for(unit).unwrap_or_default() {
+            if !path.exists() {
+                continue;
+            }
+            let previous = previous_of(&path);
+            if previous.is_dir() {
+                let _ = fs::remove_dir_all(&previous);
+            } else {
+                let _ = fs::remove_file(&previous);
+            }
+            fs::rename(&path, &previous)
+                .map_err(|error| format!("{} could not be set aside: {error}", path.display()))?;
+        }
+    }
     let mut command = match crate::sidecar::bundled_engine() {
         Some(engine) => {
             let mut command = Command::new(&engine);
@@ -449,7 +464,83 @@ fn copy_tree(from: &Path, to: &Path) -> Result<u64, String> {
     Ok(copied)
 }
 
-pub fn relocate(target: &str) -> Result<String, String> {
+fn same_tree(left: &Path, right: &Path) -> bool {
+    let Ok(entries) = fs::read_dir(left) else {
+        return false;
+    };
+    for entry in entries.flatten() {
+        let source = entry.path();
+        let target = right.join(entry.file_name());
+        if source.is_dir() {
+            if !target.is_dir() || !same_tree(&source, &target) {
+                return false;
+            }
+        } else {
+            match (fs::metadata(&source), fs::metadata(&target)) {
+                (Ok(here), Ok(there)) if here.len() > 0 && here.len() == there.len() => {}
+                _ => return false,
+            }
+        }
+    }
+    true
+}
+
+fn previous_of(path: &Path) -> PathBuf {
+    let mut name = path
+        .file_name()
+        .map(|name| name.to_os_string())
+        .unwrap_or_default();
+    name.push(".previous");
+    path.with_file_name(name)
+}
+
+pub fn has_previous(id: &str) -> bool {
+    paths_for(id)
+        .map(|paths| paths.iter().any(|path| previous_of(path).exists()))
+        .unwrap_or(false)
+}
+
+pub fn rollback(id: &str) -> Result<String, String> {
+    let paths = paths_for(id).ok_or_else(|| format!("{id} is not a model this app manages"))?;
+    let mut restored = 0;
+    for path in paths {
+        let previous = previous_of(&path);
+        if !previous.exists() {
+            continue;
+        }
+        let removed = if path.is_dir() {
+            fs::remove_dir_all(&path)
+        } else {
+            fs::remove_file(&path)
+        };
+        if let Err(error) = removed {
+            if path.exists() {
+                return Err(format!(
+                    "{} could not be replaced: {error}. Close Parlo and try again.",
+                    path.display()
+                ));
+            }
+        }
+        fs::rename(&previous, &path).map_err(|error| {
+            format!(
+                "{} could not be restored: {error}. The previous copy is still there.",
+                path.display()
+            )
+        })?;
+        restored += 1;
+    }
+    if restored == 0 {
+        return Err("there is no previous copy of this model to go back to".to_string());
+    }
+    let name = status()
+        .into_iter()
+        .find(|model| model.id == id)
+        .map(|model| model.name)
+        .unwrap_or_else(|| id.to_string());
+    Ok(format!("{name} is back on the copy that was here before."))
+}
+
+fn relocate_target(target: &str) -> Result<(PathBuf, PathBuf), String> {
     let trimmed = target.trim();
     if trimmed.is_empty() {
         return Err("give the folder the models should move to".to_string());
@@ -471,6 +562,43 @@ pub fn relocate(target: &str) -> Result<String, String> {
     if !source.is_dir() {
         return Err(format!("there are no models in {} yet", source.display()));
     }
+    Ok((source, destination))
+}
+
+pub fn describe_bytes(bytes: u64) -> String {
+    if bytes >= 1024 * 1024 {
+        format!("{:.1} MB", bytes as f64 / (1024.0 * 1024.0))
+    } else {
+        format!("{} KB", bytes.div_ceil(1024))
+    }
+}
+
+pub fn relocate_plan(target: &str) -> Result<(u64, bool), String> {
+    let (source, destination) = relocate_target(target)?;
+    Ok((directory_bytes(&source), same_tree(&source, &destination)))
+}
+
+pub fn relocate(target: &str) -> Result<String, String> {
+    let (source, destination) = relocate_target(target)?;
+    if same_tree(&source, &destination) {
+        let size = describe_bytes(directory_bytes(&source));
+        fs::remove_dir_all(&source).map_err(|error| {
+            format!(
+                "the copy in {} is complete but {} could not be removed: {error}",
+                destination.display(),
+                source.display()
+            )
+        })?;
+        let mut config = crate::config::load();
+        config.models_dir = destination.display().to_string();
+        crate::config::save(&config).map_err(|error| {
+            format!("the models were adopted but the folder was not saved: {error}")
+        })?;
+        return Ok(format!(
+            "Adopted {size} already in {}. Nothing was copied.",
+            destination.display()
+        ));
+    }
     let expected = directory_bytes(&source);
     let copied = copy_tree(&source, &destination)?;
     if copied != expected {
@@ -489,9 +617,9 @@ pub fn relocate(target: &str) -> Result<String, String> {
     config.models_dir = destination.display().to_string();
     crate::config::save(&config)
         .map_err(|error| format!("the models moved but the folder was not saved: {error}"))?;
-    let megabytes = copied as f64 / (1024.0 * 1024.0);
     let mut message = format!(
-        "Moved {megabytes:.1} MB to {}. The old folder is gone.",
+        "Moved {} to {}. The old folder is gone.",
+        describe_bytes(copied),
         destination.display()
     );
     if env::var("PARLO_MODELS_DIR").is_ok() {
@@ -574,6 +702,7 @@ pub fn as_json(models: &[Model], lifecycle: &Lifecycle, pair: &str, working: boo
                 "bytes": model.bytes,
                 "reason": reason_for(model, &described),
                 "quality": quality_for(model),
+                "previous": has_previous(model.id),
             })
         })
         .collect();
@@ -584,6 +713,11 @@ pub fn as_json(models: &[Model], lifecycle: &Lifecycle, pair: &str, working: boo
         "downloading": downloading(models),
         "manage_memory": lifecycle.manage,
         "folder": models_root().display().to_string(),
+        "recommendation": if machine.memory_gb as i64 * 1024 - 746 >= 700 {
+            "Parakeet 0.6B v3 at 0.21 of real time here, because this machine leaves room for its 746 MB."
+        } else {
+            "Whisper base at 0.24 of real time here, because Parakeet would leave less than 700 MB free."
+        },
         "machine": {
             "cores": machine.cores,
             "memory_gb": machine.memory_gb,
@@ -683,6 +817,31 @@ mod tests {
         assert_eq!(unit_of("voice-en"), Some("voice"));
         assert_eq!(unit_of("mt-en-pt"), Some("translation"));
         assert_eq!(unit_of("nonsense"), None);
+    }
+
+    #[test]
+    fn a_previous_copy_lives_beside_the_model() {
+        let path = std::path::Path::new("C:/models/parakeet");
+        assert_eq!(
+            previous_of(path),
+            std::path::Path::new("C:/models/parakeet.previous")
+        );
+    }
+
+    #[test]
+    fn the_same_files_with_the_same_sizes_are_adoptable() {
+        let root = std::env::temp_dir().join(format!("parlo-adopt-{}", std::process::id()));
+        let left = root.join("left");
+        let right = root.join("right");
+        fs::create_dir_all(left.join("inner")).unwrap();
+        fs::create_dir_all(right.join("inner")).unwrap();
+        fs::write(left.join("inner/model.bin"), vec![1u8; 64]).unwrap();
+        assert!(!same_tree(&left, &right));
+        fs::write(right.join("inner/model.bin"), vec![2u8; 64]).unwrap();
+        assert!(same_tree(&left, &right));
+        fs::write(right.join("inner/model.bin"), vec![2u8; 32]).unwrap();
+        assert!(!same_tree(&left, &right));
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

@@ -1089,6 +1089,16 @@ function describeModels(state) {
       actions.append(held);
     }
 
+    if (model.previous) {
+      const restore = document.createElement("button");
+      restore.type = "button";
+      restore.className = "models-action";
+      restore.textContent = "Restore";
+      restore.disabled = Boolean(state.downloading);
+      restore.addEventListener("click", () => rollbackModel(model, restore));
+      actions.append(restore);
+    }
+
     const action = document.createElement("button");
     action.type = "button";
     action.className = "models-action";
@@ -1213,26 +1223,59 @@ async function savePolicy(model, select) {
   }
 }
 
+let movePlan = null;
+
 async function moveModels() {
   modelsMove.disabled = true;
-  modelsMoveNote.textContent = "Copying the models. Nothing is deleted until the copy matches.";
   try {
     const response = await fetch("/models/relocate", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ path: modelsFolder.value }),
+      body: JSON.stringify({ path: modelsFolder.value, confirm: Boolean(movePlan) }),
     });
     const detail = await response.json().catch(() => ({}));
-    modelsMoveNote.textContent =
-      detail.message || detail.error || "The models could not be moved.";
-    if (response.ok) {
-      modelsFolder.dataset.filled = "1";
-      await loadModels();
+    if (!response.ok) {
+      modelsMoveNote.textContent = detail.error || "The models could not be moved.";
+      movePlan = null;
+      modelsMove.textContent = "Move the models";
+      return;
     }
+    modelsMoveNote.textContent = detail.message || "The models were moved.";
+    if (!movePlan) {
+      movePlan = detail;
+      modelsMove.textContent = detail.adopt
+        ? "Use that copy"
+        : "Copy " + Math.round((detail.needed || 0) / (1024 * 1024)) + " MB";
+      return;
+    }
+    movePlan = null;
+    modelsMove.textContent = "Move the models";
+    modelsFolder.dataset.filled = "1";
+    await loadModels();
   } catch (failure) {
     modelsMoveNote.textContent = "The models could not be moved. Check that Parlo is still running.";
+    movePlan = null;
+    modelsMove.textContent = "Move the models";
   } finally {
     modelsMove.disabled = false;
+  }
+}
+
+async function rollbackModel(model, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch("/models/rollback/" + encodeURIComponent(model.id), {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    modelsNote.textContent =
+      detail.message || detail.error || "That could not be done.";
+    await loadModels();
+  } catch (failure) {
+    modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
+  } finally {
+    button.disabled = false;
   }
 }
 

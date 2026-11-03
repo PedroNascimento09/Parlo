@@ -1769,10 +1769,53 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":{\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        let target = serde_json::from_slice::<RelocateRequest>(&body)
-            .map(|request| request.path)
-            .unwrap_or_default();
-        return match models::relocate(&target) {
+        let request: serde_json::Value = serde_json::from_slice(&body).unwrap_or_default();
+        let target = request["path"].as_str().unwrap_or_default();
+        if !request["confirm"].as_bool().unwrap_or(false) {
+            return match models::relocate_plan(target) {
+                Ok((needed, adopt)) => {
+                    let size = models::describe_bytes(needed);
+                    let message = if adopt {
+                        format!(
+                            "{size} are already in that folder. Press again to use them and remove the old copy."
+                        )
+                    } else {
+                        format!(
+                            "{size} will be copied to that folder. Nothing is deleted until the copy matches."
+                        )
+                    };
+                    respond_json(
+                        stream,
+                        "200 OK",
+                        &serde_json::json!({ "needed": needed, "adopt": adopt, "message": message })
+                            .to_string(),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+                Err(error) => respond_json(stream, "400 Bad Request", &error_json(&error))
+                    .map(|()| Flow::Serve),
+            };
+        }
+        return match models::relocate(target) {
+            Ok(message) => respond_json(
+                stream,
+                "200 OK",
+                &serde_json::json!({ "message": message }).to_string(),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "400 Bad Request", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
+    if method == "POST" && path.starts_with("/models/rollback/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", &error_json("wrong token"))
+                .map(|()| Flow::Serve);
+        }
+        let id = &path["/models/rollback/".len()..];
+        return match models::rollback(id) {
             Ok(message) => respond_json(
                 stream,
                 "200 OK",
@@ -2433,11 +2476,6 @@ struct VoiceTarget {
 const MIN_SAMPLE_SECONDS: f64 = 10.0;
 const MAX_SAMPLE_SECONDS: f64 = 30.0;
 const SILENT_PEAK: f32 = 0.002;
-
-#[derive(serde::Deserialize)]
-struct RelocateRequest {
-    path: String,
-}
 
 fn voice_store() -> Store {
     Store::new(crate::config::data_root().join("voices"))

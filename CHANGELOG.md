@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A model keeps the copy it replaced. When a model is downloaded again, the build in place is set aside beside it, and a **Restore** row puts it back if the new copy is worse; nothing is deleted until the new download finishes.
+- Moving the models says what it costs before it copies. The first press answers with the megabytes that will move and whether the target already holds an identical copy, and only a second press copies anything; a target that already matches is adopted instead of copied again.
+- The first start names the recogniser it recommends with the measured speed behind the choice, instead of memory alone.
+
 - The model library is a catalogue by purpose, not a checklist. Rows are grouped into **Speech to text**, **Read text aloud**, **Translation** and **Speech synthesis**, the catalogue names more recognisers and voices than this build installs, and a model that cannot run here says why instead of offering a button. Only what ships or is claimed is measured, so a new row no longer waits for a benchmark of its own.
 
 - The first start ends with the next step instead of a silent change of screen. When a recogniser arrives, the page says `Dictation is ready.` and names the shortcut to hold, taken from the settings, so nobody is left looking at a window with no instruction.
