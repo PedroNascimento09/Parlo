@@ -81,7 +81,7 @@ Name: "{group}\Uninstall Parlo"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\Parlo"; Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Parlo"; ValueData: "\"{app}\parlo-app.exe\""; Tasks: startup; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Parlo"; ValueData: """{app}\parlo-app.exe"""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
 Filename: "{app}\parlo-app.exe"; WorkingDir: "{app}"; Description: "Open Parlo now"; Flags: nowait postinstall skipifsilent
