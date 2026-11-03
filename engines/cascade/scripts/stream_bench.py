@@ -1,8 +1,10 @@
 import argparse
 import json
+import os
 import statistics
 import sys
 import time
+import wave
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +27,30 @@ def load_corpus(path: Path) -> list[str]:
         for line in lines
         if line.strip() and not line.strip().startswith("#")
     ]
+
+
+def load_clips(directory: Path) -> list[tuple[Path, str]]:
+    manifest = directory / "reference.jsonl"
+    if not manifest.exists():
+        raise SystemExit(f"no reference.jsonl in {directory}")
+    clips = []
+    for line in manifest.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        clips.append((directory / row["audio"], row["text"]))
+    return clips
+
+
+def read_wav(path: Path) -> np.ndarray:
+    with wave.open(str(path), "rb") as handle:
+        mono = handle.getnchannels() == 1
+        rate = handle.getframerate() == 16_000
+        width = handle.getsampwidth() == 2
+        if not (mono and rate and width):
+            raise SystemExit(f"{path.name} is not 16 kHz mono pcm16")
+        frames = handle.readframes(handle.getnframes())
+    return pcm16_to_float(frames)
 
 
 def percentile(values: list[float], share: float) -> float | None:
@@ -119,6 +145,7 @@ def summarise(reference: str, events: list[tuple[float, object]]) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--corpus", default=str(DEFAULT_CORPUS))
+    parser.add_argument("--audio-dir", default="")
     parser.add_argument("--stt", choices=["parakeet", "whisper"], default="parakeet")
     parser.add_argument("--model", default="base")
     parser.add_argument("--threads", type=int, default=4)
@@ -135,11 +162,10 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
-    sentences = load_corpus(Path(args.corpus))
-    if args.limit > 0:
-        sentences = sentences[: args.limit]
-    if not sentences:
-        raise SystemExit(f"no sentences in {args.corpus}")
+    os.environ["PARLO_CASCADE_STT"] = args.stt
+    os.environ["PARLO_CASCADE_THREADS"] = str(args.threads)
+    if args.stt == "whisper":
+        os.environ["PARLO_CASCADE_MODEL"] = args.model
 
     engine = CascadeEngine(source="pt", target="en")
     if args.voice:
@@ -147,7 +173,15 @@ def main() -> int:
         engine.voice_path = chosen if chosen.exists() else ROOT / "models" / args.voice
     if not engine.available:
         raise SystemExit("install the cascade requirements first")
-    if not engine.voice_path.exists():
+    clips = load_clips(Path(args.audio_dir)) if args.audio_dir else []
+    if args.limit > 0:
+        clips = clips[: args.limit]
+    sentences = [] if args.audio_dir else load_corpus(Path(args.corpus))
+    if args.limit > 0:
+        sentences = sentences[: args.limit]
+    if not clips and not sentences:
+        raise SystemExit(f"nothing to read in {args.audio_dir or args.corpus}")
+    if not clips and not engine.voice_path.exists():
         raise SystemExit("missing voice model, run scripts/setup_models.py")
     from parlo_cascade.streaming import StreamingSession
 
@@ -163,15 +197,24 @@ def main() -> int:
     lead = int(args.lead * 16_000)
     tail = int(args.tail * 16_000)
     rows = []
+    work = (
+        [(text, read_wav(path)) for path, text in clips]
+        if clips
+        else [
+            (
+                sentence,
+                np.asarray(pcm16_to_float(engine._synthesize(sentence)), dtype="float32"),
+            )
+            for sentence in sentences
+        ]
+    )
+    source = Path(args.audio_dir).name if clips else Path(args.corpus).name
+    voice = "recorded" if clips else engine.voice_path.name
     print(
         f"\n{args.stt} | rounds {args.rounds} | decode every {args.decode_every:.2f} s"
-        f" | voice {engine.voice_path.name} | corpus {Path(args.corpus).name}"
-        f" | {len(sentences)} sentences"
+        f" | voice {voice} | corpus {source} | {len(work)} sentences"
     )
-    for index, sentence in enumerate(sentences):
-        samples = np.asarray(
-            pcm16_to_float(engine._synthesize(sentence)), dtype="float32"
-        )
+    for index, (sentence, samples) in enumerate(work):
         audio_seconds = len(samples) / 16_000
         events = run(engine, samples, chunk, lead, tail, args.snr, args.seed + index)
         row = summarise(sentence, events)
