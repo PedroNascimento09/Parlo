@@ -781,8 +781,12 @@ const WELCOME_FEATURES = [
   { id: "read-aloud", label: "Read text aloud", units: ["voice-pt", "voice-en"] },
 ];
 
+function catalogEntry(unit) {
+  return catalogEntries.find((item) => item.unit === unit);
+}
+
 function catalogSize(unit) {
-  const entry = catalogEntries.find((item) => item.unit === unit);
+  const entry = catalogEntry(unit);
   return entry && entry.size_mb ? entry.size_mb : 0;
 }
 
@@ -869,11 +873,24 @@ async function renderWelcomePlan(state) {
     label.append(box, " " + feature.label);
     term.append(label);
     const detail = document.createElement("dd");
-    detail.textContent = missing.length
-      ? (size ? size + " MB" : "size not measured yet") +
+    if (!missing.length) {
+      detail.textContent = "already here";
+    } else {
+      const first = catalogEntry(feature.units[0]);
+      const cost =
+        first && first.memory_mb
+          ? first.name +
+            ": " +
+            first.memory_mb +
+            " MB in memory" +
+            (first.speed ? ", " + first.speed : "")
+          : "";
+      detail.textContent =
+        (size ? size + " MB to download" : "size not measured yet") +
         " · " +
-        (suggested ? "suggested for this machine" : "optional here")
-      : "already here";
+        (suggested ? "suggested here" : "optional here") +
+        (cost ? " · " + cost : "");
+    }
     plan.append(term, detail);
   }
   refreshWelcomeTotal();
