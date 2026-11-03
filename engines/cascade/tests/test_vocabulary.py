@@ -64,7 +64,7 @@ class VocabularyTests(unittest.TestCase):
 
     def test_a_broken_file_is_treated_as_an_empty_profile(self):
         Path(self.folder.name, "vocabulary.json").write_text("not json", encoding="utf-8")
-        self.assertEqual(vocabulary.load(), {"terms": {}, "abbreviations": {}})
+        self.assertEqual(vocabulary.load(), {"terms": {}, "abbreviations": {}, "snippets": {}})
         self.assertEqual(vocabulary.apply("nada muda")[0], "nada muda")
 
     def test_a_regular_expression_is_not_a_word(self):

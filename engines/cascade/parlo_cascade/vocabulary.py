@@ -4,9 +4,10 @@ from pathlib import Path
 
 from .models import data_root
 
-KINDS = ("term", "abbreviation")
+KINDS = ("term", "abbreviation", "snippet")
 FILE = "vocabulary.json"
 LIMIT = 64
+SNIPPET_LIMIT = 240
 
 
 def path() -> Path:
@@ -17,13 +18,17 @@ def load() -> dict:
     try:
         payload = json.loads(path().read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return {"terms": {}, "abbreviations": {}}
+        return _empty()
     if not isinstance(payload, dict):
-        return {"terms": {}, "abbreviations": {}}
-    return {
-        "terms": _pairs(payload.get("terms")),
-        "abbreviations": _pairs(payload.get("abbreviations")),
-    }
+        return _empty()
+    profile = _empty()
+    for kind in KINDS:
+        profile[_key(kind)] = _pairs(payload.get(_key(kind)))
+    return profile
+
+
+def _empty() -> dict:
+    return {_key(kind): {} for kind in KINDS}
 
 
 def _pairs(value) -> dict:
@@ -48,7 +53,8 @@ def save(profile: dict) -> None:
 
 def add(kind: str, wrong: str, right: str) -> dict:
     profile = load()
-    profile[_key(kind)][_side(wrong)] = _side(right)
+    limit = SNIPPET_LIMIT if kind == "snippet" else LIMIT
+    profile[_key(kind)][_side(wrong)] = _side(right, limit)
     save(profile)
     return profile
 
@@ -63,17 +69,17 @@ def discard(kind: str, wrong: str) -> dict:
 def _key(kind: str) -> str:
     if not isinstance(kind, str) or kind not in KINDS:
         raise ValueError(f"unknown kind {kind}, expected one of {KINDS}")
-    return "terms" if kind == "term" else "abbreviations"
+    return {"term": "terms", "abbreviation": "abbreviations", "snippet": "snippets"}[kind]
 
 
-def _side(value: str) -> str:
+def _side(value: str, limit: int = LIMIT) -> str:
     if not isinstance(value, str):
         raise ValueError("a word is written as text")
     text = " ".join(value.split())
     if not text:
         raise ValueError("a word cannot be empty")
-    if len(text) > LIMIT:
-        raise ValueError(f"a word cannot be longer than {LIMIT} characters")
+    if len(text) > limit:
+        raise ValueError(f"a word cannot be longer than {limit} characters")
     return text
 
 
@@ -83,7 +89,7 @@ def apply(text: str, profile: dict | None = None) -> tuple[str, tuple[str, ...]]
     profile = profile if profile is not None else load()
     changes = []
     for kind in KINDS:
-        for wrong, right in profile[_key(kind)].items():
+        for wrong, right in profile.get(_key(kind), {}).items():
             pattern = re.compile(rf"\b{re.escape(wrong)}\b", re.IGNORECASE)
             if not pattern.search(text):
                 continue

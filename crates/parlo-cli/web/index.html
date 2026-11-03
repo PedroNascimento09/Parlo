@@ -105,12 +105,12 @@
   <div class="gate-card">
     <p class="gate-kicker">Parlo</p>
     <h1 id="gate-title">What should Parlo call you?</h1>
-    <p class="gate-note">A name for the greeting, nothing more. No account, no sign-in, and it never leaves this computer.</p>
+    <p class="gate-note">Stays on this computer.</p>
     <label class="field" for="name-input">
       <span class="field-label">Your name</span>
       <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Pedro">
     </label>
-    <button id="name-save" class="install" type="button">That is me</button>
+    <button id="name-save" class="install" type="button">Continue</button>
     <p class="gate-note" id="name-note" aria-live="polite"></p>
   </div>
 </section>
@@ -363,6 +363,8 @@
     </dl>
     <h3 class="meeting-group">Where the text landed</h3>
     <ul class="insights-apps" id="insights-apps"></ul>
+    <h3 class="meeting-group">Words you reach for</h3>
+    <ol class="insights-words" id="insights-words"></ol>
     <h3 class="meeting-group">The last four weeks</h3>
     <div class="insights-days" id="insights-days" aria-hidden="true"></div>
     <p class="settings-note" id="insights-days-note"></p>
@@ -489,16 +491,18 @@
         <select id="vocabulary-kind" class="field-input">
           <option value="term">A name or a term</option>
           <option value="abbreviation">A short form I say</option>
+          <option value="snippet">A snippet I say</option>
         </select>
       </label>
       <label class="field" for="vocabulary-wrong">
         <span class="field-label">What Parlo hears</span>
         <input id="vocabulary-wrong" class="field-input" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="parlo">
       </label>
-      <label class="field" for="vocabulary-right">
+      <label class="field field-wide" for="vocabulary-right">
         <span class="field-label">What it should write</span>
-        <input id="vocabulary-right" class="field-input" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="Parlo">
+        <input id="vocabulary-right" class="field-input" type="text" maxlength="240" autocomplete="off" spellcheck="false" placeholder="Parlo">
       </label>
+      <p class="settings-note field-wide" id="vocabulary-hint">A snippet is a phrase that becomes a longer piece of text: say "my channel" and Parlo writes https://www.youtube.com/@example.</p>
       <button id="vocabulary-add" class="install" type="button">Add</button>
     </div>
     <dl class="status" id="vocabulary-list"></dl>

@@ -3239,6 +3239,127 @@ function matchesHistory(entry) {
   return true;
 }
 
+function paintInsights() {
+  const wordsEl = document.getElementById("insights-words");
+  if (!wordsEl) {
+    return;
+  }
+  const textOf = (entry) => entry.translation || entry.text || "";
+  const countOf = (entry) => textOf(entry).split(/\s+/).filter(Boolean).length;
+  const words = historyEntries.reduce((total, entry) => total + countOf(entry), 0);
+  const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
+  wordsEl.textContent = String(words);
+  document.getElementById("insights-minutes").textContent = (seconds / 60).toFixed(1);
+  document.getElementById("insights-count").textContent = String(historyEntries.length);
+  document.getElementById("insights-rate").textContent =
+    seconds > 0 && words > 0 ? String(Math.round(words / (seconds / 60))) : "–";
+
+  const apps = new Map();
+  for (const entry of historyEntries) {
+    const total = countOf(entry);
+    if (!total) {
+      continue;
+    }
+    const raw = (entry.app || "").trim();
+    const name = raw && raw !== "unknown" ? raw : "Another app";
+    apps.set(name, (apps.get(name) || 0) + total);
+  }
+  const ranked = [...apps.entries()].sort((left, right) => right[1] - left[1]).slice(0, 4);
+  const best = ranked.length ? ranked[0][1] : 0;
+  const list = document.getElementById("insights-apps");
+  list.replaceChildren();
+  if (!ranked.length) {
+    const empty = document.createElement("li");
+    empty.className = "insights-empty";
+    empty.textContent = "No words written yet, so there is nowhere to point at.";
+    list.append(empty);
+  }
+  for (const [name, total] of ranked) {
+    const item = document.createElement("li");
+    const label = document.createElement("span");
+    label.className = "insights-app";
+    label.textContent = name;
+    const track = document.createElement("span");
+    track.className = "insights-track";
+    const fill = document.createElement("span");
+    fill.className = "insights-fill";
+    fill.style.width = Math.max(4, Math.round((100 * total) / best)) + "%";
+    track.append(fill);
+    const value = document.createElement("span");
+    value.className = "insights-value";
+    value.textContent = total + (total === 1 ? " word" : " words");
+    item.append(label, track, value);
+    list.append(item);
+  }
+
+  const surface = new Map();
+  const skip = new Set([
+    "the", "and", "that", "this", "with", "for", "you", "your", "are", "was", "were", "have",
+    "has", "had", "but", "not", "from", "they", "them", "then", "than", "what", "when", "who",
+    "how", "all", "can", "our", "out", "one", "two", "get", "got", "just", "very", "also",
+    "into", "over", "about", "para", "porque", "como", "mais", "muito", "isso", "esta", "este",
+    "não", "que", "com", "uma", "dos", "das", "por", "mas", "foi", "ser", "tem", "aos", "pelo",
+    "pela", "aqui", "ainda", "depois",
+  ]);
+  for (const entry of historyEntries) {
+    for (const raw of textOf(entry).toLowerCase().split(/[^\p{L}\p{N}]+/u)) {
+      if (raw.length < 4 || skip.has(raw)) {
+        continue;
+      }
+      surface.set(raw, (surface.get(raw) || 0) + 1);
+    }
+  }
+  const top = [...surface.entries()].sort((left, right) => right[1] - left[1]).slice(0, 6);
+  const wordList = document.getElementById("insights-words");
+  wordList.replaceChildren();
+  if (!top.length) {
+    const empty = document.createElement("li");
+    empty.className = "insights-empty";
+    empty.textContent = "Nothing written yet, so there are no favourites.";
+    wordList.append(empty);
+  }
+  for (const [word, hits] of top) {
+    const item = document.createElement("li");
+    const label = document.createElement("span");
+    label.className = "insights-word";
+    label.textContent = word;
+    const count = document.createElement("span");
+    count.className = "insights-hits";
+    count.textContent = hits + "×";
+    item.append(label, count);
+    wordList.append(item);
+  }
+
+  const days = document.getElementById("insights-days");
+  days.replaceChildren();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const perDay = new Map();
+  for (const entry of historyEntries) {
+    const when = new Date((entry.at || 0) * 1000);
+    when.setHours(0, 0, 0, 0);
+    perDay.set(when.getTime(), (perDay.get(when.getTime()) || 0) + 1);
+  }
+  const peak = Math.max(1, ...perDay.values());
+  let active = 0;
+  for (let back = 27; back >= 0; back -= 1) {
+    const day = new Date(today.getTime() - back * 86400000);
+    const hits = perDay.get(day.getTime()) || 0;
+    if (hits) {
+      active += 1;
+    }
+    const cell = document.createElement("span");
+    cell.className = "insights-day";
+    cell.dataset.level = hits === 0 ? "0" : hits >= peak * 0.66 ? "3" : hits >= peak * 0.33 ? "2" : "1";
+    cell.title = day.toLocaleDateString() + ": " + hits + (hits === 1 ? " dictation" : " dictations");
+    days.append(cell);
+  }
+  document.getElementById("insights-days-note").textContent =
+    active === 0
+      ? "No dictation in the last four weeks."
+      : active + (active === 1 ? " day" : " days") + " with at least one dictation in the last four weeks.";
+}
+
 function renderHistory() {
   paintHome();
   paintInsights();
@@ -4101,3 +4222,20 @@ nameInput.addEventListener("keydown", (event) => {
     nameSave.click();
   }
 });
+
+const vocabularyHint = document.getElementById("vocabulary-hint");
+if (vocabularyHint) {
+  const examples = {
+    term: 'A name Parlo keeps getting wrong: hear "parlo" and write "Parlo".',
+    abbreviation: 'A short form you say out loud: "qr" becomes "quarta-feira".',
+    snippet: 'A phrase that becomes longer text: say "my channel" and Parlo writes https://www.youtube.com/@example.',
+  };
+  const paintHint = () => {
+    const kind = vocabularyKind.value;
+    vocabularyHint.textContent = examples[kind] || examples.term;
+    vocabularyRight.placeholder =
+      kind === "snippet" ? "https://www.youtube.com/@example" : "Parlo";
+  };
+  vocabularyKind.addEventListener("change", paintHint);
+  paintHint();
+}
