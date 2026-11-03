@@ -167,13 +167,43 @@ class MarianTranslator:
         return translated
 
 
+def find_onnx_pair(source, target):
+    root = Path(os.environ.get("PARLO_MODELS_DIR") or packs.packs_dir())
+    for name in (f"{source}-{target}-onnx", f"translate-{source}_{target}-onnx"):
+        folder = root / "mt" / name
+        if (folder / "encoder_model.onnx").is_file():
+            return folder
+    return None
+
+
+def is_onnx_folder(folder):
+    return (Path(folder) / "encoder_model.onnx").is_file()
+
+
 def from_environment(source=None, target=None):
     folder = os.environ.get("PARLO_CASCADE_MT_DIR")
     if not folder and source and target:
+        onnx_pair = find_onnx_pair(source, target)
+        if onnx_pair is not None:
+            from .onnx_mt import OnnxTranslator
+
+            return OnnxTranslator(
+                onnx_pair,
+                target=target,
+                threads=int(os.environ.get("PARLO_CASCADE_THREADS") or 0),
+            )
         pack = find_pack(source, target)
         folder = str(pack) if pack else None
     if not folder:
         return None
+    if is_onnx_folder(folder):
+        from .onnx_mt import OnnxTranslator
+
+        return OnnxTranslator(
+            folder,
+            target=target,
+            threads=int(os.environ.get("PARLO_CASCADE_THREADS") or 0),
+        )
     return MarianTranslator(
         folder,
         prefix=os.environ.get("PARLO_CASCADE_MT_PREFIX") or None,

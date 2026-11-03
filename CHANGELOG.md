@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The engine can load a direct ONNX pair. A folder named `<source>-<target>-onnx` under `models/mt` with the exported encoder, decoder, decoder-with-past, vocabulary and sentencepiece files is used before any translation package, with the language tag read from a table; the decoding loop is tested, and the runtime path is **implemented, not verified** because no weights are installed here.
+
 - Portuguese to German is no longer pivot-only on paper: an int8 ONNX build of a Romance-to-German checkpoint passes the gate's 20 sentences directly — numbers, clocks and negations 1.000, names 0.850, 601.6 ms median against 0.79 s for the two-stage route — and three sentences the pivot broke come back right. Nothing ships from it yet: the engine has no ONNX path, so the pair is measured, not installable.
 
 - `parlo doctor` ends with a **first session** check: every model on disk, the recogniser Settings chose, the shortcut, the settings file and a writable data folder, each pass or fail in one line, and it exits 1 while anything is missing.
