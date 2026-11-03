@@ -104,6 +104,7 @@ let chosenFile = null;
 let dubbing = false;
 let dubTimer = null;
 let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
+let currentShortcut = "Ctrl+Alt+D";
 let settingsBusy = false;
 let playbackDone = null;
 
@@ -561,7 +562,8 @@ async function refreshHealth() {
       return;
     }
     const values = await response.json();
-    shortcutEl.textContent = values.shortcut || "not set";
+    currentShortcut = values.shortcut || "not set";
+    shortcutEl.textContent = currentShortcut;
     modeEl.textContent = values.write
       ? "writing in " + (LANGUAGE_NAMES[values.write] || values.write)
       : "translating";
@@ -933,9 +935,10 @@ function reflectFirstRun(ready, dictation, downloading) {
       document.body.classList.remove("first-run");
       welcomeBox.hidden = true;
       setProgress(
-        ready
+        (ready
           ? "The models are ready. Parlo works offline from now on."
-          : "Dictation is ready. Translation and read aloud can be added later, one model at a time.",
+          : "Dictation is ready. Translation and read aloud can be added later, one model at a time.") +
+          " Hold " + currentShortcut + " and speak; the text lands where the cursor is.",
       );
     }
     return;
@@ -1420,6 +1423,7 @@ function reflectSettings(values) {
   settingsUnload.value = String(typeof values.unload === "number" ? values.unload : 30);
   settingsUnload.disabled = !settingsManageMemory.checked;
   settingsShortcut.value = values.shortcut || "Ctrl+Alt+D";
+  currentShortcut = settingsShortcut.value;
   settingsHandsFree.value = values.hands_free || "Ctrl+Alt+Shift+D";
   settingsCaptions.value = values.captions || "Ctrl+Alt+C";
   savedSettings = {

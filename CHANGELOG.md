@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The first start ends with the next step instead of a silent change of screen. When a recogniser arrives, the page says `Dictation is ready.` and names the shortcut to hold, taken from the settings, so nobody is left looking at a window with no instruction.
+
 - Whisper can be removed like anything else: the row deletes the weights from the Hugging Face cache, and a download still blocks removal. The first-start choice also stops resetting itself every time the model list refreshes, so a tick someone made stays ticked.
 
 - Whisper base joins the library as a second way to dictate: 145 MB on disk, 148 MB in memory, 0.24 of real time and 0.377 word error on the same recordings, downloaded and removed like any other model. It counts as a dictation model only when Settings selects it, so readiness never points at a model that is not there, and the first start offers it when Parakeet's 746 MB would leave less than 700 MB of headroom on this machine.
