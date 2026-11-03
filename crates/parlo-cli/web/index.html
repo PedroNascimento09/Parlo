@@ -464,20 +464,24 @@
       <h2 id="meetings-title">Meetings</h2>
       <p class="settings-note" id="meetings-note" aria-live="polite"></p>
     </div>
+    <div class="call-banner" id="call-banner" hidden>
+      <p class="call-text" id="call-text" aria-live="polite"></p>
+      <div class="meeting-actions">
+        <button id="call-record" class="install" type="button">Record this meeting</button>
+        <button id="call-dismiss" class="swap" type="button">Not now</button>
+      </div>
+    </div>
     <div class="settings-row meeting-compose">
       <label class="field" for="meeting-title">
         <span class="field-label">Title</span>
         <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Product Sync" autocomplete="off">
       </label>
-      <label class="field field-wide" for="meeting-text">
-        <span class="field-label">Transcript</span>
-        <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: Olá, tudo bem?&#10;Speaker 2: Sim, tudo bem."></textarea>
-      </label>
-      <div class="meeting-actions">
-        <button id="meeting-import" class="install" type="button">Import transcript</button>
-        <button id="meeting-export" class="swap" type="button">Copy all as Markdown</button>
-        <button id="meeting-summary" class="swap" type="button">Summarise the latest</button>
-      </div>
+      <button id="meeting-live" class="live" type="button" aria-pressed="false">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span>Record a meeting</span>
+      </button>
+      <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled>Pause</button>
+      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone into a transcript, a few seconds behind. Sound from another application is not captured yet.</p>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="meeting-search">
@@ -499,14 +503,20 @@
     </div>
     <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
     <dl class="status" id="meeting-citations"></dl>
-    <div class="settings-row meeting-record">
-      <button id="meeting-live" class="live" type="button" aria-pressed="false">
-        <span class="live-dot" aria-hidden="true"></span>
-        <span>Record a meeting</span>
-      </button>
-      <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled>Pause</button>
-      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone into a meeting transcript, a few seconds behind. Sound from another application is not captured yet.</p>
-    </div>
+    <details class="meeting-import">
+      <summary>Import a transcript instead</summary>
+      <div class="settings-row meeting-compose">
+        <label class="field field-wide" for="meeting-text">
+          <span class="field-label">Transcript</span>
+          <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: Olá, tudo bem?&#10;Speaker 2: Sim, tudo bem."></textarea>
+        </label>
+        <div class="meeting-actions">
+          <button id="meeting-import" class="install" type="button">Import transcript</button>
+          <button id="meeting-export" class="swap" type="button">Copy all as Markdown</button>
+          <button id="meeting-summary" class="swap" type="button">Summarise the latest</button>
+        </div>
+      </div>
+    </details>
     <div class="settings-row" id="meeting-notes-row" hidden>
       <label class="field field-wide" for="meeting-notes">
         <span class="field-label">Note</span>

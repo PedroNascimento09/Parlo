@@ -494,6 +494,20 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/call" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let answer = match crate::calls::detected() {
+            Some((app, title)) => {
+                serde_json::json!({ "app": app, "title": title.chars().take(80).collect::<String>() })
+            }
+            None => serde_json::json!({ "app": serde_json::Value::Null }),
+        };
+        return respond_json(stream, "200 OK", &answer.to_string()).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/meetings" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")

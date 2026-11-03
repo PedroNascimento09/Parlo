@@ -1591,3 +1591,59 @@ kbd {
 .catalog-sections dl:first-of-type {
   margin-top: 0;
 }
+
+.call-banner {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  margin: 18px 0 0;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--line));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.call-text {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.meeting-import {
+  margin: 22px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.meeting-import > summary {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.meeting-import > summary::-webkit-details-marker {
+  display: none;
+}
+
+.meeting-import > summary::before {
+  content: "▸";
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 140ms ease;
+}
+
+.meeting-import[open] > summary {
+  color: var(--ink);
+}
+
+.meeting-import[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meeting-import > summary::before {
+    transition: none;
+  }
+}

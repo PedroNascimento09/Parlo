@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The window offers to record a call instead of asking for a transcript. `GET /call` names a call application found among the visible windows (Discord, Zoom, Teams, Google Meet, Webex, Skype, Whereby, Jitsi, Slack), the Meetings screen shows that offer with **Record this meeting** and **Not now**, and pasting a transcript moved behind **Import a transcript instead** at the bottom of the same screen. **Status: three tests on the title match, and the endpoint answers `{"app":null}` on this machine; no call application was open, so the offer itself was not seen.**
+
 - A voice sample is refused before a profile is built on it. Past the length window and the silent recording, `POST /voice/sample` now measures how many samples clip, the level in dBFS and how much of the recording carries speech, and answers with the number that failed: a sample that clips, sits under -40 dBFS, or spends more than two thirds of its time in pauses is refused with what to change. **Status: six tests on synthetic buffers; not run against a real microphone here.**
 
 - The window's type scale, measure and states were lifted: a larger display and title size, 42 px fields, one focus colour on every control, hover and press feedback on the recent and history lists, and the reduced-motion list extended to both. **Status: checked in this window's own server on Home; the other sections share the same rules and were not opened.**

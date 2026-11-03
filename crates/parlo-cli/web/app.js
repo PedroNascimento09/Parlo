@@ -1452,6 +1452,50 @@ const meetingAsk = document.getElementById("meeting-ask");
 const meetingAskAll = document.getElementById("meeting-ask-all");
 const meetingAnswer = document.getElementById("meeting-answer");
 const meetingCitations = document.getElementById("meeting-citations");
+const callBanner = document.getElementById("call-banner");
+const callText = document.getElementById("call-text");
+const callRecord = document.getElementById("call-record");
+const callDismiss = document.getElementById("call-dismiss");
+const callsIgnored = new Set();
+
+async function checkCall() {
+  if (!callBanner || meetingLive.getAttribute("aria-pressed") === "true") {
+    return;
+  }
+  try {
+    const response = await fetch("/call", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      callBanner.hidden = true;
+      return;
+    }
+    const call = await response.json();
+    if (!call.app || callsIgnored.has(call.app)) {
+      callBanner.hidden = true;
+      return;
+    }
+    callText.dataset.app = call.app;
+    callText.textContent = call.app + " is open on this computer. Record this meeting?";
+    callBanner.hidden = false;
+  } catch (failure) {
+    callBanner.hidden = true;
+  }
+}
+
+callRecord.addEventListener("click", () => {
+  callBanner.hidden = true;
+  meetingLive.click();
+});
+
+callDismiss.addEventListener("click", () => {
+  callsIgnored.add(callText.dataset.app || "");
+  callBanner.hidden = true;
+});
+
+window.setInterval(checkCall, 20000);
+checkCall();
 const catalogList = document.getElementById("catalog-list");
 const catalogNote = document.getElementById("catalog-note");
 const historyList = document.getElementById("history-list");
