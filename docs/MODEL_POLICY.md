@@ -9,7 +9,7 @@ What may enter Parlo, how it is checked, and what the product promises about it.
 - A model is a file with a hash. The published sha256 and size are checked before the file is used, a mismatch leaves nothing behind, and a repaired file is fetched again rather than trusted.
 - A model can be removed completely, and a feature that needs it says so in a sentence instead of failing later.
 - Removing a model never removes a setting, a transcript or a recording.
-- Every model states its licence, its size, its memory, its measured speed on this machine and its quality where a measurement exists. Where none exists, the row says so.
+- Every model states its licence and what it does. A size, memory, speed or quality number appears only where it was measured here, and the row says so when it was not. The library is grouped by purpose and the choice of what to install belongs to the person; nothing is tested for its own sake, only for a claim that is published or a feature that ships.
 
 ## Licences
 
@@ -35,5 +35,5 @@ A quality number is published only with its corpus, its hardware, its commit and
 1. Find the artefact, its licence and its redistribution terms.
 2. Record it in `catalog/models.json` with hash, size, licence and source.
 3. Run the licence gate with `--strict --strict-models`.
-4. Measure it on the corpora the feature uses, on the reference machine, and write the row into `docs/BENCHMARKS.md`.
-5. Wire it into a feature only after the gate passes and the number exists.
+4. Measure it when it is wired into a feature, on the corpora that feature uses, on the reference machine, and write the row into `docs/BENCHMARKS.md`. Listing a model before it is measured is allowed: the row then says the number is not measured, which is not the same as a number.
+5. Wire it into a feature only after the gate passes. A measured number is required before a quality claim is published, not before a model is listed.

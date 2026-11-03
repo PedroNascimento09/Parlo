@@ -48,6 +48,14 @@ One row per model, and every row answers the same questions in the same order, i
 
 States are the four the plan already fixes, and they are visible: a model that is downloaded but not loaded says so, and so does one that a task is currently using.
 
+## The library, by what a model does
+
+The library is a broad catalogue grouped into sections by purpose: **Speech to text**, **Read text aloud**, **Translation** and **Speech synthesis**. A person opens the section that matches what they want and reads the rows; nothing is installed by opening it.
+
+Each row carries the name, the languages it covers, its size where one was measured, its licence, and its measured memory, speed or quality where a measurement exists. A row with no measurement says so instead of borrowing a number from a sibling. A row whose model this build cannot run carries no button and a sentence saying why; a row that can be installed carries **Download** and brings that model alone.
+
+The product does not test every model it lists. It tests what it ships and what it claims: a quality number is published only with its corpus and conditions, and a feature is wired only after the licence gate passes. Beyond that the catalogue is a choice, not a curriculum, and the client decides which model to take.
+
 ## Uninstall, and what happens next
 
 - Any model can be removed with one action, from its own row, with the size it frees shown first.
