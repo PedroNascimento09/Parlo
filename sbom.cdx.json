@@ -6,7 +6,7 @@
     "component": {
       "type": "application",
       "name": "parlo",
-      "version": "0.2.2"
+      "version": "0.2.3"
     }
   },
   "components": [
@@ -11327,6 +11327,162 @@
         {
           "type": "distribution",
           "url": "https://github.com/argosopentech/argospm-index"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "whisper-small",
+      "version": "small",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/Systran/faster-whisper-small"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "whisper-medium",
+      "version": "medium",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/Systran/faster-whisper-medium"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "piper-voice-en-gb-alba",
+      "version": "medium",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alba/medium"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "piper-voice-de-de-thorsten",
+      "version": "medium",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "piper-voice-fr-fr-siwis",
+      "version": "medium",
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium"
+        }
+      ]
+    },
+    {
+      "type": "data",
+      "name": "opus-mt-pt-de-direct",
+      "version": "1.0",
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "parlo:scope",
+          "value": "downloadable"
+        },
+        {
+          "name": "parlo:status",
+          "value": "verified"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://huggingface.co/Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa"
         }
       ]
     }
