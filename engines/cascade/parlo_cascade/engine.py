@@ -379,15 +379,20 @@ class CascadeEngine:
         return self._transcribe(samples)
 
     def write(self, pcm16: bytes, target: str | None = None) -> tuple[str, str]:
+        self.last_warning = ""
         text = self.transcribe(pcm16)
         if not text:
             return "", ""
         language = (target or self.target).lower()
         if language == self.source:
             return text, text
-        translator = self._load_writer(language)
-        self._touch("dictation translation")
-        return text, translator(text)
+        try:
+            translator = self._load_writer(language)
+            self._touch("dictation translation")
+            return text, translator(text)
+        except Exception as failure:
+            print(f"translation failed, the words were kept: {failure}", flush=True)
+            return text, ""
 
     def stream(self, pcm16: bytes) -> list[TextEvent]:
         if not self._ready:
