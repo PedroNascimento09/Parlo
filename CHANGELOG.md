@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A moved model folder is adopted only when every file matches byte for byte. The comparison used names and sizes, so a file of the same length but different content counted as a copy; it now reads both files in 64 KB blocks and refuses at the first difference, and an empty file never counts as a match, so a truncated copy is copied again instead of adopted.
+
 - A translation pair exported to a folder now installs from the command line. `parlo pair <folder> --from pt --to de` checks the seven files the direct export needs, names the ones that are missing instead of failing inside the decoder, copies them into `models/mt/pt-de-onnx` and refuses a destination that already holds a pair. **Status: the check and the copy are covered by tests; no export is published, so nothing here was run against real weights.**
 
 - An interrupted model download resumes where it stopped. The bytes already on disk stay in the `.part` file and the next run asks the server for the rest with `Range: bytes=<n>-`, hashes the whole file again and only then installs it; a server that ignores the range starts the file over, a part larger than the published size is dropped, and a part that already holds every byte is checked without a request. A downloaded file that ends short of the published size is still refused and deleted, so a wrong total never looks like a resume.

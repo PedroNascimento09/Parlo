@@ -487,14 +487,102 @@ fn same_tree(left: &Path, right: &Path) -> bool {
             if !target.is_dir() || !same_tree(&source, &target) {
                 return false;
             }
-        } else {
-            match (fs::metadata(&source), fs::metadata(&target)) {
-                (Ok(here), Ok(there)) if here.len() > 0 && here.len() == there.len() => {}
-                _ => return false,
-            }
+        } else if !same_file(&source, &target) {
+            return false;
         }
     }
     true
+}
+
+fn same_file(left: &Path, right: &Path) -> bool {
+    use std::io::Read;
+
+    let (Ok(here), Ok(there)) = (fs::metadata(left), fs::metadata(right)) else {
+        return false;
+    };
+    if !there.is_file() || here.len() == 0 || here.len() != there.len() {
+        return false;
+    }
+    let (Ok(mut one), Ok(mut other)) = (fs::File::open(left), fs::File::open(right)) else {
+        return false;
+    };
+    let mut first = [0u8; 64 * 1024];
+    let mut second = [0u8; 64 * 1024];
+    loop {
+        let read_one = match one.read(&mut first) {
+            Ok(count) => count,
+            Err(_) => return false,
+        };
+        let read_two = match other.read(&mut second) {
+            Ok(count) => count,
+            Err(_) => return false,
+        };
+        if read_one != read_two {
+            return false;
+        }
+        if read_one == 0 {
+            return true;
+        }
+        if first[..read_one] != second[..read_two] {
+            return false;
+        }
+    }
+}
+
+#[cfg(test)]
+mod adopt_tests {
+    use super::*;
+
+    fn folder(name: &str) -> PathBuf {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_nanos())
+            .unwrap_or_default();
+        let path = std::env::temp_dir().join(format!("parlo-adopt-{name}-{stamp}"));
+        fs::create_dir_all(&path).unwrap();
+        path
+    }
+
+    fn pair_of(here: &Path, there: &Path, left: &[u8], right: &[u8]) {
+        fs::create_dir_all(here).unwrap();
+        fs::create_dir_all(there).unwrap();
+        fs::write(here.join("model.bin"), left).unwrap();
+        fs::write(there.join("model.bin"), right).unwrap();
+    }
+
+    #[test]
+    fn a_copy_with_the_same_bytes_is_the_same_tree() {
+        let root = folder("same");
+        pair_of(
+            &root.join("here"),
+            &root.join("there"),
+            b"weights",
+            b"weights",
+        );
+        assert!(same_tree(&root.join("here"), &root.join("there")));
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn the_same_size_with_different_bytes_is_not_adopted() {
+        let root = folder("different");
+        pair_of(
+            &root.join("here"),
+            &root.join("there"),
+            b"weights",
+            b"weightz",
+        );
+        assert!(!same_tree(&root.join("here"), &root.join("there")));
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn an_empty_file_never_counts_as_adopted() {
+        let root = folder("empty");
+        pair_of(&root.join("here"), &root.join("there"), b"", b"");
+        assert!(!same_tree(&root.join("here"), &root.join("there")));
+        fs::remove_dir_all(&root).unwrap();
+    }
 }
 
 fn previous_of(path: &Path) -> PathBuf {
@@ -1000,7 +1088,7 @@ mod tests {
     }
 
     #[test]
-    fn the_same_files_with_the_same_sizes_are_adoptable() {
+    fn a_folder_is_adoptable_only_when_every_file_matches() {
         let root = std::env::temp_dir().join(format!("parlo-adopt-{}", std::process::id()));
         let left = root.join("left");
         let right = root.join("right");
@@ -1008,9 +1096,11 @@ mod tests {
         fs::create_dir_all(right.join("inner")).unwrap();
         fs::write(left.join("inner/model.bin"), vec![1u8; 64]).unwrap();
         assert!(!same_tree(&left, &right));
-        fs::write(right.join("inner/model.bin"), vec![2u8; 64]).unwrap();
+        fs::write(right.join("inner/model.bin"), vec![1u8; 64]).unwrap();
         assert!(same_tree(&left, &right));
-        fs::write(right.join("inner/model.bin"), vec![2u8; 32]).unwrap();
+        fs::write(right.join("inner/model.bin"), vec![2u8; 64]).unwrap();
+        assert!(!same_tree(&left, &right));
+        fs::write(right.join("inner/model.bin"), vec![1u8; 32]).unwrap();
         assert!(!same_tree(&left, &right));
         let _ = fs::remove_dir_all(&root);
     }

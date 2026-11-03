@@ -67,7 +67,7 @@ The product does not test every model it lists. It tests what it ships and what 
 
 - One setting says where models live, and it can point at another disk, including an external one.
 - Moving is a copy with verification, then the old copy goes; a move that fails leaves the working copy untouched and says why.
-- A folder that already contains models is adopted after checking each file's digest, so a person can carry them on a drive between machines of the same platform.
+- A folder that already contains models is adopted after comparing every file byte for byte, so a person can carry them on a drive between machines of the same platform.
 - The app says how much space a location needs before it copies anything.
 
 ## Delivery
