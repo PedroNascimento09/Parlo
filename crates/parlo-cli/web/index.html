@@ -167,10 +167,18 @@
   <section class="stage" id="status-list" aria-label="Right now">
     <div class="stage-head">
       <h1 class="home-greeting" id="home-greeting">Hello again</h1>
-      <p class="stage-state">
-        <span class="dot" id="status-dot" aria-hidden="true"></span>
-        <span id="status-state">Ready to dictate</span>
-      </p>
+      <div class="stage-tools">
+        <div class="style-row" role="group" aria-label="Writing style">
+          <span class="style-row-label">Writing</span>
+          <button class="style-chip" data-style="formal" type="button" aria-pressed="false">Formal</button>
+          <button class="style-chip" data-style="casual" type="button" aria-pressed="false">Casual</button>
+          <button class="style-chip" data-style="excited" type="button" aria-pressed="false">Excited</button>
+        </div>
+        <p class="stage-state">
+          <span class="dot" id="status-dot" aria-hidden="true"></span>
+          <span id="status-state">Ready to dictate</span>
+        </p>
+      </div>
     </div>
     <div class="home-body">
       <div class="home-main">

@@ -4208,7 +4208,10 @@ const nameSave = document.getElementById("name-save");
 const nameNote = document.getElementById("name-note");
 const gateName = document.getElementById("gate-name");
 const gateStyle = document.getElementById("gate-style");
-const styleCards = [...document.querySelectorAll(".style-card")];
+const styleControls = [
+  ...document.querySelectorAll(".style-card"),
+  ...document.querySelectorAll(".style-chip"),
+];
 const settingsStyle = document.getElementById("settings-style");
 const STYLES = ["formal", "casual", "excited"];
 
@@ -4219,8 +4222,8 @@ function storedStyle() {
 
 function paintStyleControls() {
   const chosen = storedStyle();
-  for (const card of styleCards) {
-    card.setAttribute("aria-pressed", String(card.dataset.style === chosen));
+  for (const control of styleControls) {
+    control.setAttribute("aria-pressed", String(control.dataset.style === chosen));
   }
   if (settingsStyle) {
     settingsStyle.value = chosen || "formal";
@@ -4272,9 +4275,9 @@ nameInput.addEventListener("keydown", (event) => {
   }
 });
 
-for (const card of styleCards) {
-  card.addEventListener("click", () => {
-    chooseStyle(card.dataset.style);
+for (const control of styleControls) {
+  control.addEventListener("click", () => {
+    chooseStyle(control.dataset.style);
   });
 }
 

@@ -2643,6 +2643,49 @@ body.first-run .home-panel dl {
   margin: 14px 0 0;
 }
 
+.stage-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.style-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.style-row-label {
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+
+.style-chip {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.style-chip:hover,
+.style-chip:focus-visible {
+  color: var(--ink);
+  background: var(--surface-sunken);
+}
+
+.style-chip[aria-pressed="true"] {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
 .home-panel {
   display: grid;
   gap: 14px;
