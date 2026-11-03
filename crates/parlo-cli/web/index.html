@@ -109,7 +109,7 @@
       <p class="gate-note">Stays on this computer.</p>
       <label class="field" for="name-input">
         <span class="field-label">Your name</span>
-        <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Pedro">
+        <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Alex">
       </label>
       <button id="name-save" class="install" type="button">Continue</button>
       <p class="gate-note" id="name-note" aria-live="polite"></p>
@@ -513,13 +513,13 @@
   <nav class="tabs" id="library-tabs" aria-label="Library">
     <button type="button" class="tab" data-tab="history">History</button>
     <button type="button" class="tab" data-tab="models">Models</button>
-    <button type="button" class="tab" data-tab="vocabulary">Vocabulary</button>
+    <button type="button" class="tab" data-tab="vocabulary">Words &amp; snippets</button>
     <button type="button" class="tab" data-tab="files">Files</button>
   </nav>
 
   <section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
     <div class="settings-head">
-      <h2 id="vocabulary-title">Words Parlo should know</h2>
+      <h2 id="vocabulary-title">Words and snippets Parlo should know</h2>
       <p class="settings-note" id="vocabulary-note" aria-live="polite">Names and short forms stay on this computer and are applied before any model reads the sentence.</p>
     </div>
     <div class="settings-row">
@@ -540,6 +540,7 @@
         <input id="vocabulary-right" class="field-input" type="text" maxlength="240" autocomplete="off" spellcheck="false" placeholder="Parlo">
       </label>
       <div class="preset-row field-wide" role="group" aria-label="Snippet examples">
+        <button class="preset" type="button" data-wrong="my linkedin" data-right="https://www.linkedin.com/in/example">My LinkedIn</button>
         <button class="preset" type="button" data-wrong="my channel" data-right="https://www.youtube.com/@example">My channel</button>
         <button class="preset" type="button" data-wrong="my calendar" data-right="https://cal.com/example">My calendar</button>
         <button class="preset" type="button" data-wrong="my sign off" data-right="Best, {{name}}">My sign off</button>

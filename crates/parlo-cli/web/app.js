@@ -2355,14 +2355,19 @@ function renderVocabulary(profile) {
   for (const [wrong, right] of Object.entries(profile.abbreviations || {})) {
     rows.push({ kind: "abbreviation", wrong, right });
   }
+  for (const [wrong, right] of Object.entries(profile.snippets || {})) {
+    rows.push({ kind: "snippet", wrong, right });
+  }
   if (!rows.length) {
     vocabularyNote.textContent =
-      "Nothing here yet. A name the recogniser keeps getting wrong is the first thing worth adding.";
+      "Nothing here yet. A snippet is the quickest win: say \"my linkedin\" and Parlo writes your link.";
     return;
   }
   for (const row of rows) {
     const term = document.createElement("dt");
-    term.textContent = (row.kind === "term" ? "Name: " : "Short form: ") + row.wrong;
+    const label =
+      row.kind === "term" ? "Name: " : row.kind === "snippet" ? "Snippet: " : "Short form: ";
+    term.textContent = label + row.wrong;
     const detail = document.createElement("dd");
     const written = document.createElement("span");
     written.textContent = "becomes " + row.right;
@@ -2374,7 +2379,7 @@ function renderVocabulary(profile) {
     detail.append(written, remove);
     vocabularyList.append(term, detail);
   }
-  const count = rows.length === 1 ? "1 word kept" : rows.length + " words kept";
+  const count = rows.length === 1 ? "1 entry kept" : rows.length + " entries kept";
   vocabularyNote.textContent = count + " on this computer.";
 }
 
@@ -4294,7 +4299,7 @@ document.addEventListener("click", (event) => {
   document.getElementById("vocabulary-wrong").value = preset.dataset.wrong;
   document.getElementById("vocabulary-right").value = preset.dataset.right.replace(
     "{{name}}",
-    storedName() || "Pedro",
+    storedName() || "Alex",
   );
   document.getElementById("vocabulary-right").focus();
 });

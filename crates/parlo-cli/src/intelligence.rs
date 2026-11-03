@@ -136,11 +136,6 @@ pub fn run(request: &Value) -> Result<Value, String> {
 }
 
 fn engine() -> Result<Command, String> {
-    if let Some(engine) = crate::sidecar::bundled_engine() {
-        let mut command = Command::new(engine);
-        command.arg("--intelligence");
-        return Ok(command);
-    }
     let directory = crate::models::cascade_dir();
     let entry = directory.join("parlo_engine.py");
     if !entry.is_file() {
