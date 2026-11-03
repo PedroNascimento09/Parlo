@@ -3372,6 +3372,7 @@ function paintInsights() {
 function renderHistory() {
   paintHome();
   paintInsights();
+  paintPrograms();
   historyList.replaceChildren();
   if (!historyEntries.length) {
     historyFilters.hidden = true;
@@ -3475,11 +3476,52 @@ async function editHistory(entry) {
     return;
   }
   try {
-    await historyPost("/history/edit", { id: entry.id, text: chosen });
+    const updated = await historyPost("/history/edit", { id: entry.id, text: chosen });
     await loadHistory();
+    renderLearned(updated.suggestions || []);
     historyNote.textContent = "Corrected on this computer. Nothing was sent anywhere.";
   } catch (failure) {
     historyNote.textContent = failure.message;
+  }
+}
+
+const historyLearn = document.getElementById("history-learn");
+
+function renderLearned(pairs) {
+  if (!historyLearn) {
+    return;
+  }
+  historyLearn.replaceChildren();
+  historyLearn.hidden = pairs.length === 0;
+  for (const pair of pairs) {
+    const line = document.createElement("p");
+    line.textContent =
+      "Parlo heard “" + pair.heard + "” and you wrote “" + pair.written + "”. ";
+    const learn = document.createElement("button");
+    learn.type = "button";
+    learn.className = "swap";
+    learn.textContent = "Learn it";
+    learn.title = "Keep this pair in the vocabulary so the recogniser writes it next time";
+    learn.addEventListener("click", () => learnTerm(pair, line));
+    line.append(learn);
+    historyLearn.append(line);
+  }
+}
+
+async function learnTerm(pair, line) {
+  try {
+    const response = await fetch("/vocabulary/accept", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ heard: pair.heard, written: pair.written }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That pair could not be kept.");
+    }
+    line.textContent = "Kept: “" + pair.heard + "” now becomes “" + pair.written + "”.";
+  } catch (failure) {
+    line.textContent = failure.message;
   }
 }
 
@@ -3944,6 +3986,7 @@ const SETTINGS_TABS = {
   insights: ["insights"],
   dictation: ["settings"],
   languages: ["languages"],
+  programs: ["programs"],
   shortcuts: ["shortcuts"],
   advanced: ["intelligence", "provider", "privacy", "about"],
 };
@@ -4326,6 +4369,123 @@ if (settingsNameSave) {
   });
 }
 
+const programsName = document.getElementById("programs-name");
+const programsStyle = document.getElementById("programs-style");
+const programsWrite = document.getElementById("programs-write");
+const programsSave = document.getElementById("programs-save");
+const programsNote = document.getElementById("programs-note");
+const programsList = document.getElementById("programs-list");
+const programsKnown = document.getElementById("programs-known");
+let appProfiles = {};
+
+function paintPrograms() {
+  if (!programsList) {
+    return;
+  }
+  programsList.replaceChildren();
+  const entries = Object.entries(appProfiles);
+  if (!entries.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "No program has a style of its own yet.";
+    programsList.append(empty);
+  }
+  for (const [program, profile] of entries) {
+    const row = document.createElement("div");
+    const term = document.createElement("dt");
+    term.textContent = program.charAt(0).toUpperCase() + program.slice(1);
+    const detail = document.createElement("dd");
+    const parts = [profile.style || "the usual style"];
+    if (profile.write) {
+      parts.push("writes " + (LANGUAGE_NAMES[profile.write] || profile.write));
+    }
+    detail.textContent = parts.join(" · ") + " ";
+    const forget = document.createElement("button");
+    forget.type = "button";
+    forget.className = "swap";
+    forget.textContent = "Forget";
+    forget.title = "Let this program use the usual style again";
+    forget.addEventListener("click", () => saveProgram(program, "", ""));
+    detail.append(forget);
+    row.append(term, detail);
+    programsList.append(row);
+  }
+  if (programsKnown) {
+    programsKnown.replaceChildren();
+    const names = new Map();
+    for (const name of [
+      ...Object.keys(appProfiles),
+      ...historyEntries.map((entry) => entry.app),
+    ]) {
+      if (!name) {
+        continue;
+      }
+      const key = name.toLowerCase();
+      const known = names.get(key);
+      if (!known || (known === key && name !== key)) {
+        names.set(key, name);
+      }
+    }
+    for (const name of names.values()) {
+      const option = document.createElement("option");
+      option.value = name;
+      programsKnown.append(option);
+    }
+  }
+}
+
+async function saveProgram(program, style, write) {
+  try {
+    const response = await fetch("/profiles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ program, style, write }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "The program could not be saved.");
+    }
+    appProfiles = detail;
+    paintPrograms();
+    programsNote.textContent =
+      style || write
+        ? "Saved. The next dictation into " + program + " follows this."
+        : "Forgotten. " + program + " uses the usual style again.";
+  } catch (failure) {
+    programsNote.textContent = failure.message;
+  }
+}
+
+if (programsSave) {
+  programsSave.addEventListener("click", () => {
+    const program = programsName.value.trim();
+    if (!program) {
+      programsNote.textContent = "Name the program first, as Windows calls it.";
+      programsName.focus();
+      return;
+    }
+    saveProgram(program, programsStyle.value, programsWrite.value);
+  });
+}
+
+async function loadProfiles() {
+  if (!programsList) {
+    return;
+  }
+  try {
+    const response = await fetch("/profiles", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      throw new Error("status " + response.status);
+    }
+    appProfiles = await response.json();
+    paintPrograms();
+  } catch (failure) {
+    programsNote.textContent = "The programs could not be read from Parlo.";
+  }
+}
+
+loadProfiles();
 paintSettingsName();
 paintStyleControls();
 

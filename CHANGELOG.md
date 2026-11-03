@@ -4,6 +4,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A correction offers the word it changed, with one button that keeps it in the vocabulary.
+- Settings has a Programs tab: each program gets its own writing style and language, and a Forget button takes it back.
+
 - A correction in the history proposes the words that changed, and one of them can be saved into the vocabulary as a term, so the recogniser stops missing the name.
 - A program profile now carries the language to write as well as the style, and a profile saved before this change still reads.
 

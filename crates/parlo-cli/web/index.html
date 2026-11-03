@@ -202,6 +202,7 @@
     <button type="button" class="tab" data-tab="you">You</button>
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
     <button type="button" class="tab" data-tab="languages">Languages</button>
+    <button type="button" class="tab" data-tab="programs">Programs</button>
     <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
     <button type="button" class="tab" data-tab="advanced">Advanced</button>
     <button type="button" class="tab" data-tab="insights">Insights</button>
@@ -340,6 +341,47 @@
         <dd><span id="status-models">checking</span> <a id="status-models-manage" href="#library">manage</a></dd>
       </div>
     </dl>
+    <div class="settings-row">
+      <button id="talk" class="talk" type="button" aria-pressed="false">
+        <span class="talk-label">Speak a translation</span>
+        <span class="talk-sub">Hold while you speak; the answer plays aloud.</span>
+        <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
+      </button>
+    </div>
+  </section>
+
+  <section class="settings" id="programs" aria-labelledby="programs-title">
+    <div class="settings-head">
+      <h2 id="programs-title">A style for each program</h2>
+      <p class="settings-note">A program named here shapes the dictation that lands in it. With both fields on Default the program is forgotten.</p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="programs-name">
+        <span class="field-label">Program</span>
+        <input id="programs-name" class="field-input" type="text" list="programs-known" placeholder="Slack" autocomplete="off" spellcheck="false">
+      </label>
+      <datalist id="programs-known"></datalist>
+      <label class="field" for="programs-style">
+        <span class="field-label">Writing style</span>
+        <select id="programs-style" class="field-input">
+          <option value="">Default</option>
+          <option value="formal">Formal</option>
+          <option value="casual">Casual</option>
+          <option value="excited">Excited</option>
+        </select>
+      </label>
+      <label class="field" for="programs-write">
+        <span class="field-label">Write in</span>
+        <select id="programs-write" class="field-input">
+          <option value="">Default</option>
+          <option value="pt">Portuguese</option>
+          <option value="en">English</option>
+        </select>
+      </label>
+      <button id="programs-save" class="install" type="button">Save program</button>
+      <p class="settings-note field-wide" id="programs-note" aria-live="polite"></p>
+    </div>
+    <dl class="status" id="programs-list"></dl>
   </section>
 
   <section class="settings" id="languages" aria-labelledby="languages-title">
@@ -677,6 +719,7 @@
       </label>
     </div>
     <dl class="status" id="history-list"></dl>
+    <div class="settings-note" id="history-learn" aria-live="polite" hidden></div>
     <button id="history-clear" class="install" type="button" hidden>Clear history</button>
   </section>
 
