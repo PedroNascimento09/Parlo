@@ -27,6 +27,7 @@ mod models;
 mod notes;
 mod playback;
 mod record;
+mod retention;
 mod serve;
 mod sidecar;
 mod summary;
@@ -50,6 +51,7 @@ fn main() -> ExitCode {
         Some("dictate") => dictate_command(&args[1..]),
         Some("app") => app_command(&args[1..]),
         Some("mcp") => mcp::serve(),
+        Some("retention") => retention_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
@@ -113,6 +115,7 @@ fn print_help() {
     println!(
         "  mcp                                meetings and dictations for an MCP client, on stdio"
     );
+    println!("  retention [--days N] [--apply]     delete meetings older than N days, dry run by default");
     println!("  update [--check]                   install the latest release in place");
     println!("  engines                            list engines, licenses and voice levels");
     println!("  config [--engine NAME] [--from X]  show or write the defaults in the config file");
@@ -1456,6 +1459,58 @@ fn dictate_command(args: &[String]) -> Result<(), String> {
             Err(error) => eprintln!("  clipboard  not copied: {error}"),
         }
     }
+    Ok(())
+}
+
+fn retention_command(args: &[String]) -> Result<(), String> {
+    let mut days: u64 = 30;
+    let mut apply = false;
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--days" => {
+                index += 1;
+                days = args
+                    .get(index)
+                    .ok_or("--days needs a number")?
+                    .parse()
+                    .map_err(|_| "--days needs a number".to_string())?;
+            }
+            "--apply" => apply = true,
+            other => {
+                return Err(format!(
+                    "unknown option {other}; usage: parlo retention [--days N] [--apply]"
+                ))
+            }
+        }
+        index += 1;
+    }
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or_default();
+    let cutoff = retention::cutoff_ms(days, now_ms)?;
+    let stale = retention::stale(&crate::meeting::list(), cutoff);
+    if !apply {
+        println!(
+            "{days} days or older: {} meeting(s) would be deleted",
+            stale.len()
+        );
+        if !stale.is_empty() {
+            println!("run the same command with --apply to delete them");
+        }
+        return Ok(());
+    }
+    let mut removed = 0;
+    for id in &stale {
+        crate::meeting::delete(id)?;
+        removed += 1;
+    }
+    println!("{removed} meeting(s) older than {days} days were deleted");
+    println!(
+        "dictations were not touched: the library keeps the last {} entries",
+        crate::history::LIMIT
+    );
     Ok(())
 }
 

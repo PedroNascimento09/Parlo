@@ -48,7 +48,7 @@ Four capabilities exist ahead of where the plan schedules them: **dubbing** (pla
 | v1.3 Meeting Chat | Ask the meetings, with verifiable citations | G4 | Not started |
 | v1.4 Plataforma | SDK, plugins, stable local API, MCP | G4 | Partly: `parlo mcp` serves meetings and dictations to an MCP client over stdio (list, ask with citations, Markdown notes, recent dictations), tested without a client; the contract a plugin will meet is written in [docs/PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md); no SDK and no plugin host yet |
 | v1.5 Dub e Voz própria | Dub files, clone your own voice with consent | G4 | Dubbing shipped ahead; voice cloning not started |
-| v1.6 Equipa e áudio pro | Workspaces, retention, advanced denoise and echo cancellation, public benchmark | G4 | Not started |
+| v1.6 Equipa e áudio pro | Workspaces, retention, advanced denoise and echo cancellation, public benchmark | G4 | Partly: meeting retention by an explicit command, which prints what it would delete and only deletes with `--apply`; dictations stay bounded at 200 entries. Workspaces, denoise, echo cancellation and the public benchmark are not started |
 
 Windows first, up to v1.0. macOS and Linux arrive after it, first with dictation and captions and only later with Live; on Linux, X11 and Wayland are separate problems.
 
