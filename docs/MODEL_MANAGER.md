@@ -109,3 +109,36 @@ Rows carry the lifecycle of Part XVI. A model is loaded or unloaded by hand, eve
 Built since: moving the models answers with the megabytes it will copy and whether the target already holds an identical tree, and only a second press copies anything; a target whose files match in name and size is adopted instead of copied again. A model downloaded over an existing copy sets that copy aside beside it, and **Restore** puts it back. The first start names the recogniser it recommends with the measured realtime factor behind the choice, not memory alone.
 
 Still missing: the file-by-file digest check on adoption, resuming an interrupted download instead of starting it again, memory pressure, preloading and a limit on total memory. Those stay planned, and the plan keeps the rest at **v0.7 Modelos**.
+
+## A translation pair the engine loads from a folder
+
+The engine reads two kinds of translation model. A package produced by `setup_models.py` speaks CTranslate2. A folder of ONNX files speaks the direct export, which is how Portuguese to German runs at 601.6 ms median where the pivot needs about 790 ms.
+
+The folder is `models/mt/<source>-<target>-onnx` (or `translate-<source>_<target>-onnx`), and it holds seven files:
+
+| File | What it is |
+|---|---|
+| `encoder_model.onnx` | the encoder |
+| `decoder_model.onnx` | the decoder for the first token |
+| `decoder_with_past_model.onnx` | the decoder that reuses past key values |
+| `config.json` | carries `decoder_start_token_id` and `eos_token_id` |
+| `vocab.json` | the piece table, where the language tag is an id |
+| `source.spm`, `target.spm` | the sentencepiece models |
+
+`parlo` looks for the folder before any other pair for that direction, so an exported pair wins over a converted one. `PARLO_CASCADE_MT_DIR` accepts either shape and is recognised by the presence of `encoder_model.onnx`.
+
+The language tag comes from a table (`>>deu<<`, `>>eng<<`, `>>fra<<`, `>>por<<`, `>>nld<<`, `>>spa<<`, `>>ita<<`). A folder whose tag is unknown, or whose tag is not in `vocab.json`, is refused with the file or the tag named, before any weight is loaded.
+
+No such export is published for the German pair, so the folder is made on the machine that has the toolchain:
+
+```bash
+python -m venv out/onnx
+out/onnx/Scripts/pip install torch==2.4.1 "optimum[onnxruntime]==1.24.0" transformers==4.46.3
+out/onnx/Scripts/python engines/cascade/scripts/export_pair.py --output out/pt-de-onnx
+```
+
+`export_pair.py` calls `main_export` with `text2text-generation-with-past`, which is the task that writes `decoder_with_past_model.onnx`; the plain `translation` task does not. Copy the folder to `models/mt/pt-de-onnx` and the engine picks it up on the next start.
+
+**Status: implemented, not verified in an installed build.** The decoding loop and the folder refusals are covered by tests that need no weights; the runtime path has not been run since the export measured in `docs/BENCHMARKS.md` was deleted with the other artefacts, so it is not claimed as working.
+
+The export writes `config.json` and `vocab.json` itself, so the copy step is a real step rather than a formality: a missing file is named in the refusal instead of failing somewhere inside the decoder.

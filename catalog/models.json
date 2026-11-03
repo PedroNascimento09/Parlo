@@ -271,7 +271,7 @@
       "languages": [
         "pt to de"
       ],
-      "note": "Translates correctly in float32; no converted build runs yet, so there is no Download button."
+      "note": "Translates correctly as an ONNX export; no export is published, so the folder is built locally as docs/MODEL_MANAGER.md describes, and the engine loads it before any other pair."
     }
   ]
 }
