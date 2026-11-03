@@ -1420,8 +1420,9 @@ kbd {
 }
 
 .settings-nav .tab[aria-selected="true"] {
-  background: var(--ink);
-  color: var(--canvas);
+  background: var(--accent-wash);
+  color: var(--ink);
+  font-weight: 600;
 }
 
 #settings-foot {
@@ -1546,8 +1547,8 @@ kbd {
 }
 
 #library-tabs .tab[aria-selected="true"] {
-  background: var(--ink);
-  color: var(--canvas);
+  background: var(--accent-wash);
+  color: var(--ink);
   font-weight: 600;
   opacity: 1;
 }
