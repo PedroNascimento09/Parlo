@@ -2347,7 +2347,13 @@ fn handle(
             }
         };
         let (from, to) = match project.as_ref() {
-            Some(project) => (project.from.clone(), project.to.clone()),
+            Some(project) => (
+                project.from.clone(),
+                header(&headers, "x-parlo-to")
+                    .map(|value| value.trim().to_ascii_lowercase())
+                    .filter(|value| !value.is_empty())
+                    .unwrap_or_else(|| project.to.clone()),
+            ),
             None => (
                 header(&headers, "x-parlo-from")
                     .unwrap_or_else(|| stored.from.clone())
@@ -2428,7 +2434,7 @@ fn handle(
         return match result {
             Ok(result) => {
                 if let (Some(project), Some(store)) = (project.as_mut(), project_store.as_mut()) {
-                    apply_dub(project, &result.lines);
+                    apply_dub(project, &result.lines, &to);
                     if let Err(error) = store.save_dub_project(project) {
                         return respond_json(
                             stream,
@@ -2466,8 +2472,9 @@ fn handle(
                     .map(|project| format!(",\"project_id\":\"{}\"", json_string(&project.id)))
                     .unwrap_or_default();
                 let body = format!(
-                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"seconds\":{:.2},\"lines\":[{}]{project_field}}}",
+                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"to\":\"{}\",\"seconds\":{:.2},\"lines\":[{}]{project_field}}}",
                     json_string(&out_name),
+                    json_string(&to),
                     result.seconds,
                     lines.join(",")
                 );
@@ -3807,6 +3814,7 @@ fn apply_project_edits(
         if text_changed || before.get(&segment.id).cloned().flatten() != after {
             if text_changed {
                 segment.target_text = None;
+                segment.translations.clear();
             }
             segment.state = "edited".to_string();
         }
@@ -3882,20 +3890,46 @@ fn project_json(project: &crate::store::DubProject) -> Result<String, serde_json
             })
         })
         .collect();
+    let mut languages: Vec<&str> = Vec::new();
+    for spec in crate::registry::MODELS
+        .iter()
+        .filter(|spec| spec.kind == "translation")
+    {
+        if spec.languages.first() == Some(&project.from.as_str()) {
+            if let Some(target) = spec.languages.get(1) {
+                if !languages.contains(target) {
+                    languages.push(target);
+                }
+            }
+        }
+    }
+    if !languages.contains(&project.to.as_str()) {
+        languages.push(&project.to);
+    }
     let mut document = serde_json::to_value(project)?;
     document["voices"] = serde_json::Value::Array(voices);
+    document["languages"] = serde_json::json!(languages);
     serde_json::to_string(&document)
 }
 
-fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line]) {
+fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line], language: &str) {
+    let primary = language == project.to;
     for line in lines {
         let Some(id) = line.id.as_deref() else {
             continue;
         };
         if let Some(segment) = project.segments.iter_mut().find(|segment| segment.id == id) {
-            segment.target_text = Some(line.translated.clone());
+            segment
+                .translations
+                .insert(language.to_string(), line.translated.clone());
+            if primary {
+                segment.target_text = Some(line.translated.clone());
+            }
             segment.state = "dubbed".to_string();
         }
+    }
+    if !project.targets.iter().any(|target| target == language) {
+        project.targets.push(language.to_string());
     }
 }
 
@@ -4280,6 +4314,7 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
@@ -4321,6 +4356,7 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4352,6 +4388,7 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4363,6 +4400,7 @@ mod tests {
             end_ms: 6_000,
             speaker: Some("Bob".to_string()),
             voice_id: Some("voice-fr".to_string()),
+            translations: std::collections::BTreeMap::new(),
             source_text: "Até logo".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4374,6 +4412,7 @@ mod tests {
             end_ms: 8_000,
             speaker: None,
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: "Sem voz".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4399,6 +4438,7 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
@@ -4444,6 +4484,7 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4467,13 +4508,63 @@ mod tests {
             },
         ];
 
-        apply_dub(&mut project, &lines);
+        apply_dub(&mut project, &lines, "en");
 
         assert_eq!(
             project.segments[0].target_text.as_deref(),
             Some("Good morning")
         );
         assert_eq!(project.segments[0].state, "dubbed");
+    }
+
+    #[test]
+    fn a_project_keeps_one_translation_per_target_language() {
+        let mut project =
+            crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            voice_id: Some("voice-en".to_string()),
+            translations: std::collections::BTreeMap::new(),
+            source_text: "Bom dia".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+        let line = |text: &str, voice: &str| dub::Line {
+            start: 1.25,
+            end: 2.0,
+            source: "Bom dia".to_string(),
+            translated: text.to_string(),
+            id: Some("p1-0".to_string()),
+            voice: Some(voice.to_string()),
+        };
+
+        apply_dub(&mut project, &[line("Good morning", "voice-en")], "en");
+        assert_eq!(project.targets, ["en"]);
+        apply_dub(&mut project, &[line("Guten Morgen", "voice-de")], "de");
+
+        assert_eq!(project.targets, ["en", "de"]);
+        assert_eq!(
+            project.segments[0]
+                .translations
+                .get("en")
+                .map(String::as_str),
+            Some("Good morning")
+        );
+        assert_eq!(
+            project.segments[0]
+                .translations
+                .get("de")
+                .map(String::as_str),
+            Some("Guten Morgen")
+        );
+        assert_eq!(
+            project.segments[0].target_text.as_deref(),
+            Some("Good morning")
+        );
     }
 
     #[test]

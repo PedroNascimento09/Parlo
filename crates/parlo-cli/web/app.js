@@ -54,6 +54,8 @@ const dubProjectLabel = document.getElementById("dub-project");
 const dubSave = document.getElementById("dub-save");
 const dubCast = document.getElementById("dub-cast");
 const dubCastRows = document.getElementById("dub-cast-rows");
+const dubLanguage = document.getElementById("dub-language");
+const dubTarget = document.getElementById("dub-target");
 const dubClear = document.getElementById("dub-clear");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
@@ -1439,7 +1441,16 @@ document.getElementById("welcome-more").addEventListener("click", () => {
 });
 modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 
-const LANGUAGE_NAMES = { pt: "Portuguese", en: "English" };
+const LANGUAGE_NAMES = {
+  pt: "Portuguese",
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  it: "Italian",
+  nl: "Dutch",
+  de: "German",
+  ru: "Russian",
+};
 const settingsWrite = document.getElementById("settings-write");
 const settingsShortcut = document.getElementById("settings-shortcut");
 const settingsShortcutSave = document.getElementById("settings-shortcut-save");
@@ -2159,6 +2170,7 @@ function showDub(result) {
   if (!dubProject) {
     dubProjectLabel.textContent = "";
     dubClear.hidden = true;
+    dubLanguage.hidden = true;
   }
   dubDownload.hidden = false;
   dubDownload.href = "/dub/" + encodeURIComponent(result.id);
@@ -2169,7 +2181,8 @@ function showDub(result) {
     (lines.length === 1 ? " line" : " lines") +
     " · " +
     formatClock(result.seconds) +
-    " of audio";
+    " of audio" +
+    (result.to ? " · " + (LANGUAGE_NAMES[result.to] || result.to) : "");
   dubLines.replaceChildren();
   for (const line of lines) {
     const item = document.createElement("li");
@@ -2197,8 +2210,31 @@ function showDub(result) {
   dubResult.hidden = false;
 }
 
+function fillDubTargets(project, chosen) {
+  const codes = [];
+  for (const code of [
+    project.to,
+    ...(project.targets || []),
+    ...(project.languages || []),
+  ]) {
+    if (code && !codes.includes(code)) {
+      codes.push(code);
+    }
+  }
+  dubTarget.replaceChildren();
+  for (const code of codes) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = LANGUAGE_NAMES[code] || code.toUpperCase();
+    dubTarget.append(option);
+  }
+  dubTarget.value = codes.includes(chosen) ? chosen : project.to;
+  dubLanguage.hidden = codes.length === 0;
+}
+
 function showProject(project) {
   dubProject = project;
+  fillDubTargets(project, dubTarget.value);
   dubDownload.hidden = true;
   dubClear.hidden = false;
   dubSave.hidden = false;
@@ -2382,6 +2418,29 @@ async function saveProject() {
   }
 }
 
+async function refreshDubProject(language) {
+  if (!dubProject) {
+    return;
+  }
+  const id = dubProject.id;
+  try {
+    const response = await fetch("/dub/project/" + encodeURIComponent(id), {
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      return;
+    }
+    const project = await response.json();
+    if (!dubProject || dubProject.id !== id) {
+      return;
+    }
+    dubProject = project;
+    fillDubTargets(project, language);
+  } catch {
+    return;
+  }
+}
+
 async function importSubtitles(file) {
   if (!file || dubbing) {
     return;
@@ -2465,6 +2524,9 @@ async function startDub() {
     };
     if (dubProject) {
       headers["X-Parlo-Project"] = dubProject.id;
+      if (dubTarget.value) {
+        headers["X-Parlo-To"] = dubTarget.value;
+      }
     }
     const response = await fetch("/dub", {
       method: "POST",
@@ -2479,6 +2541,9 @@ async function startDub() {
       throw new Error(describeDubError(detail.error));
     }
     showDub(detail);
+    if (dubProject && detail.project_id) {
+      refreshDubProject(detail.to);
+    }
     setDubStatus("Dubbed in " + formatClock((Date.now() - started) / 1000) + ". Download it above, or keep using Parlo.");
   } catch (failure) {
     setDubStatus("");
@@ -2525,6 +2590,7 @@ dubClear.addEventListener("click", () => {
   dubSave.hidden = true;
   dubCast.hidden = true;
   dubResult.hidden = true;
+  dubLanguage.hidden = true;
   setDubStatus("Imported subtitles removed. The next dub will use speech recognition.");
 });
 

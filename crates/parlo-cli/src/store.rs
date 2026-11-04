@@ -64,6 +64,13 @@ CREATE TABLE IF NOT EXISTS segments (
     state TEXT,
     qc_json TEXT
 );
+CREATE TABLE IF NOT EXISTS segment_translations (
+    segment_id TEXT REFERENCES segments(id) ON DELETE CASCADE,
+    language TEXT NOT NULL,
+    text TEXT NOT NULL,
+    state TEXT NOT NULL,
+    PRIMARY KEY (segment_id, language)
+);
 CREATE TABLE IF NOT EXISTS jobs (
     id TEXT PRIMARY KEY,
     kind TEXT NOT NULL,
@@ -190,6 +197,7 @@ pub struct DubProject {
     pub to: String,
     pub created_at: i64,
     pub updated_at: i64,
+    pub targets: Vec<String>,
     pub cast: BTreeMap<String, String>,
     pub segments: Vec<DubSegment>,
 }
@@ -202,6 +210,7 @@ pub struct DubSegment {
     pub end_ms: u64,
     pub speaker: Option<String>,
     pub voice_id: Option<String>,
+    pub translations: BTreeMap<String, String>,
     pub source_text: String,
     pub target_text: Option<String>,
     pub state: String,
@@ -224,6 +233,7 @@ impl DubProject {
             to: to.to_string(),
             created_at: stamp,
             updated_at: stamp,
+            targets: vec![to.to_string()],
             cast: BTreeMap::new(),
             segments: Vec::new(),
         }
@@ -471,6 +481,7 @@ impl Store {
         let settings = serde_json::json!({
             "from": project.from,
             "to": project.to,
+            "targets": project.targets,
             "cast": project.cast,
         })
         .to_string();
@@ -516,6 +527,14 @@ impl Store {
                     ],
                 )
                 .map_err(sql)?;
+            for (language, text) in &segment.translations {
+                transaction
+                    .execute(
+                        "INSERT INTO segment_translations (segment_id, language, text, state) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(segment_id, language) DO UPDATE SET text = excluded.text, state = excluded.state",
+                        params![segment.id, language, text, segment.state],
+                    )
+                    .map_err(sql)?;
+            }
         }
         transaction.commit().map_err(sql)
     }
@@ -547,6 +566,16 @@ impl Store {
                             .to_string(),
                         created_at: row.get::<_, Option<i64>>(3)?.unwrap_or_default(),
                         updated_at: row.get::<_, Option<i64>>(4)?.unwrap_or_default(),
+                        targets: settings
+                            .get("targets")
+                            .and_then(|value| value.as_array())
+                            .map(|items| {
+                                items
+                                    .iter()
+                                    .filter_map(|item| item.as_str().map(ToOwned::to_owned))
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
                         cast: settings
                             .get("cast")
                             .and_then(|value| serde_json::from_value(value.clone()).ok())
@@ -573,6 +602,7 @@ impl Store {
                     end_ms: row.get::<_, i64>(3)?.max(0) as u64,
                     speaker: row.get(4)?,
                     voice_id: row.get(5)?,
+                    translations: BTreeMap::new(),
                     source_text: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
                     target_text: row.get(7)?,
                     state: row
@@ -582,6 +612,32 @@ impl Store {
             })
             .map_err(sql)?;
         project.segments = rows.collect::<Result<Vec<_>, _>>().map_err(sql)?;
+        if project.targets.is_empty() {
+            project.targets.push(project.to.clone());
+        }
+        let mut translations = self
+            .connection
+            .prepare("SELECT t.segment_id, t.language, t.text FROM segment_translations t JOIN segments s ON s.id = t.segment_id WHERE s.project_id = ?1")
+            .map_err(sql)?;
+        let rows = translations
+            .query_map(params![id], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                ))
+            })
+            .map_err(sql)?;
+        for row in rows {
+            let (segment_id, language, text) = row.map_err(sql)?;
+            if let Some(segment) = project
+                .segments
+                .iter_mut()
+                .find(|segment| segment.id == segment_id)
+            {
+                segment.translations.insert(language, text);
+            }
+        }
         Ok(Some(project))
     }
 }
@@ -796,6 +852,10 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: Some("voice-de".to_string()),
+            translations: BTreeMap::from([
+                ("en".to_string(), "Good morning".to_string()),
+                ("de".to_string(), "Guten Morgen".to_string()),
+            ]),
             source_text: "Bom dia".to_string(),
             target_text: Some("Good morning".to_string()),
             state: "imported".to_string(),
@@ -807,10 +867,12 @@ mod tests {
             end_ms: 5_000,
             speaker: None,
             voice_id: None,
+            translations: BTreeMap::new(),
             source_text: "Até logo".to_string(),
             target_text: None,
             state: "imported".to_string(),
         });
+        project.targets.push("de".to_string());
         store.save_dub_project(&mut project).unwrap();
 
         let loaded = store.load_dub_project("p1").unwrap().unwrap();
@@ -818,9 +880,17 @@ mod tests {
         assert_eq!(loaded.title, "Launch");
         assert_eq!(loaded.from, "pt");
         assert_eq!(loaded.to, "en");
+        assert_eq!(loaded.targets, ["en", "de"]);
         assert_eq!(loaded.segments, project.segments);
         assert_eq!(loaded.segments[0].speaker.as_deref(), Some("Ana"));
         assert_eq!(loaded.segments[0].voice_id.as_deref(), Some("voice-de"));
+        assert_eq!(
+            loaded.segments[0]
+                .translations
+                .get("de")
+                .map(String::as_str),
+            Some("Guten Morgen")
+        );
         assert_eq!(loaded.cast.get("Ana").map(String::as_str), Some("voice-en"));
         assert_eq!(loaded.segments[0].start_ms, 1_250);
         assert_eq!(loaded.segments[1].target_text, None);

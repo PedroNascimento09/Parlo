@@ -35,6 +35,7 @@ pub fn project(
             end_ms: cue.end_ms,
             speaker: cue.speaker,
             voice_id: None,
+            translations: std::collections::BTreeMap::new(),
             source_text: cue.text,
             target_text: None,
             state: "imported".to_string(),
