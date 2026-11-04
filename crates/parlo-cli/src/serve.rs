@@ -1832,11 +1832,17 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
+        let purpose = request
+            .purpose
+            .unwrap_or_else(|| "local voice cloning and playback".to_string());
+        let scope = request
+            .scope
+            .unwrap_or_else(|| "on this computer".to_string());
         let consent = match consent_for(
             request.origin.as_deref(),
             request.declared_authorisation,
-            request.purpose,
-            request.scope,
+            purpose,
+            scope,
             now_seconds(),
         ) {
             Ok(consent) => consent,
@@ -3157,8 +3163,10 @@ struct VoiceRequest {
     label: String,
     #[serde(default)]
     language: Option<String>,
-    purpose: String,
-    scope: String,
+    #[serde(default)]
+    purpose: Option<String>,
+    #[serde(default)]
+    scope: Option<String>,
     #[serde(default)]
     origin: Option<String>,
     #[serde(default)]

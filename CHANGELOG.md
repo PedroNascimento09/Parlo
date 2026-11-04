@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The voice page is the form a clone needs, name, language and whose voice it is, and nothing else: the purpose field and the unused sealing switch are gone.
 - The app has a visual system of its own: a pill navigation, a two column Home, cards for every surface, readable dictation cards and one button hierarchy, in light and dark.
 
 - The tray menu and a global shortcut take the last dictation back, so undo no longer needs a terminal; the key sits in Settings with the other three.

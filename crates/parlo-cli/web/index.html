@@ -781,6 +781,13 @@
         <span class="field-label">Name for this voice</span>
         <input id="voice-label" class="field-input" type="text" maxlength="48" placeholder="My voice" required autocomplete="off">
       </label>
+      <label class="field" for="voice-language">
+        <span class="field-label">Speech language</span>
+        <select id="voice-language" class="field-input">
+          <option value="pt-PT">Portuguese (Portugal)</option>
+          <option value="en">English</option>
+        </select>
+      </label>
       <label class="field" for="voice-origin">
         <span class="field-label">Whose voice is this</span>
         <select id="voice-origin" class="field-input">
@@ -792,38 +799,11 @@
         <input id="voice-authorisation" type="checkbox">
         <span>I have this person's permission to use their voice for this purpose.</span>
       </label>
-      <div class="voice-details">
-        <p class="field-label">Sample details</p>
-        <label class="field" for="voice-language">
-          <span class="field-label">Speech language</span>
-          <select id="voice-language" class="field-input">
-            <option value="pt-PT">Portuguese (Portugal)</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-        <label class="field field-wide" for="voice-purpose">
-          <span class="field-label">What you will use it for</span>
-          <input id="voice-purpose" class="field-input" type="text" placeholder="translating my own speech" required>
-        </label>
-        <label class="check" for="voice-encrypt">
-          <input id="voice-encrypt" type="checkbox">
-          <span>Keep the sample sealed with my Windows account</span>
-        </label>
-      </div>
       <div class="voice-submit">
         <button id="voice-create" class="install" type="submit">Create the profile</button>
         <p class="voice-note" id="voice-status" aria-live="polite"></p>
       </div>
     </form>
-    <div class="empty-state" id="voice-empty">
-      <p class="empty-kicker">No profiles yet</p>
-      <p class="empty-title">A voice starts with ten seconds</p>
-      <p class="empty-text">A profile keeps a name, a language and a ten second sample on this computer. Each one appears here with its sample, so you can listen before you use it.</p>
-      <div class="empty-actions">
-        <button class="install" type="button" data-focus="voice-label">Start a profile</button>
-        <span class="empty-hint">The form above takes a name and a language.</span>
-      </div>
-    </div>
     <ul class="voice-list" id="voice-list"></ul>
   </section>
 

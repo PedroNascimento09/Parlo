@@ -4134,12 +4134,10 @@ loadVocabulary();
 
 const voiceForm = document.getElementById("voice-form");
 const voiceList = document.getElementById("voice-list");
-const voiceEmpty = document.getElementById("voice-empty");
 const voiceStatus = document.getElementById("voice-status");
 const voiceOrigin = document.getElementById("voice-origin");
 const voiceAuthorisationRow = document.getElementById("voice-authorisation-row");
 const voiceAuthorisation = document.getElementById("voice-authorisation");
-const voiceEncrypt = document.getElementById("voice-encrypt");
 
 function voiceHeaders() {
   return { "Content-Type": "application/json", Authorization: "Bearer " + token };
@@ -4166,9 +4164,8 @@ function voiceButton(text, handler) {
 
 function renderVoices(profiles) {
   voiceList.replaceChildren();
-  voiceEmpty.hidden = profiles.length > 0;
   if (!profiles.length) {
-    voiceStatus.textContent = "";
+    voiceStatus.textContent = "No voice profiles on this computer yet.";
     return;
   }
   voiceStatus.textContent =
@@ -4271,8 +4268,6 @@ voiceForm.addEventListener("submit", async (event) => {
       body: JSON.stringify({
         label: document.getElementById("voice-label").value.trim(),
         language: document.getElementById("voice-language").value,
-        purpose: document.getElementById("voice-purpose").value.trim(),
-        scope: "translation and playback on this computer",
         origin: voiceOrigin.value,
         declared_authorisation: voiceAuthorisation.checked,
       }),
