@@ -277,7 +277,7 @@ Windows 11, 4 threads, the OPUS-MT packages read through CTranslate2 int8, warm 
 
 Reading: the swap costs half a millisecond because it only changes the pair the engine is told to use, and the recogniser is not touched at either step. What a person waits for is the new package coming off disk, about 0.4 s, and now only the first time that language is used, because the dictation path keeps the language it just left.
 
-The switch was measured end to end on 4 November 2026, with one write before it, two after it, and one after switching back. Windows 11 Home, AMD Ryzen 5 3600, 6 cores and 12 threads, 16 GB of RAM, no GPU, Python 3.12.10, CTranslate2 4.8.4, ONNX Runtime 1.31.1, Parakeet TDT 0.6B v3 int8, the Portuguese to English package. The clip is 7.5 s of Portuguese synthesised with `pt_PT-tugão-medium`, 16 kHz mono PCM16.
+The switch was measured end to end on 4 November 2026 at two threads, with one write before it, two after it, and one after switching back. Windows 11 Home, AMD Ryzen 5 3600, 6 cores and 12 threads, 16 GB of RAM, no GPU, Python 3.12.10, CTranslate2 4.8.4, ONNX Runtime 1.31.1, Parakeet TDT 0.6B v3 int8, the Portuguese to English package. The clip is 7.5 s of Portuguese synthesised with `pt_PT-tugão-medium`, 16 kHz mono PCM16. It is not in the repository: `parlo record out/clip.wav --seconds 8` makes an equivalent one from a microphone, which holds the same path without reproducing these numbers to the millisecond.
 
 | What | Value |
 |---|---|
