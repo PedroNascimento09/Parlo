@@ -212,7 +212,16 @@
       <div><dt>Dictations</dt><dd id="insights-count">0</dd></div>
       <div><dt>Words per minute</dt><dd id="insights-rate">–</dd></div>
     </dl>
-    <p class="settings-note" id="insights-empty" hidden>Nothing dictated yet, so there is nothing to count. Press Ctrl+Alt+D, speak, and this page fills in from your own words.</p>
+    <div class="empty-state" id="insights-empty" hidden>
+      <p class="empty-kicker">Nothing counted yet</p>
+      <p class="empty-title">The first sentence fills this page</p>
+      <p class="empty-text">Words, minutes, the programs your text landed in and a four week chart all come from the dictations kept on this computer. Nothing else is counted.</p>
+      <div class="empty-actions">
+        <kbd id="insights-key">Ctrl+Alt+D</kbd>
+        <span class="empty-hint">Hold it, speak, then let go.</span>
+        <a class="home-link" href="#settings">Set up dictation</a>
+      </div>
+    </div>
     <h3 class="meeting-group">Where the text landed</h3>
     <ul class="insights-apps" id="insights-apps"></ul>
     <h3 class="meeting-group">Words you reach for</h3>
@@ -696,6 +705,16 @@
     </div>
     <h3 class="meeting-group">Transcripts</h3>
     <dl class="status" id="meeting-list"></dl>
+    <div class="empty-state" id="meetings-empty">
+      <p class="empty-kicker">No transcript yet</p>
+      <p class="empty-title">A meeting becomes text, line by line</p>
+      <p class="empty-text">Give it a title and press Record a meeting. Every line lands here with the time it was said, and with speaker separation installed, who said it. The transcript never leaves this computer.</p>
+      <div class="empty-actions">
+        <button class="install" type="button" data-focus="meeting-title">Name the first meeting</button>
+        <span class="empty-hint">Or import a transcript you already have.</span>
+      </div>
+    </div>
+
   </section>
 
   <section class="settings" id="catalog" aria-labelledby="catalog-title">
@@ -796,6 +815,15 @@
         <p class="voice-note" id="voice-status" aria-live="polite"></p>
       </div>
     </form>
+    <div class="empty-state" id="voice-empty">
+      <p class="empty-kicker">No profiles yet</p>
+      <p class="empty-title">A voice starts with ten seconds</p>
+      <p class="empty-text">A profile keeps a name, a language and a ten second sample on this computer. Each one appears here with its sample, so you can listen before you use it.</p>
+      <div class="empty-actions">
+        <button class="install" type="button" data-focus="voice-label">Start a profile</button>
+        <span class="empty-hint">The form above takes a name and a language.</span>
+      </div>
+    </div>
     <ul class="voice-list" id="voice-list"></ul>
   </section>
 

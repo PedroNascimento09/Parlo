@@ -21,6 +21,7 @@ const progressNote = document.getElementById("update-note");
 const engineEl = document.getElementById("status-engine");
 const stateEl = document.getElementById("status-state");
 const shortcutEl = document.getElementById("status-shortcut");
+const insightsKey = document.getElementById("insights-key");
 const languagesEl = document.getElementById("status-languages");
 const modeEl = document.getElementById("status-mode");
 const micEl = document.getElementById("status-mic");
@@ -565,6 +566,7 @@ async function refreshHealth() {
     const values = await response.json();
     currentShortcut = values.shortcut || "not set";
     shortcutEl.textContent = currentShortcut;
+    insightsKey.textContent = currentShortcut;
     modeEl.textContent = values.write
       ? "writing in " + (LANGUAGE_NAMES[values.write] || values.write)
       : "translating";
@@ -1316,6 +1318,7 @@ const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
 const meetingList = document.getElementById("meeting-list");
 const meetingNote = document.getElementById("meetings-note");
+const meetingsEmpty = document.getElementById("meetings-empty");
 const vocabularyKind = document.getElementById("vocabulary-kind");
 const vocabularyWrong = document.getElementById("vocabulary-wrong");
 const vocabularyRight = document.getElementById("vocabulary-right");
@@ -2184,9 +2187,9 @@ function renderMeetings(meetings) {
   if (ask) {
     ask.hidden = !meetings.length;
   }
+  meetingsEmpty.hidden = meetings.length > 0;
   if (!meetings.length) {
-    meetingNote.textContent =
-      "No meeting kept on this computer yet. Press Record a meeting and every line lands here.";
+    meetingNote.textContent = "Every line you record is kept on this computer.";
     return;
   }
   for (const meeting of meetings) {
@@ -4104,6 +4107,17 @@ for (const button of document.querySelectorAll("#settings-tabs .tab")) {
   });
 }
 
+document.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-focus]");
+  if (!trigger) {
+    return;
+  }
+  const field = document.getElementById(trigger.dataset.focus);
+  if (field) {
+    field.focus();
+  }
+});
+
 window.addEventListener("hashchange", routeNow);
 if (!location.hash) {
   const remembered = localStorage.getItem("parlo.route");
@@ -4120,6 +4134,7 @@ loadVocabulary();
 
 const voiceForm = document.getElementById("voice-form");
 const voiceList = document.getElementById("voice-list");
+const voiceEmpty = document.getElementById("voice-empty");
 const voiceStatus = document.getElementById("voice-status");
 const voiceOrigin = document.getElementById("voice-origin");
 const voiceAuthorisationRow = document.getElementById("voice-authorisation-row");
@@ -4151,8 +4166,9 @@ function voiceButton(text, handler) {
 
 function renderVoices(profiles) {
   voiceList.replaceChildren();
+  voiceEmpty.hidden = profiles.length > 0;
   if (!profiles.length) {
-    voiceStatus.textContent = "No voice profiles on this computer yet.";
+    voiceStatus.textContent = "";
     return;
   }
   voiceStatus.textContent =

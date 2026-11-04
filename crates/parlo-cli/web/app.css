@@ -790,6 +790,53 @@ select.field-input {
   color: var(--ink);
 }
 
+.empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin-top: 24px;
+  padding: 26px 28px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+}
+
+.empty-kicker {
+  color: var(--muted);
+  font-family: var(--font-label);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.empty-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.empty-text {
+  max-width: 52ch;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 6px;
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
 .page,
 .settings,
 .voice,
@@ -1999,6 +2046,7 @@ select.field-input {
     padding: 20px 14px 40px;
   }
 
+  .empty-state,
   .stage,
   .page,
   .settings,
