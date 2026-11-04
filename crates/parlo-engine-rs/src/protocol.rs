@@ -79,6 +79,20 @@ pub fn translated_text(seq: u64, text: &str, latency_ms: u64) -> String {
     .to_string()
 }
 
+pub fn spoken(seq: u64, samples: &[f32], rate: i32) -> String {
+    json!({
+        "op": "spoken",
+        "seq": seq,
+        "pcm16": encode(samples),
+        "sample_rate": rate,
+    })
+    .to_string()
+}
+
+pub fn translation(seq: u64, text: &str) -> String {
+    json!({"op": "translation", "seq": seq, "translation": text}).to_string()
+}
+
 pub fn stream(seq: u64, events: &[Event]) -> String {
     let events: Vec<Value> = events
         .iter()

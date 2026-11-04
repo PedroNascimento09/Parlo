@@ -177,6 +177,32 @@ fn handle(request: &Value, engine: &mut Engine, session: &mut Session) -> String
             let translation = engine.translator()?.translate(&text)?;
             Ok(protocol::written(seq, &text, &translation))
         }),
+        "speak" => {
+            let text = match request.get("text").and_then(Value::as_str) {
+                Some(text) if !text.trim().is_empty() => text,
+                _ => return protocol::error(Some(seq), "text must not be empty"),
+            };
+            match engine.voice() {
+                Ok(voice) => match voice.speak(text) {
+                    Some((spoken, rate)) => protocol::spoken(seq, &spoken, rate),
+                    None => protocol::error(Some(seq), "the voice produced no audio"),
+                },
+                Err(message) => protocol::error(Some(seq), &message),
+            }
+        }
+        "translate_text" => {
+            let text = match request.get("text").and_then(Value::as_str) {
+                Some(text) if !text.trim().is_empty() => text,
+                _ => return protocol::error(Some(seq), "text must not be empty"),
+            };
+            match engine
+                .translator()
+                .and_then(|translator| translator.translate(text))
+            {
+                Ok(translation) => protocol::translation(seq, &translation),
+                Err(message) => protocol::error(Some(seq), &message),
+            }
+        }
         "translate" => with_audio(request, seq, |samples| {
             let started = Instant::now();
             let text = engine.recognizer()?.transcribe(samples);
