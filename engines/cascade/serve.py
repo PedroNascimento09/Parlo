@@ -14,6 +14,19 @@ from parlo_cascade import CascadeEngine
 from parlo_hibiki.protocol import handle_line
 
 
+def answer(line: str, engine) -> dict:
+    try:
+        return handle_line(line, engine)
+    except Exception as error:
+        request = {}
+        try:
+            request = json.loads(line)
+        except ValueError:
+            pass
+        seq = request.get("seq", 0) if isinstance(request, dict) else 0
+        return {"op": "error", "seq": seq, "error": str(error)}
+
+
 def main() -> int:
     voice = os.environ.get("PARLO_CASCADE_VOICE")
     engine = CascadeEngine(
@@ -42,7 +55,7 @@ def main() -> int:
         if not line.strip():
             continue
         with busy:
-            response = handle_line(line, engine)
+            response = answer(line, engine)
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
     return 0
