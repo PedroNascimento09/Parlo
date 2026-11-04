@@ -67,6 +67,39 @@ class VocabularyTests(unittest.TestCase):
         self.assertEqual(vocabulary.load(), {"terms": {}, "abbreviations": {}, "snippets": {}})
         self.assertEqual(vocabulary.apply("nada muda")[0], "nada muda")
 
+    def test_a_snippet_fills_the_date_and_the_name(self):
+        Path(self.folder.name, "config.json").write_text('{"name": "Ana"}', encoding="utf-8")
+        vocabulary.add("snippet", "my sign off", "Best, {{name}} — {{date}} at {{time}}")
+        text = vocabulary.apply("my sign off")[0]
+        self.assertIn("Best, Ana — ", text)
+        self.assertNotIn("{{", text)
+
+    def test_a_snippet_without_a_name_drops_it(self):
+        vocabulary.add("snippet", "my sign off", "Best, {{name}}")
+        self.assertEqual(vocabulary.apply("my sign off")[0], "Best, ")
+
+    def test_a_term_keeps_its_braces(self):
+        vocabulary.add("term", "parlo", "{{Parlo}}")
+        self.assertEqual(vocabulary.apply("o parlo")[0], "o {{Parlo}}")
+
+    def test_a_list_round_trips_through_a_file(self):
+        vocabulary.add("term", "jorge", "Jorge Silva")
+        vocabulary.add("snippet", "my calendar", "https://cal.com/example")
+        text = vocabulary.export_text()
+        vocabulary.discard("term", "jorge")
+        self.assertIn("term\tjorge\tJorge Silva", text)
+        saved = vocabulary.import_text(text)
+        self.assertEqual(saved["added"], 2)
+        self.assertEqual(vocabulary.load()["terms"]["jorge"], "Jorge Silva")
+
+    def test_an_import_refuses_a_line_without_three_parts(self):
+        with self.assertRaises(ValueError):
+            vocabulary.import_text("term\tjorge")
+
+    def test_an_empty_import_is_refused(self):
+        with self.assertRaises(ValueError):
+            vocabulary.import_text("   ")
+
     def test_a_regular_expression_is_not_a_word(self):
         vocabulary.add("term", "a.b", "AB")
         self.assertEqual(vocabulary.apply("a.b e axb")[0], "AB e axb")

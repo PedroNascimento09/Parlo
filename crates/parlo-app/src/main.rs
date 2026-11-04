@@ -122,6 +122,36 @@ pub fn captions_toggle(handle: &tauri::AppHandle) {
     surface_toggle(handle, "captions", "/captions");
 }
 
+pub fn undo_last(handle: &tauri::AppHandle) {
+    let address = handle
+        .try_state::<Address>()
+        .and_then(|address| address.0.lock().ok().and_then(|slot| slot.clone()));
+    let Some((port, token)) = address else {
+        note("undo needs the engine address, which is not ready yet");
+        return;
+    };
+    match post(port, &token, "/undo") {
+        Ok(answer) => note(&format!("undo: {answer}")),
+        Err(error) => note(&format!("undo: {error}")),
+    }
+}
+
+fn post(port: u16, token: &str, path: &str) -> Result<String, String> {
+    let mut stream = TcpStream::connect(("127.0.0.1", port)).map_err(|error| error.to_string())?;
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+    let request = format!(
+        "POST {path} HTTP/1.1\nHost: 127.0.0.1\nAuthorization: Bearer {token}\nContent-Length: 0\nConnection: close\n\n"
+    );
+    stream
+        .write_all(request.as_bytes())
+        .map_err(|error| error.to_string())?;
+    let mut answer = String::new();
+    stream
+        .read_to_string(&mut answer)
+        .map_err(|error| error.to_string())?;
+    Ok(answer.lines().last().unwrap_or("").trim().to_string())
+}
+
 pub fn live_toggle(handle: &tauri::AppHandle) {
     surface_toggle(handle, "live", "/live");
 }

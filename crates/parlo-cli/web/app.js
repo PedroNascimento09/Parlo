@@ -4520,3 +4520,126 @@ if (vocabularyHint) {
   vocabularyKind.addEventListener("change", paintHint);
   paintHint();
 }
+
+paintHome();
+const historyExport = document.getElementById("history-export");
+const historyDays = document.getElementById("history-days");
+const vocabularyExport = document.getElementById("vocabulary-export");
+const vocabularyImport = document.getElementById("vocabulary-import");
+const vocabularyFile = document.getElementById("vocabulary-file");
+
+function saveAsText(text, name, type) {
+  const address = URL.createObjectURL(new Blob([text], { type }));
+  const link = document.createElement("a");
+  link.href = address;
+  link.download = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(address);
+}
+
+if (historyExport) {
+  historyExport.addEventListener("click", async () => {
+    const note = document.getElementById("history-note");
+    try {
+      const response = await fetch("/history/export", {
+        cache: "no-store",
+        headers: { Authorization: "Bearer " + token },
+      });
+      if (!response.ok) {
+        throw new Error("The dictations could not be saved.");
+      }
+      saveAsText(await response.text(), "parlo-dictations.md", "text/markdown");
+      if (note) {
+        note.textContent = "Saved parlo-dictations.md.";
+      }
+    } catch (failure) {
+      if (note) {
+        note.textContent = failure.message || "The dictations could not be saved.";
+      }
+    }
+  });
+}
+
+if (historyDays) {
+  const note = document.getElementById("history-note");
+  fetch("/settings", { cache: "no-store" })
+    .then((response) => (response.ok ? response.json() : null))
+    .then((settings) => {
+      if (settings) {
+        historyDays.value = String(settings.history_days || 0);
+      }
+    })
+    .catch(() => {});
+  historyDays.addEventListener("change", async () => {
+    const days = Number(historyDays.value) || 0;
+    try {
+      const response = await fetch("/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ history_days: days }),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "That could not be saved.");
+      }
+      if (note) {
+        note.textContent = days
+          ? "Dictations older than " + days + " days are gone, and new ones fall off the same way."
+          : "Dictations are kept until the list is full.";
+      }
+    } catch (failure) {
+      if (note) {
+        note.textContent = failure.message || "That could not be saved.";
+      }
+    }
+  });
+}
+
+if (vocabularyExport) {
+  vocabularyExport.addEventListener("click", async () => {
+    try {
+      const response = await fetch("/vocabulary/export", {
+        cache: "no-store",
+        headers: { Authorization: "Bearer " + token },
+      });
+      if (!response.ok) {
+        throw new Error("The list could not be saved.");
+      }
+      saveAsText(await response.text(), "parlo-words.tsv", "text/tab-separated-values");
+      vocabularyNote.textContent = "Saved parlo-words.tsv.";
+    } catch (failure) {
+      vocabularyNote.textContent = failure.message || "The list could not be saved.";
+    }
+  });
+}
+
+if (vocabularyImport && vocabularyFile) {
+  vocabularyImport.addEventListener("click", () => vocabularyFile.click());
+  vocabularyFile.addEventListener("change", async () => {
+    const file = vocabularyFile.files && vocabularyFile.files[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const text = await file.text();
+      const response = await fetch("/vocabulary/import", {
+        method: "POST",
+        headers: vocabularyHeaders(),
+        body: JSON.stringify({ text }),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "That list could not be read.");
+      }
+      renderVocabulary(detail);
+      vocabularyNote.textContent =
+        detail.added === 1 ? "One entry added." : detail.added + " entries added.";
+    } catch (failure) {
+      vocabularyNote.textContent = failure.message || "That list could not be read.";
+    } finally {
+      vocabularyFile.value = "";
+    }
+  });
+}

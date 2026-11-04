@@ -3,6 +3,7 @@ use std::fmt;
 pub const DEFAULT: &str = "Ctrl+Alt+D";
 pub const HANDS_FREE: &str = "Ctrl+Alt+Shift+D";
 pub const CAPTIONS: &str = "Ctrl+Alt+C";
+pub const UNDO: &str = "Ctrl+Alt+Z";
 
 pub const ALT: u32 = 0x0001;
 pub const CONTROL: u32 = 0x0002;

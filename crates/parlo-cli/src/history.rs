@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 
 pub const LIMIT: usize = 200;
+const SECONDS_PER_DAY: u64 = 86_400;
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
@@ -53,7 +54,96 @@ pub fn path() -> PathBuf {
 }
 
 pub fn append(entry: &Entry) -> Result<(), String> {
+    let _ = prune(crate::config::load().history_days);
     append_to(&path(), entry)
+}
+
+pub fn export(days: u32) -> Result<String, String> {
+    let mut entries = entries_at(&path());
+    if days > 0 {
+        let cutoff = now_seconds().saturating_sub(u64::from(days) * SECONDS_PER_DAY);
+        entries.retain(|entry| entry.at >= cutoff);
+    }
+    Ok(markdown(&entries))
+}
+
+pub fn prune(days: u32) -> Result<usize, String> {
+    prune_at(&path(), days, now_seconds())
+}
+
+pub fn markdown(entries: &[Entry]) -> String {
+    if entries.is_empty() {
+        return "No dictations yet.\n".to_string();
+    }
+    let mut out = String::from("# Parlo dictations\n\n");
+    for entry in entries {
+        let program = if entry.app.is_empty() {
+            "another program"
+        } else {
+            entry.app.as_str()
+        };
+        out.push_str(&format!("- **{}** · {program}", moment(entry.at)));
+        if !entry.from.is_empty() && !entry.to.is_empty() {
+            out.push_str(&format!(" · {} → {}", entry.from, entry.to));
+        }
+        out.push('\n');
+        out.push_str(&format!("  {}\n", entry.text.trim()));
+    }
+    out
+}
+
+fn prune_at(path: &Path, days: u32, now: u64) -> Result<usize, String> {
+    if days == 0 {
+        return Ok(0);
+    }
+    let mut entries = entries_at(path);
+    let cutoff = now.saturating_sub(u64::from(days) * SECONDS_PER_DAY);
+    let before = entries.len();
+    entries.retain(|entry| entry.at >= cutoff);
+    let removed = before - entries.len();
+    if removed > 0 {
+        write_entries(path, &entries)?;
+    }
+    Ok(removed)
+}
+
+fn now_seconds() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or_default()
+}
+
+fn moment(seconds: u64) -> String {
+    let clock = seconds % SECONDS_PER_DAY;
+    let (year, month, day) = civil((seconds / SECONDS_PER_DAY) as i64);
+    format!(
+        "{year:04}-{month:02}-{day:02} {:02}:{:02}",
+        clock / 3_600,
+        (clock / 60) % 60
+    )
+}
+
+fn civil(days: i64) -> (i64, u32, u32) {
+    let shifted = days + 719_468;
+    let era = if shifted >= 0 {
+        shifted
+    } else {
+        shifted - 146_096
+    } / 146_097;
+    let day_of_era = (shifted - era * 146_097) as u64;
+    let year_of_era =
+        (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year = year_of_era as i64 + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_index = (5 * day_of_year + 2) / 153;
+    let day = (day_of_year - (153 * month_index + 2) / 5 + 1) as u32;
+    let month = if month_index < 10 {
+        month_index + 3
+    } else {
+        month_index - 9
+    } as u32;
+    (if month <= 2 { year + 1 } else { year }, month, day)
 }
 
 pub fn recent(limit: usize) -> Vec<Entry> {
@@ -545,6 +635,51 @@ mod tests {
         })
         .unwrap();
         assert_eq!(entries_at(&path)[0].text, "meet me on Tuesday");
+        tidy(&path);
+    }
+
+    #[test]
+    fn an_export_names_the_day_the_program_and_the_sentence() {
+        let path = scratch("export");
+        let mut entry = Entry::now("olá", "hello", "pt", "en", "Slack", "dictate");
+        entry.at = 1_700_000_000;
+        append_to(&path, &entry).unwrap();
+        let text = markdown(&entries_at(&path));
+        assert!(text.starts_with("# Parlo dictations\n\n- **2023-11-14 22:13** · Slack"));
+        assert!(text.contains("pt → en"));
+        assert!(text.contains("\n  olá\n"));
+        tidy(&path);
+    }
+
+    #[test]
+    fn an_empty_export_says_so() {
+        assert_eq!(markdown(&[]), "No dictations yet.\n");
+    }
+
+    #[test]
+    fn a_line_older_than_the_window_is_removed() {
+        let path = scratch("prune");
+        let mut old = Entry::now("velha", "old", "pt", "en", "", "dictate");
+        old.at = 10 * SECONDS_PER_DAY;
+        append_to(&path, &old).unwrap();
+        let mut fresh = Entry::now("nova", "new", "pt", "en", "", "dictate");
+        fresh.at = 99 * SECONDS_PER_DAY;
+        append_to(&path, &fresh).unwrap();
+        assert_eq!(prune_at(&path, 30, 100 * SECONDS_PER_DAY), Ok(1));
+        let left = entries_at(&path);
+        assert_eq!(left.len(), 1);
+        assert_eq!(left[0].text, "nova");
+        tidy(&path);
+    }
+
+    #[test]
+    fn a_window_of_no_days_keeps_every_line() {
+        let path = scratch("prune-off");
+        let mut old = Entry::now("velha", "old", "pt", "en", "", "dictate");
+        old.at = 1;
+        append_to(&path, &old).unwrap();
+        assert_eq!(prune_at(&path, 0, 100 * SECONDS_PER_DAY), Ok(0));
+        assert_eq!(entries_at(&path).len(), 1);
         tidy(&path);
     }
 

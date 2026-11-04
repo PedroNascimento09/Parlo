@@ -69,6 +69,10 @@ struct Settings {
     #[serde(default)]
     captions: Option<String>,
     #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    history_days: Option<u32>,
+    #[serde(default)]
     unload: Option<u32>,
     #[serde(default)]
     manage_memory: Option<bool>,
@@ -288,7 +292,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{}}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -298,7 +302,9 @@ impl Session {
             json_string(&chosen.hands_free),
             json_string(&chosen.captions),
             stored.manage_memory,
-            stored.unload
+            stored.unload,
+            json_string(&stored.name),
+            stored.history_days
         )
     }
 }
@@ -893,6 +899,58 @@ fn handle(
         };
     }
 
+    if method == "GET" && path == "/vocabulary/export" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match crate::intelligence::run(&serde_json::json!({ "action": "vocabulary/export" }))
+        {
+            Ok(reply) => {
+                let text = reply
+                    .get("text")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or("");
+                respond_named(stream, "parlo-words.tsv", text.as_bytes()).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/vocabulary/import" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let text = text_field(&request, "text");
+        if text.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"an import needs at least one line\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let payload = serde_json::json!({ "action": "vocabulary/import", "text": text });
+        return match crate::intelligence::run(&payload) {
+            Ok(reply) => match reply.get("error").and_then(serde_json::Value::as_str) {
+                Some(error) => respond_json(stream, "400 Bad Request", &error_json(error))
+                    .map(|()| Flow::Serve),
+                None => respond_json(stream, "200 OK", &reply.to_string()).map(|()| Flow::Serve),
+            },
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path == "/features" {
         let features = crate::config::load().features;
         let body = serde_json::to_string(&features).unwrap_or_else(|_| "{}".to_string());
@@ -1067,6 +1125,25 @@ fn handle(
             crate::history::search_json(&asked, 50)
         };
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/history/export" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let days = parameter(query, "days").parse::<u32>().unwrap_or(0);
+        return match crate::history::export(days) {
+            Ok(body) => {
+                respond_named(stream, "parlo-dictations.md", body.as_bytes()).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
     }
 
     if method == "POST" && path == "/history/clear" {
@@ -1255,6 +1332,50 @@ fn handle(
             }
             let mut config = crate::config::load();
             config.unload = minutes;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
+        if let Some(days) = requested.history_days {
+            if days > 3_650 {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"the history cannot be kept for longer than ten years\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            let mut config = crate::config::load();
+            config.history_days = days;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+            let _ = crate::history::prune(days);
+        }
+
+        if let Some(name) = requested.name {
+            let cleaned = name.split_whitespace().collect::<Vec<_>>().join(" ");
+            if cleaned.chars().count() > 40 {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"a name cannot be longer than 40 characters\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            let mut config = crate::config::load();
+            config.name = cleaned;
             if let Err(error) = crate::config::save(&config) {
                 return respond_json(
                     stream,
@@ -3076,6 +3197,7 @@ fn content_type(name: &str) -> &'static str {
         Some("mp3") => "audio/mpeg",
         Some("m4a") => "audio/mp4",
         Some("srt") => "text/plain; charset=utf-8",
+        Some("tsv") => "text/tab-separated-values; charset=utf-8",
         _ => "application/octet-stream",
     }
 }

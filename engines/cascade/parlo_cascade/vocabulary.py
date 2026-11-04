@@ -1,5 +1,7 @@
 import json
+import os
 import re
+from datetime import datetime
 from pathlib import Path
 
 from .models import data_root
@@ -83,17 +85,73 @@ def _side(value: str, limit: int = LIMIT) -> str:
     return text
 
 
+def export_text(profile: dict | None = None) -> str:
+    profile = profile if profile is not None else load()
+    lines = ["kind\twhat it hears\twhat it writes"]
+    for kind in KINDS:
+        for wrong, right in sorted(profile.get(_key(kind), {}).items()):
+            lines.append(f"{kind}\t{wrong}\t{right}")
+    return "\n".join(lines) + "\n"
+
+
+def import_text(text) -> dict:
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("an import needs at least one line")
+    profile = load()
+    added = 0
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip() or line.startswith("#") or line.lower().startswith("kind\t"):
+            continue
+        parts = [part.strip() for part in line.split("\t")]
+        if len(parts) != 3:
+            raise ValueError(
+                f"line {number} needs a kind, what it hears and what it writes, separated by tabs"
+            )
+        kind, wrong, right = parts
+        limit = SNIPPET_LIMIT if kind == "snippet" else LIMIT
+        profile[_key(kind)][_side(wrong)] = _side(right, limit)
+        added += 1
+    if not added:
+        raise ValueError("an import needs at least one line")
+    save(profile)
+    return {**profile, "added": added}
+
+
+def display_name() -> str:
+    configured = os.environ.get("PARLO_CONFIG")
+    target = Path(configured) if configured else data_root() / "config.json"
+    try:
+        payload = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    name = payload.get("name") if isinstance(payload, dict) else None
+    return name.strip() if isinstance(name, str) else ""
+
+
+def _fill(right: str, name: str) -> str:
+    if "{{" not in right:
+        return right
+    moment = datetime.now()
+    return (
+        right.replace("{{date}}", f"{moment.day} {moment.strftime('%B %Y')}")
+        .replace("{{time}}", moment.strftime("%H:%M"))
+        .replace("{{name}}", name)
+    )
+
+
 def apply(text: str, profile: dict | None = None) -> tuple[str, tuple[str, ...]]:
     if not text:
         return text, ()
     profile = profile if profile is not None else load()
     changes = []
+    name = display_name() if profile.get("snippets") else ""
     for kind in KINDS:
         for wrong, right in profile.get(_key(kind), {}).items():
             pattern = re.compile(rf"\b{re.escape(wrong)}\b", re.IGNORECASE)
             if not pattern.search(text):
                 continue
-            text = pattern.sub(lambda match: _match_case(match.group(0), right), text)
+            filled = _fill(right, name) if kind == "snippet" else right
+            text = pattern.sub(lambda match, value=filled: _match_case(match.group(0), value), text)
             changes.append(f"{kind}: {wrong} → {right}")
     return text, tuple(changes)
 

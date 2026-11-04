@@ -66,10 +66,13 @@ pub fn listen(handle: AppHandle) {
     static FREE_MODS: AtomicU32 = AtomicU32::new(0);
     static CAPTIONS_KEY: AtomicU32 = AtomicU32::new(0);
     static CAPTIONS_MODS: AtomicU32 = AtomicU32::new(0);
+    static UNDO_KEY: AtomicU32 = AtomicU32::new(0);
+    static UNDO_MODS: AtomicU32 = AtomicU32::new(0);
     static HELD: AtomicBool = AtomicBool::new(false);
     static RECORDING: AtomicBool = AtomicBool::new(false);
     static FREE_LATCH: AtomicBool = AtomicBool::new(false);
     static CAPTIONS_LATCH: AtomicBool = AtomicBool::new(false);
+    static UNDO_LATCH: AtomicBool = AtomicBool::new(false);
     static PRESSED_AT: Mutex<Option<Instant>> = Mutex::new(None);
 
     #[repr(C)]
@@ -214,6 +217,15 @@ pub fn listen(handle: AppHandle) {
                     } else if released {
                         CAPTIONS_LATCH.store(false, Ordering::Relaxed);
                     }
+                } else if matches(
+                    UNDO_KEY.load(Ordering::Relaxed),
+                    UNDO_MODS.load(Ordering::Relaxed),
+                ) {
+                    if pressed && !UNDO_LATCH.swap(true, Ordering::Relaxed) {
+                        with_app(crate::undo_last);
+                    } else if released {
+                        UNDO_LATCH.store(false, Ordering::Relaxed);
+                    }
                 }
             }
         }
@@ -249,12 +261,15 @@ pub fn listen(handle: AppHandle) {
         parlo_core::shortcut::HANDS_FREE,
     );
     let captions = optional("captions", &stored.captions, parlo_core::shortcut::CAPTIONS);
+    let undo = optional("undo", &stored.undo, parlo_core::shortcut::UNDO);
     KEY.store(shortcut.key, Ordering::Relaxed);
     MODS.store(shortcut.modifiers, Ordering::Relaxed);
     FREE_KEY.store(free.key, Ordering::Relaxed);
     FREE_MODS.store(free.modifiers, Ordering::Relaxed);
     CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
     CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
+    UNDO_KEY.store(undo.key, Ordering::Relaxed);
+    UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
     if let Ok(mut slot) = APP.lock() {
         *slot = Some(handle);
     }
@@ -265,10 +280,11 @@ pub fn listen(handle: AppHandle) {
             return;
         }
         crate::note(&format!(
-            "shortcuts listening: {} opens the panel on a tap and records while held, {} stays listening, {} toggles captions",
+            "shortcuts listening: {} opens the panel on a tap and records while held, {} stays listening, {} toggles captions, {} takes the last dictation back",
             shortcut.text(),
             free.text(),
-            captions.text()
+            captions.text(),
+            undo.text()
         ));
         let mut message: Message = std::mem::zeroed();
         while GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) > 0 {
@@ -282,7 +298,7 @@ pub fn listen(handle: AppHandle) {
 pub fn listen(_handle: AppHandle) {
     let stored = settings::load();
     crate::note(&format!(
-        "the global shortcuts ({} to dictate, {} for hands free, {} for captions) are windows only for now",
-        stored.shortcut, stored.hands_free, stored.captions
+        "the global shortcuts ({} to dictate, {} for hands free, {} for captions, {} to undo) are windows only for now",
+        stored.shortcut, stored.hands_free, stored.captions, stored.undo
     ));
 }

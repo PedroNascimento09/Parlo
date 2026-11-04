@@ -66,6 +66,14 @@ def _vocabulary_delete(request: dict) -> dict:
     return vocabulary.discard(request.get("kind"), request.get("wrong"))
 
 
+def _vocabulary_export(request: dict) -> dict:
+    return {"text": vocabulary.export_text()}
+
+
+def _vocabulary_import(request: dict) -> dict:
+    return vocabulary.import_text(request.get("text"))
+
+
 def _provider(request: dict) -> str:
     provider = request.get("provider")
     if not isinstance(provider, str) or provider not in PROVIDERS:
@@ -81,6 +89,8 @@ ACTIONS = {
     "vocabulary": _vocabulary,
     "vocabulary/add": _vocabulary_add,
     "vocabulary/delete": _vocabulary_delete,
+    "vocabulary/export": _vocabulary_export,
+    "vocabulary/import": _vocabulary_import,
 }
 
 
@@ -102,12 +112,12 @@ def answer(request: dict) -> dict:
 
 def main() -> int:
     try:
-        request = json.loads(sys.stdin.read() or "{}")
+        request = json.loads(sys.stdin.buffer.read().decode("utf-8") or "{}")
     except ValueError:
         request = {}
     reply = answer(request if isinstance(request, dict) else {})
-    sys.stdout.write(json.dumps(reply) + "\n")
-    sys.stdout.flush()
+    sys.stdout.buffer.write((json.dumps(reply) + "\n").encode("utf-8"))
+    sys.stdout.buffer.flush()
     return 0
 
 

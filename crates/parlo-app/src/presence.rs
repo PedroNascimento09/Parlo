@@ -8,6 +8,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
     let dictate = MenuItem::with_id(app, "dictate", "Dictate", true, None::<&str>)?;
     let live = MenuItem::with_id(app, "live", "Live", true, None::<&str>)?;
     let captions = MenuItem::with_id(app, "captions", "Captions", true, None::<&str>)?;
+    let undo = MenuItem::with_id(app, "undo", "Undo last dictation", true, None::<&str>)?;
     let home = MenuItem::with_id(app, "home", "Home", true, None::<&str>)?;
     let library = MenuItem::with_id(app, "library", "Library", true, None::<&str>)?;
     let meetings = MenuItem::with_id(app, "meetings", "Meetings", true, None::<&str>)?;
@@ -20,6 +21,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
             &dictate,
             &live,
             &captions,
+            &undo,
             &PredefinedMenuItem::separator(app)?,
             &home,
             &library,
@@ -41,6 +43,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
             "dictate" => crate::island::show(app),
             "live" => crate::live_toggle(app),
             "captions" => crate::captions_toggle(app),
+            "undo" => crate::undo_last(app),
             "home" => focus_hub(app, Some("home")),
             "library" => focus_hub(app, Some("library")),
             "meetings" => focus_hub(app, Some("meetings")),
