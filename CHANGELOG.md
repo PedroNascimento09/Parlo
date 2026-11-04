@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.4] - 4 November 2026
+
 - The voice page is the form a clone needs, name, language and whose voice it is, and nothing else: the purpose field and the unused sealing switch are gone.
 - The app has a visual system of its own: a pill navigation, a two column Home, cards for every surface, readable dictation cards and one button hierarchy, in light and dark.
 
@@ -462,5 +464,6 @@ First tagged release of the command line prototype. Everything under `[Unrelease
 - Documentation for architecture, engines, languages, privacy, virtual microphones, benchmarks, and troubleshooting.
 - CI for Linux, macOS, and Windows, release builds on tags, CodeQL, and dependency updates.
 
-[Unreleased]: https://github.com/PedroNascimento09/parlo/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/PedroNascimento09/parlo/compare/v0.2.4...HEAD
+[0.2.4]: https://github.com/PedroNascimento09/parlo/releases/tag/v0.2.4
 [0.1.0]: https://github.com/PedroNascimento09/parlo/releases/tag/v0.1.0
