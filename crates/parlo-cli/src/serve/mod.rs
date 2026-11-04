@@ -302,6 +302,12 @@ impl Session {
         Ok(translation)
     }
 
+    fn speak(&self, text: &str) -> Result<(Vec<u8>, u32), String> {
+        let _working = self.working();
+        let mut pipeline = self.pipeline();
+        pipeline.speak(text).map_err(|error| error.to_string())
+    }
+
     fn diarize(
         &self,
         pcm16: &[u8],
@@ -2941,6 +2947,10 @@ fn handle(
 
     if method == "POST" && path == "/v1/audio/translations" {
         return routes::openai::translations(stream, &headers, token, &body, session);
+    }
+
+    if method == "POST" && path == "/v1/audio/speech" {
+        return routes::openai::speech(stream, &headers, token, &body, session);
     }
 
     if path == "/mcp" {

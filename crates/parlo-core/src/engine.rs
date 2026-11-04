@@ -102,6 +102,12 @@ pub trait Engine: Send {
         ))
     }
 
+    fn speak(&mut self, _text: &str) -> Result<(Vec<u8>, u32), EngineError> {
+        Err(EngineError::Rejected(
+            "this engine cannot speak".to_string(),
+        ))
+    }
+
     fn embed(&mut self, _pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
         Err(EngineError::Rejected(
             "this engine cannot tell voices apart".to_string(),

@@ -69,6 +69,8 @@ def handle_line(line: str, engine) -> dict:
         return dictate(request, engine)
     if op == "write":
         return write(request, engine)
+    if op == "speak":
+        return speak(request, engine)
     if op == "embed":
         return embed(request, engine)
     if op == "stream":
@@ -154,6 +156,26 @@ def write(request: dict, engine) -> dict:
         "seq": seq,
         "text": text,
         "translation": translation,
+    }
+
+
+def speak(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    text = request.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return {"op": "error", "seq": seq, "error": "text must not be empty"}
+    method = getattr(engine, "speak", None)
+    if not callable(method):
+        return {"op": "error", "seq": seq, "error": "engine cannot speak"}
+    try:
+        audio = method(text.strip())
+    except (EngineUnavailable, ValueError) as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return {
+        "op": "spoken",
+        "seq": seq,
+        "pcm16": base64.b64encode(audio).decode("ascii"),
+        "sample_rate": getattr(engine, "sample_rate", 16_000),
     }
 
 

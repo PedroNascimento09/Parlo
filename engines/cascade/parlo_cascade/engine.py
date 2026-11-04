@@ -379,6 +379,19 @@ class CascadeEngine:
             return ""
         return self._transcribe(samples)
 
+    def speak(self, text: str) -> bytes:
+        if not self._ready:
+            raise EngineUnavailable(
+                "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
+            )
+        spoken = text.strip()
+        if not spoken:
+            raise ValueError("text must not be empty")
+        try:
+            return self._synthesize(spoken)
+        except VoiceUnavailable as failure:
+            raise EngineUnavailable(str(failure)) from failure
+
     def embed(self, pcm16: bytes) -> list[float]:
         from .speakers import Embedder, MissingSpeakerModel
 

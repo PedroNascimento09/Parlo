@@ -28,6 +28,13 @@ struct UnitRequest<'a> {
     unit: &'a str,
 }
 
+#[derive(Serialize)]
+struct SpeechRequest<'a> {
+    op: &'a str,
+    seq: u64,
+    text: &'a str,
+}
+
 #[derive(Deserialize)]
 struct WireUnit {
     unit: String,
@@ -360,6 +367,43 @@ impl SidecarEngine {
         Ok((text, translation))
     }
 
+    pub fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {
+        if text.trim().is_empty() {
+            return Err(EngineError::Rejected("text must not be empty".to_string()));
+        }
+        self.seq += 1;
+        let response = self.request(&SpeechRequest {
+            op: "speak",
+            seq: self.seq,
+            text,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "the engine could not speak".to_string()),
+            ));
+        }
+        let encoded = response
+            .pcm16
+            .ok_or_else(|| EngineError::Rejected("the engine returned no audio".to_string()))?;
+        let bytes = BASE64
+            .decode(encoded)
+            .map_err(|error| EngineError::Rejected(format!("invalid base64 audio: {error}")))?;
+        if bytes.len() % 2 != 0 {
+            return Err(EngineError::Rejected(
+                "the engine returned an odd number of bytes".to_string(),
+            ));
+        }
+        let rate = response.sample_rate.unwrap_or(self.sample_rate);
+        if rate == 0 {
+            return Err(EngineError::Rejected(
+                "the engine returned no sample rate".to_string(),
+            ));
+        }
+        Ok((bytes, rate))
+    }
+
     pub fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
         self.seq += 1;
         let response = self.request(&Request {
@@ -533,6 +577,10 @@ impl Engine for SidecarEngine {
 
     fn close_stream(&mut self) -> Result<Vec<parlo_core::engine::StreamPiece>, EngineError> {
         SidecarEngine::close_stream(self).map(pieces)
+    }
+
+    fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {
+        SidecarEngine::speak(self, text)
     }
 
     fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {

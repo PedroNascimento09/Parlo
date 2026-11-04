@@ -1,9 +1,21 @@
 use std::net::TcpStream;
 
+use parlo_core::wav::write_pcm16;
+use parlo_core::{AudioFormat, Wav};
+
 use super::super::auth::authorised;
 use super::super::http::{header, respond, respond_json};
 use super::super::multipart::{self, Part};
 use super::super::{Flow, Session};
+
+#[derive(serde::Deserialize)]
+struct SpeechRequest {
+    input: String,
+    #[serde(default)]
+    response_format: Option<String>,
+    #[serde(default)]
+    speed: Option<f32>,
+}
 
 pub(crate) fn transcriptions(
     stream: &mut TcpStream,
@@ -79,6 +91,144 @@ pub(crate) fn translations(
     };
     let language = session.chosen().from.clone();
     answer(stream, &text, seconds, &language, &format, "translate")
+}
+
+pub(crate) fn speech(
+    stream: &mut TcpStream,
+    headers: &[(String, String)],
+    token: &str,
+    body: &[u8],
+    session: &Session,
+) -> Result<Flow, String> {
+    if !authorised(headers, token) {
+        return fail(
+            stream,
+            "401 Unauthorized",
+            "wrong token",
+            "invalid_request_error",
+            None,
+        )
+        .map(|()| Flow::Serve);
+    }
+    let request: SpeechRequest = match serde_json::from_slice(body) {
+        Ok(request) => request,
+        Err(error) => {
+            return fail(
+                stream,
+                "400 Bad Request",
+                &format!("the request is not valid json: {error}"),
+                "invalid_request_error",
+                None,
+            )
+            .map(|()| Flow::Serve)
+        }
+    };
+    let input = request.input.trim();
+    if input.is_empty() {
+        return fail(
+            stream,
+            "400 Bad Request",
+            "input must not be empty",
+            "invalid_request_error",
+            Some("input"),
+        )
+        .map(|()| Flow::Serve);
+    }
+    if input.chars().count() > 4096 {
+        return fail(
+            stream,
+            "400 Bad Request",
+            "input must be at most 4096 characters",
+            "invalid_request_error",
+            Some("input"),
+        )
+        .map(|()| Flow::Serve);
+    }
+    if let Some(speed) = request.speed {
+        if !(0.25..=4.0).contains(&speed) {
+            return fail(
+                stream,
+                "400 Bad Request",
+                "speed must be between 0.25 and 4",
+                "invalid_request_error",
+                Some("speed"),
+            )
+            .map(|()| Flow::Serve);
+        }
+        if (speed - 1.0).abs() > 0.01 {
+            return fail(
+                stream,
+                "400 Bad Request",
+                "this build speaks at normal speed; speed must be 1",
+                "invalid_request_error",
+                Some("speed"),
+            )
+            .map(|()| Flow::Serve);
+        }
+    }
+    let format = request
+        .response_format
+        .as_deref()
+        .unwrap_or("wav")
+        .to_ascii_lowercase();
+    if !matches!(format.as_str(), "wav" | "pcm") {
+        return fail(
+            stream,
+            "400 Bad Request",
+            "response_format must be wav or pcm in this build",
+            "invalid_request_error",
+            Some("response_format"),
+        )
+        .map(|()| Flow::Serve);
+    }
+    let (pcm16, rate) = match session.speak(input) {
+        Ok(speech) => speech,
+        Err(error) => {
+            return fail(
+                stream,
+                "500 Internal Server Error",
+                &error,
+                "server_error",
+                None,
+            )
+            .map(|()| Flow::Serve)
+        }
+    };
+    if pcm16.is_empty() {
+        return fail(
+            stream,
+            "500 Internal Server Error",
+            "the voice produced no audio",
+            "server_error",
+            None,
+        )
+        .map(|()| Flow::Serve);
+    }
+    if format == "pcm" {
+        return respond(stream, "200 OK", "audio/pcm", &pcm16).map(|()| Flow::Serve);
+    }
+    let audio_format = match AudioFormat::mono(rate) {
+        Ok(format) => format,
+        Err(error) => {
+            return fail(
+                stream,
+                "500 Internal Server Error",
+                &error.to_string(),
+                "server_error",
+                None,
+            )
+            .map(|()| Flow::Serve)
+        }
+    };
+    let samples = pcm16
+        .chunks_exact(2)
+        .map(|pair| i16::from_le_bytes([pair[0], pair[1]]) as f32 / 32_768.0)
+        .collect();
+    let wav = write_pcm16(&Wav {
+        format: audio_format,
+        samples,
+    });
+    respond(stream, "200 OK", "audio/wav", &wav).map(|()| Flow::Serve)
 }
 
 fn prepare(
