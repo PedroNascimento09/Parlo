@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use std::io::Write;
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::mpsc::{self, RecvTimeoutError, Sender};
+use std::sync::mpsc::{self, Sender};
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::store::{JobRecord, Store};
 
@@ -265,34 +264,9 @@ impl Manager {
 
     pub fn stream(&self, stream: &mut TcpStream, id: &str) -> Result<(), String> {
         let events = self.subscribe(id).ok_or_else(|| format!("no job {id}"))?;
-        stream
-            .write_all(
-                b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n",
-            )
-            .map_err(|error| error.to_string())?;
-        loop {
-            match events.recv_timeout(Duration::from_secs(15)) {
-                Ok(event) => {
-                    let terminal = event.job.state.terminal();
-                    let payload = format!("data: {}\n\n", event.job.value());
-                    if stream.write_all(payload.as_bytes()).is_err() {
-                        break;
-                    }
-                    let _ = stream.flush();
-                    if terminal {
-                        break;
-                    }
-                }
-                Err(RecvTimeoutError::Timeout) => {
-                    if stream.write_all(b": keep-alive\n\n").is_err() {
-                        break;
-                    }
-                    let _ = stream.flush();
-                }
-                Err(RecvTimeoutError::Disconnected) => break,
-            }
-        }
-        Ok(())
+        crate::serve::sse::stream(stream, events, |event| {
+            (event.job.value().to_string(), event.job.state.terminal())
+        })
     }
 
     pub fn recover(&self) -> usize {
@@ -469,6 +443,7 @@ mod tests {
     use super::*;
     use std::net::TcpListener;
     use std::sync::mpsc::RecvTimeoutError;
+    use std::time::Duration;
 
     fn wait_for(manager: &Manager, id: &str) -> Job {
         for _ in 0..400 {

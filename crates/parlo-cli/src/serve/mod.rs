@@ -22,6 +22,7 @@ use crate::update;
 
 mod auth;
 mod http;
+pub(crate) mod sse;
 use auth::authorised;
 pub use auth::new_token;
 use http::{
