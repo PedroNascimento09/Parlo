@@ -261,24 +261,26 @@ impl Session {
         if !kept {
             *pipeline = build(&from, &to, &engine, &stt)?;
         }
+        {
+            let mut chosen = self.choose();
+            *chosen = Chosen {
+                engine,
+                stt,
+                from,
+                to,
+                write,
+                shortcut,
+                hands_free,
+                captions,
+                undo,
+            };
+        }
         drop(pipeline);
         if !kept {
             if let Ok(mut target) = self.target.lock() {
                 *target = None;
             }
         }
-        let mut chosen = self.choose();
-        *chosen = Chosen {
-            engine,
-            stt,
-            from,
-            to,
-            write,
-            shortcut,
-            hands_free,
-            captions,
-            undo,
-        };
         Ok(())
     }
 
@@ -473,12 +475,9 @@ pub fn start(
     println!("listening on http://127.0.0.1:{port}");
     println!("  token      {token}");
     {
+        let engine_id = session.pipeline().engine_id().to_string();
         let chosen = session.chosen();
-        println!(
-            "  engine     {} on {}",
-            session.pipeline().engine_id(),
-            chosen.stt
-        );
+        println!("  engine     {engine_id} on {}", chosen.stt);
         println!("  languages  {} to {}", chosen.from, chosen.to);
     }
     println!("  input      16 kHz mono wav, POST /translate");
@@ -1717,22 +1716,12 @@ fn handle(
             .map(|()| Flow::Serve);
         }
 
-        let mut stored = crate::config::load();
-        stored.engine = session.chosen().engine.clone();
-        stored.stt = session.chosen().stt.clone();
-        stored.from = session.chosen().from.clone();
-        stored.to = session.chosen().to.clone();
-        if let Err(error) = crate::config::save(&stored) {
-            eprintln!("could not save the settings: {error}");
-        }
         {
+            let engine_id = session.pipeline().engine_id().to_string();
             let chosen = session.chosen();
             println!(
-                "  ready       {} on {}, {} to {}",
-                session.pipeline().engine_id(),
-                chosen.stt,
-                chosen.from,
-                chosen.to
+                "  ready       {engine_id} on {}, {} to {}",
+                chosen.stt, chosen.from, chosen.to
             );
         }
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
