@@ -2382,6 +2382,42 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        let timing = header(&headers, "x-parlo-timing")
+            .map(|value| value.trim().to_ascii_lowercase())
+            .filter(|value| !value.is_empty())
+            .unwrap_or_else(|| "natural".to_string());
+        let fastest = match header(&headers, "x-parlo-fastest") {
+            Some(value) => match value.trim().parse::<f64>() {
+                Ok(value) => value,
+                Err(_) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &error_json("fastest must be a number"),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            },
+            None => 1.25,
+        };
+        let slowest = match header(&headers, "x-parlo-slowest") {
+            Some(value) => match value.trim().parse::<f64>() {
+                Ok(value) => value,
+                Err(_) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &error_json("slowest must be a number"),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            },
+            None => 0.9,
+        };
+        if let Err(error) = dub::check_timing(&timing, fastest, slowest) {
+            return respond_json(stream, "400 Bad Request", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
 
         let requested = header(&headers, "x-parlo-filename")
             .map(|value| percent_decode(&value))
@@ -2442,6 +2478,21 @@ fn handle(
             .map(|()| Flow::Serve);
         }
 
+        if timing == "lip-sync" {
+            if let Ok(false) = crate::ingest::has_video(&upload) {
+                fs::remove_file(&upload).ok();
+                if let Some(path) = &cues {
+                    fs::remove_file(path).ok();
+                }
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &error_json("lip sync needs a video file with a picture"),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
         let out_name = dubbed_name(&name, &to);
         let dubbed = directory.join(format!("{id}-{out_name}"));
         let subtitles = dubbed.with_extension("srt");
@@ -2455,6 +2506,9 @@ fn handle(
             srt: Some(subtitles),
             cues: cues.clone(),
             keep_background: header(&headers, "x-parlo-background").is_some(),
+            timing: &timing,
+            fastest,
+            slowest,
         });
         if let Some(path) = &cues {
             fs::remove_file(path).ok();
@@ -2502,9 +2556,12 @@ fn handle(
                     .map(|project| format!(",\"project_id\":\"{}\"", json_string(&project.id)))
                     .unwrap_or_default();
                 let body = format!(
-                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"to\":\"{}\",\"seconds\":{:.2},\"lines\":[{}]{project_field}}}",
+                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"lines\":[{}]{project_field}}}",
                     json_string(&out_name),
                     json_string(&to),
+                    json_string(&timing),
+                    fastest,
+                    slowest,
                     result.seconds,
                     lines.join(",")
                 );

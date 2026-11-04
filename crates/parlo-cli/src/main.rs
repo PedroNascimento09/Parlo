@@ -799,6 +799,9 @@ fn dub_command(args: &[String]) -> Result<(), String> {
         srt,
         cues: None,
         keep_background,
+        timing: "natural",
+        fastest: 1.25,
+        slowest: 0.9,
     })?;
 
     println!();

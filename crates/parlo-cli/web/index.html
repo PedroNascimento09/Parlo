@@ -861,6 +861,22 @@
       <span>Dubbed language</span>
       <select id="dub-target" class="dub-input"></select>
     </label>
+    <div class="dub-timing">
+      <label for="dub-timing">Timing</label>
+      <select id="dub-timing" class="dub-input">
+        <option value="natural">Natural</option>
+        <option value="concise">Concise</option>
+        <option value="smart-fit">Smart Fit</option>
+        <option value="stretch">Stretch</option>
+        <option value="lip-sync">Lip sync (video only)</option>
+      </select>
+      <span class="dub-speed" id="dub-speed" hidden>
+        <label for="dub-fastest">Fastest</label>
+        <input id="dub-fastest" class="dub-input" type="number" min="1" max="4" step="0.05" value="1.25">
+        <label for="dub-slowest">Slowest</label>
+        <input id="dub-slowest" class="dub-input" type="number" min="0.25" max="1" step="0.05" value="0.9">
+      </span>
+    </div>
     <p class="progress dub-status" id="dub-status" aria-live="polite" hidden></p>
     <div class="dub-cast" id="dub-cast" hidden>
       <h3 class="dub-cast-title">Cast</h3>

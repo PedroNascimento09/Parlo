@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -105,6 +106,67 @@ class CueTest(unittest.TestCase):
 
 @unittest.skipUnless(HAS_NUMPY, "numpy is required for the cue build")
 class CueBuildTest(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required to change a line's speed")
+    def test_smart_fit_speeds_the_rendered_line(self):
+        import numpy as np
+
+        class Engine:
+            def _transcribe(self, audio):
+                raise AssertionError("the cue path must not transcribe")
+
+            def _translate(self, text):
+                return text
+
+        def fake_speak(engine, text):
+            return np.full(2 * dub.SAMPLE_RATE, 0.2, dtype=np.float32)
+
+        cues = [dub.Cue("p-0", 0.0, 1.0, "hello")]
+        samples = np.zeros(dub.SAMPLE_RATE * 3, dtype=np.float32)
+
+        with tempfile.TemporaryDirectory() as directory:
+            with mock.patch.object(dub, "speak", fake_speak):
+                _, lines = dub.build(
+                    Engine(),
+                    samples,
+                    lambda _: None,
+                    cues,
+                    mode="smart-fit",
+                    fastest=1.25,
+                    slowest=0.9,
+                    ffmpeg=shutil.which("ffmpeg"),
+                    workdir=Path(directory),
+                )
+
+        self.assertAlmostEqual(lines[0].end, 1.6, delta=0.1)
+
+    def test_concise_drops_words_until_the_line_fits(self):
+        import numpy as np
+
+        class Engine:
+            def _transcribe(self, audio):
+                raise AssertionError("the cue path must not transcribe")
+
+            def _translate(self, text):
+                return text
+
+        spoken = []
+
+        def fake_speak(engine, text):
+            spoken.append(text)
+            words = len(text.split())
+            return np.full(int(0.4 * words * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
+
+        cues = [dub.Cue("p-0", 0.0, 1.0, "one two three")]
+        samples = np.zeros(dub.SAMPLE_RATE * 2, dtype=np.float32)
+
+        with mock.patch.object(dub, "speak", fake_speak):
+            _, lines = dub.build(Engine(), samples, lambda _: None, cues, mode="concise")
+
+        self.assertEqual(spoken, ["one two three", "one two"])
+        self.assertEqual(lines[0].translated, "one two")
+        self.assertAlmostEqual(lines[0].end, 0.8)
+
+
     def test_build_uses_cues_instead_of_transcribing(self):
         import numpy as np
 

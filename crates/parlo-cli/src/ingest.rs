@@ -81,6 +81,27 @@ pub fn probe(path: &Path) -> Result<(), String> {
         Err("the link does not point at an audio or video file".to_string())
     }
 }
+pub fn has_video(path: &Path) -> Result<bool, String> {
+    let output = Command::new("ffprobe")
+        .args([
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=codec_type",
+            "-of",
+            "csv=p=0",
+        ])
+        .arg(path)
+        .output()
+        .map_err(|error| error.to_string())?;
+    if !output.status.success() {
+        return Ok(false);
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).contains("video"))
+}
+
 pub fn name_from_url(url: &str) -> String {
     let trimmed = url.split(['?', '#']).next().unwrap_or(url);
     let path = trimmed

@@ -7,6 +7,8 @@ import sys
 import tempfile
 import threading
 import wave
+
+import timing
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -295,8 +297,19 @@ def cue_pieces(cues: list[Cue], length: int) -> list[tuple[Segment, Cue]]:
 
 
 def build(
-    engine: CascadeEngine, samples: np.ndarray, progress, cues: list[Cue] | None = None
+    engine: CascadeEngine,
+    samples: np.ndarray,
+    progress,
+    cues: list[Cue] | None = None,
+    mode: str = "natural",
+    fastest: float = 1.25,
+    slowest: float = 0.9,
+    video: bool = True,
+    ffmpeg: str | None = None,
+    workdir: Path | None = None,
 ) -> tuple[np.ndarray, list[Line]]:
+    timing.check_mode(mode)
+    timing.check_limits(fastest, slowest)
     if cues is None:
         segments = segment(samples)
         if not segments:
@@ -322,11 +335,41 @@ def build(
             progress(f"[{number}/{len(pieces)}] skipped, nothing translated")
             continue
         audio = speak(engine, translated)
+        if mode == "concise":
+            words = translated.split()
+            while len(words) > 1 and len(audio) / SAMPLE_RATE > piece.seconds():
+                words.pop()
+                translated = " ".join(words)
+                audio = speak(engine, translated)
+        start = piece.start / SAMPLE_RATE
+        next_start = (
+            pieces[number][0].start / SAMPLE_RATE
+            if number < len(pieces)
+            else len(samples) / SAMPLE_RATE
+        )
+        placed = timing.plan(
+            mode,
+            start,
+            piece.end / SAMPLE_RATE,
+            next_start,
+            len(audio) / SAMPLE_RATE,
+            fastest,
+            slowest,
+            video,
+        )
+        if abs(placed.tempo - 1.0) >= 0.01:
+            if ffmpeg is None or workdir is None:
+                raise SystemExit("changing the line speed needs ffmpeg and a work directory")
+            raw = workdir / f"line-{number}.wav"
+            fitted = workdir / f"line-{number}-fit.wav"
+            write_wav(raw, audio)
+            timing.stretch_wav(ffmpeg, raw, fitted, placed.tempo)
+            audio = read_wav(fitted)
         end = min(piece.start + len(audio), len(track))
         track[piece.start : end] += audio[: end - piece.start]
         lines.append(
             Line(
-                start=piece.start / SAMPLE_RATE,
+                start=start,
                 end=(piece.start + len(audio)) / SAMPLE_RATE,
                 source=source,
                 translated=translated,
@@ -401,6 +444,9 @@ def main() -> int:
     parser.add_argument("--srt", type=Path)
     parser.add_argument("--keep-background", action="store_true")
     parser.add_argument("--cues", type=Path)
+    parser.add_argument("--timing", default="natural")
+    parser.add_argument("--fastest", type=float, default=1.25)
+    parser.add_argument("--slowest", type=float, default=0.9)
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
 
@@ -408,6 +454,11 @@ def main() -> int:
         raise SystemExit(f"{args.source} does not exist")
     if args.source_language == args.to:
         raise SystemExit("the source and target language must differ")
+    try:
+        timing.check_mode(args.timing)
+        timing.check_limits(args.fastest, args.slowest)
+    except timing.TimingError as error:
+        raise SystemExit(str(error)) from error
 
     cues = load_cues(args.cues) if args.cues else None
 
@@ -415,6 +466,8 @@ def main() -> int:
     ffprobe = require("ffprobe")
     video = has_video(ffprobe, args.source)
     video = video and args.source.suffix.lower() in VIDEO_SUFFIXES
+    if args.timing == "lip-sync" and not video:
+        raise SystemExit("lip sync needs a video file with a picture")
 
     stem = args.source.with_suffix("")
     suffix = args.source.suffix or ".wav"
@@ -433,7 +486,18 @@ def main() -> int:
             f"dubbing {args.source.name} ({len(samples) / SAMPLE_RATE:.1f} s, "
             f"{args.source_language} to {args.to})"
         )
-        track, lines = build(engine, samples, print, cues)
+        track, lines = build(
+            engine,
+            samples,
+            print,
+            cues,
+            mode=args.timing,
+            fastest=args.fastest,
+            slowest=args.slowest,
+            video=video,
+            ffmpeg=ffmpeg,
+            workdir=work,
+        )
         if not lines:
             raise SystemExit("nothing was translated")
         if args.keep_background:
@@ -453,6 +517,9 @@ def main() -> int:
                     "srt": str(srt),
                     "from": args.source_language,
                     "to": args.to,
+                    "timing": args.timing,
+                    "fastest": args.fastest,
+                    "slowest": args.slowest,
                     "seconds": round(len(samples) / SAMPLE_RATE, 2),
                     "lines": [
                         {

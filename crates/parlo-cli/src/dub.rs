@@ -36,6 +36,24 @@ pub struct Request<'a> {
     pub srt: Option<PathBuf>,
     pub cues: Option<PathBuf>,
     pub keep_background: bool,
+    pub timing: &'a str,
+    pub fastest: f64,
+    pub slowest: f64,
+}
+
+pub const TIMING_MODES: [&str; 5] = ["natural", "concise", "smart-fit", "stretch", "lip-sync"];
+
+pub fn check_timing(mode: &str, fastest: f64, slowest: f64) -> Result<(), String> {
+    if !TIMING_MODES.contains(&mode) {
+        return Err(format!("timing must be one of {}", TIMING_MODES.join(", ")));
+    }
+    if !fastest.is_finite() || !(1.0..=4.0).contains(&fastest) {
+        return Err("fastest must be between 1 and 4".to_string());
+    }
+    if !slowest.is_finite() || !(0.25..=1.0).contains(&slowest) {
+        return Err("slowest must be between 0.25 and 1".to_string());
+    }
+    Ok(())
 }
 
 pub fn run(request: &Request) -> Result<Dub, String> {
@@ -74,11 +92,15 @@ pub fn run(request: &Request) -> Result<Dub, String> {
 
     let report = env::temp_dir().join(format!("parlo-dub-{}-{}.json", std::process::id(), stamp()));
     let python = crate::sidecar::python_for(&engine_dir);
+    let fastest = request.fastest.to_string();
+    let slowest = request.slowest.to_string();
     let mut command = Command::new(&python);
     command
         .arg(&script)
         .arg(&source)
         .args(["--from", request.from, "--to", request.to])
+        .args(["--timing", request.timing])
+        .args(["--fastest", &fastest, "--slowest", &slowest])
         .arg("--json")
         .arg(&report)
         .current_dir(&engine_dir)
@@ -171,5 +193,26 @@ mod tests {
         assert_eq!(safe_name(".."), "file");
         assert_eq!(safe_name(""), "file");
         assert_eq!(safe_name("/"), "file");
+    }
+
+    #[test]
+    fn accepts_every_timing_mode_with_sane_limits() {
+        for mode in TIMING_MODES {
+            assert!(check_timing(mode, 1.25, 0.9).is_ok());
+        }
+    }
+
+    #[test]
+    fn refuses_an_unknown_mode_and_bad_limits() {
+        assert!(check_timing("fast", 1.25, 0.9)
+            .unwrap_err()
+            .contains("timing"));
+        assert!(check_timing("smart-fit", 0.5, 0.9)
+            .unwrap_err()
+            .contains("fastest"));
+        assert!(check_timing("smart-fit", 1.25, 1.5)
+            .unwrap_err()
+            .contains("slowest"));
+        assert!(check_timing("smart-fit", f64::NAN, 0.9).is_err());
     }
 }

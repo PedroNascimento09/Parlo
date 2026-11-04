@@ -56,6 +56,10 @@ const dubCast = document.getElementById("dub-cast");
 const dubCastRows = document.getElementById("dub-cast-rows");
 const dubLanguage = document.getElementById("dub-language");
 const dubTarget = document.getElementById("dub-target");
+const dubTiming = document.getElementById("dub-timing");
+const dubSpeed = document.getElementById("dub-speed");
+const dubFastest = document.getElementById("dub-fastest");
+const dubSlowest = document.getElementById("dub-slowest");
 const dubUrlForm = document.getElementById("dub-url-form");
 const dubUrl = document.getElementById("dub-url");
 const dubUrlStart = document.getElementById("dub-url-start");
@@ -1454,6 +1458,13 @@ const LANGUAGE_NAMES = {
   de: "German",
   ru: "Russian",
 };
+const TIMING_NAMES = {
+  natural: "Natural timing",
+  concise: "Concise",
+  "smart-fit": "Smart Fit",
+  stretch: "Stretch",
+  "lip-sync": "Lip sync",
+};
 const settingsWrite = document.getElementById("settings-write");
 const settingsShortcut = document.getElementById("settings-shortcut");
 const settingsShortcutSave = document.getElementById("settings-shortcut-save");
@@ -2185,7 +2196,10 @@ function showDub(result) {
     " · " +
     formatClock(result.seconds) +
     " of audio" +
-    (result.to ? " · " + (LANGUAGE_NAMES[result.to] || result.to) : "");
+    (result.to ? " · " + (LANGUAGE_NAMES[result.to] || result.to) : "") +
+    (result.timing && result.timing !== "natural"
+      ? " · " + (TIMING_NAMES[result.timing] || result.timing)
+      : "");
   dubLines.replaceChildren();
   for (const line of lines) {
     const item = document.createElement("li");
@@ -2457,6 +2471,24 @@ function describeLinkProblem(value) {
   return "";
 }
 
+function timingHeaders() {
+  const mode = dubTiming.value;
+  const headers = { "X-Parlo-Timing": mode };
+  if (mode === "smart-fit") {
+    const fastest = Number(dubFastest.value);
+    const slowest = Number(dubSlowest.value);
+    if (!(fastest >= 1 && fastest <= 4)) {
+      throw new Error("Smart Fit needs a fastest speed between 1 and 4.");
+    }
+    if (!(slowest >= 0.25 && slowest <= 1)) {
+      throw new Error("Smart Fit needs a slowest speed between 0.25 and 1.");
+    }
+    headers["X-Parlo-Fastest"] = String(fastest);
+    headers["X-Parlo-Slowest"] = String(slowest);
+  }
+  return headers;
+}
+
 async function startDubUrl(value) {
   const url = (value || "").trim();
   if (dubbing) {
@@ -2499,6 +2531,7 @@ async function startDubUrl(value) {
         headers["X-Parlo-To"] = dubTarget.value;
       }
     }
+    Object.assign(headers, timingHeaders());
     const response = await fetch("/dub", { method: "POST", headers });
     const detail = await response.json().catch(() => ({}));
     if (response.status === 401) {
@@ -2612,6 +2645,7 @@ async function startDub() {
         headers["X-Parlo-To"] = dubTarget.value;
       }
     }
+    Object.assign(headers, timingHeaders());
     const response = await fetch("/dub", {
       method: "POST",
       headers,
@@ -2660,6 +2694,10 @@ dubStart.addEventListener("click", () => startDub());
 dubUrlForm.addEventListener("submit", (event) => {
   event.preventDefault();
   startDubUrl(dubUrl.value);
+});
+
+dubTiming.addEventListener("change", () => {
+  dubSpeed.hidden = dubTiming.value !== "smart-fit";
 });
 
 dubSave.addEventListener("click", () => saveProject());
