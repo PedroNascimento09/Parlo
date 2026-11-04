@@ -138,12 +138,10 @@ pub fn check_url(url: &str, allow_local: bool) -> Result<(), Failure> {
         return Err(refused("the link must use an ASCII address"));
     }
     let host_lower = host.to_ascii_lowercase();
-    if host_lower == "localhost" || host_lower.ends_with(".localhost") {
-        if !allow_local {
-            return Err(refused(
-                "the link points at this computer; paste a public address",
-            ));
-        }
+    if (host_lower == "localhost" || host_lower.ends_with(".localhost")) && !allow_local {
+        return Err(refused(
+            "the link points at this computer; paste a public address",
+        ));
     }
     if let Ok(ip) = host.parse::<IpAddr>() {
         if !is_public(ip) {
