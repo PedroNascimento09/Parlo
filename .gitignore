@@ -32,3 +32,6 @@ docs/plan/
 
 .skills/
 video/
+
+# Local scratch runs and measurements
+.tmp-*
