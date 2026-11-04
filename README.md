@@ -17,6 +17,10 @@
 
 Parlo is a desktop app that turns speech into writing without sending it anywhere. Press a shortcut, speak, and the sentence appears in the field you were already typing in, cleaned up, translated if you asked for another language. The same engine powers live text, captions, meetings and dubbing, so a model installed once serves every surface: the window configures it, the shortcut and the tray are how you use it.
 
+<p align="center">
+  <img src="assets/parlo-preview.gif" width="880" alt="Parlo in motion: a greeting in six languages, the wordmark drawing itself, a sentence translated, live text filling in, and the end card">
+</p>
+
 ## What you can do with it
 
 **Dictate into any program.** `Ctrl+Alt+D` opens a small island at the bottom of the screen, on the monitor the cursor is on. Speak, and the sentence is typed into the window that had the focus, in the language you are writing. `Ctrl+Alt+Shift+D` keeps listening for as long as you need it. Where a program refuses typed text, the sentence lands on the clipboard instead, and Escape throws it away.
