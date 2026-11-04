@@ -114,6 +114,10 @@ pub trait Engine: Send {
         ))
     }
 
+    fn finish(&mut self) -> Result<EngineOutput, EngineError> {
+        Ok(EngineOutput::empty())
+    }
+
     fn loaded_units(&mut self) -> Option<Vec<String>> {
         None
     }

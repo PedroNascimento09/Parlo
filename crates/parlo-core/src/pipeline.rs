@@ -174,6 +174,34 @@ impl Pipeline {
         outputs
     }
 
+    pub fn finish(&mut self) -> Vec<PipelineOutput> {
+        let mut outputs = Vec::new();
+        if !self.pending.is_empty() {
+            let mut tail = std::mem::take(&mut self.pending);
+            tail.resize(self.frame_samples, 0.0);
+            outputs.push(self.process_frame(tail));
+        }
+        let latency_ms = self.budget.total_ms();
+        let result = self.engine.finish();
+        outputs.push(match result {
+            Ok(output) => PipelineOutput {
+                voice: true,
+                frame: output.audio,
+                transcript: output.transcript,
+                latency_ms,
+                error: None,
+            },
+            Err(error) => PipelineOutput {
+                voice: true,
+                frame: None,
+                transcript: None,
+                latency_ms,
+                error: Some(error.to_string()),
+            },
+        });
+        outputs
+    }
+
     fn process_frame(&mut self, mut samples: Vec<f32>) -> PipelineOutput {
         let voice = self.gate.process(&samples);
         if !voice {
@@ -214,6 +242,56 @@ impl Pipeline {
 mod tests {
     use super::*;
     use crate::engine::{EchoEngine, EngineOutput};
+
+    struct FlushingEngine;
+
+    impl Engine for FlushingEngine {
+        fn id(&self) -> &str {
+            "flushing"
+        }
+
+        fn target_languages(&self) -> Vec<String> {
+            Vec::new()
+        }
+
+        fn latency_ms(&self) -> u32 {
+            1
+        }
+
+        fn process(&mut self, _input: &Frame) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::empty())
+        }
+
+        fn finish(&mut self) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::translated(Frame::new(
+                AudioFormat::mono(16_000).unwrap(),
+                vec![0.5; 16],
+            )))
+        }
+    }
+
+    #[test]
+    fn finish_returns_the_audio_the_engine_held_back() {
+        let format = AudioFormat::mono(16_000).unwrap();
+        let mut pipeline = Pipeline::new(
+            PipelineConfig::new(format, format),
+            Box::new(FlushingEngine),
+        )
+        .unwrap();
+
+        assert!(pipeline.push(&[0.2; 16]).is_empty());
+        let outputs = pipeline.finish();
+
+        assert_eq!(outputs.len(), 2);
+        assert!(outputs.iter().all(|output| output.error.is_none()));
+        assert_eq!(
+            outputs
+                .last()
+                .and_then(|output| output.frame.as_ref())
+                .map(|frame| frame.samples().len()),
+            Some(16)
+        );
+    }
 
     struct DictatingEngine;
 
