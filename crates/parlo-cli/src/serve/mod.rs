@@ -22,6 +22,7 @@ use crate::update;
 
 mod auth;
 mod http;
+mod routes;
 pub(crate) mod sse;
 use auth::authorised;
 pub use auth::new_token;
@@ -1803,16 +1804,6 @@ fn handle(
         return respond_file(stream, &file, &name).map(|()| Flow::Serve);
     }
 
-    if method == "GET" && path == "/models" {
-        let lifecycle = session.lifecycle_snapshot();
-        let pair = {
-            let chosen = session.chosen();
-            format!("{}-{}", chosen.from, chosen.to)
-        };
-        let body = models::as_json(&models::status(), &lifecycle, &pair, session.is_working());
-        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
-    }
-
     if method == "GET" && path == "/voice" {
         return match voice_store().list() {
             Ok(profiles) => {
@@ -2849,42 +2840,12 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
-    if method == "GET" && path == "/.well-known/parlo" {
-        let body = serde_json::json!({
-            "name": "Parlo",
-            "version": VERSION,
-            "api": "v1",
-            "local": true,
-            "authentication": "x-parlo-token or Authorization: Bearer",
-            "capabilities": ["dictation", "translation", "meetings", "voices", "dubbing"],
-        })
-        .to_string();
-        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    if let Some(answer) = routes::discovery::route(method, path, stream) {
+        return answer;
     }
 
-    if method == "GET" && path == "/v1/models" {
-        let data: Vec<serde_json::Value> = models::status()
-            .iter()
-            .map(|model| {
-                let spec = crate::registry::model(model.id);
-                serde_json::json!({
-                    "id": model.id,
-                    "object": "model",
-                    "owned_by": "parlo",
-                    "kind": model.kind,
-                    "feature": model.feature,
-                    "installed": model.installed,
-                    "licence": spec.map(|spec| spec.licence).unwrap_or_default(),
-                    "languages": spec.map(|spec| spec.languages).unwrap_or(&[]),
-                    "devices": spec.map(|spec| spec.devices).unwrap_or(&[]),
-                    "bytes": spec.map(|spec| spec.bytes).unwrap_or(0),
-                    "capabilities": spec.map(|spec| spec.capabilities).unwrap_or(&[]),
-                    "default": spec.map(|spec| spec.default).unwrap_or(false),
-                })
-            })
-            .collect();
-        let body = serde_json::json!({ "object": "list", "data": data }).to_string();
-        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    if let Some(answer) = routes::models::route(method, path, stream, session) {
+        return answer;
     }
 
     if method == "POST" && path == "/v1/jobs" {
