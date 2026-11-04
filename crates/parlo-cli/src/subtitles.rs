@@ -34,6 +34,7 @@ pub fn project(
             start_ms: cue.start_ms,
             end_ms: cue.end_ms,
             speaker: cue.speaker,
+            voice_id: None,
             source_text: cue.text,
             target_text: None,
             state: "imported".to_string(),

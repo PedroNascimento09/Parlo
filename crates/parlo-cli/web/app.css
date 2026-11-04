@@ -1685,6 +1685,45 @@ select.field-input {
   gap: 10px;
 }
 
+.dub-cast {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+.dub-cast-title {
+  margin: 0;
+  font-size: 13px;
+}
+
+.dub-cast-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dub-cast-rows {
+  display: grid;
+  gap: 8px;
+}
+
+.dub-cast-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dub-cast-name {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+
+.dub-cast-row .dub-input {
+  max-width: 260px;
+}
+
 .dub-times {
   display: flex;
   flex-wrap: wrap;

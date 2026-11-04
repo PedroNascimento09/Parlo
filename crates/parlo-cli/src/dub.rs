@@ -16,6 +16,8 @@ pub struct Line {
     pub translated: String,
     #[serde(default)]
     pub id: Option<String>,
+    #[serde(default)]
+    pub voice: Option<String>,
 }
 
 #[derive(Deserialize)]

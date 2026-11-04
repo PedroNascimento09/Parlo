@@ -15,7 +15,13 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from parlo_cascade import CascadeEngine
-from parlo_cascade.engine import SAMPLE_RATE, float_to_pcm16, pcm16_to_float
+from parlo_cascade.engine import (
+    MODEL_DIR,
+    SAMPLE_RATE,
+    VOICES,
+    float_to_pcm16,
+    pcm16_to_float,
+)
 
 FRAME_SECONDS = 0.02
 MIN_SEGMENT_SECONDS = 0.8
@@ -46,6 +52,7 @@ class Line:
     source: str
     translated: str
     id: str | None = None
+    voice: str | None = None
 
 
 @dataclass(frozen=True)
@@ -54,6 +61,7 @@ class Cue:
     start: float
     end: float
     source: str
+    voice: str | None = None
 
 
 def require(tool: str) -> str:
@@ -99,7 +107,10 @@ def load_cues(path: Path) -> list[Cue]:
             raise SystemExit(f"cue {number} has no valid end")
         if not isinstance(source, str) or not source.strip():
             raise SystemExit(f"cue {number} has no text")
-        cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source))
+        voice = item.get("voice")
+        if voice is not None and (not isinstance(voice, str) or not voice.strip()):
+            raise SystemExit(f"cue {number} has an invalid voice")
+        cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source, voice))
     cues.sort(key=lambda cue: cue.start)
     return cues
 
@@ -254,6 +265,26 @@ def speak(engine: CascadeEngine, text: str, slot_seconds: float) -> np.ndarray:
     return faster if faster.size > 0 else samples
 
 
+def select_voice(
+    engine: CascadeEngine, voice: str | None, default: Path | None
+) -> Path | None:
+    if not voice:
+        if default is None:
+            return None
+        path = default
+    else:
+        name = VOICES.get(voice.removeprefix("voice-"))
+        if name is None:
+            raise SystemExit(f"{voice} is not a voice this engine installs")
+        path = MODEL_DIR / name
+        if not path.is_file():
+            raise SystemExit(f"the voice {path.name} is not installed")
+    if Path(engine.voice_path) != path:
+        engine._release_voice()
+        engine.voice_path = path
+    return path
+
+
 def cue_pieces(cues: list[Cue], length: int) -> list[tuple[Segment, Cue]]:
     pieces = []
     for cue in cues:
@@ -277,9 +308,13 @@ def build(
     else:
         pieces = cue_pieces(cues, len(samples))
 
+    engine_voice = getattr(engine, "voice_path", None)
+    default_voice = Path(engine_voice) if engine_voice else None
     track = np.zeros(len(samples), dtype=np.float32)
     lines: list[Line] = []
     for number, (piece, cue) in enumerate(pieces, start=1):
+        voice = cue.voice if cue is not None else None
+        select_voice(engine, voice, default_voice)
         source = cue.source if cue is not None else engine._transcribe(samples[piece.start : piece.end])
         if not source:
             progress(f"[{number}/{len(pieces)}] skipped, nothing recognised")
@@ -301,6 +336,7 @@ def build(
                 source=source,
                 translated=translated,
                 id=cue.id if cue is not None else None,
+                voice=voice,
             )
         )
         progress(
@@ -428,6 +464,7 @@ def main() -> int:
                             "source": line.source,
                             "translated": line.translated,
                             "id": line.id,
+                            "voice": line.voice,
                         }
                         for line in lines
                     ],

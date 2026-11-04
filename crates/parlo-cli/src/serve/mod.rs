@@ -1940,7 +1940,7 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        return match serde_json::to_string(&project) {
+        return match project_json(&project) {
             Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
             Err(error) => respond_json(
                 stream,
@@ -1975,7 +1975,7 @@ fn handle(
             }
         };
         return match store.load_dub_project(id) {
-            Ok(Some(project)) => match serde_json::to_string(&project) {
+            Ok(Some(project)) => match project_json(&project) {
                 Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
                 Err(error) => respond_json(
                     stream,
@@ -2044,7 +2044,7 @@ fn handle(
                 .map(|()| Flow::Serve);
             }
         };
-        if let Err(error) = apply_project_edits(&mut project, &edit.segments) {
+        if let Err(error) = apply_project_edits(&mut project, &edit.segments, &edit.cast) {
             return respond_json(stream, "400 Bad Request", &error_json(&error))
                 .map(|()| Flow::Serve);
         }
@@ -2056,7 +2056,7 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        return match serde_json::to_string(&project) {
+        return match project_json(&project) {
             Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
             Err(error) => respond_json(
                 stream,
@@ -2446,12 +2446,18 @@ fn handle(
                     .lines
                     .iter()
                     .map(|line| {
+                        let voice = line
+                            .voice
+                            .as_deref()
+                            .map(|voice| format!("\"{}\"", json_string(voice)))
+                            .unwrap_or_else(|| "null".to_string());
                         format!(
-                            "{{\"start\":{:.2},\"end\":{:.2},\"source\":\"{}\",\"translated\":\"{}\"}}",
+                            "{{\"start\":{:.2},\"end\":{:.2},\"source\":\"{}\",\"translated\":\"{}\",\"voice\":{}}}",
                             line.start,
                             line.end,
                             json_string(&line.source),
-                            json_string(&line.translated)
+                            json_string(&line.translated),
+                            voice
                         )
                     })
                     .collect();
@@ -3684,6 +3690,8 @@ const MAX_SEGMENT_TEXT: usize = 10_000;
 
 #[derive(serde::Deserialize)]
 struct ProjectEdit {
+    #[serde(default)]
+    cast: std::collections::BTreeMap<String, String>,
     segments: Vec<SegmentEdit>,
 }
 
@@ -3694,18 +3702,29 @@ struct SegmentEdit {
     end_ms: u64,
     #[serde(default)]
     speaker: Option<String>,
+    #[serde(default)]
+    voice_id: Option<String>,
     source_text: String,
 }
 
 fn apply_project_edits(
     project: &mut crate::store::DubProject,
     edits: &[SegmentEdit],
+    cast: &std::collections::BTreeMap<String, String>,
 ) -> Result<(), String> {
     if project.segments.is_empty() {
         return Err("the project has no segments to edit".to_string());
     }
     if edits.len() != project.segments.len() {
         return Err("send every segment exactly once".to_string());
+    }
+    for (speaker, voice) in cast {
+        if speaker.trim().is_empty() || speaker.chars().count() > 120 {
+            return Err("a speaker needs a name of up to 120 characters".to_string());
+        }
+        if !known_voice(voice) {
+            return Err(format!("{voice} is not a voice Parlo can cast"));
+        }
     }
     let mut seen = std::collections::HashSet::new();
     for edit in edits {
@@ -3736,10 +3755,25 @@ fn apply_project_edits(
                 edit.id
             ));
         }
+        if let Some(voice) = edit.voice_id.as_deref().filter(|voice| !voice.is_empty()) {
+            if !known_voice(voice) {
+                return Err(format!("{voice} is not a voice Parlo can cast"));
+            }
+        }
         if !project.segments.iter().any(|segment| segment.id == edit.id) {
             return Err(format!("segment {} is not in this project", edit.id));
         }
     }
+    let before: std::collections::HashMap<String, Option<String>> = project
+        .segments
+        .iter()
+        .map(|segment| {
+            (
+                segment.id.clone(),
+                effective_voice(project, segment).map(ToOwned::to_owned),
+            )
+        })
+        .collect();
     for segment in &mut project.segments {
         let edit = edits
             .iter()
@@ -3751,19 +3785,33 @@ fn apply_project_edits(
             .map(str::trim)
             .filter(|speaker| !speaker.is_empty())
             .map(ToOwned::to_owned);
-        if segment.start_ms != edit.start_ms
+        let text_changed = segment.start_ms != edit.start_ms
             || segment.end_ms != edit.end_ms
             || segment.speaker != speaker
-            || segment.source_text != edit.source_text
-        {
-            segment.target_text = None;
-            segment.state = "edited".to_string();
-        }
+            || segment.source_text != edit.source_text;
         segment.start_ms = edit.start_ms;
         segment.end_ms = edit.end_ms;
         segment.speaker = speaker;
         segment.source_text = edit.source_text.clone();
+        segment.voice_id = edit
+            .voice_id
+            .clone()
+            .filter(|voice| !voice.trim().is_empty());
+        let after = segment.voice_id.clone().or_else(|| {
+            segment
+                .speaker
+                .as_deref()
+                .and_then(|speaker| cast.get(speaker))
+                .cloned()
+        });
+        if text_changed || before.get(&segment.id).cloned().flatten() != after {
+            if text_changed {
+                segment.target_text = None;
+            }
+            segment.state = "edited".to_string();
+        }
     }
+    project.cast = cast.clone();
     Ok(())
 }
 
@@ -3774,6 +3822,7 @@ struct DubCue<'a> {
     end_ms: u64,
     source: &'a str,
     speaker: Option<&'a str>,
+    voice: Option<&'a str>,
 }
 
 #[derive(serde::Serialize)]
@@ -3791,9 +3840,51 @@ fn cue_document(project: &crate::store::DubProject) -> Result<String, serde_json
             end_ms: segment.end_ms,
             source: segment.source_text.as_str(),
             speaker: segment.speaker.as_deref(),
+            voice: effective_voice(project, segment),
         })
         .collect();
     serde_json::to_string(&DubCueDocument { cues })
+}
+
+fn known_voice(id: &str) -> bool {
+    crate::registry::model(id)
+        .map(|spec| spec.kind == "voice")
+        .unwrap_or(false)
+}
+
+fn effective_voice<'a>(
+    project: &'a crate::store::DubProject,
+    segment: &'a crate::store::DubSegment,
+) -> Option<&'a str> {
+    segment.voice_id.as_deref().or_else(|| {
+        segment
+            .speaker
+            .as_deref()
+            .and_then(|speaker| project.cast.get(speaker))
+            .map(String::as_str)
+    })
+}
+
+fn project_json(project: &crate::store::DubProject) -> Result<String, serde_json::Error> {
+    let installed: std::collections::HashSet<&str> = crate::models::status()
+        .into_iter()
+        .filter(|model| model.installed)
+        .map(|model| model.id)
+        .collect();
+    let voices: Vec<serde_json::Value> = crate::registry::MODELS
+        .iter()
+        .filter(|spec| spec.kind == "voice")
+        .map(|spec| {
+            serde_json::json!({
+                "id": spec.id,
+                "name": spec.name,
+                "installed": installed.contains(spec.id),
+            })
+        })
+        .collect();
+    let mut document = serde_json::to_value(project)?;
+    document["voices"] = serde_json::Value::Array(voices);
+    serde_json::to_string(&document)
 }
 
 fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line]) {
@@ -4188,6 +4279,7 @@ mod tests {
             start_ms: 1_250,
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
+            voice_id: None,
             source_text: "Bom dia".to_string(),
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
@@ -4201,8 +4293,10 @@ mod tests {
                 start_ms: 500,
                 end_ms: 2_750,
                 speaker: Some("Beatriz".to_string()),
+                voice_id: None,
                 source_text: "Bom dia a todos".to_string(),
             }],
+            &std::collections::BTreeMap::new(),
         )
         .unwrap();
         store.save_dub_project(&mut project).unwrap();
@@ -4226,6 +4320,7 @@ mod tests {
             start_ms: 1_250,
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
+            voice_id: None,
             source_text: "Bom dia".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4241,6 +4336,104 @@ mod tests {
     }
 
     #[test]
+    fn casting_and_overrides_decide_the_voice_each_line_uses() {
+        let mut project =
+            crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
+        project
+            .cast
+            .insert("Ana".to_string(), "voice-en".to_string());
+        project
+            .cast
+            .insert("Bob".to_string(), "voice-de".to_string());
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            voice_id: None,
+            source_text: "Bom dia".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-1".to_string(),
+            position: 1,
+            start_ms: 4_000,
+            end_ms: 6_000,
+            speaker: Some("Bob".to_string()),
+            voice_id: Some("voice-fr".to_string()),
+            source_text: "Até logo".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-2".to_string(),
+            position: 2,
+            start_ms: 7_000,
+            end_ms: 8_000,
+            speaker: None,
+            voice_id: None,
+            source_text: "Sem voz".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+
+        let document: serde_json::Value =
+            serde_json::from_str(&cue_document(&project).unwrap()).unwrap();
+
+        assert_eq!(document["cues"][0]["voice"], "voice-en");
+        assert_eq!(document["cues"][1]["voice"], "voice-fr");
+        assert!(document["cues"][2]["voice"].is_null());
+    }
+
+    #[test]
+    fn project_edits_keep_the_cast_and_refuse_an_unknown_voice() {
+        let mut store = crate::store::Store::open_memory().unwrap();
+        let mut project =
+            crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            voice_id: None,
+            source_text: "Bom dia".to_string(),
+            target_text: Some("Good morning".to_string()),
+            state: "dubbed".to_string(),
+        });
+        store.save_dub_project(&mut project).unwrap();
+        let edit = [SegmentEdit {
+            id: "p1-0".to_string(),
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            voice_id: Some("voice-fr".to_string()),
+            source_text: "Bom dia".to_string(),
+        }];
+        let mut cast = std::collections::BTreeMap::new();
+        cast.insert("Ana".to_string(), "voice-en".to_string());
+
+        apply_project_edits(&mut project, &edit, &cast).unwrap();
+        store.save_dub_project(&mut project).unwrap();
+        let loaded = store.load_dub_project("p1").unwrap().unwrap();
+
+        assert_eq!(loaded.cast.get("Ana").map(String::as_str), Some("voice-en"));
+        assert_eq!(loaded.segments[0].voice_id.as_deref(), Some("voice-fr"));
+        assert_eq!(
+            loaded.segments[0].target_text.as_deref(),
+            Some("Good morning")
+        );
+        assert_eq!(loaded.segments[0].state, "edited");
+
+        let mut wrong = std::collections::BTreeMap::new();
+        wrong.insert("Ana".to_string(), "voice-klingon".to_string());
+        let refused = apply_project_edits(&mut project, &edit, &wrong).unwrap_err();
+        assert!(refused.contains("is not a voice"), "{refused}");
+    }
+
+    #[test]
     fn a_finished_dub_updates_matching_project_segments() {
         let mut project =
             crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
@@ -4250,6 +4443,7 @@ mod tests {
             start_ms: 1_250,
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
+            voice_id: None,
             source_text: "Bom dia".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -4261,6 +4455,7 @@ mod tests {
                 source: "Bom dia".to_string(),
                 translated: "Good morning".to_string(),
                 id: Some("p1-0".to_string()),
+                voice: None,
             },
             dub::Line {
                 start: 4.0,
@@ -4268,6 +4463,7 @@ mod tests {
                 source: "Até logo".to_string(),
                 translated: "See you".to_string(),
                 id: Some("missing".to_string()),
+                voice: None,
             },
         ];
 

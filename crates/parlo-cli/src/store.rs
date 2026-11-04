@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -189,6 +190,7 @@ pub struct DubProject {
     pub to: String,
     pub created_at: i64,
     pub updated_at: i64,
+    pub cast: BTreeMap<String, String>,
     pub segments: Vec<DubSegment>,
 }
 
@@ -199,6 +201,7 @@ pub struct DubSegment {
     pub start_ms: u64,
     pub end_ms: u64,
     pub speaker: Option<String>,
+    pub voice_id: Option<String>,
     pub source_text: String,
     pub target_text: Option<String>,
     pub state: String,
@@ -221,6 +224,7 @@ impl DubProject {
             to: to.to_string(),
             created_at: stamp,
             updated_at: stamp,
+            cast: BTreeMap::new(),
             segments: Vec::new(),
         }
     }
@@ -467,6 +471,7 @@ impl Store {
         let settings = serde_json::json!({
             "from": project.from,
             "to": project.to,
+            "cast": project.cast,
         })
         .to_string();
         let transaction = self.connection.transaction().map_err(sql)?;
@@ -496,7 +501,7 @@ impl Store {
             }
             transaction
                 .execute(
-                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, ?8, ?9, NULL)",
+                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)",
                     params![
                         segment.id,
                         project.id,
@@ -504,6 +509,7 @@ impl Store {
                         segment.start_ms as i64,
                         segment.end_ms as i64,
                         segment.speaker,
+                        segment.voice_id,
                         segment.source_text,
                         segment.target_text,
                         segment.state
@@ -541,6 +547,10 @@ impl Store {
                             .to_string(),
                         created_at: row.get::<_, Option<i64>>(3)?.unwrap_or_default(),
                         updated_at: row.get::<_, Option<i64>>(4)?.unwrap_or_default(),
+                        cast: settings
+                            .get("cast")
+                            .and_then(|value| serde_json::from_value(value.clone()).ok())
+                            .unwrap_or_default(),
                         segments: Vec::new(),
                     })
                 },
@@ -552,7 +562,7 @@ impl Store {
         };
         let mut statement = self
             .connection
-            .prepare("SELECT id, position, start_ms, end_ms, speaker, source_text, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
+            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
             .map_err(sql)?;
         let rows = statement
             .query_map(params![id], |row| {
@@ -562,10 +572,11 @@ impl Store {
                     start_ms: row.get::<_, i64>(2)?.max(0) as u64,
                     end_ms: row.get::<_, i64>(3)?.max(0) as u64,
                     speaker: row.get(4)?,
-                    source_text: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                    target_text: row.get(6)?,
+                    voice_id: row.get(5)?,
+                    source_text: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                    target_text: row.get(7)?,
                     state: row
-                        .get::<_, Option<String>>(7)?
+                        .get::<_, Option<String>>(8)?
                         .unwrap_or_else(|| "imported".to_string()),
                 })
             })
@@ -775,12 +786,16 @@ mod tests {
             "en",
             Some("launch.srt".to_string()),
         );
+        project
+            .cast
+            .insert("Ana".to_string(), "voice-en".to_string());
         project.segments.push(DubSegment {
             id: "p1-0".to_string(),
             position: 0,
             start_ms: 1_250,
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
+            voice_id: Some("voice-de".to_string()),
             source_text: "Bom dia".to_string(),
             target_text: Some("Good morning".to_string()),
             state: "imported".to_string(),
@@ -791,6 +806,7 @@ mod tests {
             start_ms: 4_000,
             end_ms: 5_000,
             speaker: None,
+            voice_id: None,
             source_text: "Até logo".to_string(),
             target_text: None,
             state: "imported".to_string(),
@@ -804,6 +820,8 @@ mod tests {
         assert_eq!(loaded.to, "en");
         assert_eq!(loaded.segments, project.segments);
         assert_eq!(loaded.segments[0].speaker.as_deref(), Some("Ana"));
+        assert_eq!(loaded.segments[0].voice_id.as_deref(), Some("voice-de"));
+        assert_eq!(loaded.cast.get("Ana").map(String::as_str), Some("voice-en"));
         assert_eq!(loaded.segments[0].start_ms, 1_250);
         assert_eq!(loaded.segments[1].target_text, None);
         assert!(store.load_dub_project("missing").unwrap().is_none());

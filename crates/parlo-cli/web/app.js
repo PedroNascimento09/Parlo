@@ -52,6 +52,8 @@ const dubImport = document.getElementById("dub-import");
 const dubSubtitles = document.getElementById("dub-subtitles");
 const dubProjectLabel = document.getElementById("dub-project");
 const dubSave = document.getElementById("dub-save");
+const dubCast = document.getElementById("dub-cast");
+const dubCastRows = document.getElementById("dub-cast-rows");
 const dubClear = document.getElementById("dub-clear");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
@@ -2153,6 +2155,7 @@ function describeDubError(detail) {
 
 function showDub(result) {
   dubSave.hidden = true;
+  dubCast.hidden = true;
   if (!dubProject) {
     dubProjectLabel.textContent = "";
     dubClear.hidden = true;
@@ -2185,7 +2188,7 @@ function showDub(result) {
     translated.append(document.createTextNode(" "), listen);
     const source = document.createElement("p");
     source.className = "dub-source";
-    source.textContent = line.source || "";
+    source.textContent = [line.voice, line.source].filter(Boolean).join(" · ");
     body.append(translated, source);
 
     item.append(time, body);
@@ -2219,6 +2222,45 @@ function showProject(project) {
     label.append(title, input);
     return label;
   };
+  const voices = Array.isArray(project.voices) ? project.voices : [];
+  const cast = project.cast || {};
+  const speakers = [];
+  for (const line of lines) {
+    const name = (line.speaker || "").trim();
+    if (name && !speakers.includes(name)) {
+      speakers.push(name);
+    }
+  }
+  const voiceSelect = (selected, defaultLabel) => {
+    const select = document.createElement("select");
+    select.className = "dub-input dub-voice";
+    const fallback = document.createElement("option");
+    fallback.value = "";
+    fallback.textContent = defaultLabel;
+    select.append(fallback);
+    for (const voice of voices) {
+      const option = document.createElement("option");
+      option.value = voice.id;
+      option.textContent = voice.name + (voice.installed ? "" : " · not installed");
+      select.append(option);
+    }
+    select.value = voices.some((voice) => voice.id === selected) ? selected : "";
+    return select;
+  };
+  dubCastRows.replaceChildren();
+  dubCast.hidden = speakers.length === 0;
+  for (const speaker of speakers) {
+    const row = document.createElement("div");
+    row.className = "dub-cast-row";
+    row.dataset.speaker = speaker;
+    const name = document.createElement("span");
+    name.className = "dub-cast-name";
+    name.textContent = speaker;
+    const select = voiceSelect(cast[speaker], "No voice yet");
+    select.classList.add("dub-cast-voice");
+    row.append(name, select);
+    dubCastRows.append(row);
+  }
   for (const line of lines) {
     const item = document.createElement("li");
     item.className = "dub-line dub-edit-line";
@@ -2254,7 +2296,12 @@ function showProject(project) {
     text.rows = 2;
     text.required = true;
     text.value = line.source_text || "";
-    body.append(times, field("Speaker", speaker), field("Text", text));
+    body.append(
+      times,
+      field("Speaker", speaker),
+      field("Voice", voiceSelect(line.voice_id, "Speaker voice")),
+      field("Text", text)
+    );
 
     item.append(body);
     dubLines.append(item);
@@ -2278,9 +2325,21 @@ function editedProjectSegments() {
       start_ms: Math.round(start * 1000),
       end_ms: Math.round(end * 1000),
       speaker: row.querySelector(".dub-speaker").value.trim() || null,
+      voice_id: row.querySelector(".dub-voice").value || null,
       source_text: sourceText,
     };
   });
+}
+
+function editedProjectCast() {
+  const cast = {};
+  for (const row of dubCastRows.querySelectorAll("[data-speaker]")) {
+    const voice = row.querySelector(".dub-cast-voice").value;
+    if (voice) {
+      cast[row.dataset.speaker] = voice;
+    }
+  }
+  return cast;
 }
 
 async function saveProject() {
@@ -2304,7 +2363,7 @@ async function saveProject() {
         "Content-Type": "application/json",
         Authorization: "Bearer " + token,
       },
-      body: JSON.stringify({ segments }),
+      body: JSON.stringify({ cast: editedProjectCast(), segments }),
     });
     const detail = await response.json().catch(() => ({}));
     if (response.status === 401) {
@@ -2464,6 +2523,7 @@ dubClear.addEventListener("click", () => {
   dubProjectLabel.textContent = "";
   dubClear.hidden = true;
   dubSave.hidden = true;
+  dubCast.hidden = true;
   dubResult.hidden = true;
   setDubStatus("Imported subtitles removed. The next dub will use speech recognition.");
 });
