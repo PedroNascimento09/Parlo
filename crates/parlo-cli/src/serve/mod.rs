@@ -2878,6 +2878,11 @@ fn handle(
         return routes::openai::translations(stream, &headers, token, &body, session);
     }
 
+    if path == "/mcp" {
+        return routes::mcp::route(method, stream, &headers, token, &body)
+            .unwrap_or(Ok(Flow::Serve));
+    }
+
     if method == "POST" && path == "/v1/jobs" {
         return routes::jobs::create(stream, &headers, token, &body);
     }
