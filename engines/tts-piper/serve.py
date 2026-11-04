@@ -1,9 +1,7 @@
 import base64
-import io
 import json
 import os
 import sys
-import wave
 
 
 def reply(payload: dict) -> None:
@@ -12,21 +10,12 @@ def reply(payload: dict) -> None:
 
 
 def synthesize(voice, text: str) -> tuple[bytes, int]:
-    import numpy as np
-
-    buffer = io.BytesIO()
-    with wave.open(buffer, "wb") as wav:
-        voice.synthesize_wav(text, wav)
-    buffer.seek(0)
-    with wave.open(buffer, "rb") as wav:
-        rate = wav.getframerate()
-        channels = wav.getnchannels()
-        frames = wav.readframes(wav.getnframes())
-
-    samples = np.frombuffer(frames, dtype="<i2")
-    if channels > 1:
-        samples = samples.reshape(-1, channels).mean(axis=1)
-    return samples.astype("<i2").tobytes(), rate
+    rate = int(voice.config.sample_rate)
+    audio = bytearray()
+    for chunk in voice.synthesize(text):
+        rate = int(chunk.sample_rate)
+        audio.extend(chunk.audio_int16_bytes)
+    return bytes(audio), rate
 
 
 def main() -> int:
