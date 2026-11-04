@@ -29,6 +29,14 @@ struct UnitRequest<'a> {
 }
 
 #[derive(Serialize)]
+struct PairRequest<'a> {
+    op: &'a str,
+    seq: u64,
+    from: &'a str,
+    to: &'a str,
+}
+
+#[derive(Serialize)]
 struct SpeechRequest<'a> {
     op: &'a str,
     seq: u64,
@@ -367,6 +375,25 @@ impl SidecarEngine {
         Ok((text, translation))
     }
 
+    pub fn set_pair(&mut self, from: &str, to: &str) -> Result<(), EngineError> {
+        self.seq += 1;
+        let response = self.request(&PairRequest {
+            op: "pair",
+            seq: self.seq,
+            from,
+            to,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(response.error.unwrap_or_else(
+                || "the engine did not change languages".to_string(),
+            )));
+        }
+        if !response.target_languages.is_empty() {
+            self.languages = response.target_languages;
+        }
+        Ok(())
+    }
+
     pub fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {
         if text.trim().is_empty() {
             return Err(EngineError::Rejected("text must not be empty".to_string()));
@@ -583,6 +610,10 @@ impl Engine for SidecarEngine {
         SidecarEngine::speak(self, text)
     }
 
+    fn set_languages(&mut self, from: &str, to: &str) -> Result<(), EngineError> {
+        SidecarEngine::set_pair(self, from, to)
+    }
+
     fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
         SidecarEngine::embed(self, pcm16)
     }
@@ -719,6 +750,21 @@ mod tests {
         })
         .unwrap();
         assert_eq!(line, "{\"op\":\"hello\"}");
+    }
+
+    #[test]
+    fn a_pair_request_names_both_languages() {
+        let line = serde_json::to_string(&PairRequest {
+            op: "pair",
+            seq: 3,
+            from: "pt",
+            to: "de",
+        })
+        .unwrap();
+        assert_eq!(
+            line,
+            "{\"op\":\"pair\",\"seq\":3,\"from\":\"pt\",\"to\":\"de\"}"
+        );
     }
 
     #[test]

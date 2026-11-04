@@ -141,6 +141,10 @@ impl Pipeline {
         self.engine.write(pcm16, target, clean)
     }
 
+    pub fn set_languages(&mut self, from: &str, to: &str) -> Result<(), EngineError> {
+        self.engine.set_languages(from, to)
+    }
+
     pub fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {
         self.engine.speak(text)
     }

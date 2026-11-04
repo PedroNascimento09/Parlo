@@ -44,6 +44,15 @@ pub fn hello(target: &str) -> String {
     .to_string()
 }
 
+pub fn switched(seq: u64, target: &str) -> String {
+    json!({
+        "op": "switched",
+        "seq": seq,
+        "target_languages": [target],
+    })
+    .to_string()
+}
+
 pub fn loaded(units: &[&str]) -> String {
     json!({"op": "loaded", "units": units}).to_string()
 }
@@ -168,6 +177,13 @@ mod tests {
         let line = hello("en");
         assert!(line.contains("\"engine\":\"cascade\""));
         assert!(line.contains("\"en\""));
+    }
+
+    #[test]
+    fn a_switch_names_the_new_target() {
+        let line = switched(7, "de");
+        assert!(line.contains("\"op\":\"switched\""));
+        assert!(line.contains("\"de\""));
     }
 
     #[test]

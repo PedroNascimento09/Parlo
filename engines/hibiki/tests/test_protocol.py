@@ -120,7 +120,7 @@ class BrokenDictationEngine(FakeDictationEngine):
 
 
 class FakeWritingEngine(FakeDictationEngine):
-    def write(self, pcm16, target=None):
+    def write(self, pcm16, target=None, clean=None):
         return "bom dia", "good morning" if target == "en" else "bom dia"
 
 
@@ -210,6 +210,44 @@ class StreamProtocolTest(unittest.TestCase):
     def test_stream_rejects_a_missing_payload(self):
         response = handle_line('{"op": "stream"}', FakeStreamingEngine())
         self.assertEqual(response["error"], "pcm16 must be base64 text")
+
+
+class FakePairEngine(FakeEngine):
+    def __init__(self):
+        self.pair = ("pt", "en")
+
+    def set_pair(self, source, target):
+        self.pair = (source.strip().lower(), target.strip().lower())
+        self.target_languages = (self.pair[1],)
+
+
+class PairProtocolTest(unittest.TestCase):
+    def test_pair_switches_and_reports_the_new_target(self):
+        engine = FakePairEngine()
+        response = handle_line('{"op": "pair", "seq": 5, "from": "pt", "to": "de"}', engine)
+        self.assertEqual(response["op"], "switched")
+        self.assertEqual(response["seq"], 5)
+        self.assertEqual(response["target_languages"], ["de"])
+        self.assertEqual(engine.pair, ("pt", "de"))
+
+    def test_pair_rejects_missing_languages(self):
+        response = handle_line('{"op": "pair", "from": "pt"}', FakePairEngine())
+        self.assertEqual(response["op"], "error")
+        self.assertIn("must be text", response["error"])
+
+    def test_an_engine_without_pairs_is_reported(self):
+        response = handle_line('{"op": "pair", "from": "pt", "to": "en"}', FakeEngine())
+        self.assertEqual(response["op"], "error")
+        self.assertIn("one language pair", response["error"])
+
+    def test_a_refusal_from_the_engine_is_reported(self):
+        class Refusing(FakePairEngine):
+            def set_pair(self, source, target):
+                raise ValueError("no translation model")
+
+        response = handle_line('{"op": "pair", "from": "pt", "to": "ja"}', Refusing())
+        self.assertEqual(response["op"], "error")
+        self.assertIn("no translation model", response["error"])
 
 
 if __name__ == "__main__":

@@ -230,12 +230,44 @@ impl Session {
         to: String,
         write: String,
     ) -> Result<(), String> {
-        let pipeline = build(&from, &to, &engine, &stt)?;
+        crate::config::check_pair(&from, &to)?;
+        crate::config::check_stt(&stt)?;
+        let mut pipeline = self.pipeline();
+        let chosen = self.chosen();
+        let same_backend = chosen.engine == engine && chosen.stt == stt;
+        let same_pair = chosen.from == from && chosen.to == to;
+        let (shortcut, hands_free, captions, undo) = (
+            chosen.shortcut.clone(),
+            chosen.hands_free.clone(),
+            chosen.captions.clone(),
+            chosen.undo.clone(),
+        );
+        let mut kept = same_backend;
+        if same_backend && !same_pair {
+            match pipeline.set_languages(&from, &to) {
+                Ok(()) => {
+                    std::env::set_var("PARLO_CASCADE_SOURCE", &from);
+                    std::env::set_var("PARLO_CASCADE_TARGET", &to);
+                }
+                Err(error) => {
+                    eprintln!(
+                        "changing the language pair in place failed, restarting the engine: {error}"
+                    );
+                    kept = false;
+                }
+            }
+        }
+        drop(chosen);
+        if !kept {
+            *pipeline = build(&from, &to, &engine, &stt)?;
+        }
+        drop(pipeline);
+        if !kept {
+            if let Ok(mut target) = self.target.lock() {
+                *target = None;
+            }
+        }
         let mut chosen = self.choose();
-        let shortcut = chosen.shortcut.clone();
-        let hands_free = chosen.hands_free.clone();
-        let captions = chosen.captions.clone();
-        let undo = chosen.undo.clone();
         *chosen = Chosen {
             engine,
             stt,
@@ -247,11 +279,6 @@ impl Session {
             captions,
             undo,
         };
-        drop(chosen);
-        *self.pipeline() = pipeline;
-        if let Ok(mut target) = self.target.lock() {
-            *target = None;
-        }
         Ok(())
     }
 
@@ -1659,7 +1686,7 @@ fn handle(
             .map(|()| Flow::Serve);
         }
 
-        println!("switching to {engine} on {stt}, {from} to {to}, loading models");
+        println!("switching to {engine} on {stt}, {from} to {to}");
         let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
         let stored = (
             engine.clone(),

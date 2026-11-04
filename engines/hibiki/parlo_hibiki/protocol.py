@@ -45,6 +45,30 @@ def switch_unit(request: dict, engine) -> dict:
     return {"op": "model", "unit": unit, "state": "loaded" if held else "unloaded"}
 
 
+def switch_pair(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    method = getattr(engine, "set_pair", None)
+    if not callable(method):
+        return {
+            "op": "error",
+            "seq": seq,
+            "error": "this engine holds one language pair at a time",
+        }
+    source = request.get("from")
+    target = request.get("to")
+    if not isinstance(source, str) or not isinstance(target, str):
+        return {"op": "error", "seq": seq, "error": "from and to must be text"}
+    try:
+        method(source, target)
+    except (EngineUnavailable, ValueError) as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return {
+        "op": "switched",
+        "seq": seq,
+        "target_languages": list(engine.target_languages),
+    }
+
+
 def handle_line(line: str, engine) -> dict:
     try:
         request = json.loads(line)
@@ -63,6 +87,8 @@ def handle_line(line: str, engine) -> dict:
         return lifecycle(engine)
     if op in ("load", "unload"):
         return switch_unit(request, engine)
+    if op == "pair":
+        return switch_pair(request, engine)
     if op == "translate":
         return translate(request, engine)
     if op == "dictate":

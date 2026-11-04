@@ -177,6 +177,21 @@ cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release --target
 
 with `RUSTFLAGS="-C target-feature=+crt-static"`, `CC` and `CXX` unset so cc-rs picks the Microsoft compiler for the target and the system compiler for build scripts, and the Microsoft linker named through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. The crate keeps `ct2rs` without its default features, plus `ruy` for the int8 kernels, so the tokenizer dependency that refuses to build is left out. The build needs CMake and the MSVC build tools; GitHub's Windows runner has both.
 
+## Changing languages without a restart
+
+A new language pair used to cost a restart: the app killed the engine process, started another one, and loaded the recogniser again before it could hear the first word. On the reference machine that is the first start in the table at the top of this page, paid again on every swap.
+
+The engine process now stays, and `pair` changes the pair inside it:
+
+```json
+{"op": "pair", "seq": 7, "from": "pt", "to": "de"}
+{"op": "switched", "seq": 7, "target_languages": ["de"]}
+```
+
+The recogniser stays loaded, because it is the largest model in the cascade and it serves every pair the same way. The translator and the voice of the old target are released, the audio buffer and the caption session are dropped, and the next `write` or `translate` loads what the new pair needs. The Rust engine keeps the last two translators and the last two voices, so a pair used a moment ago is still warm when someone switches back.
+
+In the app, `POST /settings` compares the requested engine and recogniser with the running ones. When both match, it asks the engine for the new pair and leaves the process alone; when either differs, or the swap is refused, the session rebuilds the pipeline exactly as before. Changing only the language dictation writes in no longer restarts anything, because nothing in the engine depends on it.
+
 ## Streaming, the decision
 
 The 0.3 milestone asked whether the windowed pipeline stays or a native streaming recogniser replaces it. On ten recorded European Portuguese segments (`docs/BENCHMARKS.md`), Parakeet keeps a real time factor of 1.023 with flat drift (x0.84 decode, x0.80 real time factor), and local agreement confirms 84.4% of a segment's words before it closes. **The pipeline stays for v0.3**, because it meets the latency target on the reference machine and neither replacement is shippable yet:

@@ -178,5 +178,43 @@ class EngineTest(unittest.TestCase):
             os.environ.pop("PARLO_CASCADE_CLEAN", None)
 
 
+class PairSwitchTest(unittest.TestCase):
+    def test_a_switch_keeps_the_recogniser_and_drops_the_rest(self):
+        engine = CascadeEngine()
+        recogniser = object()
+        engine._stt = recogniser
+        engine._translator = lambda text: text
+        engine._writers["en"] = lambda text: text
+        engine._tts = object()
+        engine._buffer.extend(b"\x00\x00")
+        engine.set_pair("pt", "de")
+        self.assertEqual(engine.target, "de")
+        self.assertEqual(engine.target_languages, ("de",))
+        self.assertIs(engine._stt, recogniser)
+        self.assertIsNone(engine._translator)
+        self.assertEqual(engine._writers, {})
+        self.assertIsNone(engine._tts)
+        self.assertEqual(engine._buffer, bytearray())
+
+    def test_the_same_pair_keeps_what_is_loaded(self):
+        engine = CascadeEngine()
+        translator = lambda text: text
+        engine._translator = translator
+        engine.set_pair("pt", "en")
+        self.assertIs(engine._translator, translator)
+
+    def test_a_pair_needs_two_letter_codes(self):
+        engine = CascadeEngine()
+        with self.assertRaises(ValueError):
+            engine.set_pair("pt", "english")
+        with self.assertRaises(ValueError):
+            engine.set_pair("de", "de")
+
+    def test_the_voice_follows_the_new_target(self):
+        engine = CascadeEngine()
+        engine.set_pair("pt", "de")
+        self.assertEqual(engine.voice_path.name, "de_DE-thorsten-medium.onnx")
+
+
 if __name__ == "__main__":
     unittest.main()

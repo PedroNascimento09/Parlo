@@ -61,10 +61,13 @@ fn pack_dir(from: &str, to: &str) -> Option<PathBuf> {
     matches.pop()
 }
 
+const KEPT_TRANSLATORS: usize = 2;
+const KEPT_VOICES: usize = 2;
+
 struct Engine {
     recognizer: Option<Recognizer>,
-    translator: Option<Translator>,
-    voice: Option<Voice>,
+    translators: Vec<(String, Translator)>,
+    voices: Vec<(String, Voice)>,
     from: String,
     to: String,
 }
@@ -73,11 +76,31 @@ impl Engine {
     fn new() -> Self {
         Self {
             recognizer: None,
-            translator: None,
-            voice: None,
+            translators: Vec::new(),
+            voices: Vec::new(),
             from: language("PARLO_FROM", "pt"),
             to: language("PARLO_TO", "en"),
         }
+    }
+
+    fn set_pair(&mut self, from: &str, to: &str) -> Result<(), String> {
+        let from = from.trim().to_ascii_lowercase();
+        let to = to.trim().to_ascii_lowercase();
+        let code = |value: &str| {
+            value.len() == 2
+                && value
+                    .chars()
+                    .all(|character| character.is_ascii_alphabetic())
+        };
+        if !code(&from) || !code(&to) {
+            return Err("a language pair needs two letter codes".to_string());
+        }
+        if from == to {
+            return Err("the two languages must differ".to_string());
+        }
+        self.from = from;
+        self.to = to;
+        Ok(())
     }
 
     fn recognizer(&mut self) -> Result<&mut Recognizer, String> {
@@ -93,30 +116,48 @@ impl Engine {
     }
 
     fn translator(&mut self) -> Result<&mut Translator, String> {
-        if self.translator.is_none() {
+        let key = format!("{}>{}", self.from, self.to);
+        if let Some(index) = self.translators.iter().position(|(name, _)| name == &key) {
+            let held = self.translators.remove(index);
+            self.translators.push(held);
+        } else {
             let folder = pack_dir(&self.from, &self.to).ok_or_else(|| {
                 format!(
                     "no translation model for {} to {}; download it first",
                     self.from, self.to
                 )
             })?;
-            self.translator = Some(Translator::open(&folder, threads() as usize)?);
+            let translator = Translator::open(&folder, threads() as usize)?;
+            self.translators.push((key, translator));
+            while self.translators.len() > KEPT_TRANSLATORS {
+                self.translators.remove(0);
+            }
         }
-        self.translator
-            .as_mut()
+        self.translators
+            .last_mut()
+            .map(|(_, translator)| translator)
             .ok_or_else(|| "the translator is unavailable".to_string())
     }
 
     fn voice(&mut self) -> Result<&mut Voice, String> {
-        if self.voice.is_none() {
-            let model = match std::env::var("PARLO_VOICE_PATH") {
-                Ok(configured) => PathBuf::from(configured),
-                Err(_) => models_root().join(voice_file(&self.to)),
-            };
-            self.voice = Some(Voice::open(&model, threads())?);
+        let model = match std::env::var("PARLO_VOICE_PATH") {
+            Ok(configured) => PathBuf::from(configured),
+            Err(_) => models_root().join(voice_file(&self.to)),
+        };
+        let key = model.to_string_lossy().into_owned();
+        if let Some(index) = self.voices.iter().position(|(name, _)| name == &key) {
+            let held = self.voices.remove(index);
+            self.voices.push(held);
+        } else {
+            let voice = Voice::open(&model, threads())?;
+            self.voices.push((key, voice));
+            while self.voices.len() > KEPT_VOICES {
+                self.voices.remove(0);
+            }
         }
-        self.voice
-            .as_mut()
+        self.voices
+            .last_mut()
+            .map(|(_, voice)| voice)
             .ok_or_else(|| "the voice is unavailable".to_string())
     }
 
@@ -125,10 +166,10 @@ impl Engine {
         if self.recognizer.is_some() {
             units.push("recognition");
         }
-        if self.translator.is_some() {
+        if !self.translators.is_empty() {
             units.push("translation");
         }
-        if self.voice.is_some() {
+        if !self.voices.is_empty() {
             units.push("voice");
         }
         units
@@ -165,6 +206,14 @@ fn handle(request: &Value, engine: &mut Engine, session: &mut Session) -> String
     let seq = request.get("seq").and_then(Value::as_u64).unwrap_or(0);
     match op {
         "hello" => protocol::hello(&engine.to),
+        "pair" => {
+            let from = request.get("from").and_then(Value::as_str).unwrap_or("");
+            let to = request.get("to").and_then(Value::as_str).unwrap_or("");
+            match engine.set_pair(from, to) {
+                Ok(()) => protocol::switched(seq, &engine.to),
+                Err(message) => protocol::error(Some(seq), &message),
+            }
+        }
         "loaded" => protocol::loaded(&engine.loaded()),
         "dictate" => with_audio(request, seq, |samples| {
             Ok(protocol::dictated(
@@ -250,6 +299,35 @@ fn handle(request: &Value, engine: &mut Engine, session: &mut Session) -> String
             protocol::stream(seq, &events)
         }
         other => protocol::error(Some(seq), &format!("unknown op: {other}")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_pair_needs_two_language_codes() {
+        let mut engine = Engine::new();
+        assert!(engine.set_pair("pt", "eng").is_err());
+        assert!(engine.set_pair("p1", "en").is_err());
+        assert!(engine.set_pair("pt", "pt").is_err());
+    }
+
+    #[test]
+    fn switching_languages_keeps_the_recogniser_slot_untouched() {
+        let mut engine = Engine::new();
+        engine.set_pair("pt", "de").unwrap();
+        assert_eq!(engine.from, "pt");
+        assert_eq!(engine.to, "de");
+        assert!(engine.recognizer.is_none());
+    }
+
+    #[test]
+    fn a_switch_drops_the_voices_for_the_old_target() {
+        let mut engine = Engine::new();
+        engine.set_pair("pt", "en").unwrap();
+        assert!(engine.voices.is_empty());
     }
 }
 

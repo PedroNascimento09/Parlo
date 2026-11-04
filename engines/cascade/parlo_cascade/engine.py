@@ -176,6 +176,7 @@ class CascadeEngine:
         self.touched: dict[str, float] = {}
         self.intelligence = Intelligence(settings_from_config(self.clean_mode), source)
         self.glossary = load_glossary(GLOSSARY_FILE)
+        self._explicit_voice = voice
         self.voice_path = voice or MODEL_DIR / VOICES.get(target, VOICES["pt"])
         self._buffer = bytearray()
         self._ready = available()
@@ -308,7 +309,7 @@ class CascadeEngine:
             self._writers.clear()
         elif unit == "voice":
             held = self._tts is not None
-            self._tts = None
+            self._release_voice()
         else:
             raise ValueError(f"unknown unit {unit}")
         self.touched.pop(unit, None)
@@ -330,6 +331,34 @@ class CascadeEngine:
             if self.unload_unit(unit):
                 dropped.append(unit)
         return tuple(dropped)
+
+    def set_pair(self, source: str, target: str) -> None:
+        source = source.strip().lower()
+        target = target.strip().lower()
+        if (
+            len(source) != 2
+            or len(target) != 2
+            or not source.isalpha()
+            or not target.isalpha()
+        ):
+            raise ValueError("a language pair needs two letter codes")
+        if source == target:
+            raise ValueError("the two languages must differ")
+        if source == self.source and target == self.target:
+            return
+        self._release_voice()
+        self._translator = None
+        self._writers.clear()
+        self._buffer.clear()
+        self._stream = None
+        self._silent_seconds = 0.0
+        self.source = source
+        self.target = target
+        self.target_languages = (target,)
+        self.voice_path = self._explicit_voice or MODEL_DIR / VOICES.get(
+            target, VOICES["pt"]
+        )
+        self.intelligence = Intelligence(settings_from_config(self.clean_mode), source)
 
     def translate(self, pcm16: bytes) -> Translation:
         if not self._ready:
@@ -478,6 +507,12 @@ class CascadeEngine:
                 )
             self._writers[language] = translator
         return translator
+
+    def _release_voice(self) -> None:
+        voice, self._tts = self._tts, None
+        close = getattr(voice, "close", None)
+        if callable(close):
+            close()
 
     def _load_voice(self):
         if self._tts is None:

@@ -134,6 +134,12 @@ pub trait Engine: Send {
         )))
     }
 
+    fn set_languages(&mut self, _from: &str, _to: &str) -> Result<(), EngineError> {
+        Err(EngineError::Rejected(
+            "this engine holds one language pair at a time".to_string(),
+        ))
+    }
+
     fn reset(&mut self) {}
 }
 
@@ -205,6 +211,13 @@ mod tests {
         let mut engine = EchoEngine::default();
         let error = engine.dictate(&[0, 0]).unwrap_err();
         assert!(error.to_string().contains("cannot dictate"));
+    }
+
+    #[test]
+    fn an_engine_that_cannot_switch_says_so() {
+        let mut engine = EchoEngine::default();
+        let error = engine.set_languages("pt", "en").unwrap_err();
+        assert!(error.to_string().contains("one language pair"));
     }
 
     #[test]
