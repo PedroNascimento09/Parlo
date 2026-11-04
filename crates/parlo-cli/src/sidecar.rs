@@ -634,6 +634,47 @@ impl Engine for SidecarEngine {
         SidecarEngine::switch(self, "unload", unit)
     }
 
+    fn finish(&mut self) -> Result<EngineOutput, EngineError> {
+        self.seq += 1;
+        let response = self.request(&Request {
+            op: "flush",
+            seq: Some(self.seq),
+            pcm16: None,
+            target: None,
+            clean: None,
+        })?;
+
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+
+        let audio = match response.pcm16 {
+            Some(encoded) if !encoded.is_empty() => {
+                let bytes = BASE64.decode(encoded).map_err(|error| {
+                    EngineError::Rejected(format!("invalid base64 audio: {error}"))
+                })?;
+                let format = AudioFormat::mono(response.sample_rate.unwrap_or(self.sample_rate))
+                    .map_err(|error| EngineError::Rejected(error.to_string()))?;
+                let samples = decode_pcm16(&bytes);
+                if samples.is_empty() {
+                    None
+                } else {
+                    Some(Frame::new(format, samples))
+                }
+            }
+            _ => None,
+        };
+
+        Ok(EngineOutput {
+            audio,
+            transcript: response.text,
+        })
+    }
+
     fn process(&mut self, input: &Frame) -> Result<EngineOutput, EngineError> {
         self.seq += 1;
         let response = self.request(&Request {
