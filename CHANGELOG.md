@@ -4,7 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
-- Changing language no longer restarts the engine: the session keeps the recogniser loaded and swaps the translator and the voice in place, so a new pair arrives without a process start.
+- Changing language no longer restarts the engine: the session keeps the recogniser loaded, swaps the translator and the voice in place, and keeps the previous dictation language warm, so a new pair arrives without a process start.
 - The optional Rust engine can read aloud with Piper voices, translates PT to EN, and is selected with `PARLO_ENGINE=rust`; the Python engine stays the default and the fallback.
 - Parlo's mark is built from the wordmark itself: white bars on a black tile, the bowl left open the way the letters are drawn, so the window, the tray, the installer and every shortcut look like the app they open.
 - The Windows installer is three pages: what Parlo does, install, finish. The licence wall and the all-users prompt are gone, and the panel carries the wordmark with one line, stays on this computer.

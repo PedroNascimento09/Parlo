@@ -263,6 +263,28 @@ That figure contains spawning the Python sidecar, loading Parakeet TDT 0.6B v3 i
 
 Not measured yet, and blank on purpose: VRAM (there is no NVIDIA GPU here), perceived latency through a live microphone, BLEU and COMET, voice similarity. The test audio is synthetic speech from Piper, which the recogniser reads worse than a real voice; `Parlo` came out as `Palo`, which is what the glossary is for.
 
+### Changing the language pair
+
+A new pair used to cost a restart: the session killed the engine process, started another one and loaded the recogniser again before it could hear the first word. `Session::switch` now asks the running engine for the pair, and rebuilds only when the engine or the recogniser changes.
+
+Windows 11, 4 threads, the OPUS-MT packages read through CTranslate2 int8, warm Python processes, one 7.5 s Portuguese clip synthesised with `pt_PT-tugão-medium`:
+
+| What | Value |
+|---|---|
+| `pair` round trip, sidecar already running | **0.50 ms**, and **0.38 ms** back |
+| Loading a package that was not in memory | **454.8 ms** (`pt` to `en`), **391.2 ms** (`pt` to `es`) |
+| First sentence after that load, then warm | 93.5 ms, then 70.8 ms |
+
+Reading: the swap costs half a millisecond because it only changes the pair the engine is told to use, and the recogniser is not touched at either step. What a person waits for is the new package coming off disk, about 0.4 s, and now only the first time that language is used, because the dictation path keeps the language it just left.
+
+The end to end `write` figure is missing on purpose. This machine could not give the sidecar enough memory for the recogniser and a second package in one process while games and a browser held most of 16 GB, and CTranslate2 stopped with `mkl_malloc: failed to allocate memory`. What disappeared is in the cold start section above: a process start plus the warm-up of every model, 12 to 21 s before the first request. The pieces above are what a switch costs instead.
+
+```bash
+.venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip-pt.wav --models .tmp-models --cascade-dir engines/cascade --from pt --to en --switch-to es --threads 4 --runs 3
+```
+
+`--switch-to` adds the pair change and the writes around it to any run, and `--warmup` keeps the sidecar's own warm-up so a restart can be measured the way the app used to pay for it.
+
 ### Translation on the corpus
 
 `benchmarks/corpus/translation.jsonl` holds 24 sentence pairs written for this project, 12 in each direction, with times, dates, numbers, negations, clitics, reported speech and idioms. `engines/cascade/scripts/mt_bench.py` runs one checkpoint over one direction and prints every row, so any number below arrives with the text that produced it.

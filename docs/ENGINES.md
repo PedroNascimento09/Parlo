@@ -188,7 +188,7 @@ The engine process now stays, and `pair` changes the pair inside it:
 {"op": "switched", "seq": 7, "target_languages": ["de"]}
 ```
 
-The recogniser stays loaded, because it is the largest model in the cascade and it serves every pair the same way. The translator and the voice of the old target are released, the audio buffer and the caption session are dropped, and the next `write` or `translate` loads what the new pair needs. The Rust engine keeps the last two translators and the last two voices, so a pair used a moment ago is still warm when someone switches back.
+The recogniser stays loaded, because it is the largest model in the cascade and it serves every pair the same way. The voice of the old target is released, and so are the audio buffer and the caption session. The translator of a pair nobody has used yet loads on first use, 391 to 455 ms on the reference machine as [BENCHMARKS.md](BENCHMARKS.md) records. The dictation path keeps the previous language in a two entry cache, and the Rust engine keeps the last two translators and the last two voices, so a pair used a moment ago costs nothing to load again.
 
 In the app, `POST /settings` compares the requested engine and recogniser with the running ones. When both match, it asks the engine for the new pair and leaves the process alone; when either differs, or the swap is refused, the session rebuilds the pipeline exactly as before. Changing only the language dictation writes in no longer restarts anything, because nothing in the engine depends on it.
 
