@@ -389,7 +389,7 @@ The recogniser costs 695 MB and the translator 130 MB in the same process, and t
 
 They are resident together because the pipeline is a stream. Every segment is transcribed, translated and spoken before the next one starts, so the recogniser cannot be dropped while the translator and the voice are in use. Two passes over the file would fix it, transcribe everything, drop the recogniser, then translate and speak, and the peak would be about 750 MB instead of 1128 MB: 720 MB for the recogniser alone, then 350 MB for translator and voice.
 
-That needs the offline path to hand the whole file to the engine, and that path is `translate` in `crates/parlo-cli/src/main.rs`, which pushes 480 sample frames one at a time; the file is off limits in this round, so the change is not in this repository yet. The smaller-looking alternative, unloading the recogniser between segments and reloading it for the next one, costs a reload every 2.5 s of audio and would make the live path unusable, so it was measured out instead of forced in.
+That needs the offline path to hand the whole file to the engine, and that path is `translate` in `crates/parlo-cli/src/main.rs`, which pushes 480 sample frames one at a time; it now asks the engine for a flush when the loop ends, but the peak stays where it is because the work is the same and the three models still overlap in time. The smaller-looking alternative, unloading the recogniser between segments and reloading it for the next one, costs a reload every 2.5 s of audio and would make the live path unusable, so it was measured out instead of forced in.
 
 The peak is not a threading artefact either: loading parakeet with 1, 2 and 4 threads settles at 713, 714 and 715 MB, so the threads do not buy memory back.
 
@@ -399,7 +399,9 @@ A 24.30 s clip is nine 2.5 s segments plus 1.80 s. The engine only translates on
 
 The `/translate` route now flushes at end of stream, and two runs of the clip on it took 6.09 s and 6.39 s wall with 1129 MB peak, producing 22.67 s and 24.60 s of audio from 24.30 s of input; the output length moves with the voice, which is not deterministic. The peak does not move: the flush drains an 80 KB buffer, while the 1128 MB is the recogniser, translator and voice adapter staying resident, as measured above.
 
-`parlo translate` still drops that tail. Its only flush point is the frame loop in `crates/parlo-cli/src/main.rs`, which another session holds uncommitted this round, so the command needs one call that the core, the sidecar and the engine already answer.
+`parlo translate` now drains that buffer too. The same 24.30 s clip takes 14.98 s and 16.40 s wall with 1124 MB and 1125 MB peak and writes 22.60 s and 22.96 s of audio, against the 32.37 s and 1128 MB recorded above; the three megabytes are run noise, not a saving, since the flush moves an 80 KB buffer.
+
+The clearest proof is the tail alone. Its last 2.00 s is shorter than a segment, so before the change the command had nothing to write and failed, and now it exits 0, produces 1.82 s of audio in 9.21 s, and peaks at 1027 MB.
 
 The translations below are the engine's own on the 24.3 s clip, chunked the way the command chunks it. This clip is synthetic and the recogniser mishears words on it, which the translations carry:
 
