@@ -99,6 +99,12 @@ jobs:
       - name: Build
         run: cargo build --release --locked --target ${{ matrix.target }} -p parlo-cli -p parlo-app
 
+      - name: Build the Rust engine
+        if: runner.os == 'Windows'
+        env:
+          RUSTFLAGS: "-C target-feature=+crt-static"
+        run: cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release --target x86_64-pc-windows-msvc
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
@@ -148,9 +154,12 @@ jobs:
           if (-not $loader) { throw "WebView2Loader.dll was not produced by the build" }
           Copy-Item $loader.FullName release/
           Copy-Item engines/cascade/dist/parlo-engine release/parlo-engine -Recurse
+          $rust = "crates/parlo-engine-rs/target/x86_64-pc-windows-msvc/release"
+          New-Item -ItemType Directory -Force release/parlo-engine-rs | Out-Null
+          Copy-Item "$rust/parlo-engine.exe", "$rust/sherpa-onnx-c-api.dll", "$rust/sherpa-onnx-cxx-api.dll", "$rust/onnxruntime.dll", "$rust/onnxruntime_providers_shared.dll" release/parlo-engine-rs
           Copy-Item assets/parlo.ico, assets/parlo.png release/
           Copy-Item README.md, LICENSE, NOTICE, LICENSES.md, THIRD_PARTY_NOTICES.md, sbom.cdx.json release/
-          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/WebView2Loader.dll, release/parlo-engine, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
+          Compress-Archive -Path release/parlo.exe, release/parlo-app.exe, release/WebView2Loader.dll, release/parlo-engine, release/parlo-engine-rs, release/parlo.ico, release/parlo.png, release/README.md, release/LICENSE, release/NOTICE, release/LICENSES.md, release/THIRD_PARTY_NOTICES.md, release/sbom.cdx.json -DestinationPath ${{ matrix.archive }} -Force
 
       - name: Sign the Windows binaries
         if: runner.os == 'Windows'
@@ -188,6 +197,7 @@ jobs:
           Copy-Item release/WebView2Loader.dll $payload/
           Copy-Item release/parlo.png $payload/
           Copy-Item release/parlo-engine "$payload/parlo-engine" -Recurse
+          Copy-Item release/parlo-engine-rs "$payload/parlo-engine-rs" -Recurse
           $version = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw "Inno Setup is missing, so the one click installer cannot be built" }

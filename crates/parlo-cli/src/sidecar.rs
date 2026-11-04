@@ -121,58 +121,148 @@ fn find_venv_python(script_dir: &Path) -> Option<PathBuf> {
 }
 
 pub fn bundled_engine() -> Option<PathBuf> {
-    if let Ok(configured) = std::env::var("PARLO_ENGINE") {
-        let path = PathBuf::from(configured);
-        if path.is_file() {
-            return Some(path);
-        }
-    }
-    let name = if cfg!(windows) {
+    engine_candidates().into_iter().next()
+}
+
+fn engine_name() -> &'static str {
+    if cfg!(windows) {
         "parlo-engine.exe"
     } else {
         "parlo-engine"
-    };
-    let directory = std::env::current_exe().ok()?.parent()?.to_path_buf();
-    let beside = directory.join(name);
-    if beside.is_file() {
-        return Some(beside);
     }
-    let bundled = directory.join("parlo-engine").join(name);
-    bundled.is_file().then_some(bundled)
+}
+
+fn rust_candidates() -> Vec<PathBuf> {
+    std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(Path::to_path_buf))
+        .map(|root| root.join("parlo-engine-rs").join(engine_name()))
+        .filter(|path| path.is_file())
+        .into_iter()
+        .collect()
+}
+
+fn python_candidates() -> Vec<PathBuf> {
+    let mut candidates = std::env::current_exe()
+        .ok()
+        .and_then(|path| path.parent().map(Path::to_path_buf))
+        .map(|root| {
+            vec![
+                root.join("parlo-engine").join(engine_name()),
+                root.join(engine_name()),
+            ]
+        })
+        .unwrap_or_default();
+    candidates.retain(|path| path.is_file());
+    candidates
+}
+
+fn engine_candidates() -> Vec<PathBuf> {
+    if let Ok(configured) = std::env::var("PARLO_ENGINE") {
+        match configured.as_str() {
+            "rust" => {
+                let mut candidates = rust_candidates();
+                candidates.extend(python_candidates());
+                return candidates;
+            }
+            "python" => return python_candidates(),
+            _ => {
+                let path = PathBuf::from(configured);
+                if path.is_file() {
+                    return vec![path];
+                }
+            }
+        }
+    }
+    let mut candidates = python_candidates();
+    candidates.extend(rust_candidates());
+    candidates
+}
+
+fn explicit_engine() -> Option<PathBuf> {
+    let configured = std::env::var("PARLO_ENGINE").ok()?;
+    if configured == "rust" || configured == "python" {
+        return None;
+    }
+    let path = PathBuf::from(configured);
+    path.is_file().then_some(path)
+}
+
+fn espeak_data_for(engine: &Path) -> Option<PathBuf> {
+    let folder = engine.parent()?;
+    let mut candidates = vec![folder.join("espeak-ng-data")];
+    if let Some(root) = folder.parent() {
+        candidates.push(root.join("parlo-engine/_internal/piper/espeak-ng-data"));
+    }
+    candidates.into_iter().find(|path| path.is_dir())
 }
 
 impl SidecarEngine {
     pub fn spawn(script_dir: &Path) -> Result<Self, EngineError> {
         let models = crate::models::models_root();
-        let mut child = match bundled_engine() {
-            Some(engine) => Command::new(&engine)
-                .env("PARLO_MODELS_DIR", &models)
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::inherit())
-                .spawn()
-                .map_err(|error| {
-                    EngineError::Unavailable(format!("cannot start {}: {error}", engine.display()))
-                })?,
-            None => {
-                let python = python_for(script_dir);
-                Command::new(&python)
-                    .arg("serve.py")
-                    .env("PARLO_MODELS_DIR", &models)
-                    .current_dir(script_dir)
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .stderr(Stdio::inherit())
-                    .spawn()
-                    .map_err(|error| {
-                        EngineError::Unavailable(format!(
-                            "cannot start {python} in {}: {error}",
-                            script_dir.display()
-                        ))
-                    })?
+        let explicit = explicit_engine();
+        let candidates = explicit
+            .clone()
+            .map(|path| vec![path])
+            .unwrap_or_else(engine_candidates);
+        let mut failures = Vec::new();
+        for engine in candidates {
+            match Self::spawn_binary(&engine, &models) {
+                Ok(sidecar) => return Ok(sidecar),
+                Err(error) => failures.push(format!("{}: {error}", engine.display())),
             }
-        };
+        }
+        if explicit.is_none() {
+            let python = python_for(script_dir);
+            match Self::spawn_python(script_dir, &python, &models) {
+                Ok(sidecar) => return Ok(sidecar),
+                Err(error) => failures.push(format!("{python}: {error}")),
+            }
+        }
+        Err(EngineError::Unavailable(if failures.is_empty() {
+            "no engine was found".to_string()
+        } else {
+            format!("no engine started: {}", failures.join("; "))
+        }))
+    }
 
+    fn spawn_binary(engine: &Path, models: &Path) -> Result<Self, EngineError> {
+        let mut command = Command::new(engine);
+        command
+            .env("PARLO_MODELS_DIR", models)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit());
+        if std::env::var_os("PARLO_ESPEAK_DATA").is_none() {
+            if let Some(data) = espeak_data_for(engine) {
+                command.env("PARLO_ESPEAK_DATA", data);
+            }
+        }
+        let child = command.spawn().map_err(|error| {
+            EngineError::Unavailable(format!("cannot start {}: {error}", engine.display()))
+        })?;
+        Self::handshake(child)
+    }
+
+    fn spawn_python(script_dir: &Path, python: &str, models: &Path) -> Result<Self, EngineError> {
+        let child = Command::new(python)
+            .arg("serve.py")
+            .env("PARLO_MODELS_DIR", models)
+            .current_dir(script_dir)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .spawn()
+            .map_err(|error| {
+                EngineError::Unavailable(format!(
+                    "cannot start {python} in {}: {error}",
+                    script_dir.display()
+                ))
+            })?;
+        Self::handshake(child)
+    }
+
+    fn handshake(mut child: Child) -> Result<Self, EngineError> {
         let stdin = child
             .stdin
             .take()
