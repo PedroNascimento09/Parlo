@@ -472,7 +472,7 @@ function playAndWait(blob) {
   });
 }
 
-function play(blob) {
+function play(blob, blockedMessage = "The translation is ready but the browser blocked playback. Click the page, then try again.") {
   stopPlayback();
   const url = URL.createObjectURL(blob);
   player = new Audio(url);
@@ -487,8 +487,61 @@ function play(blob) {
   );
   player.play().catch(() => {
     setProgress("");
-    showError("The translation is ready but the browser blocked playback. Click the page, then try again.");
+    showError(blockedMessage);
   });
+}
+
+async function speakText(text) {
+  const clean = (text || "").trim();
+  if (!clean) {
+    return;
+  }
+  if (!featureVoice.checked) {
+    showError("Read aloud is switched off in Settings.");
+    return;
+  }
+  clearError();
+  try {
+    const response = await fetch("/v1/audio/speech", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ input: clean, response_format: "wav" }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      const message =
+        detail && detail.error && detail.error.message
+          ? detail.error.message
+          : "The voice could not be generated.";
+      throw new Error(message);
+    }
+    play(
+      await response.blob(),
+      "The voice is ready but the browser blocked playback. Click the page, then try again.",
+    );
+  } catch (failure) {
+    showError(failure.message || "The voice could not be generated.");
+  }
+}
+
+function listenButton(text, className = "swap speaker-chip") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.textContent = "Listen";
+  button.title = "Hear this line aloud";
+  button.addEventListener("click", async () => {
+    const label = button.textContent;
+    button.disabled = true;
+    button.textContent = "Reading";
+    try {
+      await speakText(text);
+    } finally {
+      button.disabled = false;
+      button.textContent = label;
+    }
+  });
+  return button;
 }
 
 async function begin() {
@@ -2298,6 +2351,7 @@ function renderMeetings(meetings) {
         const said = document.createElement("p");
         said.className = "meeting-said";
         said.textContent = segment.text;
+        said.append(document.createTextNode(" "), listenButton(segment.text));
         line.append(when, who, said);
         lines.append(line);
       }
@@ -3595,6 +3649,8 @@ function renderHistory() {
     reuse.addEventListener("click", () => copyHistory(reuse.textContent));
     const actions = document.createElement("div");
     actions.className = "history-actions";
+    const listen = listenButton(entry.translation || entry.text, "swap");
+    listen.title = "Hear this dictation aloud";
     const star = document.createElement("button");
     star.type = "button";
     star.className = "swap";
@@ -3614,7 +3670,7 @@ function renderHistory() {
     remove.textContent = "Delete";
     remove.title = "Remove this dictation from this computer";
     remove.addEventListener("click", () => deleteHistory(entry));
-    actions.append(star, correct, remove);
+    actions.append(listen, star, correct, remove);
     detail.append(reuse, actions);
     const card = document.createElement("div");
     card.className = "history-entry";
