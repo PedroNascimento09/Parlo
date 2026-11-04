@@ -54,11 +54,6 @@ const CAPTIONS: &str = include_str!("../../web/captions.html");
 const LIVE: &str = include_str!("../../web/live.html");
 
 #[derive(serde::Deserialize)]
-struct JobRequest {
-    kind: String,
-}
-
-#[derive(serde::Deserialize)]
 struct Settings {
     #[serde(default)]
     engine: Option<String>,
@@ -2849,131 +2844,19 @@ fn handle(
     }
 
     if method == "POST" && path == "/v1/jobs" {
-        if !authorised(&headers, token) {
-            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
-                .map(|()| Flow::Serve);
-        }
-        let request: JobRequest = match serde_json::from_slice(&body) {
-            Ok(request) => request,
-            Err(_) => {
-                return respond_json(stream, "400 Bad Request", &error_json("invalid job"))
-                    .map(|()| Flow::Serve)
-            }
-        };
-        if request.kind != "models" {
-            return respond_json(
-                stream,
-                "400 Bad Request",
-                &error_json("the only job kind is models"),
-            )
-            .map(|()| Flow::Serve);
-        }
-        let targets = models::remaining_units();
-        let current = models::status();
-        let installed = targets
-            .iter()
-            .filter(|id| {
-                current
-                    .iter()
-                    .any(|model| model.id == **id && model.installed)
-            })
-            .count();
-        if targets.is_empty() || installed == targets.len() {
-            return respond_json(
-                stream,
-                "409 Conflict",
-                &error_json("every model is already installed"),
-            )
-            .map(|()| Flow::Serve);
-        }
-        let id = crate::jobs::manager().submit("models", "Download the remaining models", "", {
-            let targets = targets.clone();
-            move |handle| {
-                models::install(&targets)?;
-                let deadline = Instant::now() + Duration::from_secs(3_600);
-                loop {
-                    if handle.cancelled() {
-                        let _ = models::cancel();
-                        return Ok(());
-                    }
-                    let current = models::status();
-                    let installed = targets
-                        .iter()
-                        .filter(|id| {
-                            current
-                                .iter()
-                                .any(|model| model.id == **id && model.installed)
-                        })
-                        .count();
-                    handle.progress("download", installed as f32 / targets.len() as f32);
-                    if installed == targets.len() {
-                        return Ok(());
-                    }
-                    if Instant::now() > deadline {
-                        return Err("the download did not finish within an hour".to_string());
-                    }
-                    if !models::downloading(&current) {
-                        return Err("the download stopped before it finished".to_string());
-                    }
-                    std::thread::sleep(Duration::from_millis(500));
-                }
-            }
-        });
-        let accepted = serde_json::json!({ "id": id, "state": "queued" }).to_string();
-        return respond_json(stream, "202 Accepted", &accepted).map(|()| Flow::Serve);
+        return routes::jobs::create(stream, &headers, token, &body);
     }
 
     if method == "GET" && path == "/v1/jobs" {
-        if !authorised(&headers, token) {
-            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
-                .map(|()| Flow::Serve);
-        }
-        let jobs: Vec<serde_json::Value> = crate::jobs::manager()
-            .list()
-            .iter()
-            .map(|job| job.value())
-            .collect();
-        let body = serde_json::json!({ "object": "list", "data": jobs }).to_string();
-        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+        return routes::jobs::list(stream, &headers, token);
     }
 
     if method == "GET" && path.starts_with("/v1/jobs/") {
-        if !authorised(&headers, token) {
-            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
-                .map(|()| Flow::Serve);
-        }
-        let rest = &path["/v1/jobs/".len()..];
-        if let Some(id) = rest.strip_suffix("/events") {
-            if crate::jobs::manager().get(id).is_none() {
-                return respond_json(stream, "404 Not Found", &error_json("no such job"))
-                    .map(|()| Flow::Serve);
-            }
-            return crate::jobs::manager()
-                .stream(stream, id)
-                .map(|()| Flow::Serve);
-        }
-        let id = rest.trim_end_matches('/');
-        let Some(job) = crate::jobs::manager().get(id) else {
-            return respond_json(stream, "404 Not Found", &error_json("no such job"))
-                .map(|()| Flow::Serve);
-        };
-        return respond_json(stream, "200 OK", &job.value().to_string()).map(|()| Flow::Serve);
+        return routes::jobs::read(stream, &headers, token, path);
     }
 
     if method == "POST" && path.starts_with("/v1/jobs/") && path.ends_with("/cancel") {
-        if !authorised(&headers, token) {
-            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
-                .map(|()| Flow::Serve);
-        }
-        let id = path
-            .trim_start_matches("/v1/jobs/")
-            .trim_end_matches("/cancel");
-        return match crate::jobs::manager().cancel(id) {
-            Ok(()) => respond_json(stream, "200 OK", "{\"cancelled\":true}").map(|()| Flow::Serve),
-            Err(error) => {
-                respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
-            }
-        };
+        return routes::jobs::cancel(stream, &headers, token, path);
     }
 
     if method == "POST" && path == "/dictate/begin" {
@@ -3612,6 +3495,17 @@ mod tests {
 
         let foreign = ask(port, "GET /state HTTP/1.1\r\nHost: evil.example\r\n\r\n");
         assert!(foreign.starts_with("HTTP/1.1 400"));
+
+        for request in [
+            "GET /v1/jobs HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            "GET /v1/jobs/missing HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            "GET /v1/jobs/missing/events HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            "POST /v1/jobs/missing/cancel HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            "POST /v1/jobs HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 2\r\n\r\n{}",
+        ] {
+            let answer = ask(port, request);
+            assert!(answer.starts_with("HTTP/1.1 401"), "{answer}");
+        }
 
         stop.store(false, Ordering::Relaxed);
         let _ = TcpStream::connect(("127.0.0.1", port));
