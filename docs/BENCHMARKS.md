@@ -470,6 +470,31 @@ It needs `torch`, `optimum` and `transformers` in a separate environment; withou
 
 The mechanical gate scored that output at numbers 0.950, clocks 0.950, negations 0.950, names 0.950, completeness 1.000, which is the clearest demonstration of what the gate is worth: it counts quantities and punctuation, and cannot hear that the sentence is broken. Nothing from that run is published as a result, and PT→DE still runs only through English.
 
+### The Rust engine against the Python engine
+
+The Rust engine already answers dictation. The useful question is what a replacement would cost and buy. One 8.05 s clip went to all three engines through the same JSON line protocol, with Parakeet TDT 0.6B v3 int8 on four threads and three runs each. The clip is Microsoft Zira reading an English sentence, so the comparison is between engines. The text came back word for word identical.
+
+The Python source ran under Python 3.12.10, the bundled engine is the 0.2.4 PyInstaller folder, and the Rust engine is `parlo-engine` 0.2.1+3 with its three DLLs, a prototype outside the workspace.
+
+| | Python, source | Python, bundled | Rust |
+|---|---|---|---|
+| `hello`, warm | 229 ms | 403 to 439 ms | **33 ms** |
+| RSS at `hello` | 28.1 MB | 37.5 MB | **8.9 MB** |
+| RSS with Parakeet loaded | 844.8 MB | 854.0 MB | **809.9 MB** |
+| `dictate`, warm median | **1090.4 ms** | 1265.3 ms | 1152.1 ms |
+| First `dictate`, load included | 5680.5 ms | 6166.5 ms | 6178.9 ms |
+| Installed size | 182 MB, 477 files | 182 MB, 477 files | **23 MB, 4 files** |
+
+The first launch of the freshly built bundle took 15.5 s. The next three took 0.40 to 0.44 s, so that first figure is disk and antivirus work on a new executable, not the startup a user meets on later launches. A Python start that warms every model before answering `hello` took 12.08 s and held 993.4 MB.
+
+The warm segment stays between 1.09 and 1.27 s in all three, which is the recogniser's cost. Rust moves startup from 0.40 to 0.44 s down to 33 ms, saves 35 to 45 MB with Parakeet loaded and cuts the bundle from 182 MB to 23 MB, but it does not make a segment faster. The 23 MB bundle carries the recogniser and the dictation path, not translation or speech synthesis, so it is not the size of a complete engine.
+
+```bash
+python tools/benchmark_engines.py --wav out/voice.wav --models "$LOCALAPPDATA/parlo/models" --cascade-dir engines/cascade --bundled build/installer/payload/parlo-engine/parlo-engine.exe --rust crates/parlo-engine-rs/target/release/parlo-engine.exe --from en --to pt
+```
+
+The Rust executable needs `sherpa-onnx-c-api.dll`, `sherpa-onnx-cxx-api.dll` and `onnxruntime.dll` beside it, as the build notes in [ENGINES.md](ENGINES.md) describe.
+
 ## What gets measured
 
 | Metric | Method |
