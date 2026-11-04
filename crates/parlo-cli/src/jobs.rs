@@ -10,6 +10,7 @@ use crate::store::{JobRecord, Store};
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
 static MANAGER: OnceLock<Manager> = OnceLock::new();
+const STALL_SECONDS: i64 = 600;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
@@ -18,6 +19,7 @@ pub enum State {
     Done,
     Failed,
     Cancelled,
+    Stalled,
 }
 
 impl State {
@@ -28,11 +30,15 @@ impl State {
             Self::Done => "done",
             Self::Failed => "failed",
             Self::Cancelled => "cancelled",
+            Self::Stalled => "stalled",
         }
     }
 
     pub fn terminal(self) -> bool {
-        matches!(self, Self::Done | Self::Failed | Self::Cancelled)
+        matches!(
+            self,
+            Self::Done | Self::Failed | Self::Cancelled | Self::Stalled
+        )
     }
 }
 
@@ -88,20 +94,22 @@ pub struct Manager {
 
 impl Manager {
     pub fn new() -> Self {
-        Self {
+        let manager = Self {
             shared: Arc::new(Shared {
                 inner: Mutex::new(Inner {
                     jobs: HashMap::new(),
                     watchers: HashMap::new(),
                 }),
-                store: Mutex::new(None),
+                store: Mutex::new(Store::open_default().ok()),
             }),
-        }
+        };
+        manager.recover();
+        manager
     }
 
     #[cfg(test)]
     pub fn in_memory() -> Self {
-        Self {
+        let manager = Self {
             shared: Arc::new(Shared {
                 inner: Mutex::new(Inner {
                     jobs: HashMap::new(),
@@ -109,13 +117,31 @@ impl Manager {
                 }),
                 store: Mutex::new(Store::open_memory().ok()),
             }),
-        }
+        };
+        manager.recover();
+        manager
+    }
+
+    #[cfg(test)]
+    fn with_store(store: Store) -> Self {
+        let manager = Self {
+            shared: Arc::new(Shared {
+                inner: Mutex::new(Inner {
+                    jobs: HashMap::new(),
+                    watchers: HashMap::new(),
+                }),
+                store: Mutex::new(Some(store)),
+            }),
+        };
+        manager.recover();
+        manager
     }
 
     pub fn submit<F>(&self, kind: &str, title: &str, input_hash: &str, work: F) -> String
     where
         F: FnOnce(Handle) -> Result<(), String> + Send + 'static,
     {
+        self.sweep();
         let id = new_id();
         let created = now();
         let job = Job {
@@ -188,16 +214,19 @@ impl Manager {
     }
 
     pub fn get(&self, id: &str) -> Option<Job> {
+        self.sweep();
         self.lock().jobs.get(id).cloned()
     }
 
     pub fn list(&self) -> Vec<Job> {
+        self.sweep();
         let mut jobs: Vec<Job> = self.lock().jobs.values().cloned().collect();
         jobs.sort_by_key(|job| job.created_at);
         jobs
     }
 
     pub fn cancel(&self, id: &str) -> Result<(), String> {
+        self.sweep();
         let mut inner = self.lock();
         let cancelled = {
             let Some(job) = inner.jobs.get_mut(id) else {
@@ -218,6 +247,7 @@ impl Manager {
     }
 
     fn subscribe(&self, id: &str) -> Option<mpsc::Receiver<Event>> {
+        self.sweep();
         let mut inner = self.lock();
         let job = inner.jobs.get(id)?.clone();
         let (sender, receiver) = mpsc::channel();
@@ -263,6 +293,70 @@ impl Manager {
             }
         }
         Ok(())
+    }
+
+    pub fn recover(&self) -> usize {
+        let stored = {
+            let store = self
+                .shared
+                .store
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            match store.as_ref() {
+                Some(store) => store.unfinished_jobs().unwrap_or_default(),
+                None => Vec::new(),
+            }
+        };
+        let recovered: Vec<Job> = stored
+            .into_iter()
+            .map(|stored| Job {
+                id: stored.id,
+                kind: stored.kind,
+                state: State::Failed,
+                stage: stored.stage,
+                progress: stored.progress,
+                title: stored.title,
+                error: Some("the app stopped before this job finished".to_string()),
+                input_hash: stored.input_hash,
+                created_at: stored.created_at,
+                updated_at: now(),
+            })
+            .collect();
+        let mut inner = self.lock();
+        for job in &recovered {
+            inner.jobs.insert(job.id.clone(), job.clone());
+            publish(&mut inner, job);
+        }
+        drop(inner);
+        for job in &recovered {
+            self.shared.persist(job);
+        }
+        recovered.len()
+    }
+
+    pub fn sweep(&self) -> usize {
+        self.sweep_at(now())
+    }
+
+    fn sweep_at(&self, at: i64) -> usize {
+        let mut inner = self.lock();
+        let mut stalled = Vec::new();
+        for job in inner.jobs.values_mut() {
+            if !job.state.terminal() && at.saturating_sub(job.updated_at) >= STALL_SECONDS {
+                job.state = State::Stalled;
+                job.error = Some("no progress for ten minutes".to_string());
+                job.updated_at = at;
+                stalled.push(job.clone());
+            }
+        }
+        for job in &stalled {
+            publish(&mut inner, job);
+        }
+        drop(inner);
+        for job in &stalled {
+            self.shared.persist(job);
+        }
+        stalled.len()
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Inner> {
@@ -451,6 +545,49 @@ mod tests {
             events.recv_timeout(Duration::from_secs(1)),
             Err(RecvTimeoutError::Disconnected)
         ));
+    }
+
+    #[test]
+    fn a_running_job_without_a_worker_ends_as_failed_on_recovery() {
+        let store = Store::open_memory().unwrap();
+        store
+            .save_job(&JobRecord {
+                id: "j1",
+                kind: "models",
+                state: "running",
+                stage: "download",
+                progress: 0.5,
+                input_hash: "",
+                title: "A file",
+                error: None,
+                created_at: 1,
+                updated_at: 2,
+            })
+            .unwrap();
+        let manager = Manager::with_store(store);
+        let job = manager.get("j1").unwrap();
+        assert_eq!(job.state, State::Failed);
+        assert!(job.error.unwrap().contains("stopped"));
+    }
+
+    #[test]
+    fn a_job_without_progress_for_ten_minutes_is_stalled() {
+        let manager = Manager::in_memory();
+        let id = manager.submit("dub", "A file", "hash", |handle| {
+            for _ in 0..200 {
+                if handle.cancelled() {
+                    return Ok(());
+                }
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            Ok(())
+        });
+        assert_eq!(manager.sweep_at(now() + STALL_SECONDS + 1), 1);
+        let job = manager.get(&id).unwrap();
+        assert_eq!(job.state, State::Stalled);
+        let events = manager.subscribe(&id).unwrap();
+        let event = events.recv_timeout(Duration::from_secs(2)).unwrap();
+        assert_eq!(event.job.state, State::Stalled);
     }
 
     #[test]

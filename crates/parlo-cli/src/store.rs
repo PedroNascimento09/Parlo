@@ -156,6 +156,16 @@ pub struct Imported {
     pub already: bool,
 }
 
+pub struct StoredJob {
+    pub id: String,
+    pub kind: String,
+    pub stage: String,
+    pub progress: f32,
+    pub input_hash: String,
+    pub title: String,
+    pub created_at: i64,
+}
+
 pub struct JobRecord<'a> {
     pub id: &'a str,
     pub kind: &'a str,
@@ -314,6 +324,27 @@ impl Store {
             .map_err(sql)?;
         transaction.commit().map_err(sql)?;
         Ok(imported)
+    }
+
+    pub fn unfinished_jobs(&self) -> Result<Vec<StoredJob>, String> {
+        let mut statement = self
+            .connection
+            .prepare("SELECT id, kind, stage, progress, input_hash, title, created_at FROM jobs WHERE state IN ('queued', 'running')")
+            .map_err(sql)?;
+        let rows = statement
+            .query_map([], |row| {
+                Ok(StoredJob {
+                    id: row.get(0)?,
+                    kind: row.get(1)?,
+                    stage: row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                    progress: row.get(3)?,
+                    input_hash: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                    title: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    created_at: row.get(6)?,
+                })
+            })
+            .map_err(sql)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(sql)
     }
 
     #[cfg(test)]
