@@ -2161,6 +2161,9 @@ function showDub(result) {
     const translated = document.createElement("p");
     translated.className = "dub-translated";
     translated.textContent = line.translated || "";
+    const listen = listenButton(line.translated);
+    listen.title = "Hear this dubbed line aloud";
+    translated.append(document.createTextNode(" "), listen);
     const source = document.createElement("p");
     source.className = "dub-source";
     source.textContent = line.source || "";
