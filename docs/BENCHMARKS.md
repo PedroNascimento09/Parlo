@@ -391,6 +391,16 @@ They are resident together because the pipeline is a stream. Every segment is tr
 
 That needs the offline path to hand the whole file to the engine, and that path is `translate` in `crates/parlo-cli/src/main.rs`, which pushes 480 sample frames one at a time; the file is off limits in this round, so the change is not in this repository yet. The smaller-looking alternative, unloading the recogniser between segments and reloading it for the next one, costs a reload every 2.5 s of audio and would make the live path unusable, so it was measured out instead of forced in.
 
+The peak is not a threading artefact either: loading parakeet with 1, 2 and 4 threads settles at 713, 714 and 715 MB, so the threads do not buy memory back.
+
+### The tail the pipeline used to drop, 4 November 2026
+
+A 24.30 s clip is nine 2.5 s segments plus 1.80 s. The engine only translates once its buffer reaches `min_segment`, so the last 1.80 s waited in the buffer and died with the process. Feeding every frame of the clip to `CascadeEngine` in one process gives nine segments; calling the new `flush()` afterwards gives ten, the tenth being `Fatil libre works well.`
+
+The `/translate` route now flushes at end of stream, and two runs of the clip on it took 6.09 s and 6.39 s wall with 1129 MB peak, producing 22.67 s and 24.60 s of audio from 24.30 s of input; the output length moves with the voice, which is not deterministic. The peak does not move: the flush drains an 80 KB buffer, while the 1128 MB is the recogniser, translator and voice adapter staying resident, as measured above.
+
+`parlo translate` still drops that tail. Its only flush point is the frame loop in `crates/parlo-cli/src/main.rs`, which another session holds uncommitted this round, so the command needs one call that the core, the sidecar and the engine already answer.
+
 The translations below are the engine's own on the 24.3 s clip, chunked the way the command chunks it. This clip is synthetic and the recogniser mishears words on it, which the translations carry:
 
 ```
