@@ -35,6 +35,8 @@ fn language(name: &str, fallback: &str) -> String {
 fn voice_file(language: &str) -> &'static str {
     match language {
         "pt" => "pt_PT-tugão-medium.onnx",
+        "de" => "de_DE-thorsten-medium.onnx",
+        "fr" => "fr_FR-siwis-medium.onnx",
         _ => "en_US-lessac-medium.onnx",
     }
 }
@@ -321,6 +323,19 @@ mod tests {
         assert_eq!(engine.from, "pt");
         assert_eq!(engine.to, "de");
         assert!(engine.recognizer.is_none());
+    }
+
+    #[test]
+    fn each_language_speaks_with_its_own_voice() {
+        assert_eq!(voice_file("pt"), "pt_PT-tugão-medium.onnx");
+        assert_eq!(voice_file("en"), "en_US-lessac-medium.onnx");
+        assert_eq!(voice_file("de"), "de_DE-thorsten-medium.onnx");
+        assert_eq!(voice_file("fr"), "fr_FR-siwis-medium.onnx");
+    }
+
+    #[test]
+    fn a_language_without_a_voice_falls_back_to_english() {
+        assert_eq!(voice_file("ja"), "en_US-lessac-medium.onnx");
     }
 
     #[test]
