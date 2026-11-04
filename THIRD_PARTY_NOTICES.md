@@ -531,6 +531,7 @@ from the original source and each one keeps its own licence.
 
 | Artifact | Kind | Licence | Status | Source |
 |---|---|---|---|---|
+| speaker-separation | speaker | Apache-2.0 | verified | https://github.com/k2-fsa/sherpa-onnx/releases/tag/speaker-recongition-models |
 | whisper-base | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-base |
 | piper-voice-pt-pt-tugao | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_PT/tug%C3%A3o/medium |
 | piper-voice-pt-br-faber | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/pt/pt_BR/faber/medium |
@@ -547,3 +548,39 @@ from the original source and each one keeps its own licence.
 | piper-voice-de-de-thorsten | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium |
 | piper-voice-fr-fr-siwis | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium |
 | opus-mt-pt-de-direct | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa |
+| whisper-tiny | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-tiny |
+| whisper-small | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-small |
+| whisper-medium | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-medium |
+| whisper-large-v3 | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-large-v3 |
+| moonshine-base | asr | MIT | verified | https://huggingface.co/UsefulSensors/moonshine-base |
+| piper-voice-es-es-davefx | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-it-it-riccardo | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices |
+| opus-mt-en-de | mt | MIT | verified | https://huggingface.co/Helsinki-NLP/opus-mt-en-de |
+| opus-mt-fr-en | mt | MIT | verified | https://huggingface.co/Helsinki-NLP/opus-mt-fr-en |
+| qwen2.5-7b-instruct | text | Apache-2.0 | verified | https://huggingface.co/Qwen/Qwen2.5-7B-Instruct |
+| phi-3-mini-4k-instruct | text | MIT | verified | https://huggingface.co/microsoft/Phi-3-mini-4k-instruct |
+| mistral-7b-instruct | text | Apache-2.0 | verified | https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3 |
+| whisper-large-v3-turbo | asr | MIT | verified | https://huggingface.co/Systran/faster-whisper-large-v3-turbo |
+| qwen2.5-0.5b-instruct | text | Apache-2.0 | verified | https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct |
+| qwen2.5-1.5b-instruct | text | Apache-2.0 | verified | https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct |
+| qwen2.5-3b-instruct | text | Apache-2.0 | verified | https://huggingface.co/Qwen/Qwen2.5-3B-Instruct |
+| llama-3.2-1b-instruct | text | Llama-3.2 | verified | https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct |
+| llama-3.2-3b-instruct | text | Llama-3.2 | verified | https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct |
+| gemma-2-2b-it | text | Gemma | verified | https://huggingface.co/google/gemma-2-2b-it |
+| piper-voice-nl-nl-mls | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-pl-pl-gosia | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-ru-ru-irina | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-sv-se-nst | voice | MIT | verified | https://huggingface.co/rhasspy/piper-voices |
+| opus-mt-pt-es | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-pt-es |
+| opus-mt-es-pt | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-es-pt |
+| opus-mt-pt-fr | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-pt-fr |
+| opus-mt-fr-pt | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-fr-pt |
+| opus-mt-pt-it | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-pt-it |
+| opus-mt-pt-nl | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-pt-nl |
+| opus-mt-pt-ru | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-pt-ru |
+| opus-mt-en-es | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-en-es |
+| opus-mt-en-fr | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-en-fr |
+| opus-mt-en-it | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-en-it |
+| opus-mt-de-en | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-de-en |
+| opus-mt-fr-de | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-fr-de |
+| opus-mt-es-en | mt | Apache-2.0 | verified | https://huggingface.co/Helsinki-NLP/opus-mt-es-en |

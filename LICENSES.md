@@ -576,6 +576,27 @@ as if its terms were known.
 | whisper-small | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper small, MIT, converted by Systran for faster-whisper | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-small |
 | whisper-medium | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper medium, MIT, converted by Systran for faster-whisper | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-medium |
 | opus-mt-pt-de-direct | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | OPUS-MT Romance to German, Jörg Tiedemann and Santhosh Thottingal, licensed Apache 2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-tc-bible-big-roa-deu_eng_fra_por_spa |
+| whisper-tiny | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper tiny, MIT | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-tiny |
+| whisper-small | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper small, MIT | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-small |
+| whisper-medium | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper medium, MIT | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-medium |
+| whisper-large-v3 | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper large v3, MIT | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-large-v3 |
+| moonshine-base | Downloaded, never shipped | See the runtime dependencies | MIT | Moonshine base, MIT | External | Confirmed | See the licence text | https://huggingface.co/UsefulSensors/moonshine-base |
+| opus-mt-en-de | Downloaded, never shipped | See the runtime dependencies | MIT | Opus MT, English to German, MIT | External | Confirmed | See the licence text | https://huggingface.co/Helsinki-NLP/opus-mt-en-de |
+| opus-mt-fr-en | Downloaded, never shipped | See the runtime dependencies | MIT | Opus MT, French to English, MIT | External | Confirmed | See the licence text | https://huggingface.co/Helsinki-NLP/opus-mt-fr-en |
+| whisper-large-v3-turbo | Downloaded, never shipped | See the runtime dependencies | MIT | Whisper large v3 turbo, MIT | External | Confirmed | See the licence text | https://huggingface.co/Systran/faster-whisper-large-v3-turbo |
+| opus-mt-pt-es | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-pt-es |
+| opus-mt-es-pt | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-es-pt |
+| opus-mt-pt-fr | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-pt-fr |
+| opus-mt-fr-pt | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-fr-pt |
+| opus-mt-pt-it | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-pt-it |
+| opus-mt-pt-nl | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-pt-nl |
+| opus-mt-pt-ru | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-pt-ru |
+| opus-mt-en-es | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-en-es |
+| opus-mt-en-fr | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-en-fr |
+| opus-mt-en-it | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-en-it |
+| opus-mt-de-en | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-de-en |
+| opus-mt-fr-de | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-fr-de |
+| opus-mt-es-en | Downloaded, never shipped | See the runtime dependencies | Apache-2.0 | Opus-MT, Apache-2.0 | External | Confirmed | Keep this notice and state what changed | https://huggingface.co/Helsinki-NLP/opus-mt-es-en |
 
 ## 5. Voices and datasets
 
@@ -590,6 +611,12 @@ of the synthesizer that reads it. No dataset is redistributed by Parlo.
 | piper-voice-en-gb-alba | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/alba/medium |
 | piper-voice-de-de-thorsten | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/medium |
 | piper-voice-fr-fr-siwis | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium |
+| piper-voice-es-es-davefx | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Spanish, Davefx, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-it-it-riccardo | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Italian, Riccardo, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-nl-nl-mls | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Dutch, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-pl-pl-gosia | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Polish, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-ru-ru-irina | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Russian, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-sv-se-nst | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Swedish, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
 
 ## 6. Optional components under copyleft
 
