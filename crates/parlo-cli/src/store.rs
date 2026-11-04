@@ -389,6 +389,27 @@ impl Store {
             .map(|_| ())
             .map_err(sql)
     }
+
+    pub fn save_stage(&self, job_id: &str, name: &str, state: &str) -> Result<(), String> {
+        self.connection
+            .execute(
+                "INSERT INTO job_stages (job_id, name, state, started_at, ended_at) VALUES (?1, ?2, ?3, ?4, CASE WHEN ?3 = 'done' THEN ?4 END) ON CONFLICT(job_id, name) DO UPDATE SET state = excluded.state, ended_at = excluded.ended_at",
+                params![job_id, name, state, now()],
+            )
+            .map(|_| ())
+            .map_err(sql)
+    }
+
+    pub fn completed_stages(&self, job_id: &str) -> Result<Vec<String>, String> {
+        let mut statement = self
+            .connection
+            .prepare("SELECT name FROM job_stages WHERE job_id = ?1 AND state = 'done' ORDER BY ended_at, rowid")
+            .map_err(sql)?;
+        let rows = statement
+            .query_map([job_id], |row| row.get(0))
+            .map_err(sql)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(sql)
+    }
 }
 
 fn sql(error: rusqlite::Error) -> String {
@@ -528,6 +549,33 @@ mod tests {
         assert_eq!(speaker, "Ana");
 
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn only_completed_stages_are_returned() {
+        let store = Store::open_memory().unwrap();
+        store
+            .save_job(&JobRecord {
+                id: "j1",
+                kind: "dub",
+                state: "running",
+                stage: "transcribe",
+                progress: 0.1,
+                input_hash: "abc",
+                title: "A file",
+                error: None,
+                created_at: 10,
+                updated_at: 11,
+            })
+            .unwrap();
+        store.save_stage("j1", "transcribe", "done").unwrap();
+        store.save_stage("j1", "translate", "running").unwrap();
+        assert_eq!(
+            store.completed_stages("j1").unwrap(),
+            vec!["transcribe".to_string()]
+        );
+        store.save_stage("j1", "translate", "done").unwrap();
+        assert_eq!(store.completed_stages("j1").unwrap().len(), 2);
     }
 
     #[test]

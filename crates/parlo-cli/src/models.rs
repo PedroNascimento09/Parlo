@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Mutex, OnceLock};
+use std::time::{Duration, Instant};
 
 use parlo_core::{device, UnitState};
 
@@ -293,6 +294,52 @@ pub fn install(units: &[&str]) -> Result<(), String> {
         .map_err(|_| "the download state is locked".to_string())?;
     *slot = Some(child);
     Ok(())
+}
+
+pub fn download_remaining(
+    mut progress: impl FnMut(&str, f32),
+    cancelled: impl Fn() -> bool,
+) -> Result<(), String> {
+    let current = status();
+    let missing: Vec<&str> = remaining_units()
+        .into_iter()
+        .filter(|id| {
+            !current
+                .iter()
+                .any(|model| model.id == *id && model.installed)
+        })
+        .collect();
+    if missing.is_empty() {
+        return Ok(());
+    }
+    install(&missing)?;
+    let deadline = Instant::now() + Duration::from_secs(3_600);
+    loop {
+        if cancelled() {
+            let _ = cancel();
+            return Ok(());
+        }
+        let current = status();
+        let installed = missing
+            .iter()
+            .filter(|id| {
+                current
+                    .iter()
+                    .any(|model| model.id == **id && model.installed)
+            })
+            .count();
+        progress("download", installed as f32 / missing.len() as f32);
+        if installed == missing.len() {
+            return Ok(());
+        }
+        if Instant::now() > deadline {
+            return Err("the download did not finish within an hour".to_string());
+        }
+        if !downloading(&current) {
+            return Err("the download stopped before it finished".to_string());
+        }
+        std::thread::sleep(Duration::from_millis(500));
+    }
 }
 
 pub fn cancel() -> Result<(), String> {

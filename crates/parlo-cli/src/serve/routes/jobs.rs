@@ -1,5 +1,6 @@
 use std::net::TcpStream;
-use std::time::{Duration, Instant};
+#[cfg(test)]
+use std::time::Duration;
 
 use super::super::auth::authorised;
 use super::super::http::{error_json, respond_json};
@@ -82,38 +83,11 @@ pub(crate) fn create(
         )
         .map(|()| Flow::Serve);
     }
-    let id = jobs::manager().submit("models", "Download the remaining models", "", {
-        let targets = targets.clone();
-        move |handle| {
-            models::install(&targets)?;
-            let deadline = Instant::now() + Duration::from_secs(3_600);
-            loop {
-                if handle.cancelled() {
-                    let _ = models::cancel();
-                    return Ok(());
-                }
-                let current = models::status();
-                let installed = targets
-                    .iter()
-                    .filter(|id| {
-                        current
-                            .iter()
-                            .any(|model| model.id == **id && model.installed)
-                    })
-                    .count();
-                handle.progress("download", installed as f32 / targets.len() as f32);
-                if installed == targets.len() {
-                    return Ok(());
-                }
-                if Instant::now() > deadline {
-                    return Err("the download did not finish within an hour".to_string());
-                }
-                if !models::downloading(&current) {
-                    return Err("the download stopped before it finished".to_string());
-                }
-                std::thread::sleep(Duration::from_millis(500));
-            }
-        }
+    let id = jobs::manager().submit("models", "Download the remaining models", "", |handle| {
+        models::download_remaining(
+            |stage, progress| handle.progress(stage, progress),
+            || handle.cancelled(),
+        )
     });
     let accepted = serde_json::json!({ "id": id, "state": "queued" }).to_string();
     respond_json(stream, "202 Accepted", &accepted).map(|()| Flow::Serve)
