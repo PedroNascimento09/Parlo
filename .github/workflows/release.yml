@@ -60,6 +60,10 @@ jobs:
     name: Build ${{ matrix.target }}
     needs: licences
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -196,6 +200,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "The installer did not compile" }
           Get-Item "build/installer/Parlo-Setup.exe" | Select-Object Name, Length
 
+      - name: Attest the archive
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: ${{ matrix.archive }}
+
+      - name: Attest the installer
+        if: runner.os == 'Windows'
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: build/installer/Parlo-Setup.exe
+
       - name: Attach to release
         uses: softprops/action-gh-release@v2
         with:
@@ -205,3 +220,29 @@ jobs:
             sbom.cdx.json
             build/installer/Parlo-Setup.exe
           generate_release_notes: false
+
+  checksums:
+    name: Checksums
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download the release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir assets
+          gh release download "${{ github.event.inputs.tag || github.ref_name }}" --dir assets
+
+      - name: Write SHA256SUMS.txt
+        working-directory: assets
+        run: |
+          sha256sum * | grep -v ' SHA256SUMS.txt$' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Attach the checksums
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: assets/SHA256SUMS.txt

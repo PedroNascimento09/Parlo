@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Every release ships a `SHA256SUMS.txt` and a build provenance attestation, so a downloaded installer can be checked against the workflow and commit that built it.
 ## [0.2.4] - 4 November 2026
 
 - The voice page is the form a clone needs, name, language and whose voice it is, and nothing else: the purpose field and the unused sealing switch are gone.

@@ -74,6 +74,20 @@ Every key is changed in Settings, validated when it is saved, refused when it re
 
 **Windows.** [Download Parlo-Setup.exe](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) and double click it. It installs for your user, adds a Start menu entry and opens Parlo when it finishes, so one download is the whole install. The build is unsigned, so SmartScreen asks once: **More info**, then **Run anyway**.
 
+**Verify the download.** Every release carries a `SHA256SUMS.txt` with the hash of each file, and a build provenance record that names the workflow, the commit and the repository that produced it. On Windows:
+
+```bat
+certutil -hashfile Parlo-Setup.exe SHA256
+```
+
+Compare that line with the installer's line in `SHA256SUMS.txt`. With the GitHub CLI signed in, this checks where the file came from instead of trusting the page:
+
+```bash
+gh attestation verify Parlo-Setup.exe --repo PedroNascimento09/Parlo
+```
+
+Neither replaces a code signature: Windows still treats the installer as unsigned, and SmartScreen still asks once.
+
 **macOS and Linux**, in any terminal:
 
 ```bash
