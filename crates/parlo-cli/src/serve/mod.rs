@@ -384,7 +384,8 @@ pub fn start(
 
     let address = format!("http://127.0.0.1:{port}");
     let shared = token.clone();
-    std::thread::spawn(move || listen(listener, shared, port, session));
+    let accepting = Arc::new(AtomicBool::new(true));
+    std::thread::spawn(move || listen(listener, shared, port, session, accepting));
     Ok(Server { address, token })
 }
 
@@ -408,10 +409,15 @@ impl Drop for Open {
     }
 }
 
-fn listen(listener: TcpListener, token: String, port: u16, session: Session) {
+fn listen(
+    listener: TcpListener,
+    token: String,
+    port: u16,
+    session: Session,
+    accepting: Arc<AtomicBool>,
+) {
     let started = Instant::now();
     let session = Arc::new(session);
-    let accepting = Arc::new(AtomicBool::new(true));
     for stream in listener.incoming() {
         if !accepting.load(Ordering::Relaxed) {
             break;
@@ -3457,6 +3463,42 @@ fn constant_time_eq(left: &str, right: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn ask(port: u16, request: &str) -> String {
+        let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        stream.write_all(request.as_bytes()).unwrap();
+        let mut answer = String::new();
+        stream.read_to_string(&mut answer).unwrap();
+        answer
+    }
+
+    #[test]
+    fn the_main_routes_answer_on_a_real_socket() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let session =
+            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap();
+        let accepting = Arc::new(AtomicBool::new(true));
+        let stop = Arc::clone(&accepting);
+        std::thread::spawn(move || listen(listener, "t0ken".into(), port, session, accepting));
+
+        let health = ask(port, "GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
+        assert!(health.starts_with("HTTP/1.1 200 OK"));
+        assert!(health.contains("\"status\":\"ok\""));
+
+        let state = ask(port, "GET /state HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
+        assert!(state.starts_with("HTTP/1.1 200 OK"));
+        assert!(state.contains("\"state\":"));
+
+        let models = ask(port, "GET /models HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
+        assert!(models.starts_with("HTTP/1.1 200 OK"));
+
+        let foreign = ask(port, "GET /state HTTP/1.1\r\nHost: evil.example\r\n\r\n");
+        assert!(foreign.starts_with("HTTP/1.1 400"));
+
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
+    }
 
     #[test]
     fn a_session_can_be_shared_between_threads() {
