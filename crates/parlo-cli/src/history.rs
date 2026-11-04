@@ -53,7 +53,14 @@ pub fn path() -> PathBuf {
     crate::config::data_root().join("history.jsonl")
 }
 
+fn worth_keeping(entry: &Entry) -> bool {
+    !entry.text.trim().is_empty()
+}
+
 pub fn append(entry: &Entry) -> Result<(), String> {
+    if !worth_keeping(entry) {
+        return Ok(());
+    }
     let _ = prune(crate::config::load().history_days);
     append_to(&path(), entry)
 }
@@ -384,6 +391,17 @@ fn clear_at(path: &Path) -> Result<(), String> {
         Ok(()) => Ok(()),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
         Err(error) => Err(format!("{}: {error}", path.display())),
+    }
+}
+
+#[cfg(test)]
+mod empty_tests {
+    use super::*;
+
+    #[test]
+    fn a_dictation_without_words_is_not_kept() {
+        assert!(!worth_keeping(&Entry::now("   ", "", "pt", "pt", "", "")));
+        assert!(worth_keeping(&Entry::now("Olá.", "", "pt", "pt", "", "")));
     }
 }
 
