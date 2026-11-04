@@ -20,6 +20,7 @@ SILENCE_HOLD_SECONDS = 0.45
 MODEL_DIR = models_dir()
 REQUIRED_MODULES = ("numpy", "sherpa_onnx")
 DEFAULT_THREADS = 4
+KEPT_WRITERS = 2
 STT_BACKENDS = ("parakeet", "whisper")
 WHISPER_SIZES = ("tiny", "base", "small", "medium", "large-v3")
 PARAKEET_DIR = MODEL_DIR / "parakeet"
@@ -348,7 +349,8 @@ class CascadeEngine:
             return
         self._release_voice()
         self._translator = None
-        self._writers.clear()
+        if source != self.source:
+            self._writers.clear()
         self._buffer.clear()
         self._stream = None
         self._silent_seconds = 0.0
@@ -497,7 +499,7 @@ class CascadeEngine:
     def _load_writer(self, language: str):
         from . import mt
 
-        translator = self._writers.get(language)
+        translator = self._writers.pop(language, None)
         if translator is None:
             translator = mt.from_environment(self.source, language)
             if translator is None:
@@ -505,7 +507,9 @@ class CascadeEngine:
                     f"no translation model for {self.source}->{language}; "
                     "run engines/cascade/scripts/setup_models.py"
                 )
-            self._writers[language] = translator
+            while len(self._writers) >= KEPT_WRITERS:
+                self._writers.pop(next(iter(self._writers)))
+        self._writers[language] = translator
         return translator
 
     def _release_voice(self) -> None:

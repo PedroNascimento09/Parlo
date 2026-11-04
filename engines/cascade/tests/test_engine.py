@@ -179,12 +179,13 @@ class EngineTest(unittest.TestCase):
 
 
 class PairSwitchTest(unittest.TestCase):
-    def test_a_switch_keeps_the_recogniser_and_drops_the_rest(self):
+    def test_a_switch_keeps_the_recogniser_and_the_known_languages(self):
         engine = CascadeEngine()
         recogniser = object()
+        writer = lambda text: text
         engine._stt = recogniser
-        engine._translator = lambda text: text
-        engine._writers["en"] = lambda text: text
+        engine._translator = writer
+        engine._writers["en"] = writer
         engine._tts = object()
         engine._buffer.extend(b"\x00\x00")
         engine.set_pair("pt", "de")
@@ -192,9 +193,15 @@ class PairSwitchTest(unittest.TestCase):
         self.assertEqual(engine.target_languages, ("de",))
         self.assertIs(engine._stt, recogniser)
         self.assertIsNone(engine._translator)
-        self.assertEqual(engine._writers, {})
+        self.assertIs(engine._writers["en"], writer)
         self.assertIsNone(engine._tts)
         self.assertEqual(engine._buffer, bytearray())
+
+    def test_a_new_source_drops_the_languages_it_can_no_longer_write(self):
+        engine = CascadeEngine()
+        engine._writers["en"] = lambda text: text
+        engine.set_pair("en", "pt")
+        self.assertEqual(engine._writers, {})
 
     def test_the_same_pair_keeps_what_is_loaded(self):
         engine = CascadeEngine()
@@ -209,6 +216,31 @@ class PairSwitchTest(unittest.TestCase):
             engine.set_pair("pt", "english")
         with self.assertRaises(ValueError):
             engine.set_pair("de", "de")
+
+    def test_a_language_that_was_written_before_is_not_loaded_again(self):
+        from unittest import mock
+
+        engine = CascadeEngine()
+        with mock.patch(
+            "parlo_cascade.mt.from_environment", side_effect=lambda source, target: (source, target)
+        ) as loader:
+            engine.set_pair("pt", "es")
+            self.assertEqual(engine._load_writer("es"), ("pt", "es"))
+            engine.set_pair("pt", "en")
+            self.assertEqual(engine._load_writer("en"), ("pt", "en"))
+            engine.set_pair("pt", "es")
+            self.assertEqual(engine._load_writer("es"), ("pt", "es"))
+        self.assertEqual(loader.call_count, 2)
+
+    def test_the_writer_cache_holds_two_languages(self):
+        from unittest import mock
+
+        engine = CascadeEngine()
+        engine._writers["pt"] = "oldest"
+        engine._writers["en"] = "newer"
+        with mock.patch("parlo_cascade.mt.from_environment", side_effect=lambda source, target: target):
+            engine._load_writer("es")
+        self.assertEqual(list(engine._writers), ["en", "es"])
 
     def test_the_voice_follows_the_new_target(self):
         engine = CascadeEngine()
