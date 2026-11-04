@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The optional Rust engine can read aloud with Piper voices, translates PT to EN, and is selected with `PARLO_ENGINE=rust`; the Python engine stays the default and the fallback.
 - Parlo's mark is built from the wordmark itself: white bars on a black tile, the bowl left open the way the letters are drawn, so the window, the tray, the installer and every shortcut look like the app they open.
 - The Windows installer is three pages: what Parlo does, install, finish. The licence wall and the all-users prompt are gone, and the panel carries the wordmark with one line, stays on this computer.
 - Every release ships a `SHA256SUMS.txt` and a build provenance attestation, so a downloaded installer can be checked against the workflow and commit that built it.

@@ -24,7 +24,7 @@ If the engine has to live elsewhere, point at it:
 PARLO_ENGINE=/path/to/parlo-engine/parlo-engine parlo translate in.wav out.wav --engine cascade
 ```
 
-On Windows the same thing is `set PARLO_ENGINE=C:\path\parlo-engine\parlo-engine.exe` before the command. From a source checkout there is no `parlo-engine` directory and Parlo uses `python serve.py` instead, which needs the venv from [the cascade guide](../engines/cascade/README.md).
+On Windows the same thing is `set PARLO_ENGINE=C:\path\parlo-engine\parlo-engine.exe` before the command. From a source checkout there is no `parlo-engine` directory and Parlo uses `python serve.py` instead, which needs the venv from [the cascade guide](../engines/cascade/README.md). `PARLO_ENGINE=rust` tries the bundled Rust engine first and falls back to Python; `PARLO_ENGINE=python` skips the Rust engine.
 
 ## The app says the models are missing
 

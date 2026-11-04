@@ -165,15 +165,17 @@ Measured on the reference machine with the same models and the same six second r
 
 Live mode confirms words instead of rewriting them. A hypothesis stays provisional until two rounds agree, then the agreed words are announced once as `stable`; when the end of a segment changes what was already announced, it is announced again as `corrected` before the `final` text. The interval between decodes follows the time the last decode took, one and a half times it, so a slower machine decodes less often instead of falling further behind: on the same recording and machine a six and a third second clip is decoded nine times rather than fifteen, the first stable words arrive after one second of audio, the whole run costs 4.7 s against 12.6 s when every chunk was decoded, and the final text matches the dictation word for word.
 
-Speech is not speech yet. The voices are piper files, and the sherpa speaker refuses them because they carry no sample rate in their metadata; it aborts the process instead of returning an error. The engine therefore checks the metadata first, refuses the voice with a sentence, and returns the translation as text so a caller still gets the words.
+Read aloud is wired into the Rust engine. Piper voices carry no sample rate or voice name in their ONNX metadata, so the engine appends those fields to a temporary copy before loading it, builds the token table from `phoneme_id_map`, and points sherpa at the `espeak-ng-data` folder from `PARLO_ESPEAK_DATA` or the voice folder. On the reference machine, `speak` returned 2.03 s of 22 050 Hz audio for “Olá, isto é um teste do motor em Rust.” with the European Portuguese voice; that is a smoke result, not a quality claim.
 
-The crate is outside the Cargo workspace, because its speech dependency pulls licences the project does not accept. It builds for the MSVC target with the runtime aligned to static:
+The crate is outside the Cargo workspace because the shared sherpa-onnx runtime carries espeak-ng for speech, which is GPL-3.0-or-later. That is why the Rust engine is optional: `PARLO_ENGINE=rust` tries it first and falls back to the Python engine, `PARLO_ENGINE=python` skips it, and with no variable the Python engine stays the default. The Windows release carries `parlo-engine-rs` beside the Python engine, so the same installer offers both.
+
+It builds for the MSVC target with the runtime aligned to static:
 
 ```
-cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release   --target x86_64-pc-windows-msvc
+cargo build --manifest-path crates/parlo-engine-rs/Cargo.toml --release --target x86_64-pc-windows-msvc
 ```
 
-with `RUSTFLAGS="-C target-feature=+crt-static"`, `CC` and `CXX` unset so cc-rs picks the Microsoft compiler for the target and the system compiler for build scripts, and the Microsoft linker named through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. The crate keeps `ct2rs` without its default features, plus `ruy` for the int8 kernels, so the tokenizer dependency that refuses to build is left out.
+with `RUSTFLAGS="-C target-feature=+crt-static"`, `CC` and `CXX` unset so cc-rs picks the Microsoft compiler for the target and the system compiler for build scripts, and the Microsoft linker named through `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER`. The crate keeps `ct2rs` without its default features, plus `ruy` for the int8 kernels, so the tokenizer dependency that refuses to build is left out. The build needs CMake and the MSVC build tools; GitHub's Windows runner has both.
 
 ## Streaming, the decision
 

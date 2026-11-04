@@ -9,3 +9,7 @@ licences in THIRD_PARTY_NOTICES.md.
 
 Piper and the espeak-ng data it loads are GPL-3.0-or-later and are not part of
 this distribution. They are installed separately as an optional adapter.
+
+The optional Rust engine links sherpa-onnx 1.13.8 (Apache-2.0). Its shared
+runtime carries espeak-ng (GPL-3.0-or-later) for read aloud, so it is selected
+with PARLO_ENGINE=rust and is not the default engine.
