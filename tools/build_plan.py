@@ -387,7 +387,7 @@ def build_pdf(blocks):
         topMargin=2.3 * cm,
         bottomMargin=2.0 * cm,
         title="Parlo — Plano Mestre v12.5",
-        author="Pedro Nascimento",
+        author="Parlo",
         subject="Plano mestre técnico, produto e open source do Parlo",
     )
     frame = Frame(document.leftMargin, document.bottomMargin, width, A4[1] - 4.3 * cm, id="body")
