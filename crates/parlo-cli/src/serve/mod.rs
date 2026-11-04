@@ -35,12 +35,12 @@ static STATE: std::sync::Mutex<parlo_core::state::Machine> =
     std::sync::Mutex::new(parlo_core::state::Machine::new());
 const DUB_TIMEOUT: Duration = Duration::from_secs(3_600);
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const INDEX: &str = include_str!("../web/index.html");
-const STYLESHEET: &str = include_str!("../web/app.css");
-const SCRIPT: &str = include_str!("../web/app.js");
-const ISLAND: &str = include_str!("../web/island.html");
-const CAPTIONS: &str = include_str!("../web/captions.html");
-const LIVE: &str = include_str!("../web/live.html");
+const INDEX: &str = include_str!("../../web/index.html");
+const STYLESHEET: &str = include_str!("../../web/app.css");
+const SCRIPT: &str = include_str!("../../web/app.js");
+const ISLAND: &str = include_str!("../../web/island.html");
+const CAPTIONS: &str = include_str!("../../web/captions.html");
+const LIVE: &str = include_str!("../../web/live.html");
 
 pub fn new_token() -> String {
     let nanos = SystemTime::now()
