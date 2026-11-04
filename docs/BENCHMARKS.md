@@ -334,6 +334,25 @@ target/debug/parlo.exe dub .tmp-clip-pt-long.wav --from pt --to en --out .tmp-du
 
 The regression test was checked in both directions on the reference commit. With `engines/cascade/parlo_cascade/tts.py` taken from the commit before the fix, `test_a_dead_adapter_is_replaced_for_the_next_sentence` fails with `parlo_cascade.tts.VoiceUnavailable: the piper adapter stopped without answering` and `FAILED (errors=1)`; with the fixed file back it prints `OK`, and the file is unchanged in the working tree afterwards.
 
+### Dubbing three segments with one voice, 4 November 2026
+
+`parlo dub` runs recognition, translation and voice one segment at a time, and the only part worth hiding is the voice's model load: piper spends 5 s loading `en_US-lessac-medium` before it can say anything, while the recogniser is already busy with the first segment. The load now starts in a thread when the batch begins, and one lock in `parlo_cascade/tts.py` keeps two threads from starting two adapters.
+
+Clip: the 7.5 s Portuguese clip played three times with 0.9 s of silence between, 24.3 s in total, two threads.
+
+| Batch | Wall | Adapter seen from | Segments | WAV | Exit |
+|---|---|---|---|---|---|
+| Before | 16.60 s | 5.78 s | 3 | 19.83 s | 0 |
+| After | **11.75 s** | **0.78 s** | 3 | 20.00 s | 0 |
+
+Both runs produced the same three translated lines, which is the only part of the output that can be compared: piper is not deterministic. One English sentence synthesised six times, three in each of two processes, came back as 7.6742 s, 8.0922 s, 7.8716 s, 8.2547 s, 7.8367 s and 7.7787 s, so the WAV moves by half a second between runs of the same text and the subtitle timings move with it.
+
+One adapter means one `engines/tts-piper/serve.py` session for all three segments. On Windows that is two process ids: `.venv\Scripts\python.exe` is a redirector that starts the base interpreter. Both ids stayed alive for the whole batch in both runs and no second session appeared.
+
+```bash
+target/debug/parlo.exe dub .tmp-clip-pt-three.wav --from pt --to en --out .tmp-dub.wav --srt .tmp-dub.srt
+```
+
 The `translate` number is still not published, and this time memory is the whole reason. Windows 11 Home, AMD Ryzen 5 3600, 16 GB, games and a browser holding most of it, about 2.3 GB free: the recogniser refused to load (`Load model from .tmp-models\parakeet\encoder.int8.onnx failed: bad allocation`), CTranslate2 stopped with `mkl_malloc: failed to allocate memory`, and once inside the voice `onnxruntime` asked for 8 978 432 bytes and did not get them (`BFCArena::AllocateRawInternal Failed to allocate memory`). The same run with Whisper base instead of Parakeet held only 201 MB and still failed in `mkl_malloc`. Nothing here is a property of the fix: with the fix the failure arrives as one error reply and the sidecar stays alive, which is what the protocol tests assert.
 
 When a machine has the memory, these two commands produce the numbers, the second of them over the voice path alone:
