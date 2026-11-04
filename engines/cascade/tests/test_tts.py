@@ -15,8 +15,32 @@ ADAPTER = textwrap.dedent(
     for line in sys.stdin:
         request = json.loads(line)
         if request.get("op") == "synthesize":
-            audio = base64.b64encode(b"\\x01\\x00" * 4).decode("ascii")
+            audio = base64.b64encode(bytes([1, 0]) * 4).decode("ascii")
             print(json.dumps({"op": "synthesized", "pcm16": audio, "sample_rate": 22050}), flush=True)
+    """
+)
+
+ONCE = textwrap.dedent(
+    """
+    import base64, json, sys
+    print(json.dumps({"op": "hello", "engine": "piper", "available": True}), flush=True)
+    for line in sys.stdin:
+        request = json.loads(line)
+        if request.get("op") == "synthesize":
+            audio = base64.b64encode(bytes([1, 0]) * 4).decode("ascii")
+            print(json.dumps({"op": "synthesized", "pcm16": audio, "sample_rate": 22050}), flush=True)
+            sys.exit(1)
+    """
+)
+
+CRASHING = textwrap.dedent(
+    """
+    import json, sys
+    print(json.dumps({"op": "hello", "engine": "piper", "available": True}), flush=True)
+    for line in sys.stdin:
+        sys.stderr.write("onnxruntime: bad allocation\\n")
+        sys.stderr.flush()
+        sys.exit(3)
     """
 )
 
@@ -63,8 +87,24 @@ class AdapterTest(unittest.TestCase):
         voice = PiperVoice(model, directory=directory)
         pcm16, rate = voice.synthesize("bom dia")
         self.assertEqual(rate, 22050)
-        self.assertEqual(pcm16, b"\x01\x00" * 4)
+        self.assertEqual(pcm16, bytes([1, 0]) * 4)
         voice.close()
+
+    def test_a_dead_adapter_is_replaced_for_the_next_sentence(self):
+        directory, model = self.make(ONCE)
+        voice = PiperVoice(model, directory=directory)
+        first, _ = voice.synthesize("bom dia")
+        second, _ = voice.synthesize("boa tarde")
+        self.assertEqual(first, bytes([1, 0]) * 4)
+        self.assertEqual(second, bytes([1, 0]) * 4)
+        voice.close()
+
+    def test_a_dead_adapter_reports_its_last_words(self):
+        directory, model = self.make(CRASHING)
+        voice = PiperVoice(model, directory=directory)
+        with self.assertRaises(VoiceUnavailable) as raised:
+            voice.synthesize("bom dia")
+        self.assertIn("bad allocation", str(raised.exception))
 
     def test_installed_requires_both_files(self):
         directory, model = self.make(ADAPTER)
