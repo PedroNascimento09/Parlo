@@ -1,5 +1,6 @@
 import argparse
 import base64
+import collections
 import json
 import os
 import statistics
@@ -53,22 +54,39 @@ class Session:
             env=merged,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
             text=True,
             encoding="utf-8",
             bufsize=1,
         )
+        self.stderr: collections.deque[str] = collections.deque(maxlen=8)
+        threading.Thread(target=self._drain, daemon=True).start()
+
+    def _drain(self) -> None:
+        stream = self.process.stderr
+        if stream is None:
+            return
+        for line in stream:
+            text = line.strip()
+            if text:
+                self.stderr.append(text)
+
+    def reason(self) -> str:
+        return f": {self.stderr[-1]}" if self.stderr else ""
 
     def call(self, request: dict, timeout: int = 240) -> tuple[dict, float]:
         begin = time.perf_counter()
-        self.process.stdin.write(json.dumps(request) + "\n")
-        self.process.stdin.flush()
+        try:
+            self.process.stdin.write(json.dumps(request) + "\n")
+            self.process.stdin.flush()
+        except OSError as error:
+            raise RuntimeError(f"the engine stopped: {error}" + self.reason()) from error
         timer = threading.Timer(timeout, self.process.kill)
         timer.start()
         line = self.process.stdout.readline()
         timer.cancel()
         if not line:
-            raise RuntimeError("the engine closed its output")
+            raise RuntimeError("the engine closed its output" + self.reason())
         return json.loads(line), (time.perf_counter() - begin) * 1000
 
     def hello(self) -> tuple[dict, float]:
@@ -107,6 +125,9 @@ def measure(
     cwd: Path,
     environment: dict[str, str],
     audio: str,
+    source: str,
+    target: str,
+    switch_to: str | None,
     runs: int,
 ) -> dict:
     session = Session(command, cwd, environment)
@@ -123,6 +144,13 @@ def measure(
         "write_ms": [],
         "write_median_ms": None,
         "write_translation": "",
+        "switch_target": None,
+        "switch_ms": None,
+        "switch_write_first_ms": None,
+        "switch_write_second_ms": None,
+        "switch_translation": "",
+        "switch_back_ms": None,
+        "switch_back_write_ms": None,
         "translate_first_ms": None,
         "translate_ms": [],
         "translate_median_ms": None,
@@ -172,6 +200,39 @@ def measure(
         except (RuntimeError, ValueError) as error:
             result["errors"].append(f"write: {error}")
 
+        if switch_to and result["write_first_ms"] is not None:
+            try:
+                answer, elapsed = session.call(
+                    {"op": "pair", "seq": 1, "from": source, "to": switch_to}
+                )
+                if answer.get("op") == "error":
+                    raise RuntimeError(str(answer.get("error")))
+                result["switch_target"] = switch_to
+                result["switch_ms"] = round(elapsed, 1)
+                for field, seq in (
+                    ("switch_write_first_ms", 2),
+                    ("switch_write_second_ms", 3),
+                ):
+                    answer, elapsed = session.call(
+                        {"op": "write", "seq": seq, "pcm16": audio}
+                    )
+                    if answer.get("op") == "error":
+                        raise RuntimeError(str(answer.get("error")))
+                    result[field] = round(elapsed, 1)
+                    result["switch_translation"] = answer_translation(answer)
+                answer, elapsed = session.call(
+                    {"op": "pair", "seq": 4, "from": source, "to": target}
+                )
+                if answer.get("op") == "error":
+                    raise RuntimeError(str(answer.get("error")))
+                result["switch_back_ms"] = round(elapsed, 1)
+                answer, elapsed = session.call({"op": "write", "seq": 5, "pcm16": audio})
+                if answer.get("op") == "error":
+                    raise RuntimeError(str(answer.get("error")))
+                result["switch_back_write_ms"] = round(elapsed, 1)
+            except (RuntimeError, ValueError) as error:
+                result["errors"].append(f"switch: {error}")
+
         try:
             answer, elapsed = session.call({"op": "translate", "seq": 1, "pcm16": audio})
             if answer.get("op") == "error":
@@ -212,6 +273,8 @@ def main() -> int:
     parser.add_argument("--to", dest="target", default="en")
     parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--runs", type=int, default=3)
+    parser.add_argument("--switch-to", dest="switch_to", default=None)
+    parser.add_argument("--warmup", action="store_true")
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
 
@@ -221,6 +284,11 @@ def main() -> int:
         parser.error(f"{args.voice} does not exist")
     if args.espeak_data and not args.espeak_data.is_dir():
         parser.error(f"{args.espeak_data} does not exist")
+    if args.switch_to:
+        if len(args.switch_to) != 2 or not args.switch_to.isalpha():
+            parser.error("--switch-to needs a two letter language code")
+        if args.switch_to == args.target:
+            parser.error("--switch-to must differ from --to")
     audio, seconds = audio_payload(args.wav)
     models = str(args.models.resolve())
     voice = str(args.voice.resolve()) if args.voice else None
@@ -232,7 +300,7 @@ def main() -> int:
         "PARLO_CASCADE_SOURCE": args.source,
         "PARLO_CASCADE_TARGET": args.target,
         "PARLO_CASCADE_THREADS": str(args.threads),
-        "PARLO_CASCADE_WARMUP": "0",
+        "PARLO_CASCADE_WARMUP": "1" if args.warmup else "0",
     }
     if voice:
         python_environment["PARLO_CASCADE_VOICE"] = voice
@@ -248,6 +316,9 @@ def main() -> int:
                 args.cascade_dir,
                 python_environment,
                 audio,
+                args.source,
+                args.target,
+                args.switch_to,
                 args.runs,
             )
         )
@@ -260,6 +331,9 @@ def main() -> int:
                 args.bundled.parent,
                 python_environment,
                 audio,
+                args.source,
+                args.target,
+                args.switch_to,
                 args.runs,
             )
         )
@@ -282,6 +356,9 @@ def main() -> int:
                 args.rust.parent,
                 rust_environment,
                 audio,
+                args.source,
+                args.target,
+                args.switch_to,
                 args.runs,
             )
         )
@@ -295,6 +372,15 @@ def main() -> int:
             print(
                 f"  write {result['write_first_ms']} ms first, "
                 f"{result['write_median_ms']} ms median; {result['write_translation']}"
+            )
+        if result["switch_ms"] is not None:
+            print(
+                f"  switch to {result['switch_target']} {result['switch_ms']} ms; "
+                f"write {result['switch_write_first_ms']} ms first, "
+                f"{result['switch_write_second_ms']} ms second; "
+                f"back {result['switch_back_ms']} ms, "
+                f"write {result['switch_back_write_ms']} ms; "
+                f"{result['switch_translation']}"
             )
         if result["translate_median_ms"] is not None:
             print(
