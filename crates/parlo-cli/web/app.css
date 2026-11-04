@@ -1987,7 +1987,7 @@ kbd {
 }
 
 .more[open] > summary::before {
-  content: "−";
+  content: "âˆ’";
 }
 
 .meeting-import > summary {
@@ -2003,7 +2003,7 @@ kbd {
 }
 
 .meeting-import > summary::before {
-  content: "▸";
+  content: "â–¸";
   display: inline-block;
   margin-right: 8px;
   transition: transform 140ms ease;
@@ -4209,4 +4209,57 @@ kbd {
   color: var(--muted);
   white-space: nowrap;
   margin-left: 8px;
+}
+
+.meeting-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.meeting-row-actions {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.speaker-chip {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  font: 600 13px/1 var(--font-label);
+  color: var(--ink);
+}
+
+.speaker-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent-deep);
+}
+
+.meeting-action,
+.meeting-action:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.meeting-action {
+  padding: 7px 10px;
+  border-color: transparent;
+  color: var(--ink-soft);
+}
+
+.meeting-action:hover {
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+#meeting-list dt {
+  margin-bottom: 10px;
+}
+
+#meeting-list dd {
+  margin: 0;
 }

@@ -2149,34 +2149,39 @@ function renderMeetings(meetings) {
       " lines";
     const detail = document.createElement("dd");
     const speakers = meeting.speakers.filter((name) => name !== "Note");
+    const speakerRow = document.createElement("div");
+    speakerRow.className = "meeting-row";
     if (speakers.length) {
       const label = document.createElement("span");
       label.className = "meeting-label";
       label.textContent = "Speakers";
-      detail.append(label);
+      speakerRow.append(label);
     }
     for (const speaker of speakers) {
       const chip = document.createElement("button");
       chip.type = "button";
-      chip.className = "swap";
+      chip.className = "swap speaker-chip";
       chip.textContent = speaker;
       chip.title = "Name this speaker everywhere in this meeting";
       chip.addEventListener("click", () => nameSpeaker(meeting, speaker));
-      detail.append(chip);
+      speakerRow.append(chip);
     }
+    const actionRow = document.createElement("div");
+    actionRow.className = "meeting-row meeting-row-actions";
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "swap";
+    remove.className = "swap meeting-action";
     remove.textContent = "Delete";
     remove.addEventListener("click", () => deleteMeeting(meeting.id));
-    detail.append(remove);
+    actionRow.append(remove);
     const download = document.createElement("button");
     download.type = "button";
-    download.className = "swap";
+    download.className = "swap meeting-action";
     download.textContent = "Save as Markdown";
     download.title = "Save this meeting as a Markdown file";
     download.addEventListener("click", () => downloadMeeting(meeting));
-    detail.append(download);
+    actionRow.append(download);
+    detail.append(speakerRow, actionRow);
     for (const note of (meeting.segments || []).filter((segment) => segment.speaker === "Note")) {
       const line = document.createElement("p");
       line.className = "meeting-note";
