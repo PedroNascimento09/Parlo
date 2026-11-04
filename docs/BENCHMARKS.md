@@ -277,10 +277,24 @@ Windows 11, 4 threads, the OPUS-MT packages read through CTranslate2 int8, warm 
 
 Reading: the swap costs half a millisecond because it only changes the pair the engine is told to use, and the recogniser is not touched at either step. What a person waits for is the new package coming off disk, about 0.4 s, and now only the first time that language is used, because the dictation path keeps the language it just left.
 
-The end to end `write` figure is missing on purpose. This machine could not give the sidecar enough memory for the recogniser and a second package in one process while games and a browser held most of 16 GB, and CTranslate2 stopped with `mkl_malloc: failed to allocate memory`. What disappeared is in the cold start section above: a process start plus the warm-up of every model, 12 to 21 s before the first request. The pieces above are what a switch costs instead.
+The switch was measured end to end on 4 November 2026, with one write before it, two after it, and one after switching back. Windows 11 Home, AMD Ryzen 5 3600, 6 cores and 12 threads, 16 GB of RAM, no GPU, Python 3.12.10, CTranslate2 4.8.4, ONNX Runtime 1.31.1, Parakeet TDT 0.6B v3 int8, the Portuguese to English package. The clip is 7.5 s of Portuguese synthesised with `pt_PT-tugão-medium`, 16 kHz mono PCM16.
+
+| What | Value |
+|---|---|
+| `hello`, sidecar up | 242.5 ms |
+| Memory at `hello`, then with Parakeet loaded | 28.2 MB, then 838.0 MB |
+| `dictate`, three calls | 4591.4, 1212.5, 1123.6 ms |
+| `write` to English, first, then three warm | 2212.3 ms, then 1709.2, 1601.1, 1689.8 ms, median **1689.8 ms** |
+| `pair` to Spanish, then back to English | 0.8 ms, then 1.2 ms |
+| `write` after the switch to Spanish, first and second | 1963.1 ms, 1542.3 ms |
+| `write` after switching back to English | 1636.6 ms |
+
+Writing a sentence in the other language costs 1.7 s median on this clip, and none of that is the pair change. The switch is under a millisecond because it only tells the engine which pair to use; the Spanish package arrives on the first write that needs it, 1963.1 ms against 1542.3 ms on the next call, and once warm the sentence lands within 150 ms of the English path. Dictation pays 4591.4 ms once, for the recogniser, and about 1.2 s a sentence after that.
+
+Limits. One 7.5 s synthetic clip, one machine, three warm calls, two threads, no music and no crosstalk. The transcript is not a quality result: the recogniser misheard words and those mistakes travel into the translation. Speech is not measured here: `translate` stopped with `the piper adapter stopped without answering`, which is the voice path, not the write path. Four threads could not run this on the day: with games and a browser holding most of 16 GB, the same command stopped with `bad allocation` inside ONNX Runtime, and a later attempt closed the sidecar with `Expecting value: line 1 column 1`. The earlier engine comparison put `write` at 992.7 ms median on a 5.085 s clip with four threads, so that row and this one are not comparable: different clip length and thread count.
 
 ```bash
-.venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip-pt.wav --models .tmp-models --cascade-dir engines/cascade --from pt --to en --switch-to es --threads 4 --runs 3
+.venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip-pt.wav --models .tmp-models --cascade-dir engines/cascade --from pt --to en --switch-to es --threads 2 --runs 3 --json .tmp-bench-write-switch.json
 ```
 
 `--switch-to` adds the pair change and the writes around it to any run, and `--warmup` keeps the sidecar's own warm-up so a restart can be measured the way the app used to pay for it.
