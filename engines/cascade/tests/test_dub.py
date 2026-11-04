@@ -1,8 +1,10 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -59,6 +61,81 @@ class SrtTest(unittest.TestCase):
 
         self.assertIn("target text", text)
         self.assertNotIn("texto de origem", text)
+
+
+class CueTest(unittest.TestCase):
+    def write(self, payload):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = Path(directory.name) / "cues.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        return path
+
+    def test_load_cues_keeps_ids_times_and_source(self):
+        path = self.write(
+            {
+                "cues": [
+                    {"id": "p-0", "start_ms": 1250, "end_ms": 3500, "source": "Bom dia"},
+                    {"id": "p-1", "start_ms": 4000, "end_ms": 6000, "source": "Até logo"},
+                ]
+            }
+        )
+
+        cues = dub.load_cues(path)
+
+        self.assertEqual([cue.id for cue in cues], ["p-0", "p-1"])
+        self.assertEqual(cues[0].start, 1.25)
+        self.assertEqual(cues[0].end, 3.5)
+        self.assertEqual(cues[0].source, "Bom dia")
+
+    def test_load_cues_rejects_a_cue_that_ends_before_it_starts(self):
+        path = self.write(
+            {"cues": [{"id": "p-0", "start_ms": 1000, "end_ms": 1000, "source": "x"}]}
+        )
+
+        with self.assertRaisesRegex(SystemExit, "valid end"):
+            dub.load_cues(path)
+
+    def test_load_cues_rejects_a_document_without_cues(self):
+        path = self.write({"cues": []})
+
+        with self.assertRaisesRegex(SystemExit, "no cues"):
+            dub.load_cues(path)
+
+
+@unittest.skipUnless(HAS_NUMPY, "numpy is required for the cue build")
+class CueBuildTest(unittest.TestCase):
+    def test_build_uses_cues_instead_of_transcribing(self):
+        import numpy as np
+
+        class Engine:
+            def _transcribe(self, audio):
+                raise AssertionError("the cue path must not transcribe")
+
+            def _translate(self, text):
+                return "T:" + text
+
+        spoken = []
+
+        def fake_speak(engine, text, slot):
+            spoken.append(text)
+            return np.full(int(0.1 * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
+
+        cues = [
+            dub.Cue("p-0", 0.1, 0.5, "hello"),
+            dub.Cue("p-1", 1.0, 1.5, "world"),
+        ]
+        samples = np.zeros(dub.SAMPLE_RATE * 2, dtype=np.float32)
+
+        with mock.patch.object(dub, "speak", fake_speak):
+            track, lines = dub.build(Engine(), samples, lambda _: None, cues)
+
+        self.assertEqual(len(track), len(samples))
+        self.assertEqual(spoken, ["T:hello", "T:world"])
+        self.assertEqual([line.id for line in lines], ["p-0", "p-1"])
+        self.assertEqual([line.source for line in lines], ["hello", "world"])
+        self.assertAlmostEqual(lines[0].start, 0.1)
+        self.assertAlmostEqual(lines[0].end, 0.2)
 
 
 @unittest.skipUnless(HAS_NUMPY, "numpy is required for the segmentation helpers")

@@ -1,6 +1,7 @@
 import argparse
 import io
 import json
+import math
 import shutil
 import subprocess
 import sys
@@ -44,6 +45,15 @@ class Line:
     end: float
     source: str
     translated: str
+    id: str | None = None
+
+
+@dataclass(frozen=True)
+class Cue:
+    id: str
+    start: float
+    end: float
+    source: str
 
 
 def require(tool: str) -> str:
@@ -51,6 +61,47 @@ def require(tool: str) -> str:
     if path is None:
         raise SystemExit(f"{tool} is not installed; install ffmpeg and add it to PATH")
     return path
+
+
+def load_cues(path: Path) -> list[Cue]:
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise SystemExit(f"cannot read imported subtitles: {error}") from error
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"the imported subtitles are not valid JSON: {error}") from error
+    items = document.get("cues") if isinstance(document, dict) else None
+    if not isinstance(items, list) or not items:
+        raise SystemExit("the imported subtitles have no cues")
+    cues: list[Cue] = []
+    for number, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            raise SystemExit(f"cue {number} is not an object")
+        identifier = item.get("id")
+        start = item.get("start_ms")
+        end = item.get("end_ms")
+        source = item.get("source")
+        if not isinstance(identifier, str) or not identifier:
+            raise SystemExit(f"cue {number} has no id")
+        if (
+            not isinstance(start, (int, float))
+            or isinstance(start, bool)
+            or not math.isfinite(start)
+            or start < 0
+        ):
+            raise SystemExit(f"cue {number} has no valid start")
+        if (
+            not isinstance(end, (int, float))
+            or isinstance(end, bool)
+            or not math.isfinite(end)
+            or end <= start
+        ):
+            raise SystemExit(f"cue {number} has no valid end")
+        if not isinstance(source, str) or not source.strip():
+            raise SystemExit(f"cue {number} has no text")
+        cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source))
+    cues.sort(key=lambda cue: cue.start)
+    return cues
 
 
 def extract_audio(ffmpeg: str, source: Path, target: Path) -> None:
@@ -203,24 +254,42 @@ def speak(engine: CascadeEngine, text: str, slot_seconds: float) -> np.ndarray:
     return faster if faster.size > 0 else samples
 
 
-def build(engine: CascadeEngine, samples: np.ndarray, progress) -> tuple[np.ndarray, list[Line]]:
-    segments = segment(samples)
-    if not segments:
-        raise SystemExit("no speech was found in the file")
+def cue_pieces(cues: list[Cue], length: int) -> list[tuple[Segment, Cue]]:
+    pieces = []
+    for cue in cues:
+        start = max(int(round(cue.start * SAMPLE_RATE)), 0)
+        end = min(int(round(cue.end * SAMPLE_RATE)), length)
+        if end > start:
+            pieces.append((Segment(start, end), cue))
+    if not pieces:
+        raise SystemExit("none of the imported cues fall inside the audio")
+    return pieces
+
+
+def build(
+    engine: CascadeEngine, samples: np.ndarray, progress, cues: list[Cue] | None = None
+) -> tuple[np.ndarray, list[Line]]:
+    if cues is None:
+        segments = segment(samples)
+        if not segments:
+            raise SystemExit("no speech was found in the file")
+        pieces = [(piece, None) for piece in segments]
+    else:
+        pieces = cue_pieces(cues, len(samples))
 
     track = np.zeros(len(samples), dtype=np.float32)
     lines: list[Line] = []
-    for number, piece in enumerate(segments, start=1):
-        source = engine._transcribe(samples[piece.start : piece.end])
+    for number, (piece, cue) in enumerate(pieces, start=1):
+        source = cue.source if cue is not None else engine._transcribe(samples[piece.start : piece.end])
         if not source:
-            progress(f"[{number}/{len(segments)}] skipped, nothing recognised")
+            progress(f"[{number}/{len(pieces)}] skipped, nothing recognised")
             continue
         translated = engine._translate(source)
         if not translated:
-            progress(f"[{number}/{len(segments)}] skipped, nothing translated")
+            progress(f"[{number}/{len(pieces)}] skipped, nothing translated")
             continue
-        following = segments[number].start if number < len(segments) else len(samples)
-        gap = (following - piece.end) / SAMPLE_RATE
+        following = pieces[number][0].start if number < len(pieces) else len(samples)
+        gap = max((following - piece.end) / SAMPLE_RATE, 0.0)
         slot = piece.seconds() * SLOT_GROWTH + min(gap, SLOT_MAX_GROWTH_SECONDS)
         audio = speak(engine, translated, slot)
         end = min(piece.start + len(audio), len(track))
@@ -231,10 +300,11 @@ def build(engine: CascadeEngine, samples: np.ndarray, progress) -> tuple[np.ndar
                 end=(piece.start + len(audio)) / SAMPLE_RATE,
                 source=source,
                 translated=translated,
+                id=cue.id if cue is not None else None,
             )
         )
         progress(
-            f"[{number}/{len(segments)}] {piece.start / SAMPLE_RATE:7.1f}s  {translated}"
+            f"[{number}/{len(pieces)}] {piece.start / SAMPLE_RATE:7.1f}s  {translated}"
         )
     return np.clip(track, -1.0, 1.0), lines
 
@@ -297,6 +367,7 @@ def main() -> int:
     parser.add_argument("--out", type=Path)
     parser.add_argument("--srt", type=Path)
     parser.add_argument("--keep-background", action="store_true")
+    parser.add_argument("--cues", type=Path)
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
 
@@ -304,6 +375,8 @@ def main() -> int:
         raise SystemExit(f"{args.source} does not exist")
     if args.source_language == args.to:
         raise SystemExit("the source and target language must differ")
+
+    cues = load_cues(args.cues) if args.cues else None
 
     ffmpeg = require("ffmpeg")
     ffprobe = require("ffprobe")
@@ -327,7 +400,7 @@ def main() -> int:
             f"dubbing {args.source.name} ({len(samples) / SAMPLE_RATE:.1f} s, "
             f"{args.source_language} to {args.to})"
         )
-        track, lines = build(engine, samples, print)
+        track, lines = build(engine, samples, print, cues)
         if not lines:
             raise SystemExit("nothing was translated")
         if args.keep_background:
@@ -354,6 +427,7 @@ def main() -> int:
                             "end": round(line.end, 2),
                             "source": line.source,
                             "translated": line.translated,
+                            "id": line.id,
                         }
                         for line in lines
                     ],

@@ -788,6 +788,7 @@ fn dub_command(args: &[String]) -> Result<(), String> {
         to: &to,
         out,
         srt,
+        cues: None,
         keep_background,
     })?;
 

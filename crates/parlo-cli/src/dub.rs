@@ -14,6 +14,8 @@ pub struct Line {
     pub end: f64,
     pub source: String,
     pub translated: String,
+    #[serde(default)]
+    pub id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -30,6 +32,7 @@ pub struct Request<'a> {
     pub to: &'a str,
     pub out: Option<PathBuf>,
     pub srt: Option<PathBuf>,
+    pub cues: Option<PathBuf>,
     pub keep_background: bool,
 }
 
@@ -53,6 +56,7 @@ pub fn run(request: &Request) -> Result<Dub, String> {
     };
     let out = absolute(&request.out);
     let srt = absolute(&request.srt);
+    let cues = absolute(&request.cues);
     let engine_dir = env::var("PARLO_CASCADE_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(DEFAULT_ENGINE_DIR))
@@ -84,6 +88,9 @@ pub fn run(request: &Request) -> Result<Dub, String> {
     }
     if let Some(srt) = &srt {
         command.arg("--srt").arg(srt);
+    }
+    if let Some(cues) = &cues {
+        command.arg("--cues").arg(cues);
     }
     if request.keep_background {
         command.arg("--keep-background");

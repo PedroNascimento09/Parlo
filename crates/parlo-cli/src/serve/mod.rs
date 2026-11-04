@@ -2267,12 +2267,24 @@ fn handle(
         }
 
         let stored = crate::config::load();
-        let from = header(&headers, "x-parlo-from")
-            .unwrap_or_else(|| stored.from.clone())
-            .to_ascii_lowercase();
-        let to = header(&headers, "x-parlo-to")
-            .unwrap_or_else(|| stored.to.clone())
-            .to_ascii_lowercase();
+        let (mut project, mut project_store) = match load_requested_project(&headers) {
+            Ok(Some(loaded)) => (Some(loaded.project), Some(loaded.store)),
+            Ok(None) => (None, None),
+            Err((reason, message)) => {
+                return respond_json(stream, reason, &error_json(&message)).map(|()| Flow::Serve);
+            }
+        };
+        let (from, to) = match project.as_ref() {
+            Some(project) => (project.from.clone(), project.to.clone()),
+            None => (
+                header(&headers, "x-parlo-from")
+                    .unwrap_or_else(|| stored.from.clone())
+                    .to_ascii_lowercase(),
+                header(&headers, "x-parlo-to")
+                    .unwrap_or_else(|| stored.to.clone())
+                    .to_ascii_lowercase(),
+            ),
+        };
         if let Err(error) = crate::config::check_pair(&from, &to) {
             return respond_json(
                 stream,
@@ -2301,6 +2313,14 @@ fn handle(
             .map(|()| Flow::Serve);
         }
 
+        let cues = match write_cues(&directory, &id, project.as_ref()) {
+            Ok(cues) => cues,
+            Err(error) => {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+
         let upload = directory.join(format!("{id}-{name}"));
         if let Err(error) = fs::write(&upload, &body) {
             return respond_json(
@@ -2325,12 +2345,29 @@ fn handle(
             to: &to,
             out: Some(dubbed.clone()),
             srt: Some(subtitles),
+            cues: cues.clone(),
             keep_background: header(&headers, "x-parlo-background").is_some(),
         });
+        if let Some(path) = &cues {
+            fs::remove_file(path).ok();
+        }
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
 
         return match result {
             Ok(result) => {
+                if let (Some(project), Some(store)) = (project.as_mut(), project_store.as_mut()) {
+                    apply_dub(project, &result.lines);
+                    if let Err(error) = store.save_dub_project(project) {
+                        return respond_json(
+                            stream,
+                            "500 Internal Server Error",
+                            &error_json(&format!(
+                                "the dub finished, but the project could not be saved: {error}"
+                            )),
+                        )
+                        .map(|()| Flow::Serve);
+                    }
+                }
                 let output = PathBuf::from(&result.out);
                 remember(id.clone(), upload, output, out_name.clone());
                 let lines: Vec<String> = result
@@ -2346,8 +2383,12 @@ fn handle(
                         )
                     })
                     .collect();
+                let project_field = project
+                    .as_ref()
+                    .map(|project| format!(",\"project_id\":\"{}\"", json_string(&project.id)))
+                    .unwrap_or_default();
                 let body = format!(
-                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"seconds\":{:.2},\"lines\":[{}]}}",
+                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"seconds\":{:.2},\"lines\":[{}]{project_field}}}",
                     json_string(&out_name),
                     result.seconds,
                     lines.join(",")
@@ -3516,6 +3557,98 @@ fn dubbed_name(name: &str, to: &str) -> String {
     format!("{stem}.{to}.{extension}")
 }
 
+struct LoadedProject {
+    project: crate::store::DubProject,
+    store: ProjectStore,
+}
+
+fn load_requested_project(
+    headers: &[(String, String)],
+) -> Result<Option<LoadedProject>, (&'static str, String)> {
+    let id = header(headers, "x-parlo-project").unwrap_or_default();
+    if id.is_empty() {
+        return Ok(None);
+    }
+    let store = ProjectStore::open_default().map_err(|error| {
+        (
+            "Internal Server Error",
+            format!("cannot open the project store: {error}"),
+        )
+    })?;
+    match store.load_dub_project(&id) {
+        Ok(Some(project)) => {
+            if project.segments.is_empty() {
+                return Err((
+                    "Bad Request",
+                    "the imported project has no cues".to_string(),
+                ));
+            }
+            Ok(Some(LoadedProject { project, store }))
+        }
+        Ok(None) => Err(("Not Found", "project not found".to_string())),
+        Err(error) => Err((
+            "Internal Server Error",
+            format!("cannot load the project: {error}"),
+        )),
+    }
+}
+
+fn write_cues(
+    directory: &Path,
+    id: &str,
+    project: Option<&crate::store::DubProject>,
+) -> Result<Option<PathBuf>, String> {
+    let Some(project) = project else {
+        return Ok(None);
+    };
+    let path = directory.join(format!("{id}-cues.json"));
+    let document =
+        cue_document(project).map_err(|error| format!("cannot encode the cues: {error}"))?;
+    fs::write(&path, document).map_err(|error| format!("cannot store the cues: {error}"))?;
+    Ok(Some(path))
+}
+
+#[derive(serde::Serialize)]
+struct DubCue<'a> {
+    id: &'a str,
+    start_ms: u64,
+    end_ms: u64,
+    source: &'a str,
+    speaker: Option<&'a str>,
+}
+
+#[derive(serde::Serialize)]
+struct DubCueDocument<'a> {
+    cues: Vec<DubCue<'a>>,
+}
+
+fn cue_document(project: &crate::store::DubProject) -> Result<String, serde_json::Error> {
+    let cues: Vec<DubCue<'_>> = project
+        .segments
+        .iter()
+        .map(|segment| DubCue {
+            id: segment.id.as_str(),
+            start_ms: segment.start_ms,
+            end_ms: segment.end_ms,
+            source: segment.source_text.as_str(),
+            speaker: segment.speaker.as_deref(),
+        })
+        .collect();
+    serde_json::to_string(&DubCueDocument { cues })
+}
+
+fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line]) {
+    for line in lines {
+        let Some(id) = line.id.as_deref() else {
+            continue;
+        };
+        if let Some(segment) = project.segments.iter_mut().find(|segment| segment.id == id) {
+            segment.target_text = Some(line.translated.clone());
+            segment.state = "dubbed".to_string();
+        }
+    }
+}
+
 fn respond_file(stream: &mut TcpStream, path: &Path, name: &str) -> Result<(), String> {
     let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
@@ -3883,6 +4016,70 @@ mod tests {
         assert_eq!(body_limit("POST /dub/import HTTP/1.1"), MAX_BODY);
         assert_eq!(body_limit("POST /translate HTTP/1.1"), MAX_BODY);
         assert_eq!(body_limit(""), MAX_BODY);
+    }
+
+    #[test]
+    fn cue_documents_keep_segment_identity_and_timing() {
+        let mut project =
+            crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            source_text: "Bom dia".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+
+        let document: serde_json::Value =
+            serde_json::from_str(&cue_document(&project).unwrap()).unwrap();
+
+        assert_eq!(document["cues"][0]["id"], "p1-0");
+        assert_eq!(document["cues"][0]["start_ms"], 1_250);
+        assert_eq!(document["cues"][0]["end_ms"], 3_500);
+        assert_eq!(document["cues"][0]["source"], "Bom dia");
+    }
+
+    #[test]
+    fn a_finished_dub_updates_matching_project_segments() {
+        let mut project =
+            crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            source_text: "Bom dia".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+        let lines = vec![
+            dub::Line {
+                start: 1.25,
+                end: 2.0,
+                source: "Bom dia".to_string(),
+                translated: "Good morning".to_string(),
+                id: Some("p1-0".to_string()),
+            },
+            dub::Line {
+                start: 4.0,
+                end: 5.0,
+                source: "Até logo".to_string(),
+                translated: "See you".to_string(),
+                id: Some("missing".to_string()),
+            },
+        ];
+
+        apply_dub(&mut project, &lines);
+
+        assert_eq!(
+            project.segments[0].target_text.as_deref(),
+            Some("Good morning")
+        );
+        assert_eq!(project.segments[0].state, "dubbed");
     }
 
     #[test]

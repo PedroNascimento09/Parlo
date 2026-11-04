@@ -51,6 +51,7 @@ const dubLines = document.getElementById("dub-lines");
 const dubImport = document.getElementById("dub-import");
 const dubSubtitles = document.getElementById("dub-subtitles");
 const dubProjectLabel = document.getElementById("dub-project");
+const dubClear = document.getElementById("dub-clear");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
 const settingsStt = document.getElementById("settings-stt");
@@ -111,6 +112,7 @@ let modelsDownloading = false;
 let chosenFile = null;
 let dubbing = false;
 let dubTimer = null;
+let dubProject = null;
 let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
 let currentShortcut = "Ctrl+Alt+D";
 let settingsBusy = false;
@@ -2149,7 +2151,10 @@ function describeDubError(detail) {
 }
 
 function showDub(result) {
-  dubProjectLabel.textContent = "";
+  if (!dubProject) {
+    dubProjectLabel.textContent = "";
+    dubClear.hidden = true;
+  }
   dubDownload.hidden = false;
   dubDownload.href = "/dub/" + encodeURIComponent(result.id);
   dubDownload.textContent = "Download " + (result.name || "the dubbed file");
@@ -2188,7 +2193,9 @@ function showDub(result) {
 }
 
 function showProject(project) {
+  dubProject = project;
   dubDownload.hidden = true;
+  dubClear.hidden = false;
   const lines = project.segments || [];
   dubProjectLabel.textContent =
     (project.title || "Imported subtitles") +
@@ -2263,7 +2270,7 @@ async function importSubtitles(file) {
     setDubStatus(
       "Imported " +
         (project.segments || []).length +
-        " cues. The project is saved on this computer.",
+        " cues ready. Choose a file, then press Dub this file.",
     );
   } catch (failure) {
     setDubStatus("");
@@ -2301,13 +2308,17 @@ async function startDub() {
   dubTimer = setInterval(tick, 1000);
 
   try {
+    const headers = {
+      "Content-Type": "application/octet-stream",
+      "X-Parlo-Filename": encodeURIComponent(chosenFile.name),
+      Authorization: "Bearer " + token,
+    };
+    if (dubProject) {
+      headers["X-Parlo-Project"] = dubProject.id;
+    }
     const response = await fetch("/dub", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "X-Parlo-Filename": encodeURIComponent(chosenFile.name),
-        Authorization: "Bearer " + token,
-      },
+      headers,
       body: chosenFile,
     });
     const detail = await response.json().catch(() => ({}));
@@ -2353,6 +2364,14 @@ dubSubtitles.addEventListener("change", () => {
   const file = dubSubtitles.files && dubSubtitles.files[0];
   importSubtitles(file);
   dubSubtitles.value = "";
+});
+
+dubClear.addEventListener("click", () => {
+  dubProject = null;
+  dubProjectLabel.textContent = "";
+  dubClear.hidden = true;
+  dubResult.hidden = true;
+  setDubStatus("Imported subtitles removed. The next dub will use speech recognition.");
 });
 
 document.addEventListener("dragover", (event) => {
