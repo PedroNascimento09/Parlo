@@ -2848,6 +2848,37 @@ fn handle(
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/.well-known/parlo" {
+        let body = serde_json::json!({
+            "name": "Parlo",
+            "version": VERSION,
+            "api": "v1",
+            "local": true,
+            "authentication": "x-parlo-token or Authorization: Bearer",
+            "capabilities": ["dictation", "translation", "meetings", "voices", "dubbing"],
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/v1/models" {
+        let data: Vec<serde_json::Value> = models::status()
+            .iter()
+            .map(|model| {
+                serde_json::json!({
+                    "id": model.id,
+                    "object": "model",
+                    "owned_by": "parlo",
+                    "kind": model.kind,
+                    "feature": model.feature,
+                    "installed": model.installed,
+                })
+            })
+            .collect();
+        let body = serde_json::json!({ "object": "list", "data": data }).to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path == "/dictate/begin" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -3492,6 +3523,19 @@ mod tests {
 
         let models = ask(port, "GET /models HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
         assert!(models.starts_with("HTTP/1.1 200 OK"));
+
+        let discovery = ask(
+            port,
+            "GET /.well-known/parlo HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        );
+        assert!(discovery.starts_with("HTTP/1.1 200 OK"));
+        assert!(discovery.contains("\"name\":\"Parlo\""));
+        assert!(discovery.contains("\"local\":true"));
+
+        let listed = ask(port, "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
+        assert!(listed.starts_with("HTTP/1.1 200 OK"));
+        assert!(listed.contains("\"object\":\"list\""));
+        assert!(listed.contains("\"owned_by\":\"parlo\""));
 
         let foreign = ask(port, "GET /state HTTP/1.1\r\nHost: evil.example\r\n\r\n");
         assert!(foreign.starts_with("HTTP/1.1 400"));
