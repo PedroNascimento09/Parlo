@@ -1,3 +1,4 @@
+pub(super) mod clipboard;
 pub(super) mod diarize;
 pub(super) mod discovery;
 pub(super) mod jobs;

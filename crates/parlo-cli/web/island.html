@@ -627,9 +627,29 @@ async function stop() {
     setState(inserted ? "Written" : "Copied", text, false);
     if (!inserted) {
       try {
-        await navigator.clipboard.writeText(text);
+        const response = await fetch("/clipboard", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ text }),
+          signal,
+        });
+        if (!response.ok) {
+          throw new Error("the server clipboard refused the text");
+        }
+        const copied = await response.json();
+        setState(
+          "Copied",
+          "Copied. Your previous clipboard returns in " + (copied.lease_seconds || 10) + " seconds.",
+          false
+        );
       } catch (failure) {
-        setState("Copied", "The clipboard refused the text, select it here and copy by hand.", true);
+        if (!signal.aborted) {
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch (copyFailure) {
+            setState("Copied", "The clipboard refused the text, select it here and copy by hand.", true);
+          }
+        }
       }
     }
   } catch (failure) {

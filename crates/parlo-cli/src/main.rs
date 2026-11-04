@@ -12,6 +12,7 @@ mod ask;
 mod calls;
 mod captions;
 mod catalog;
+mod clipboard;
 mod commands;
 mod config;
 mod decisions;

@@ -2790,6 +2790,10 @@ fn handle(
         return answer;
     }
 
+    if let Some(answer) = routes::clipboard::route(method, path, stream, &headers, token, &body) {
+        return answer;
+    }
+
     if method == "GET" && path == "/target" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
