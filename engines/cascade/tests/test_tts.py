@@ -1,11 +1,16 @@
+import subprocess
 import sys
 import tempfile
 import textwrap
+import threading
+import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from parlo_cascade import tts as tts_module
 from parlo_cascade.tts import PiperVoice, VoiceUnavailable
 
 ADAPTER = textwrap.dedent(
@@ -110,6 +115,42 @@ class AdapterTest(unittest.TestCase):
         directory, model = self.make(ADAPTER)
         self.assertTrue(PiperVoice(model, directory=directory).installed())
         self.assertFalse(PiperVoice(model, directory=directory / "absent").installed())
+
+
+class ConcurrentStartTest(unittest.TestCase):
+    def test_two_threads_start_one_adapter(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "serve.py").write_text(ADAPTER, encoding="utf-8")
+        model = directory / "voice.onnx"
+        model.write_bytes(b"")
+        voice = PiperVoice(model, directory=directory)
+        self.addCleanup(voice.close)
+
+        real = subprocess.Popen
+        spawned = []
+        ready = threading.Barrier(2)
+
+        def slow(*arguments, **keywords):
+            spawned.append(arguments)
+            time.sleep(0.2)
+            return real(*arguments, **keywords)
+
+        def boot():
+            ready.wait()
+            voice.start()
+
+        with mock.patch.object(tts_module.subprocess, "Popen", slow):
+            threads = [threading.Thread(target=boot) for _ in range(2)]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+        self.assertEqual(
+            len(spawned),
+            1,
+            f"the piper adapter started {len(spawned)} processes for one voice",
+        )
 
 
 if __name__ == "__main__":

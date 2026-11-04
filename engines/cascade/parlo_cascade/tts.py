@@ -38,6 +38,7 @@ class PiperVoice:
         self._process: subprocess.Popen | None = None
         self._errors: collections.deque[str] = collections.deque(maxlen=4)
         self._drain: threading.Thread | None = None
+        self._lock = threading.RLock()
 
     @property
     def script(self) -> Path:
@@ -47,6 +48,10 @@ class PiperVoice:
         return self.script.is_file() and self.voice.is_file()
 
     def start(self) -> subprocess.Popen:
+        with self._lock:
+            return self._boot()
+
+    def _boot(self) -> subprocess.Popen:
         if self._process is not None:
             if self._process.poll() is None:
                 return self._process
@@ -100,17 +105,22 @@ class PiperVoice:
             return self._synthesize(text)
 
     def _synthesize(self, text: str) -> tuple[bytes, int]:
-        self.start()
-        self._send({"op": "synthesize", "text": text})
-        response = self._read()
-        if "error" in response:
-            raise VoiceUnavailable(str(response["error"]))
-        payload = response.get("pcm16")
-        if not isinstance(payload, str):
-            raise VoiceUnavailable("the piper adapter returned no audio")
-        return base64.b64decode(payload), int(response["sample_rate"])
+        with self._lock:
+            self.start()
+            self._send({"op": "synthesize", "text": text})
+            response = self._read()
+            if "error" in response:
+                raise VoiceUnavailable(str(response["error"]))
+            payload = response.get("pcm16")
+            if not isinstance(payload, str):
+                raise VoiceUnavailable("the piper adapter returned no audio")
+            return base64.b64decode(payload), int(response["sample_rate"])
 
     def close(self) -> None:
+        with self._lock:
+            self._stop()
+
+    def _stop(self) -> None:
         if self._process is None:
             return
         process, self._process = self._process, None
