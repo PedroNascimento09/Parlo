@@ -981,10 +981,70 @@ select.field-input {
 
 .settings-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   align-items: end;
-  gap: 14px 16px;
+  gap: 22px 20px;
+  margin-top: 26px;
+}
+
+.settings-row > .field-wide,
+.settings-row > .check,
+.settings-row > .settings-note,
+.settings-row > .preset-row,
+.settings-row > .meeting-actions,
+.settings-row > .settings-apply {
+  grid-column: 1 / -1;
+}
+
+.settings-row > .install,
+.settings-row > .swap {
+  align-self: end;
+  justify-self: start;
+}
+
+#provider > .settings-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#provider label[for="intelligence-local-url"] {
+  grid-column: auto;
+}
+
+#privacy > .settings-row:has(#intelligence-key) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 18px 12px;
+}
+
+#privacy > .settings-row:has(#intelligence-key) > .field-wide {
+  flex: 1 1 100%;
+}
+
+#intelligence-key-remove {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--ink-soft);
+}
+
+#intelligence-key-remove:hover {
+  background: var(--surface-sunken);
+  border-color: var(--muted);
+  color: var(--ink);
+}
+
+.settings dd a,
+.stage-facts dd a {
+  margin-left: 5px;
+}
+
+.settings > .settings-apply {
   margin-top: 20px;
+}
+
+.settings > .install + .settings-note,
+.settings > .settings-row + .settings-note {
+  margin-top: 16px;
 }
 
 .settings-row > .settings-note {
@@ -1055,11 +1115,6 @@ select.field-input {
 
 .settings-panes > .settings {
   padding: clamp(18px, 2.6vw, 28px);
-}
-
-.settings-row > .install,
-.settings-row > .swap {
-  justify-self: start;
 }
 
 .onboarding {
@@ -1969,6 +2024,7 @@ select.field-input {
   .sheet-options,
   .settings-row,
   #languages > .settings-row,
+  #provider > .settings-row,
   #onboarding-pair,
   .voice-form {
     grid-template-columns: minmax(0, 1fr);
