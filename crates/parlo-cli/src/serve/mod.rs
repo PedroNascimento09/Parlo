@@ -3451,6 +3451,9 @@ mod tests {
 
     fn ask(port: u16, request: &str) -> String {
         let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
         stream.write_all(request.as_bytes()).unwrap();
         let mut answer = String::new();
         stream.read_to_string(&mut answer).unwrap();
@@ -3698,5 +3701,61 @@ mod tests {
         assert_eq!(token.len(), 24);
         assert!(token.chars().all(|character| character.is_ascii_hexdigit()));
         assert_ne!(token, new_token());
+    }
+
+    fn start_server() -> (u16, Arc<AtomicBool>) {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let session =
+            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap();
+        let accepting = Arc::new(AtomicBool::new(true));
+        let stop = Arc::clone(&accepting);
+        std::thread::spawn(move || listen(listener, "t0ken".into(), port, session, accepting));
+        (port, stop)
+    }
+
+    fn send(port: u16, method: &str, path: &str, body: &str) -> String {
+        let request = format!(
+            "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\nContent-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
+        ask(port, &request)
+    }
+
+    fn body_json(answer: &str) -> serde_json::Value {
+        let body = answer.split("\r\n\r\n").nth(1).unwrap_or("");
+        serde_json::from_str(body).unwrap()
+    }
+
+    #[test]
+    fn the_authenticated_job_flow_works_over_http() {
+        let (port, stop) = start_server();
+
+        let created = send(port, "POST", "/v1/jobs", "{\"kind\":\"fixture\"}");
+        assert!(created.starts_with("HTTP/1.1 202"), "{created}");
+        let id = body_json(&created)["id"].as_str().unwrap().to_string();
+        let state = send(port, "GET", &format!("/v1/jobs/{id}"), "");
+        assert!(state.starts_with("HTTP/1.1 200"), "{state}");
+        assert!(state.contains(&id));
+
+        let events = send(port, "GET", &format!("/v1/jobs/{id}/events"), "");
+        assert!(events.starts_with("HTTP/1.1 200"), "{events}");
+        assert!(events.contains("data: "), "{events}");
+        assert!(events.contains("\"state\":\"done\""), "{events}");
+        assert!(events.contains("\"progress\":"), "{events}");
+
+        let held = send(port, "POST", "/v1/jobs", "{\"kind\":\"fixture-hold\"}");
+        assert!(held.starts_with("HTTP/1.1 202"), "{held}");
+        let held_id = body_json(&held)["id"].as_str().unwrap().to_string();
+        std::thread::sleep(Duration::from_millis(30));
+        let cancelled = send(port, "POST", &format!("/v1/jobs/{held_id}/cancel"), "");
+        assert!(cancelled.starts_with("HTTP/1.1 200"), "{cancelled}");
+        let state = send(port, "GET", &format!("/v1/jobs/{held_id}"), "");
+        assert!(state.contains("\"state\":\"cancelled\""), "{state}");
+        let events = send(port, "GET", &format!("/v1/jobs/{held_id}/events"), "");
+        assert!(events.contains("\"state\":\"cancelled\""), "{events}");
+
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
     }
 }

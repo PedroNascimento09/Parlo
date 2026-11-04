@@ -28,6 +28,34 @@ pub(crate) fn create(
                 .map(|()| Flow::Serve)
         }
     };
+    #[cfg(test)]
+    if request.kind == "fixture" {
+        let id = jobs::manager().submit("fixture", "Fixture", "", |handle| {
+            for step in 0..5 {
+                if handle.cancelled() {
+                    return Ok(());
+                }
+                handle.progress("fixture", step as f32 / 5.0);
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            Ok(())
+        });
+        let accepted = serde_json::json!({ "id": id, "state": "queued" }).to_string();
+        return respond_json(stream, "202 Accepted", &accepted).map(|()| Flow::Serve);
+    }
+
+    #[cfg(test)]
+    if request.kind == "fixture-hold" {
+        let id = jobs::manager().submit("fixture", "Fixture hold", "", |handle| {
+            while !handle.cancelled() {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            Ok(())
+        });
+        let accepted = serde_json::json!({ "id": id, "state": "queued" }).to_string();
+        return respond_json(stream, "202 Accepted", &accepted).map(|()| Flow::Serve);
+    }
+
     if request.kind != "models" {
         return respond_json(
             stream,

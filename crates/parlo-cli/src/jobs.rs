@@ -339,7 +339,16 @@ impl Manager {
 }
 
 pub fn manager() -> &'static Manager {
-    MANAGER.get_or_init(Manager::new)
+    MANAGER.get_or_init(|| {
+        #[cfg(test)]
+        {
+            Manager::in_memory()
+        }
+        #[cfg(not(test))]
+        {
+            Manager::new()
+        }
+    })
 }
 
 #[derive(Clone)]
