@@ -15,6 +15,7 @@ mod catalog;
 mod commands;
 mod config;
 mod decisions;
+mod diarize;
 mod dictate;
 mod dub;
 mod engines;

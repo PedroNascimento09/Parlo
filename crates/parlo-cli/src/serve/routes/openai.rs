@@ -1,8 +1,5 @@
 use std::net::TcpStream;
 
-use parlo_core::resample::Resampler;
-use parlo_core::wav::read_pcm16;
-
 use super::super::auth::authorised;
 use super::super::http::{header, respond, respond_json};
 use super::super::multipart::{self, Part};
@@ -141,49 +138,19 @@ fn prepare(
         return Err(());
     }
 
-    let wav = match read_pcm16(&file.data) {
-        Ok(wav) => wav,
+    let (pcm16, seconds) = match super::super::audio::decode(&file.data) {
+        Ok(decoded) => decoded,
         Err(error) => {
             let _ = fail(
                 stream,
                 "400 Bad Request",
-                &format!("the file is not a 16-bit PCM wav: {error}"),
+                &error,
                 "invalid_request_error",
                 Some("file"),
             );
             return Err(());
         }
     };
-    if wav.samples.is_empty() {
-        let _ = fail(
-            stream,
-            "400 Bad Request",
-            "the file has no audio",
-            "invalid_request_error",
-            Some("file"),
-        );
-        return Err(());
-    }
-
-    let channels = wav.format.channels() as usize;
-    let seconds = wav.samples.len() as f32 / channels as f32 / wav.format.sample_rate() as f32;
-    let mut samples: Vec<f32> = wav
-        .samples
-        .chunks(channels)
-        .map(|frame| frame.iter().sum::<f32>() / frame.len() as f32)
-        .collect();
-    if wav.format.sample_rate() != 16_000 {
-        let mut resampler = Resampler::new(wav.format.sample_rate(), 16_000);
-        let mut resampled = Vec::new();
-        resampler.process(&samples, &mut resampled);
-        samples = resampled;
-    }
-
-    let mut pcm16 = Vec::with_capacity(samples.len() * 2);
-    for sample in &samples {
-        pcm16
-            .extend_from_slice(&((sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16).to_le_bytes());
-    }
     Ok((pcm16, seconds, format))
 }
 

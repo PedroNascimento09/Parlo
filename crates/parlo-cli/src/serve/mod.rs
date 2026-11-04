@@ -8,6 +8,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
+use parlo_core::engine::EngineError;
 use parlo_core::settings::Intelligence;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
@@ -20,6 +21,7 @@ use crate::undo;
 
 use crate::update;
 
+mod audio;
 mod auth;
 mod http;
 mod multipart;
@@ -298,6 +300,59 @@ impl Session {
             return Err("no translation model is installed for this language pair".to_string());
         }
         Ok(translation)
+    }
+
+    fn diarize(
+        &self,
+        pcm16: &[u8],
+        hint: Option<usize>,
+    ) -> Result<crate::diarize::Diarization, String> {
+        let _working = self.working();
+        let samples: Vec<f32> = pcm16
+            .chunks_exact(2)
+            .map(|pair| i16::from_le_bytes([pair[0], pair[1]]) as f32 / 32_768.0)
+            .collect();
+        const RATE: usize = 16_000;
+        const WINDOW: usize = 24_000;
+        const HOP: usize = 12_000;
+        const FLOOR: f32 = 0.003;
+        if samples.len() < RATE {
+            return Err("speaker separation needs at least a second of audio".to_string());
+        }
+        let mut pipeline = self.pipeline();
+        let mut vectors = Vec::new();
+        let mut starts = Vec::new();
+        let mut ends = Vec::new();
+        let mut offset = 0;
+        while offset + WINDOW <= samples.len() {
+            let window = &samples[offset..offset + WINDOW];
+            let energy = window.iter().map(|sample| sample * sample).sum::<f32>() / WINDOW as f32;
+            if energy.sqrt() >= FLOOR {
+                let mut bytes = Vec::with_capacity(WINDOW * 2);
+                for sample in window {
+                    bytes.extend_from_slice(
+                        &((sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16).to_le_bytes(),
+                    );
+                }
+                match pipeline.embed(&bytes) {
+                    Ok(vector) if !vector.is_empty() => {
+                        vectors.push(vector);
+                        starts.push((offset as u64 * 1_000) / RATE as u64);
+                        ends.push(((offset + WINDOW) as u64 * 1_000) / RATE as u64);
+                    }
+                    Ok(_) => {}
+                    Err(EngineError::Rejected(_)) => {}
+                    Err(error) => return Err(error.to_string()),
+                }
+            }
+            offset += HOP;
+        }
+        drop(pipeline);
+        let result = crate::diarize::group(&vectors, &starts, &ends, hint);
+        if result.turns.is_empty() {
+            return Err("no voice was found in that recording".to_string());
+        }
+        Ok(result)
     }
 
     fn write(
@@ -2727,6 +2782,12 @@ fn handle(
             port,
             session,
         );
+    }
+
+    if let Some(answer) =
+        routes::diarize::route(method, path, stream, &headers, token, &body, session)
+    {
+        return answer;
     }
 
     if method == "GET" && path == "/target" {
