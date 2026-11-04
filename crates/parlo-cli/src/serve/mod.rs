@@ -20,7 +20,10 @@ use crate::undo;
 
 use crate::update;
 
+mod auth;
 mod http;
+use auth::authorised;
+pub use auth::new_token;
 use http::{
     content_type, error_json, header, host_is_local, origin_allowed, percent_decode, respond,
     respond_json,
@@ -47,14 +50,6 @@ const SCRIPT: &str = include_str!("../../web/app.js");
 const ISLAND: &str = include_str!("../../web/island.html");
 const CAPTIONS: &str = include_str!("../../web/captions.html");
 const LIVE: &str = include_str!("../../web/live.html");
-
-pub fn new_token() -> String {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_nanos())
-        .unwrap_or_default();
-    format!("{nanos:016x}{:08x}", std::process::id())
-}
 
 #[derive(serde::Deserialize)]
 struct Settings {
@@ -3465,32 +3460,6 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
         .position(|window| window == needle)
 }
 
-fn authorised(headers: &[(String, String)], token: &str) -> bool {
-    headers.iter().any(|(name, value)| {
-        if name == "authorization" {
-            value
-                .strip_prefix("Bearer ")
-                .is_some_and(|candidate| constant_time_eq(candidate.trim(), token))
-        } else if name == "x-parlo-token" {
-            constant_time_eq(value, token)
-        } else {
-            false
-        }
-    })
-}
-
-fn constant_time_eq(left: &str, right: &str) -> bool {
-    let left = left.as_bytes();
-    let right = right.as_bytes();
-    if left.len() != right.len() {
-        return false;
-    }
-    left.iter()
-        .zip(right)
-        .fold(0u8, |acc, (a, b)| acc | (a ^ b))
-        == 0
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3574,12 +3543,6 @@ mod tests {
     #[test]
     fn rejects_a_missing_token() {
         assert!(!authorised(&[], "abc"));
-    }
-
-    #[test]
-    fn compares_without_short_circuiting_on_length() {
-        assert!(!constant_time_eq("abc", "ab"));
-        assert!(constant_time_eq("abc", "abc"));
     }
 
     #[test]
