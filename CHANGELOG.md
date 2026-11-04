@@ -4,7 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
-- The tray menu and **Ctrl+Alt+Z** take the last dictation back, so undo no longer needs a terminal.
+- The tray menu and a global shortcut take the last dictation back, so undo no longer needs a terminal; the key sits in Settings with the other three.
 - A snippet fills `{{date}}`, `{{time}}` and `{{name}}` when it is written, and the name in the app is now kept where the engine can read it.
 - History saves as Markdown, and dictations can be kept for 7, 30, 90 or 365 days, or forever.
 - Words and snippets export and import as one tab separated file, so the list moves to another computer without being retyped.

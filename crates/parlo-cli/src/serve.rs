@@ -69,6 +69,8 @@ struct Settings {
     #[serde(default)]
     captions: Option<String>,
     #[serde(default)]
+    undo: Option<String>,
+    #[serde(default)]
     name: Option<String>,
     #[serde(default)]
     history_days: Option<u32>,
@@ -94,6 +96,7 @@ struct Chosen {
     shortcut: String,
     hands_free: String,
     captions: String,
+    undo: String,
 }
 
 pub struct Session {
@@ -196,6 +199,7 @@ impl Session {
                 shortcut: stored.shortcut,
                 hands_free: stored.hands_free,
                 captions: stored.captions,
+                undo: stored.undo,
             }),
             target: Mutex::new(None),
             busy: AtomicBool::new(false),
@@ -216,6 +220,7 @@ impl Session {
         let shortcut = chosen.shortcut.clone();
         let hands_free = chosen.hands_free.clone();
         let captions = chosen.captions.clone();
+        let undo = chosen.undo.clone();
         *chosen = Chosen {
             engine,
             stt,
@@ -225,6 +230,7 @@ impl Session {
             shortcut,
             hands_free,
             captions,
+            undo,
         };
         drop(chosen);
         *self.pipeline() = pipeline;
@@ -292,7 +298,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{}}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -301,6 +307,7 @@ impl Session {
             json_string(&chosen.shortcut),
             json_string(&chosen.hands_free),
             json_string(&chosen.captions),
+            json_string(&chosen.undo),
             stored.manage_memory,
             stored.unload,
             json_string(&stored.name),
@@ -1240,6 +1247,7 @@ fn handle(
             ("dictation", requested.shortcut.as_deref()),
             ("hands free", requested.hands_free.as_deref()),
             ("captions", requested.captions.as_deref()),
+            ("undo", requested.undo.as_deref()),
         ];
         if wanted_keys.iter().any(|(_, text)| text.is_some()) {
             let mut config = crate::config::load();
@@ -1247,6 +1255,7 @@ fn handle(
                 config.shortcut.clone(),
                 config.hands_free.clone(),
                 config.captions.clone(),
+                config.undo.clone(),
             ];
             let mut after = before.clone();
             for (index, (label, text)) in wanted_keys.iter().enumerate() {
@@ -1271,7 +1280,7 @@ fn handle(
                     let message = format!(
                         "{} is already the {} shortcut, so {label} needs another one.",
                         canonical,
-                        ["dictation", "hands free", "captions"][other]
+                        ["dictation", "hands free", "captions", "undo"][other]
                     );
                     return respond_json(
                         stream,
@@ -1296,6 +1305,7 @@ fn handle(
             config.shortcut = after[0].clone();
             config.hands_free = after[1].clone();
             config.captions = after[2].clone();
+            config.undo = after[3].clone();
             if let Err(error) = crate::config::save(&config) {
                 return respond_json(
                     stream,
@@ -1309,6 +1319,7 @@ fn handle(
                 chosen.shortcut = after[0].clone();
                 chosen.hands_free = after[1].clone();
                 chosen.captions = after[2].clone();
+                chosen.undo = after[3].clone();
             }
             let only_shortcut = requested.engine.is_none()
                 && requested.stt.is_none()

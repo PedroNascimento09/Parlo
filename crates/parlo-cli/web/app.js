@@ -1308,6 +1308,8 @@ const settingsHandsFree = document.getElementById("settings-hands-free");
 const settingsHandsFreeSave = document.getElementById("settings-hands-free-save");
 const settingsCaptions = document.getElementById("settings-captions");
 const settingsCaptionsSave = document.getElementById("settings-captions-save");
+const settingsUndo = document.getElementById("settings-undo");
+const settingsUndoSave = document.getElementById("settings-undo-save");
 const meetingTitle = document.getElementById("meeting-title");
 const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
@@ -1477,6 +1479,9 @@ function reflectSettings(values) {
   currentShortcut = settingsShortcut.value;
   settingsHandsFree.value = values.hands_free || "Ctrl+Alt+Shift+D";
   settingsCaptions.value = values.captions || "Ctrl+Alt+C";
+  if (settingsUndo) {
+    settingsUndo.value = values.undo || "Ctrl+Alt+Z";
+  }
   savedSettings = {
     from: settingsFrom.value,
     to: settingsTo.value,
@@ -1533,6 +1538,15 @@ settingsCaptionsSave.addEventListener("click", () =>
     "Restart Parlo so the new captions shortcut is registered.",
   ),
 );
+if (settingsUndoSave) {
+  settingsUndoSave.addEventListener("click", () =>
+    saveShortcut(
+      "undo",
+      settingsUndo,
+      "Restart Parlo so the new undo shortcut is registered.",
+    ),
+  );
+}
 
 async function loadSettings() {
   try {
