@@ -286,6 +286,19 @@ impl Session {
             .map_err(|error| error.to_string())
     }
 
+    fn translate_audio(&self, pcm16: &[u8]) -> Result<String, String> {
+        let _working = self.working();
+        let (_, translation) = self
+            .pipeline()
+            .write(pcm16, None, None)
+            .map_err(|error| error.to_string())?;
+        let translation = translation.trim().to_string();
+        if translation.is_empty() {
+            return Err("no translation model is installed for this language pair".to_string());
+        }
+        Ok(translation)
+    }
+
     fn write(
         &self,
         pcm16: &[u8],
@@ -2847,6 +2860,10 @@ fn handle(
 
     if method == "POST" && path == "/v1/audio/transcriptions" {
         return routes::openai::transcriptions(stream, &headers, token, &body, session);
+    }
+
+    if method == "POST" && path == "/v1/audio/translations" {
+        return routes::openai::translations(stream, &headers, token, &body, session);
     }
 
     if method == "POST" && path == "/v1/jobs" {

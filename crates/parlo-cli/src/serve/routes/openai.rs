@@ -25,75 +25,144 @@ pub(crate) fn transcriptions(
         )
         .map(|()| Flow::Serve);
     }
-    let content_type = header(headers, "content-type").unwrap_or_default();
-    let parts = match multipart::parse(&content_type, body) {
-        Ok(parts) => parts,
+    let (pcm16, seconds, format) = match prepare(stream, headers, body) {
+        Ok(prepared) => prepared,
+        Err(()) => return Ok(Flow::Serve),
+    };
+    let text = match session.dictate(&pcm16) {
+        Ok(text) => text.trim().to_string(),
         Err(error) => {
             return fail(
                 stream,
-                "400 Bad Request",
+                "500 Internal Server Error",
                 &error,
-                "invalid_request_error",
+                "server_error",
                 None,
             )
             .map(|()| Flow::Serve)
         }
     };
-    let Some(file) = parts.iter().find(|part| part.name == "file") else {
+    let language = session.chosen().from.clone();
+    answer(stream, &text, seconds, &language, &format, "transcribe")
+}
+
+pub(crate) fn translations(
+    stream: &mut TcpStream,
+    headers: &[(String, String)],
+    token: &str,
+    body: &[u8],
+    session: &Session,
+) -> Result<Flow, String> {
+    if !authorised(headers, token) {
         return fail(
+            stream,
+            "401 Unauthorized",
+            "wrong token",
+            "invalid_request_error",
+            None,
+        )
+        .map(|()| Flow::Serve);
+    }
+    let (pcm16, seconds, format) = match prepare(stream, headers, body) {
+        Ok(prepared) => prepared,
+        Err(()) => return Ok(Flow::Serve),
+    };
+    let text = match session.translate_audio(&pcm16) {
+        Ok(text) => text,
+        Err(error) => {
+            return fail(
+                stream,
+                "500 Internal Server Error",
+                &error,
+                "server_error",
+                None,
+            )
+            .map(|()| Flow::Serve)
+        }
+    };
+    let language = session.chosen().from.clone();
+    answer(stream, &text, seconds, &language, &format, "translate")
+}
+
+fn prepare(
+    stream: &mut TcpStream,
+    headers: &[(String, String)],
+    body: &[u8],
+) -> Result<(Vec<u8>, f32, String), ()> {
+    let content_type = header(headers, "content-type").unwrap_or_default();
+    let parts = match multipart::parse(&content_type, body) {
+        Ok(parts) => parts,
+        Err(error) => {
+            let _ = fail(
+                stream,
+                "400 Bad Request",
+                &error,
+                "invalid_request_error",
+                None,
+            );
+            return Err(());
+        }
+    };
+    let Some(file) = parts.iter().find(|part| part.name == "file") else {
+        let _ = fail(
             stream,
             "400 Bad Request",
             "the form needs a file",
             "invalid_request_error",
             Some("file"),
-        )
-        .map(|()| Flow::Serve);
+        );
+        return Err(());
     };
     if file.data.is_empty() {
-        return fail(
+        let _ = fail(
             stream,
             "400 Bad Request",
             "the file is empty",
             "invalid_request_error",
             Some("file"),
-        )
-        .map(|()| Flow::Serve);
+        );
+        return Err(());
     }
 
-    let format = field(&parts, "response_format").unwrap_or("json");
-    if !matches!(format, "json" | "text" | "verbose_json" | "srt" | "vtt") {
-        return fail(
+    let format = field(&parts, "response_format")
+        .unwrap_or("json")
+        .to_string();
+    if !matches!(
+        format.as_str(),
+        "json" | "text" | "verbose_json" | "srt" | "vtt"
+    ) {
+        let _ = fail(
             stream,
             "400 Bad Request",
             "response_format must be json, text, verbose_json, srt or vtt",
             "invalid_request_error",
             Some("response_format"),
-        )
-        .map(|()| Flow::Serve);
+        );
+        return Err(());
     }
 
     let wav = match read_pcm16(&file.data) {
         Ok(wav) => wav,
         Err(error) => {
-            return fail(
+            let _ = fail(
                 stream,
                 "400 Bad Request",
                 &format!("the file is not a 16-bit PCM wav: {error}"),
                 "invalid_request_error",
                 Some("file"),
-            )
-            .map(|()| Flow::Serve)
+            );
+            return Err(());
         }
     };
     if wav.samples.is_empty() {
-        return fail(
+        let _ = fail(
             stream,
             "400 Bad Request",
             "the file has no audio",
             "invalid_request_error",
             Some("file"),
-        )
-        .map(|()| Flow::Serve);
+        );
+        return Err(());
     }
 
     let channels = wav.format.channels() as usize;
@@ -115,21 +184,17 @@ pub(crate) fn transcriptions(
         pcm16
             .extend_from_slice(&((sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16).to_le_bytes());
     }
-    let text = match session.dictate(&pcm16) {
-        Ok(text) => text.trim().to_string(),
-        Err(error) => {
-            return fail(
-                stream,
-                "500 Internal Server Error",
-                &error,
-                "server_error",
-                None,
-            )
-            .map(|()| Flow::Serve)
-        }
-    };
-    let language = session.chosen().from.clone();
+    Ok((pcm16, seconds, format))
+}
 
+fn answer(
+    stream: &mut TcpStream,
+    text: &str,
+    seconds: f32,
+    language: &str,
+    format: &str,
+    task: &str,
+) -> Result<Flow, String> {
     match format {
         "text" => respond(
             stream,
@@ -165,7 +230,7 @@ pub(crate) fn transcriptions(
         }
         "verbose_json" => {
             let body = serde_json::json!({
-                "task": "transcribe",
+                "task": task,
                 "language": language,
                 "duration": seconds,
                 "text": text,
@@ -174,7 +239,7 @@ pub(crate) fn transcriptions(
                     "seek": 0,
                     "start": 0.0,
                     "end": seconds,
-                    "text": &text,
+                    "text": text,
                 }],
                 "words": [],
             })
