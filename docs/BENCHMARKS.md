@@ -316,6 +316,24 @@ The proof that the voice now repeats is two `speak` calls in one sidecar, `PARLO
 
 The sidecar exited with 0 after both. Before the fix the first of those calls already failed, and `engines/cascade/tests/test_tts.py` now covers it: an adapter that answers once and exits must still answer the next sentence.
 
+The same proof through the product's own binary, with no hand-started sidecar. `parlo serve` on 127.0.0.1:8733 with `PARLO_APP_GUARD=1` and the same two threads answered two `POST /v1/audio/speech` requests, both with HTTP 200 and 16 kHz mono WAV:
+
+| Request | Text | Audio returned | Round trip |
+|---|---|---|---|
+| 1 | `Bom dia, este e um teste da voz do Parlo.` | **3.37 s** | 414 ms |
+| 2 | `Boa tarde, outra frase para medir a voz.` | **3.09 s** | 242 ms |
+
+Both requests ran inside one `parlo` process, against one cascade sidecar (pid 2776) and one piper adapter (pid 20432), and that process exited with 0 when its stdin closed. `parlo dub` covers the batch path the same way: a 15.9 s Portuguese clip (the 7.5 s clip played twice with 0.9 s of silence between), `--from pt --to en`, exited with 0, printed `[1/2]` and `[2/2]`, and wrote 12.61 s of English audio over two subtitle lines.
+
+```bash
+PARLO_APP_GUARD=1 PARLO_MODELS_DIR=.tmp-models target/debug/parlo.exe serve --port 8733 --token probe-token
+curl -s -X POST http://127.0.0.1:8733/v1/audio/speech -H "Authorization: Bearer probe-token" -H "Content-Type: application/json" -d '{"input": "Bom dia, este e um teste da voz do Parlo.", "response_format": "wav"}' -o .tmp-speech-1.wav
+curl -s -X POST http://127.0.0.1:8733/v1/audio/speech -H "Authorization: Bearer probe-token" -H "Content-Type: application/json" -d '{"input": "Boa tarde, outra frase para medir a voz.", "response_format": "wav"}' -o .tmp-speech-2.wav
+target/debug/parlo.exe dub .tmp-clip-pt-long.wav --from pt --to en --out .tmp-dub-out.wav --srt .tmp-dub-out.srt
+```
+
+The regression test was checked in both directions on the reference commit. With `engines/cascade/parlo_cascade/tts.py` taken from the commit before the fix, `test_a_dead_adapter_is_replaced_for_the_next_sentence` fails with `parlo_cascade.tts.VoiceUnavailable: the piper adapter stopped without answering` and `FAILED (errors=1)`; with the fixed file back it prints `OK`, and the file is unchanged in the working tree afterwards.
+
 The `translate` number is still not published, and this time memory is the whole reason. Windows 11 Home, AMD Ryzen 5 3600, 16 GB, games and a browser holding most of it, about 2.3 GB free: the recogniser refused to load (`Load model from .tmp-models\parakeet\encoder.int8.onnx failed: bad allocation`), CTranslate2 stopped with `mkl_malloc: failed to allocate memory`, and once inside the voice `onnxruntime` asked for 8 978 432 bytes and did not get them (`BFCArena::AllocateRawInternal Failed to allocate memory`). The same run with Whisper base instead of Parakeet held only 201 MB and still failed in `mkl_malloc`. Nothing here is a property of the fix: with the fix the failure arrives as one error reply and the sidecar stays alive, which is what the protocol tests assert.
 
 When a machine has the memory, these two commands produce the numbers, the second of them over the voice path alone:
