@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The Windows installer is three pages: what Parlo does, install, finish. The licence wall and the all-users prompt are gone, and the panel carries the wordmark with one line, stays on this computer.
 - Every release ships a `SHA256SUMS.txt` and a build provenance attestation, so a downloaded installer can be checked against the workflow and commit that built it.
 ## [0.2.4] - 4 November 2026
 
