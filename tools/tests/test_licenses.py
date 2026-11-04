@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from licenses import not_shipped_problems
+from licenses import Component, licence_problems, not_shipped_problems, policy, rust_components
 
 
 class NotShippedTests(unittest.TestCase):
@@ -28,6 +28,45 @@ class NotShippedTests(unittest.TestCase):
 
     def test_nothing_exempt_means_no_problems(self):
         self.assertEqual(not_shipped_problems({}, {"a": {"r-efi"}}), [])
+
+
+
+class SqliteLicenceTests(unittest.TestCase):
+    def test_the_sqlite_dependencies_are_accepted(self):
+        components = [
+            component
+            for component in rust_components()
+            if component.name in {"rusqlite", "libsqlite3-sys"}
+        ]
+        self.assertTrue(any(component.name == "rusqlite" for component in components))
+        problems, _, _ = licence_problems(components, policy())
+        self.assertEqual(problems, [])
+
+    def test_a_copyleft_crate_is_rejected(self):
+        component = Component(
+            name="copyleft-fixture",
+            version="1.0.0",
+            license="GPL-3.0-only",
+            scope="core",
+            kind="rust",
+            url="",
+        )
+        problems, _, _ = licence_problems([component], policy())
+        self.assertEqual(len(problems), 1)
+        self.assertIn("not allowed", problems[0])
+
+    def test_a_crate_without_a_licence_is_rejected(self):
+        component = Component(
+            name="unknown-fixture",
+            version="1.0.0",
+            license="",
+            scope="core",
+            kind="rust",
+            url="",
+        )
+        problems, _, _ = licence_problems([component], policy())
+        self.assertEqual(len(problems), 1)
+        self.assertIn("no licence metadata", problems[0])
 
 
 if __name__ == "__main__":
