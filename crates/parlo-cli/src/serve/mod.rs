@@ -25,6 +25,7 @@ mod http;
 mod multipart;
 mod routes;
 pub(crate) mod sse;
+mod ws;
 use auth::authorised;
 pub use auth::new_token;
 use http::{
@@ -2715,6 +2716,17 @@ fn handle(
             SCRIPT.as_bytes(),
         )
         .map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/v1/audio/transcriptions/stream" {
+        return ws::stream(
+            stream,
+            &headers,
+            token,
+            &parameter(query, "t"),
+            port,
+            session,
+        );
     }
 
     if method == "GET" && path == "/target" {
