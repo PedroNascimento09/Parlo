@@ -1,6 +1,24 @@
 {
   "schema": 1,
   "artifacts": [
+{
+      "id": "speaker-separation",
+      "kind": "speaker",
+      "category": "speakers",
+      "version": "campplus-16k",
+      "license": "Apache-2.0",
+      "status": "verified",
+      "source": "https://github.com/k2-fsa/sherpa-onnx/releases/tag/speaker-recongition-models",
+      "attribution": "3D-Speaker CAM++ speaker embedding, exported for sherpa-onnx, Apache-2.0",
+      "name": "Speaker separation",
+      "purpose": "Tells the people in a meeting apart",
+      "languages": [
+        "en"
+      ],
+      "size_mb": 28,
+      "unit": "speakers",
+      "note": "Optional. Until it is installed, a meeting records as one voice."
+    },
     {
       "id": "whisper-base",
       "kind": "asr",

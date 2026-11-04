@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn every_artifact_belongs_to_a_known_category() {
-        let known = ["dictation", "voice", "translation", "text"];
+        let known = ["dictation", "voice", "translation", "text", "speakers"];
         for artifact in artifacts() {
             let category = artifact
                 .get("category")

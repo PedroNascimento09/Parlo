@@ -63,6 +63,8 @@ struct Response {
     mode: Option<String>,
     #[serde(default)]
     units: Vec<serde_json::Value>,
+    #[serde(default)]
+    embedding: Vec<f32>,
 }
 
 #[derive(Deserialize)]
@@ -268,6 +270,30 @@ impl SidecarEngine {
         Ok((text, translation))
     }
 
+    pub fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
+        self.seq += 1;
+        let response = self.request(&Request {
+            op: "embed",
+            seq: Some(self.seq),
+            pcm16: Some(BASE64.encode(pcm16)),
+            target: None,
+            clean: None,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+        if response.embedding.is_empty() {
+            return Err(EngineError::Rejected(
+                "the engine measured no voice in that window".to_string(),
+            ));
+        }
+        Ok(response.embedding)
+    }
+
     pub fn stream_mode(&self) -> &str {
         &self.stream_mode
     }
@@ -417,6 +443,10 @@ impl Engine for SidecarEngine {
 
     fn close_stream(&mut self) -> Result<Vec<parlo_core::engine::StreamPiece>, EngineError> {
         SidecarEngine::close_stream(self).map(pieces)
+    }
+
+    fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
+        SidecarEngine::embed(self, pcm16)
     }
 
     fn loaded_units(&mut self) -> Option<Vec<String>> {

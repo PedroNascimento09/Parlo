@@ -115,6 +115,13 @@ impl Drop for Working<'_> {
     }
 }
 
+fn rooms() -> &'static Mutex<std::collections::HashMap<String, crate::speakers::Room>> {
+    static ROOMS: std::sync::OnceLock<
+        Mutex<std::collections::HashMap<String, crate::speakers::Room>>,
+    > = std::sync::OnceLock::new();
+    ROOMS.get_or_init(|| Mutex::new(std::collections::HashMap::new()))
+}
+
 fn build(from: &str, to: &str, engine: &str, stt: &str) -> Result<Pipeline, String> {
     crate::config::check_pair(from, to)?;
     crate::config::check_stt(stt)?;
@@ -258,6 +265,20 @@ impl Session {
         insert::type_text(target, text)?;
         undo::remember(target, text);
         Ok(())
+    }
+
+    fn dictate(&self, pcm16: &[u8]) -> Result<String, String> {
+        let _working = self.working();
+        self.pipeline()
+            .dictate(pcm16)
+            .map_err(|error| error.to_string())
+    }
+
+    fn embed(&self, pcm16: &[u8]) -> Result<Vec<f32>, String> {
+        let _working = self.working();
+        self.pipeline()
+            .embed(pcm16)
+            .map_err(|error| error.to_string())
     }
 
     fn write(
@@ -560,6 +581,106 @@ fn handle(
         return respond_named(stream, &name, body.as_bytes()).map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/meeting/window" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = header(&headers, "x-parlo-meeting")
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let at_ms = header(&headers, "x-parlo-at")
+            .unwrap_or_default()
+            .trim()
+            .parse::<u64>()
+            .unwrap_or(0);
+        let mut meeting = match crate::meeting::load(&id) {
+            Ok(meeting) => meeting,
+            Err(error) => {
+                return respond_json(stream, "404 Not Found", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let wav = match read_pcm16(&body) {
+            Ok(wav) => wav,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &error_json(&format!("bad wav: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        if wav.format.channels() != 1
+            || wav.format.sample_rate() != 16_000
+            || wav.samples.is_empty()
+        {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json("input must be 16 kHz mono pcm16"),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let mut pcm16 = Vec::with_capacity(wav.samples.len() * 2);
+        for sample in &wav.samples {
+            pcm16.extend_from_slice(&sample.to_le_bytes());
+        }
+        let text = match session.dictate(&pcm16) {
+            Ok(text) => text.trim().to_string(),
+            Err(error) => {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        if text.is_empty() {
+            return respond_json(stream, "200 OK", "{\"text\":\"\",\"speaker\":\"\"}")
+                .map(|()| Flow::Serve);
+        }
+        let label = match session.embed(&pcm16) {
+            Ok(vector) => rooms()
+                .lock()
+                .ok()
+                .and_then(|mut open| {
+                    open.entry(id.clone())
+                        .or_insert_with(crate::speakers::Room::new)
+                        .label(&vector)
+                        .ok()
+                })
+                .unwrap_or_else(|| "Mic".to_string()),
+            Err(_) => "Mic".to_string(),
+        };
+        if let Err(error) = crate::meeting::append(&mut meeting, &label, &text, at_ms) {
+            return respond_json(stream, "400 Bad Request", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        for named in crate::speakers::infer(&meeting.segments) {
+            let _ = crate::meeting::name_speaker(
+                &mut meeting,
+                &named.speaker,
+                Some(&named.name),
+                &named.evidence,
+            );
+        }
+        return match crate::meeting::save(&meeting) {
+            Ok(()) => respond_json(
+                stream,
+                "200 OK",
+                &format!(
+                    "{{\"text\":{},\"speaker\":{},\"meeting\":{}}}",
+                    json_string(&text),
+                    json_string(&label),
+                    meeting_json(meeting)
+                ),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "POST" && path == "/meeting/summary" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -735,6 +856,9 @@ fn handle(
 
         if path == "/meeting/start" {
             let meeting = crate::meeting::start(&field("title"));
+            if let Ok(mut open) = rooms().lock() {
+                open.remove(&meeting.id);
+            }
             if let Err(error) = crate::meeting::save(&meeting) {
                 return respond_json(stream, "500 Internal Server Error", &error_json(&error))
                     .map(|()| Flow::Serve);

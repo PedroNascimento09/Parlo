@@ -185,6 +185,7 @@ class CascadeEngine:
         self._writers: dict[str, object] = {}
         self._stream: StreamingSession | None = None
         self._silent_seconds = 0.0
+        self._embedder = None
 
     @property
     def available(self) -> bool:
@@ -377,6 +378,16 @@ class CascadeEngine:
         if not samples:
             return ""
         return self._transcribe(samples)
+
+    def embed(self, pcm16: bytes) -> list[float]:
+        from .speakers import Embedder, MissingSpeakerModel
+
+        if self._embedder is None:
+            try:
+                self._embedder = Embedder()
+            except MissingSpeakerModel as failure:
+                raise EngineUnavailable(str(failure)) from failure
+        return self._embedder(pcm16_to_float(pcm16))
 
     def write(
         self, pcm16: bytes, target: str | None = None, clean_mode: str | None = None

@@ -18,6 +18,7 @@ const VOICES: &[(&str, &str, &str)] = &[
     ("voice-de", "de_DE-thorsten-medium.onnx", "German voice"),
     ("voice-fr", "fr_FR-siwis-medium.onnx", "French voice"),
 ];
+const SPEAKERS: &str = "3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx";
 const TRANSLATION: &[(&str, &str, &str, &str)] = &[
     ("mt-pt-en", "pt", "en", "Portuguese to English"),
     ("mt-en-pt", "en", "pt", "English to Portuguese"),
@@ -152,6 +153,15 @@ pub fn status() -> Vec<Model> {
             bytes,
         });
     }
+    let (speakers_installed, speakers_bytes) = size(&root, &[SPEAKERS]);
+    models.push(Model {
+        id: "speakers",
+        name: "Speaker separation".to_string(),
+        kind: "speaker",
+        feature: "Meetings",
+        installed: speakers_installed,
+        bytes: speakers_bytes,
+    });
     for (id, source, target, label) in TRANSLATION {
         let (installed, bytes) = translation_size(&root, source, target);
         models.push(Model {
@@ -169,7 +179,7 @@ pub fn status() -> Vec<Model> {
 pub fn ready(models: &[Model]) -> bool {
     models
         .iter()
-        .filter(|model| model.id != "whisper")
+        .filter(|model| model.id != "whisper" && model.id != "speakers")
         .all(|model| model.installed)
 }
 
@@ -277,6 +287,7 @@ fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
             .iter()
             .find(|(unit, _, _, _)| *unit == id)
             .map(|(_, source, target, _)| translation_paths(&root, source, target)),
+        "speakers" => Some(vec![root.join(SPEAKERS)]),
         "whisper" => {
             whisper_cache().map(|cache| vec![cache.join("models--Systran--faster-whisper-base")])
         }
@@ -839,6 +850,9 @@ pub fn reason_for(model: &Model, machine: &str) -> String {
         "voice-en" => "the English voice for read aloud",
         "voice-de" => "the German voice for read aloud",
         "voice-fr" => "the French voice for read aloud",
+        "speakers" => {
+            "tells people apart in a meeting, and a meeting records as one voice without it"
+        }
         _ => "a voice for read aloud",
     };
     format!("{what}, and this machine has {machine}")

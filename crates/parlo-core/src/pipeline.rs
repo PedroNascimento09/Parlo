@@ -141,6 +141,10 @@ impl Pipeline {
         self.engine.write(pcm16, target, clean)
     }
 
+    pub fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
+        self.engine.embed(pcm16)
+    }
+
     pub fn stream(
         &mut self,
         samples: &[f32],

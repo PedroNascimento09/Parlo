@@ -76,6 +76,11 @@ DIRECTIONS = (
 )
 PARAKEET_BASE = f"https://huggingface.co/{PARAKEET_REPO}/resolve/main"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
+SPEAKER_FILE = "3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx"
+SPEAKER_URL = (
+    "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
+    "speaker-recongition-models/" + SPEAKER_FILE
+)
 
 
 def metadata(repo: str, path: str) -> tuple[str | None, int]:
@@ -196,6 +201,10 @@ def install_parakeet() -> None:
         download(f"{PARAKEET_BASE}/{name}", target, digest, size)
 
 
+def install_speakers() -> None:
+    download(SPEAKER_URL, MODELS / SPEAKER_FILE)
+
+
 def install_pack(source: str, target: str) -> None:
     from parlo_cascade import packs
 
@@ -244,6 +253,7 @@ UNITS = (
     "mt-de-en",
     "mt-fr-de",
     "mt-es-en",
+    "speakers",
     "whisper",
 )
 
@@ -286,6 +296,9 @@ def main(argv=None) -> int:
         install_parakeet()
     elif "whisper" in only:
         warm_whisper(args.whisper)
+
+    if only and "speakers" in only:
+        install_speakers()
 
     directions = []
     if only is None:

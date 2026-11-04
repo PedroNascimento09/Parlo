@@ -69,6 +69,8 @@ def handle_line(line: str, engine) -> dict:
         return dictate(request, engine)
     if op == "write":
         return write(request, engine)
+    if op == "embed":
+        return embed(request, engine)
     if op == "stream":
         return stream(request, engine)
     if op == "stream_close":
@@ -152,6 +154,24 @@ def write(request: dict, engine) -> dict:
         "seq": seq,
         "text": text,
         "translation": translation,
+    }
+
+
+def embed(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    if not hasattr(engine, "embed"):
+        return {"op": "error", "seq": seq, "error": "engine cannot tell voices apart"}
+    pcm16, error = decode_audio(request)
+    if error is not None:
+        return error
+    try:
+        vector = engine.embed(pcm16)
+    except (EngineUnavailable, ValueError) as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    return {
+        "op": "embedded",
+        "seq": seq,
+        "embedding": [float(value) for value in vector],
     }
 
 

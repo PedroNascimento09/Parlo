@@ -35,6 +35,7 @@ mod retention;
 mod sample;
 mod serve;
 mod sidecar;
+mod speakers;
 mod style;
 mod summary;
 mod undo;

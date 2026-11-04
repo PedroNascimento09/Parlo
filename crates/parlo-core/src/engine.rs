@@ -102,6 +102,12 @@ pub trait Engine: Send {
         ))
     }
 
+    fn embed(&mut self, _pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
+        Err(EngineError::Rejected(
+            "this engine cannot tell voices apart".to_string(),
+        ))
+    }
+
     fn loaded_units(&mut self) -> Option<Vec<String>> {
         None
     }
