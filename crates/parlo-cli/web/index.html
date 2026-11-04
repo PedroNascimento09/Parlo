@@ -74,7 +74,8 @@
     <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
     <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
     <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
-    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5">Settings</a>
+    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+5">Insights</a>
+    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6">Settings</a>
   </nav>
   <span class="version" id="status-version"></span>
 </header>
@@ -159,53 +160,76 @@
 
   <section class="stage" id="status-list" aria-label="Right now">
     <div class="stage-head">
-      <h1 class="home-greeting" id="home-greeting">Hello again</h1>
-      <div class="stage-tools">
-        <div class="style-row" role="group" aria-label="Writing style">
-          <span class="style-row-label">Writing</span>
-          <button class="style-chip" data-style="formal" type="button" aria-pressed="false">Formal</button>
-          <button class="style-chip" data-style="casual" type="button" aria-pressed="false">Casual</button>
-          <button class="style-chip" data-style="excited" type="button" aria-pressed="false">Excited</button>
-        </div>
-        <p class="stage-state">
-          <span class="dot" id="status-dot" aria-hidden="true"></span>
-          <span id="status-state">Ready to dictate</span>
-        </p>
+      <div class="stage-title">
+        <p class="stage-kicker" id="home-date"></p>
+        <h1 class="home-greeting" id="home-greeting">Hello again</h1>
       </div>
+      <p class="stage-state">
+        <span class="dot" id="status-dot" aria-hidden="true"></span>
+        <span id="status-state">Ready to dictate</span>
+      </p>
     </div>
-    <div class="home-body">
-      <div class="home-main">
-        <button id="talk" class="talk" type="button" aria-pressed="false">
-          <span class="talk-label">Hold to talk</span>
-          <span class="talk-sub">Speak, let go, and the words land here.</span>
-          <span class="meter" aria-hidden="true"><span class="meter-fill" id="meter-fill"></span></span>
-        </button>
-        <p class="stage-call">Or hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere on this computer.</p>
-        <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
-      </div>
-      <aside class="home-panel" aria-label="Your totals">
-        <dl>
-          <div><dt>Total words</dt><dd id="home-words">0</dd></div>
-          <div><dt>Words per minute</dt><dd id="home-wpm">–</dd></div>
-          <div><dt>Day streak</dt><dd id="home-streak">0</dd></div>
-        </dl>
-        <a class="home-link" id="home-insights" href="#settings">See the details</a>
+    <p class="stage-call">Hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere, or use the bar at the bottom of the screen.</p>
+    <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
+    <div class="stage-tools">
+      <button class="tone-open" id="tone-open" type="button" aria-haspopup="dialog">
+        <span class="tone-label">Tone</span>
+        <span class="tone-now" id="tone-now">Formal</span>
+      </button>
+    </div>
+    <figure class="last" id="home-last" hidden>
+      <figcaption class="last-label" id="home-last-label">Last thing you said</figcaption>
+      <blockquote class="last-text" id="home-last-text"></blockquote>
+      <p class="last-meta">
+        <span id="home-last-when"></span>
+        <span id="home-last-dot" aria-hidden="true">·</span>
+        <span id="home-last-app"></span>
+      </p>
+    </figure>
+    <aside class="home-panel" aria-label="Your totals">
+      <dl>
+        <div><dt>Total words</dt><dd id="home-words">0</dd></div>
+        <div><dt>Words per minute</dt><dd id="home-wpm">–</dd></div>
+        <div><dt>Day streak</dt><dd id="home-streak">0</dd></div>
+      </dl>
+      <div class="home-links">
+        <a class="home-link" id="home-insights" href="#insights">See the details</a>
         <a class="home-link" href="#library">Add a model</a>
-      </aside>
-    </div>
+      </div>
+    </aside>
   </section>
 
   
+  <section class="page" id="insights" aria-labelledby="insights-title">
+    <header class="page-head">
+      <p class="page-kicker">Your words</p>
+      <h1 id="insights-title">What you have dictated</h1>
+      <p class="page-note">Counted from the dictations kept on this computer. Nothing else.</p>
+    </header>
+    <dl class="insights-numbers">
+      <div><dt>Words written</dt><dd id="insights-words">0</dd></div>
+      <div><dt>Minutes spoken</dt><dd id="insights-minutes">0.0</dd></div>
+      <div><dt>Dictations</dt><dd id="insights-count">0</dd></div>
+      <div><dt>Words per minute</dt><dd id="insights-rate">–</dd></div>
+    </dl>
+    <p class="settings-note" id="insights-empty" hidden>Nothing dictated yet, so there is nothing to count. Press Ctrl+Alt+D, speak, and this page fills in from your own words.</p>
+    <h3 class="meeting-group">Where the text landed</h3>
+    <ul class="insights-apps" id="insights-apps"></ul>
+    <h3 class="meeting-group">Words you reach for</h3>
+    <ol class="insights-words" id="insights-top-words"></ol>
+    <h3 class="meeting-group">The last four weeks</h3>
+    <div class="insights-days" id="insights-days" aria-hidden="true"></div>
+    <p class="settings-note" id="insights-days-note"></p>
+  </section>
+
   <div class="settings-layout">
 <nav class="settings-nav" id="settings-tabs" aria-label="Settings">
     <button type="button" class="tab" data-tab="setup">Setup</button>
     <button type="button" class="tab" data-tab="you">You</button>
     <button type="button" class="tab" data-tab="dictation">Dictation</button>
     <button type="button" class="tab" data-tab="languages">Languages</button>
-    <button type="button" class="tab" data-tab="programs">Programs</button>
     <button type="button" class="tab" data-tab="shortcuts">Shortcuts</button>
     <button type="button" class="tab" data-tab="advanced">Advanced</button>
-    <button type="button" class="tab" data-tab="insights">Insights</button>
   </nav>
   <div class="settings-panes">
 <section class="onboarding" id="onboarding" aria-labelledby="onboarding-title" hidden>
@@ -451,26 +475,6 @@
     </div>
   </section>
 
-  <section class="settings" id="insights" aria-labelledby="insights-title">
-    <div class="settings-head">
-      <h2 id="insights-title">What you have dictated</h2>
-      <p class="settings-note">Counted from the dictations kept on this computer, nothing else.</p>
-    </div>
-    <dl class="insights-numbers">
-      <div><dt>Words written</dt><dd id="insights-words">0</dd></div>
-      <div><dt>Minutes spoken</dt><dd id="insights-minutes">0.0</dd></div>
-      <div><dt>Dictations</dt><dd id="insights-count">0</dd></div>
-      <div><dt>Words per minute</dt><dd id="insights-rate">–</dd></div>
-    </dl>
-    <h3 class="meeting-group">Where the text landed</h3>
-    <ul class="insights-apps" id="insights-apps"></ul>
-    <h3 class="meeting-group">Words you reach for</h3>
-    <ol class="insights-words" id="insights-words"></ol>
-    <h3 class="meeting-group">The last four weeks</h3>
-    <div class="insights-days" id="insights-days" aria-hidden="true"></div>
-    <p class="settings-note" id="insights-days-note"></p>
-  </section>
-
   <section class="settings" id="intelligence" aria-labelledby="intelligence-title">
     <div class="settings-head">
       <h2 id="intelligence-title">How dictation is cleaned up</h2>
@@ -538,7 +542,7 @@
   <section class="settings" id="privacy" aria-labelledby="privacy-title">
     <div class="settings-head">
       <h2 id="privacy-title">What leaves this machine</h2>
-      <p class="settings-note" id="privacy-note">Rules and the models on this machine send nothing. A cloud provider is reached only when you choose it, allow it here, and save a key: the sentence you dictated goes to that provider and nowhere else. There is no Parlo server in the middle.</p>
+      <p class="settings-note" id="privacy-note">Rules and the models here send nothing. A cloud provider is reached only when you choose it and save a key, and your sentence goes there and nowhere else.</p>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="intelligence-key">
@@ -636,14 +640,14 @@
     <div class="settings-row meeting-compose">
       <label class="field" for="meeting-title">
         <span class="field-label">Title</span>
-        <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Product Sync" autocomplete="off">
+        <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Name this meeting" autocomplete="off">
       </label>
       <button id="meeting-live" class="live" type="button" aria-pressed="false">
         <span class="live-dot" aria-hidden="true"></span>
         <span>Record a meeting</span>
       </button>
       <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled>Pause</button>
-      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone into a transcript, a few seconds behind. Sound from another application is not captured yet.</p>
+      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone, a few seconds behind. With Speaker separation installed, every line says who spoke.</p>
     </div>
     <h3 class="meeting-group">Find it again</h3>
     <div class="settings-row">
@@ -674,7 +678,7 @@
       <div class="settings-row meeting-compose">
         <label class="field field-wide" for="meeting-text">
           <span class="field-label">Transcript</span>
-          <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: Olá, tudo bem?&#10;Speaker 2: Sim, tudo bem."></textarea>
+          <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: we ship it on Friday&#10;Speaker 2: I will write the notes."></textarea>
         </label>
         <div class="meeting-actions">
           <button id="meeting-import" class="install" type="button">Import transcript</button>
@@ -751,12 +755,12 @@
   <section class="voice" id="voice" aria-labelledby="voice-title">
     <div class="voice-head">
       <h2 id="voice-title">My voice</h2>
-      <p class="voice-note">Create a profile, then record ten seconds of speech. The sample stays on this computer and you can revoke or delete it at any time.</p>
+      <p class="voice-note">Create a profile, then record ten seconds of speech. The sample stays on this computer.</p>
     </div>
     <form id="voice-form" class="voice-form">
       <label class="field" for="voice-label">
         <span class="field-label">Name for this voice</span>
-        <input id="voice-label" class="field-input" type="text" maxlength="48" value="My voice" required autocomplete="off">
+        <input id="voice-label" class="field-input" type="text" maxlength="48" placeholder="My voice" required autocomplete="off">
       </label>
       <label class="field" for="voice-origin">
         <span class="field-label">Whose voice is this</span>
@@ -780,7 +784,7 @@
         </label>
         <label class="field field-wide" for="voice-purpose">
           <span class="field-label">What you will use it for</span>
-          <input id="voice-purpose" class="field-input" type="text" value="translating my own speech" required>
+          <input id="voice-purpose" class="field-input" type="text" placeholder="translating my own speech" required>
         </label>
         <label class="check" for="voice-encrypt">
           <input id="voice-encrypt" type="checkbox">
@@ -853,12 +857,37 @@
 
 <footer>
   <p>Parlo works on this computer. Your voice is never uploaded, and there is no account and no telemetry.</p>
-  <p class="foot-keys">Alt+1 to Alt+5 moves between sections.</p>
+  <p class="foot-keys">Alt+1 to Alt+6 moves between sections.</p>
 </footer>
 
 </div>
 </div>
 
+<dialog class="sheet" id="style-sheet" aria-labelledby="style-sheet-title">
+  <form method="dialog">
+    <button class="sheet-close" type="submit">Close</button>
+  </form>
+  <p class="sheet-kicker">Writing style</p>
+  <h2 id="style-sheet-title">How should Parlo write?</h2>
+  <p class="sheet-note">One choice shapes the punctuation of everything you dictate, in every app.</p>
+  <div class="sheet-options" role="group" aria-label="Writing style">
+    <button class="style-card" data-style="formal" type="button" aria-pressed="false">
+      <span class="style-title">Formal</span>
+      <span class="style-sub">Full stops and capitals</span>
+      <span class="style-sample">“If you are free, let us talk about the results.”</span>
+    </button>
+    <button class="style-card" data-style="casual" type="button" aria-pressed="false">
+      <span class="style-title">Casual</span>
+      <span class="style-sub">Lighter, closer to speech</span>
+      <span class="style-sample">“hey if you're free let's talk about the results”</span>
+    </button>
+    <button class="style-card" data-style="excited" type="button" aria-pressed="false">
+      <span class="style-title">Excited</span>
+      <span class="style-sub">Keeps the energy</span>
+      <span class="style-sample">“Hey, if you're free, let's talk about the results!”</span>
+    </button>
+  </div>
+</dialog>
 <script src="/app.js"></script>
 </body>
 </html>

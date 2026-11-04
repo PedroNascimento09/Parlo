@@ -8,18 +8,20 @@
 <title>Parlo Captions</title>
 <style>
   :root {
-    --shell: rgba(18, 15, 14, 0.9);
-    --ink: #faf6ef;
-    --muted: #b6aa9b;
-    --accent: #f2693a;
+    --shell: rgba(255, 253, 248, 0.94);
+    --ink: #191512;
+    --muted: #6f6559;
+    --accent: #2f6b4f;
+    --line: rgba(25, 21, 18, 0.14);
     color-scheme: light dark;
   }
-  @media (prefers-color-scheme: light) {
+  @media (prefers-color-scheme: dark) {
     :root {
-      --shell: rgba(255, 253, 249, 0.94);
-      --ink: #1b1613;
-      --muted: #6b6257;
-      --accent: #d9481f;
+      --shell: rgba(19, 17, 14, 0.92);
+      --ink: #f4efe4;
+      --muted: #9c9284;
+      --accent: #9ed9b4;
+      --line: rgba(244, 239, 228, 0.16);
     }
   }
   * { box-sizing: border-box; }
@@ -29,7 +31,7 @@
     grid-template-rows: auto 1fr auto;
     gap: 6px;
     padding: 14px 18px;
-    font: 15px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif;
+    font: 15px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
     background: var(--shell);
     border-radius: 18px;
@@ -62,6 +64,7 @@
     gap: 0.35rem;
   }
   .line {
+    font-family: "Sitka Text", "Sitka Heading", "Iowan Old Style", Georgia, serif;
     font-size: 1.35rem;
     line-height: 1.35;
   }
@@ -75,7 +78,7 @@
     justify-content: flex-end;
   }
   button {
-    border: 1px solid rgba(250, 246, 239, 0.2);
+    border: 1px solid var(--line);
     background: none;
     color: inherit;
     font: inherit;
@@ -88,9 +91,9 @@
   button:hover,
   button:focus-visible { opacity: 1; }
   @keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0.5); }
-    70% { box-shadow: 0 0 0 10px rgba(242, 105, 58, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(242, 105, 58, 0); }
+    0% { box-shadow: 0 0 0 0 rgba(47, 107, 79, 0.45); }
+    70% { box-shadow: 0 0 0 10px rgba(47, 107, 79, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(47, 107, 79, 0); }
   }
   @media (prefers-reduced-motion: reduce) {
     body.listening .dot { animation: none; }

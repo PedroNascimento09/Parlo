@@ -1,5 +1,6 @@
 const token = new URLSearchParams(location.search).get("t") || "";
-const version = document.querySelector('meta[name="parlo-version"]').content;
+const versionMeta = document.querySelector('meta[name="parlo-version"]').content;
+const version = versionMeta.startsWith("__") ? "" : versionMeta;
 
 const talk = document.getElementById("talk");
 const label = talk.querySelector(".talk-label");
@@ -451,8 +452,8 @@ async function finish() {
   micEl.textContent = "ready";
   clearTimeout(maxTimer);
   talk.setAttribute("aria-pressed", "false");
-  label.textContent = "Try it once";
-  sub.textContent = "Hold, speak, release";
+  label.textContent = "Speak a translation";
+  sub.textContent = "Hold while you speak; the answer plays aloud.";
 
   const captured = chunks;
   chunks = [];
@@ -1019,7 +1020,7 @@ function describeModels(state) {
   }
   const sentences = Array.from(byFeature, ([feature, names]) => feature + " needs " + names.join(" and "));
   modelsNote.textContent = sentences.length
-    ? "Missing: " + sentences.join("; ") + ". Each one can be downloaded on its own, and nothing else comes with it."
+    ? "Missing: " + sentences.join("; ") + ". Each one downloads on its own."
     : "Some models are missing. They are a one time download and stay on this machine.";
   modelsInstall.hidden = false;
   modelsDictation.hidden = missing.every((model) => model.installed) || !missing.some((model) => model.id === "parakeet");
@@ -1388,6 +1389,7 @@ const CATALOG_CATEGORIES = [
   ["dictation", "Dictation"],
   ["voice", "Voice"],
   ["translation", "Translation"],
+  ["speakers", "Meetings"],
   ["text", "Text"],
 ];
 let catalogTab = "dictation";
@@ -1395,6 +1397,13 @@ let catalogLast = [];
 
 const historyList = document.getElementById("history-list");
 const homeGreeting = document.getElementById("home-greeting");
+const homeDate = document.getElementById("home-date");
+const homeLast = document.getElementById("home-last");
+const homeLastText = document.getElementById("home-last-text");
+const homeLastWhen = document.getElementById("home-last-when");
+const homeLastApp = document.getElementById("home-last-app");
+const homeLastDot = document.getElementById("home-last-dot");
+const homeLastLabel = document.getElementById("home-last-label");
 
 function storedName() {
   return (localStorage.getItem("parlo.name") || "").trim();
@@ -1424,6 +1433,40 @@ function paintHome() {
       hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
     homeGreeting.textContent = name ? "Welcome back, " + name : base;
   }
+  if (homeDate) {
+    homeDate.textContent = new Intl.DateTimeFormat("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(new Date());
+  }
+  if (homeLast) {
+    const entry = historyEntries.find((item) => (item.translation || item.text || "").trim());
+    if (entry) {
+      homeLastText.textContent = (entry.translation || entry.text).trim();
+      homeLastWhen.textContent = new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date((entry.at || 0) * 1000));
+      const app = (entry.app || "").trim();
+      homeLastApp.textContent = app;
+      homeLastApp.hidden = !app;
+      homeLastDot.hidden = !app;
+      homeLast.classList.remove("empty");
+      homeLast.hidden = false;
+    } else {
+      homeLastLabel.textContent = "Nothing yet";
+      homeLastText.textContent = "Hold the shortcut, say a sentence, and the last one lands here.";
+      homeLastWhen.textContent = "";
+      homeLastApp.textContent = "";
+      homeLastApp.hidden = true;
+      homeLastDot.hidden = true;
+      homeLast.classList.add("empty");
+      homeLast.hidden = false;
+    }
+  }
   const wordsEl = document.getElementById("home-words");
   if (!wordsEl) {
     return;
@@ -1449,6 +1492,7 @@ const statusModels = document.getElementById("status-models");
 let historyEntries = [];
 const historyClear = document.getElementById("history-clear");
 const historyFilters = document.getElementById("history-filters");
+const historyTools = document.getElementById("history-tools");
 
 function describePair(from, to) {
   return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
@@ -2132,9 +2176,17 @@ async function loadMeetings() {
 
 function renderMeetings(meetings) {
   meetingList.replaceChildren();
+  const heading = meetingList.previousElementSibling;
+  const ask = document.getElementById("meetings").querySelector("details.more");
+  if (heading && heading.classList.contains("meeting-group")) {
+    heading.hidden = !meetings.length;
+  }
+  if (ask) {
+    ask.hidden = !meetings.length;
+  }
   if (!meetings.length) {
     meetingNote.textContent =
-      "No transcript on this computer yet. Paste one above, with a speaker at the start of each line.";
+      "No meeting kept on this computer yet. Press Record a meeting and every line lands here.";
     return;
   }
   for (const meeting of meetings) {
@@ -2148,23 +2200,71 @@ function renderMeetings(meetings) {
       meeting.segments.length +
       " lines";
     const detail = document.createElement("dd");
+    const spoken = (meeting.segments || []).filter((segment) => segment.speaker !== "Note");
+    if (spoken.length) {
+      const lines = document.createElement("ol");
+      lines.className = "meeting-lines";
+      for (const segment of spoken) {
+        const line = document.createElement("li");
+        line.className = "meeting-line";
+        const when = document.createElement("span");
+        when.className = "meeting-when";
+        when.textContent = meetingClock(segment.at_ms);
+        const who = document.createElement("span");
+        who.className = "meeting-who";
+        who.textContent = segment.spoken_by || segment.speaker;
+        if (segment.named) {
+          who.classList.add("named");
+        }
+        const said = document.createElement("p");
+        said.className = "meeting-said";
+        said.textContent = segment.text;
+        line.append(when, who, said);
+        lines.append(line);
+      }
+      detail.append(lines);
+    }
     const speakers = meeting.speakers.filter((name) => name !== "Note");
-    const speakerRow = document.createElement("div");
-    speakerRow.className = "meeting-row";
     if (speakers.length) {
+      const speakerRow = document.createElement("div");
+      speakerRow.className = "meeting-row";
       const label = document.createElement("span");
       label.className = "meeting-label";
       label.textContent = "Speakers";
       speakerRow.append(label);
+      for (const speaker of speakers) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "swap speaker-chip";
+        chip.textContent = speaker;
+        chip.title = "Name this speaker everywhere in this meeting";
+        chip.addEventListener("click", () => nameSpeaker(meeting, speaker));
+        speakerRow.append(chip);
+      }
+      detail.append(speakerRow);
     }
-    for (const speaker of speakers) {
-      const chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "swap speaker-chip";
-      chip.textContent = speaker;
-      chip.title = "Name this speaker everywhere in this meeting";
-      chip.addEventListener("click", () => nameSpeaker(meeting, speaker));
-      speakerRow.append(chip);
+    const agreed = [...(meeting.decisions || []), ...(meeting.actions || [])];
+    if (agreed.length) {
+      const summary = document.createElement("ul");
+      summary.className = "meeting-summary";
+      for (const decision of meeting.decisions || []) {
+        const line = document.createElement("li");
+        line.textContent = "Agreed · " + decision.speaker + " · " + decision.text;
+        summary.append(line);
+      }
+      for (const action of meeting.actions || []) {
+        const line = document.createElement("li");
+        line.textContent =
+          "To do · " + action.owner + (action.due ? " · " + action.due : "") + " · " + action.text;
+        summary.append(line);
+      }
+      detail.append(summary);
+    }
+    for (const note of (meeting.segments || []).filter((segment) => segment.speaker === "Note")) {
+      const line = document.createElement("p");
+      line.className = "meeting-note";
+      line.textContent = "Note · " + meetingClock(note.at_ms) + " · " + note.text;
+      detail.append(line);
     }
     const actionRow = document.createElement("div");
     actionRow.className = "meeting-row meeting-row-actions";
@@ -2181,35 +2281,7 @@ function renderMeetings(meetings) {
     download.title = "Save this meeting as a Markdown file";
     download.addEventListener("click", () => downloadMeeting(meeting));
     actionRow.append(download);
-    detail.append(speakerRow, actionRow);
-    for (const note of (meeting.segments || []).filter((segment) => segment.speaker === "Note")) {
-      const line = document.createElement("p");
-      line.className = "meeting-note";
-      line.textContent = "Note · " + meetingClock(note.at_ms) + " · " + note.text;
-      detail.append(line);
-    }
-    for (const action of meeting.actions || []) {
-      const line = document.createElement("p");
-      line.className = "meeting-note";
-      line.textContent =
-        "Action · " +
-        action.owner +
-        (action.due ? " · " + action.due : "") +
-        " · " +
-        action.text;
-      detail.append(line);
-    }
-    for (const decision of meeting.decisions || []) {
-      const line = document.createElement("p");
-      line.className = "meeting-note";
-      line.textContent =
-        "Decision · " +
-        decision.speaker +
-        " · " +
-        decision.text +
-        (decision.supersedes === null ? "" : " (replaces the one at " + meetingClock(decision.supersedes) + ")");
-      detail.append(line);
-    }
+    detail.append(actionRow);
     meetingList.append(term, detail);
   }
   meetingNote.textContent =
@@ -2505,7 +2577,7 @@ function meetingStatus(last) {
   }
   if (!meetingRecording) {
     meetingLiveNote.textContent =
-      "Records the microphone into a meeting transcript, a few seconds behind. Sound from another application is not captured yet.";
+      "Records the microphone into a transcript, a few seconds behind. With Speaker separation installed in Model library, every line says who spoke.";
     return;
   }
   const kept = meetingLines === 1 ? "1 line kept" : meetingLines + " lines kept";
@@ -2514,12 +2586,13 @@ function meetingStatus(last) {
 }
 
 async function meetingSegment(wav) {
-  const response = await fetch("/dictate", {
+  const response = await fetch("/meeting/window", {
     method: "POST",
     headers: {
       "Content-Type": "audio/wav",
       Authorization: "Bearer " + token,
-      "x-parlo-style": storedStyle(),
+      "x-parlo-meeting": meetingId,
+      "x-parlo-at": String(meetingElapsed()),
     },
     body: wav,
   });
@@ -2528,25 +2601,7 @@ async function meetingSegment(wav) {
     throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
   }
   const result = await response.json();
-  const text = (result.text || "").trim();
-  if (!text) {
-    return "";
-  }
-  const saved = await fetch("/meeting/segment", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({
-      id: meetingId,
-      speaker: "Me",
-      text,
-      at_ms: meetingElapsed(),
-    }),
-  });
-  if (!saved.ok) {
-    const detail = await saved.json().catch(() => ({}));
-    throw new Error(detail.error || "The line could not be kept.");
-  }
-  return text;
+  return (result.text || "").trim();
 }
 
 async function meetingStep() {
@@ -3269,6 +3324,16 @@ function matchesHistory(entry) {
 
 function paintInsights() {
   const wordsEl = document.getElementById("insights-words");
+  const empty = historyEntries.length === 0;
+  for (const node of document.querySelectorAll("#insights h3.meeting-group")) {
+    node.hidden = empty;
+  }
+  for (const id of ["insights-apps", "insights-top-words", "insights-days", "insights-days-note", "insights-empty"]) {
+    const node = document.getElementById(id);
+    if (node) {
+      node.hidden = id === "insights-empty" ? !empty : empty;
+    }
+  }
   if (!wordsEl) {
     return;
   }
@@ -3338,7 +3403,7 @@ function paintInsights() {
     }
   }
   const top = [...surface.entries()].sort((left, right) => right[1] - left[1]).slice(0, 6);
-  const wordList = document.getElementById("insights-words");
+  const wordList = document.getElementById("insights-top-words");
   wordList.replaceChildren();
   if (!top.length) {
     const empty = document.createElement("li");
@@ -3395,6 +3460,9 @@ function renderHistory() {
   historyList.replaceChildren();
   if (!historyEntries.length) {
     historyFilters.hidden = true;
+    if (historyTools) {
+      historyTools.hidden = true;
+    }
     historyNote.textContent =
       "Nothing dictated yet. Press Ctrl+Alt+D, speak, and the sentence appears here with the program it landed in.";
     historyClear.hidden = true;
@@ -3455,6 +3523,9 @@ function renderHistory() {
         : historyEntries.length + " dictations kept on this computer."
       : shown.length + " of " + historyEntries.length + " dictations match.";
   historyFilters.hidden = false;
+  if (historyTools) {
+    historyTools.hidden = false;
+  }
   historyClear.hidden = false;
 }
 
@@ -3898,9 +3969,9 @@ const ROUTES = {
   library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub"],
   meetings: ["meetings"],
   voice: ["voice"],
+  insights: ["insights"],
   settings: [
     "settings-tabs",
-    "insights",
     "onboarding",
     "settings-foot",
     "settings",
@@ -3941,7 +4012,7 @@ function routeNow() {
   showRoute(route);
 }
 
-const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "settings" };
+const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "insights", 6: "settings" };
 
 document.addEventListener("keydown", (event) => {
   if (!event.altKey || event.ctrlKey || event.metaKey) {
@@ -4002,10 +4073,8 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 const SETTINGS_TABS = {
   setup: ["onboarding"],
   you: ["you"],
-  insights: ["insights"],
-  dictation: ["settings"],
+  dictation: ["settings", "programs"],
   languages: ["languages"],
-  programs: ["programs"],
   shortcuts: ["shortcuts"],
   advanced: ["intelligence", "provider", "privacy", "about"],
 };
@@ -4276,7 +4345,11 @@ const styleControls = [
   ...document.querySelectorAll(".style-chip"),
 ];
 const settingsStyle = document.getElementById("settings-style");
+const styleSheet = document.getElementById("style-sheet");
+const toneOpen = document.getElementById("tone-open");
+const toneNow = document.getElementById("tone-now");
 const STYLES = ["formal", "casual", "excited"];
+const STYLE_NAMES = { formal: "Formal", casual: "Casual", excited: "Excited" };
 
 function storedStyle() {
   const value = localStorage.getItem("parlo.style");
@@ -4291,6 +4364,21 @@ function paintStyleControls() {
   if (settingsStyle) {
     settingsStyle.value = chosen || "formal";
   }
+  if (toneNow) {
+    toneNow.textContent = STYLE_NAMES[chosen] || STYLE_NAMES.formal;
+  }
+}
+
+if (toneOpen && styleSheet) {
+  toneOpen.addEventListener("click", () => styleSheet.showModal());
+}
+
+if (styleSheet) {
+  styleSheet.addEventListener("click", (event) => {
+    if (event.target.closest("[data-style]") || event.target === styleSheet) {
+      styleSheet.close();
+    }
+  });
 }
 
 function chooseStyle(style) {

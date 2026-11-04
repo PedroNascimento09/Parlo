@@ -6,22 +6,22 @@
     <title>Parlo</title>
     <style>
       :root {
-        --paper: #faf6ef;
-        --surface: #ffffff;
-        --ink: #1b1613;
-        --muted: #6b6257;
-        --line: #e5dccd;
-        --accent: #d9481f;
+        --paper: #f6f2ea;
+        --surface: #fffdf8;
+        --ink: #191512;
+        --muted: #6f6559;
+        --line: #e1d8c9;
+        --accent: #2f6b4f;
         color-scheme: light dark;
       }
       @media (prefers-color-scheme: dark) {
         :root {
-          --paper: #141110;
-          --surface: #1d1917;
-          --ink: #f5efe6;
-          --muted: #a79c8e;
-          --line: #302925;
-          --accent: #f2693a;
+          --paper: #13110e;
+          --surface: #1a1713;
+          --ink: #f4efe4;
+          --muted: #9c9284;
+          --line: #2e2821;
+          --accent: #9ed9b4;
         }
       }
       * { box-sizing: border-box; }
@@ -31,7 +31,7 @@
         place-items: center;
         background: var(--paper);
         color: var(--ink);
-        font: 16px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif;
+        font: 16px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
       main {
@@ -41,7 +41,13 @@
         border-radius: 22px;
         background: var(--surface);
       }
-      h1 { font-size: 1.15rem; font-weight: 620; margin: 0 0 0.7rem; letter-spacing: -0.01em; }
+      h1 {
+        font-family: "Sitka Banner", "Sitka Heading", "Iowan Old Style", Georgia, serif;
+        font-size: 1.8rem;
+        font-weight: 400;
+        margin: 0 0 0.8rem;
+        letter-spacing: -0.02em;
+      }
       p { margin: 0 0 0.9rem; color: var(--muted); font-size: 0.93rem; }
       ol { margin: 0; padding-left: 1.2rem; color: var(--muted); font-size: 0.93rem; }
       li { margin-bottom: 0.4rem; }
