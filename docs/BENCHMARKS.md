@@ -299,6 +299,34 @@ Limits. One 7.5 s synthetic clip, one machine, three warm calls, two threads, no
 
 `--switch-to` adds the pair change and the writes around it to any run, and `--warmup` keeps the sidecar's own warm-up so a restart can be measured the way the app used to pay for it.
 
+### Speaking twice in one process, 4 November 2026
+
+The voice answered once and then failed with `the piper adapter stopped without answering`; every later sentence in the same session repeated it, and the sidecar itself closed after the first failure. Four faults made that happen and each one is fixed:
+
+- the client kept the process object of a dead adapter, so a crash was never followed by a restart, and `stderr` was sent to `NUL`, so the reason was thrown away;
+- the adapter wrote its audio through a `wave` file whose format piper sets on the first chunk, and text that phonemises to nothing yields no chunk at all: closing the file raised `# channels not specified`, which is the sentence users saw;
+- `engines/cascade/serve.py` let engine errors reach the process boundary, because `parlo_cascade.engine.EngineUnavailable` is not the class `parlo_hibiki.protocol` catches, so one failed sentence ended the sidecar and every later request met a closed pipe.
+
+The proof that the voice now repeats is two `speak` calls in one sidecar, `PARLO_CASCADE_WARMUP=0`, two threads, the `pt_PT-tugão-medium` voice:
+
+| Call | Audio returned |
+|---|---|
+| 1, `Bom dia, este e um teste.` | **2.17 s** |
+| 2, `Boa tarde, outra frase.` | **1.93 s** |
+
+The sidecar exited with 0 after both. Before the fix the first of those calls already failed, and `engines/cascade/tests/test_tts.py` now covers it: an adapter that answers once and exits must still answer the next sentence.
+
+The `translate` number is still not published, and this time memory is the whole reason. Windows 11 Home, AMD Ryzen 5 3600, 16 GB, games and a browser holding most of it, about 2.3 GB free: the recogniser refused to load (`Load model from .tmp-models\parakeet\encoder.int8.onnx failed: bad allocation`), CTranslate2 stopped with `mkl_malloc: failed to allocate memory`, and once inside the voice `onnxruntime` asked for 8 978 432 bytes and did not get them (`BFCArena::AllocateRawInternal Failed to allocate memory`). The same run with Whisper base instead of Parakeet held only 201 MB and still failed in `mkl_malloc`. Nothing here is a property of the fix: with the fix the failure arrives as one error reply and the sidecar stays alive, which is what the protocol tests assert.
+
+When a machine has the memory, these two commands produce the numbers, the second of them over the voice path alone:
+
+```bash
+.venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip-pt.wav --models .tmp-models --cascade-dir engines/cascade --from pt --to en --threads 2 --runs 3 --json .tmp-bench-translate.json
+.venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip-pt.wav --models .tmp-models --cascade-dir engines/cascade --from pt --to en --threads 2 --runs 3 --speak "Bom dia, este e um teste da voz do Parlo." --json .tmp-bench-speak.json
+```
+
+`--speak` is new: it says one sentence through the engine and reports the first call and the median of the warm ones, so the voice path can be measured without the recogniser.
+
 ### Translation on the corpus
 
 `benchmarks/corpus/translation.jsonl` holds 24 sentence pairs written for this project, 12 in each direction, with times, dates, numbers, negations, clitics, reported speech and idioms. `engines/cascade/scripts/mt_bench.py` runs one checkpoint over one direction and prints every row, so any number below arrives with the text that produced it.
