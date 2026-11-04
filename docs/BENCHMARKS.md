@@ -495,6 +495,26 @@ python tools/benchmark_engines.py --wav out/voice.wav --models "$LOCALAPPDATA/pa
 
 The Rust executable needs `sherpa-onnx-c-api.dll`, `sherpa-onnx-cxx-api.dll` and `onnxruntime.dll` beside it, as the build notes in [ENGINES.md](ENGINES.md) describe.
 
+### Voice and translation on one Portuguese clip
+
+A 5.085 s Portuguese clip, synthesised with the `pt_PT-tugão-medium` Piper voice, 16 kHz mono PCM16, went to both engines with the Parakeet TDT 0.6B v3 int8 recogniser, the OPUS-MT PT→EN package and the same Piper voice on four threads. The harness ran three calls after the first one, which loads the models; the table reports the median of those warm calls and the first call separately.
+
+| | Python source | Rust |
+|---|---:|---:|
+| `hello` | 227.3 ms | **34.5 ms** |
+| RSS at `hello` | 28.1 MB | **9.2 MB** |
+| RSS with recognition loaded | 806.1 MB | **771.2 MB** |
+| `dictate`, median | 704.8 ms | **645.5 ms** |
+| `write`, first / median | 1478.1 / **992.7** ms | 4096.1 / 3248.1 ms |
+| `translate`, first / median | 7866.5 / **1469.4** ms | 7268.5 / 3849.2 ms |
+| Audio returned | 6.409 s at 16 kHz | 5.608 s at 22.05 kHz |
+
+The Rust engine still starts faster and uses less memory with the recogniser loaded. It does not win translation or speech: `write` is about 3.3 times slower and `translate` about 2.6 times slower at the median. Both transcripts misheard “Rust” as “rosto” (Python) and “russo” (Rust), so the translated sentences are not a quality result. That is why the Python engine remains the default and the Rust engine stays opt-in.
+
+```bash
+.venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip.wav --models .tmp-models --voice .tmp-models/pt_PT-tugão-medium.onnx --espeak-data .venv/Lib/site-packages/piper/espeak-ng-data --cascade-dir engines/cascade --rust crates/parlo-engine-rs/target/x86_64-pc-windows-msvc/release/parlo-engine.exe --from pt --to en --threads 4 --runs 3 --json .tmp-bench.json
+```
+
 ## What gets measured
 
 | Metric | Method |
