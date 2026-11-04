@@ -129,6 +129,7 @@ def measure(
     target: str,
     switch_to: str | None,
     runs: int,
+    speak_text: str | None,
 ) -> dict:
     session = Session(command, cwd, environment)
     result = {
@@ -157,6 +158,10 @@ def measure(
         "translate_audio_seconds": None,
         "translate_rate": None,
         "translate_text": "",
+        "speak_first_ms": None,
+        "speak_ms": [],
+        "speak_median_ms": None,
+        "speak_seconds": None,
         "errors": [],
     }
     try:
@@ -233,6 +238,31 @@ def measure(
             except (RuntimeError, ValueError) as error:
                 result["errors"].append(f"switch: {error}")
 
+        if speak_text:
+            try:
+                answer, elapsed = session.call(
+                    {"op": "speak", "seq": 1, "text": speak_text}
+                )
+                if answer.get("op") == "error":
+                    raise RuntimeError(str(answer.get("error")))
+                result["speak_first_ms"] = round(elapsed, 1)
+                spoken, _ = audio_seconds(answer, rate)
+                result["speak_seconds"] = round(spoken, 3)
+                for index in range(runs):
+                    answer, elapsed = session.call(
+                        {"op": "speak", "seq": index + 2, "text": speak_text}
+                    )
+                    if answer.get("op") == "error":
+                        raise RuntimeError(str(answer.get("error")))
+                    result["speak_ms"].append(round(elapsed, 1))
+                    spoken, _ = audio_seconds(answer, rate)
+                    result["speak_seconds"] = round(spoken, 3)
+                result["speak_median_ms"] = round(
+                    statistics.median(result["speak_ms"]), 1
+                )
+            except (RuntimeError, ValueError) as error:
+                result["errors"].append(f"speak: {error}")
+
         try:
             answer, elapsed = session.call({"op": "translate", "seq": 1, "pcm16": audio})
             if answer.get("op") == "error":
@@ -275,6 +305,9 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--switch-to", dest="switch_to", default=None)
     parser.add_argument("--warmup", action="store_true")
+    parser.add_argument(
+        "--speak", dest="speak_text", default=None, help="text to say aloud after the translation calls"
+    )
     parser.add_argument("--json", type=Path)
     args = parser.parse_args()
 
@@ -320,6 +353,7 @@ def main() -> int:
                 args.target,
                 args.switch_to,
                 args.runs,
+                args.speak_text,
             )
         )
 
@@ -335,6 +369,7 @@ def main() -> int:
                 args.target,
                 args.switch_to,
                 args.runs,
+                args.speak_text,
             )
         )
 
@@ -360,6 +395,7 @@ def main() -> int:
                 args.target,
                 args.switch_to,
                 args.runs,
+                args.speak_text,
             )
         )
 
@@ -388,6 +424,12 @@ def main() -> int:
                 f"{result['translate_median_ms']} ms median; "
                 f"{result['translate_audio_seconds']} s at {result['translate_rate']} Hz; "
                 f"{result['translate_text']}"
+            )
+        if result["speak_median_ms"] is not None:
+            print(
+                f"  speak {result['speak_first_ms']} ms first, "
+                f"{result['speak_median_ms']} ms median; "
+                f"{result['speak_seconds']} s of audio"
             )
         for error in result["errors"]:
             print(f"  {error}")
