@@ -368,11 +368,25 @@ class CascadeEngine:
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
             )
         self._buffer.extend(pcm16)
-        buffered = pcm16_to_float(bytes(self._buffer))
-        if len(buffered) < int(self.min_segment * SAMPLE_RATE):
+        if len(self._buffer) < int(self.min_segment * SAMPLE_RATE * 2):
             return Translation(b"", None, 0)
 
+        buffered = pcm16_to_float(bytes(self._buffer))
         self._buffer.clear()
+        return self._speak_buffer(buffered)
+
+    def flush(self) -> Translation:
+        if not self._ready:
+            raise EngineUnavailable(
+                "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
+            )
+        if not self._buffer:
+            return Translation(b"", None, 0)
+        buffered = pcm16_to_float(bytes(self._buffer))
+        self._buffer.clear()
+        return self._speak_buffer(buffered)
+
+    def _speak_buffer(self, buffered) -> Translation:
         if rms(buffered) < SILENCE_RMS:
             return Translation(b"", None, 0)
 

@@ -91,6 +91,8 @@ def handle_line(line: str, engine) -> dict:
         return switch_pair(request, engine)
     if op == "translate":
         return translate(request, engine)
+    if op == "flush":
+        return flush(request, engine)
     if op == "dictate":
         return dictate(request, engine)
     if op == "write":
@@ -135,6 +137,26 @@ def translate(request: dict, engine) -> dict:
 
     return {
         "op": "translated",
+        "seq": seq,
+        "pcm16": base64.b64encode(result.pcm16).decode("ascii"),
+        "text": result.text,
+        "latency_ms": result.latency_ms,
+    }
+
+
+def flush(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    drain = getattr(engine, "flush", None)
+    if drain is None:
+        return {"op": "flushed", "seq": seq, "pcm16": "", "text": None, "latency_ms": 0}
+
+    try:
+        result = drain()
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+
+    return {
+        "op": "flushed",
         "seq": seq,
         "pcm16": base64.b64encode(result.pcm16).decode("ascii"),
         "text": result.text,

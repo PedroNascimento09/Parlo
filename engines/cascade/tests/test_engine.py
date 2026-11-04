@@ -14,6 +14,38 @@ from parlo_cascade import (
 HAS_NUMPY = importlib.util.find_spec("numpy") is not None
 
 
+class FlushTest(unittest.TestCase):
+    def engine(self):
+        engine = CascadeEngine.__new__(CascadeEngine)
+        engine._ready = True
+        engine._buffer = bytearray()
+        engine.dictate = False
+        engine.captions = False
+        engine.min_segment = 2.5
+        engine._transcribe = lambda samples: "bom dia"
+        engine._translate = lambda text: "good morning"
+        engine._synthesize = lambda text: b"\x01\x00" * 10
+        return engine
+
+    def test_translate_holds_the_tail_until_the_stream_ends(self):
+        engine = self.engine()
+
+        self.assertIsNone(engine.translate(float_to_pcm16([0.25] * 4000)).text)
+
+        flushed = engine.flush()
+
+        self.assertEqual(flushed.text, "good morning")
+        self.assertEqual(flushed.pcm16, b"\x01\x00" * 10)
+
+    def test_flush_without_a_tail_speaks_nothing(self):
+        engine = self.engine()
+
+        flushed = engine.flush()
+
+        self.assertIsNone(flushed.text)
+        self.assertEqual(flushed.pcm16, b"")
+
+
 @unittest.skipUnless(HAS_NUMPY, "numpy is required for the numeric helpers")
 class HelpersTest(unittest.TestCase):
     def test_pcm_roundtrip_preserves_levels(self):
