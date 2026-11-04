@@ -107,6 +107,7 @@
   </header>
   <div class="lines" id="lines" aria-live="polite"></div>
   <footer>
+    <button id="source" type="button">Sound: Microphone</button>
     <button id="size" type="button">Smaller</button>
     <button id="save" type="button">Save</button>
     <button id="toggle" type="button">Start</button>
@@ -119,6 +120,7 @@ const MAX_LINES = 6;
 
 const stateEl = document.getElementById("state");
 const linesEl = document.getElementById("lines");
+const sourceButton = document.getElementById("source");
 const sizeButton = document.getElementById("size");
 const toggleButton = document.getElementById("toggle");
 const saveButton = document.getElementById("save");
@@ -133,6 +135,7 @@ let sink = null;
 let chunks = [];
 let sending = false;
 let running = false;
+let system = false;
 let scale = 1;
 
 function setState(text, listening) {
@@ -234,11 +237,30 @@ async function send(buffer, rate) {
 
 async function start() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
-    });
+    if (system) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        throw new Error("This browser cannot capture the computer's sound.");
+      }
+      const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+      display.getVideoTracks().forEach((track) => track.stop());
+      const audio = display.getAudioTracks();
+      if (!audio.length) {
+        display.getTracks().forEach((track) => track.stop());
+        throw new Error("No sound was shared. Choose a tab or window and tick Share audio.");
+      }
+      stream = new MediaStream(audio);
+    } else {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      });
+    }
   } catch (failure) {
-    setState("The microphone is blocked", false);
+    setState(
+      system
+        ? (failure && failure.message) || "No sound was shared. Choose a tab or window and tick Share audio."
+        : "The microphone is blocked",
+      false
+    );
     return;
   }
   context = new (window.AudioContext || window.webkitAudioContext)();
@@ -271,7 +293,11 @@ async function start() {
   running = true;
   startedAt = Date.now();
   toggleButton.textContent = "Stop";
-  setState("Captions · listening, every 2.5 seconds · Escape stops", true);
+  setState(
+    (system ? "Captions from the computer's sound" : "Captions from the microphone") +
+      " · listening, every 2.5 seconds · Escape stops",
+    true
+  );
 }
 
 function stop() {
@@ -308,6 +334,20 @@ toggleButton.addEventListener("click", () => {
   } else {
     start();
   }
+});
+
+sourceButton.addEventListener("click", () => {
+  if (running) {
+    stop();
+  }
+  system = !system;
+  sourceButton.textContent = system ? "Sound: Computer" : "Sound: Microphone";
+  setState(
+    system
+      ? "Computer sound selected. Press Start, choose a tab or window, and tick Share audio."
+      : "Microphone selected. Press Start.",
+    false
+  );
 });
 
 document.addEventListener("keydown", (event) => {

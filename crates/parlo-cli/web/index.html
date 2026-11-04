@@ -656,7 +656,11 @@
         <span>Record a meeting</span>
       </button>
       <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled>Pause</button>
-      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone, a few seconds behind. With Speaker separation installed, every line says who spoke.</p>
+      <label class="check field-wide" for="meeting-system" title="Share a tab or window with its audio. The sound is processed on this computer.">
+        <input id="meeting-system" type="checkbox">
+        Record the computer's sound, not the microphone
+      </label>
+      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite">Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.</p>
     </div>
     <h3 class="meeting-group">Find it again</h3>
     <div class="settings-row">

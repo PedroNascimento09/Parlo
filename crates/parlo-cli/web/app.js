@@ -91,6 +91,9 @@ let context = null;
 let analyser = null;
 let processor = null;
 let levels = null;
+let inputSource = null;
+let inputKind = "";
+let systemStream = null;
 let meterFrame = null;
 let recording = false;
 let sampling = false;
@@ -165,6 +168,16 @@ function describeMicrophoneError(failure) {
   return "The microphone could not be opened. Check the input device in your system settings.";
 }
 
+function describeSystemAudioError(failure) {
+  if (failure && (failure.name === "NotAllowedError" || failure.name === "AbortError")) {
+    return "The screen share was cancelled. Press Record a meeting again and tick Share audio.";
+  }
+  if (failure && failure.name === "NotSupportedError") {
+    return "This browser cannot share sound. Use the microphone instead.";
+  }
+  return (failure && failure.message) || "The computer's sound could not be opened. Use the microphone instead.";
+}
+
 async function openMicrophone() {
   if (media) {
     return media;
@@ -195,34 +208,88 @@ function drawMeter() {
   meterFill.style.width = (level * 100).toFixed(1) + "%";
 }
 
+function ensureGraph() {
+  if (context) {
+    return;
+  }
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  context = new AudioContext();
+  analyser = context.createAnalyser();
+  analyser.fftSize = 2048;
+  processor = context.createScriptProcessor(4096, 1, 1);
+  processor.onaudioprocess = (event) => {
+    if (!recording && !sampling && (!meetingRecording || meetingPaused)) {
+      return;
+    }
+    chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+  };
+  const silence = context.createGain();
+  silence.gain.value = 0;
+  processor.connect(silence);
+  silence.connect(context.destination);
+  levels = new Float32Array(analyser.fftSize);
+  drawMeter();
+}
+
+function attach(stream, kind) {
+  if (inputSource) {
+    inputSource.disconnect();
+  }
+  inputSource = context.createMediaStreamSource(stream);
+  inputSource.connect(analyser);
+  inputSource.connect(processor);
+  inputKind = kind;
+}
+
 async function ensureAudio() {
+  ensureGraph();
   const stream = await openMicrophone();
-  if (!context) {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    context = new AudioContext();
-    const source = context.createMediaStreamSource(stream);
-    analyser = context.createAnalyser();
-    analyser.fftSize = 2048;
-    source.connect(analyser);
-    processor = context.createScriptProcessor(4096, 1, 1);
-    processor.onaudioprocess = (event) => {
-      if (!recording && !sampling && (!meetingRecording || meetingPaused)) {
-        return;
-      }
-      chunks.push(new Float32Array(event.inputBuffer.getChannelData(0)));
-    };
-    const silence = context.createGain();
-    silence.gain.value = 0;
-    source.connect(processor);
-    processor.connect(silence);
-    silence.connect(context.destination);
-    levels = new Float32Array(analyser.fftSize);
-    drawMeter();
+  if (inputKind !== "mic") {
+    attach(stream, "mic");
   }
   if (context.state === "suspended") {
     await context.resume();
   }
   return context;
+}
+
+async function ensureSystemAudio() {
+  ensureGraph();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+    throw new Error("This browser cannot capture the computer's sound.");
+  }
+  const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+  const audio = display.getAudioTracks();
+  display.getVideoTracks().forEach((track) => track.stop());
+  if (!audio.length) {
+    display.getTracks().forEach((track) => track.stop());
+    throw new Error("No sound was shared. Choose a tab or window and tick Share audio.");
+  }
+  if (systemStream) {
+    systemStream.getTracks().forEach((track) => track.stop());
+  }
+  systemStream = new MediaStream(audio);
+  audio[0].addEventListener("ended", () => {
+    if (meetingRecording) {
+      stopMeeting("The shared sound stopped. The lines already kept stay in the meeting.");
+    }
+  });
+  attach(systemStream, "system");
+  if (context.state === "suspended") {
+    await context.resume();
+  }
+  return context;
+}
+
+function restoreMicrophone() {
+  if (systemStream) {
+    systemStream.getTracks().forEach((track) => track.stop());
+    systemStream = null;
+  }
+  if (!context || !media || inputKind === "mic") {
+    return;
+  }
+  attach(media, "mic");
 }
 
 function downsample(input, fromRate, toRate) {
@@ -285,6 +352,10 @@ function mergedVoiceChunks() {
 
 async function recordVoiceSample(profile, button) {
   if (sampling) {
+    return;
+  }
+  if (meetingRecording) {
+    showError("Finish the meeting before recording a voice sample.");
     return;
   }
   clearError();
@@ -422,6 +493,10 @@ function play(blob) {
 
 async function begin() {
   if (recording) {
+    return;
+  }
+  if (meetingRecording) {
+    showError("Finish the meeting before dictating.");
     return;
   }
   clearError();
@@ -1328,6 +1403,7 @@ const vocabularyNote = document.getElementById("vocabulary-note");
 const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
 const meetingPause = document.getElementById("meeting-pause");
+const meetingSystem = document.getElementById("meeting-system");
 const meetingNotesRow = document.getElementById("meeting-notes-row");
 const meetingNotes = document.getElementById("meeting-notes");
 const meetingNoteAdd = document.getElementById("meeting-note-add");
@@ -2567,6 +2643,10 @@ function meetingElapsed() {
   return Math.max(0, Math.round(reached - meetingStarted - meetingPausedTotal));
 }
 
+function meetingSource() {
+  return meetingSystem.checked ? "the computer's sound" : "the microphone";
+}
+
 function meetingStatus(last) {
   if (meetingRecording && meetingPaused) {
     const kept = meetingLines === 1 ? "1 line kept" : meetingLines + " lines kept";
@@ -2580,12 +2660,12 @@ function meetingStatus(last) {
   }
   if (!meetingRecording) {
     meetingLiveNote.textContent =
-      "Records the microphone into a transcript, a few seconds behind. With Speaker separation installed in Model library, every line says who spoke.";
+      "Records " + meetingSource() + " into a transcript, a few seconds behind. With Speaker separation installed in Model library, every line says who spoke.";
     return;
   }
   const kept = meetingLines === 1 ? "1 line kept" : meetingLines + " lines kept";
   meetingLiveNote.textContent =
-    "Recording, " + kept + ". " + (last ? "Last: " + last : "Speak normally.");
+    "Recording " + meetingSource() + ", " + kept + ". " + (last ? "Last: " + last : "Speak normally.");
 }
 
 async function meetingSegment(wav) {
@@ -2650,16 +2730,25 @@ async function startMeeting() {
     showError("Finish the current dictation before recording a meeting.");
     return;
   }
+  if (sampling) {
+    showError("Finish the voice sample before recording a meeting.");
+    return;
+  }
   if (!welcomeBox.hidden || modelsDownloading) {
     showError("Download the models first; a meeting is written down on this machine.");
     return;
   }
   clearError();
+  const useSystem = Boolean(meetingSystem.checked);
   try {
-    await ensureAudio();
+    if (useSystem) {
+      await ensureSystemAudio();
+    } else {
+      await ensureAudio();
+    }
   } catch (failure) {
-    micEl.textContent = "blocked";
-    showError(describeMicrophoneError(failure));
+    micEl.textContent = useSystem ? "not used" : "blocked";
+    showError(useSystem ? describeSystemAudioError(failure) : describeMicrophoneError(failure));
     return;
   }
   try {
@@ -2675,6 +2764,7 @@ async function startMeeting() {
     meetingId = detail.id;
   } catch (failure) {
     showError(failure.message || "The meeting could not be started.");
+    restoreMicrophone();
     return;
   }
   meetingRecording = true;
@@ -2684,6 +2774,7 @@ async function startMeeting() {
   meetingPause.textContent = "Pause";
   meetingPause.setAttribute("aria-pressed", "false");
   meetingPause.disabled = false;
+  meetingSystem.disabled = true;
   meetingNotesRow.hidden = false;
   meetingNotes.value = "";
   meetingStarted = performance.now();
@@ -2691,7 +2782,7 @@ async function startMeeting() {
   meetingFailures = 0;
   chunks = [];
   meetingLive.setAttribute("aria-pressed", "true");
-  micEl.textContent = "recording";
+  micEl.textContent = useSystem ? "not used" : "recording";
   meetingStatus("");
   clearTimeout(meetingTimer);
   meetingTimer = setTimeout(meetingStep, 200);
@@ -2767,6 +2858,7 @@ async function stopMeeting(message) {
   meetingPause.textContent = "Pause";
   meetingPause.setAttribute("aria-pressed", "false");
   meetingPause.disabled = true;
+  meetingSystem.disabled = false;
   meetingNotesRow.hidden = true;
   meetingNotes.value = "";
   clearTimeout(meetingTimer);
@@ -2783,6 +2875,7 @@ async function stopMeeting(message) {
       showError(failure.message || "The last words could not be written down.");
     }
   }
+  restoreMicrophone();
   await loadMeetings();
   meetingPausedTotal = 0;
   if (message) {
@@ -2918,6 +3011,15 @@ meetingPause.addEventListener("click", () => {
   } else {
     pauseMeeting();
   }
+});
+
+meetingSystem.addEventListener("change", () => {
+  if (meetingRecording) {
+    return;
+  }
+  meetingLiveNote.textContent = meetingSystem.checked
+    ? "Records the computer's sound. Press Record a meeting, choose a tab or window, and tick Share audio."
+    : "Records the microphone into a transcript, a few seconds behind. With Speaker separation installed, every line says who spoke.";
 });
 
 meetingNoteAdd.addEventListener("click", () => addMeetingNote());
