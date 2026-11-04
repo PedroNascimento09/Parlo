@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Fidelity {
@@ -77,53 +78,45 @@ pub struct EngineInfo {
     pub default: bool,
 }
 
-pub const ENGINES: &[EngineInfo] = &[
-    EngineInfo {
-        id: "cascade",
-        name: "Universal cascade",
-        fidelity: &[
-            Fidelity::Captions,
-            Fidelity::Neutral,
-            Fidelity::Approximate,
-            Fidelity::Cloned,
-        ],
-        license: License::Apache2OptionalGpl,
-        hardware: "any recent CPU",
-        requires_gpu: false,
-        available: true,
-        default: true,
-    },
-    EngineInfo {
-        id: "echo",
-        name: "Echo for development",
-        fidelity: &[Fidelity::Neutral],
-        license: License::Apache2,
-        hardware: "any",
-        requires_gpu: false,
-        available: true,
-        default: false,
-    },
-    EngineInfo {
-        id: "hibiki",
-        name: "Hibiki-Zero premium",
-        fidelity: &[Fidelity::EndToEnd],
-        license: License::CcByNcSa4,
-        hardware: "NVIDIA 8 to 12 GB VRAM",
-        requires_gpu: true,
-        available: false,
-        default: false,
-    },
-    EngineInfo {
-        id: "cloud",
-        name: "Cloud with your key",
-        fidelity: &[Fidelity::EndToEnd],
-        license: License::Proprietary,
-        hardware: "any",
-        requires_gpu: false,
-        available: false,
-        default: false,
-    },
-];
+pub static ENGINES: LazyLock<Vec<EngineInfo>> = LazyLock::new(|| {
+    crate::registry::PIPELINES
+        .iter()
+        .map(|spec| EngineInfo {
+            id: spec.id,
+            name: spec.name,
+            fidelity: fidelity_set(spec),
+            license: licence(spec.licence),
+            hardware: spec.hardware,
+            requires_gpu: spec.requires_gpu,
+            available: spec.available,
+            default: spec.default,
+        })
+        .collect()
+});
+
+fn fidelity_set(spec: &crate::registry::PipelineSpec) -> &'static [Fidelity] {
+    let steps: Vec<Fidelity> = spec.fidelity.iter().map(|label| fidelity(label)).collect();
+    Box::leak(steps.into_boxed_slice())
+}
+
+fn fidelity(label: &str) -> Fidelity {
+    match label {
+        "captions" => Fidelity::Captions,
+        "neutral voice" => Fidelity::Neutral,
+        "approximate voice" => Fidelity::Approximate,
+        "cloned voice" => Fidelity::Cloned,
+        _ => Fidelity::EndToEnd,
+    }
+}
+
+fn licence(label: &str) -> License {
+    match label {
+        "Apache-2.0" => License::Apache2,
+        "Apache-2.0, optional GPL voice" => License::Apache2OptionalGpl,
+        "CC BY-NC-SA 4.0" => License::CcByNcSa4,
+        _ => License::Proprietary,
+    }
+}
 
 pub fn default_engine() -> &'static EngineInfo {
     ENGINES

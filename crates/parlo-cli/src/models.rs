@@ -12,37 +12,10 @@ const PARAKEET_FILES: &[&str] = &[
     "joiner.int8.onnx",
     "tokens.txt",
 ];
-const VOICES: &[(&str, &str, &str)] = &[
-    ("voice-pt", "pt_PT-tugão-medium.onnx", "Portuguese voice"),
-    ("voice-en", "en_US-lessac-medium.onnx", "English voice"),
-    ("voice-de", "de_DE-thorsten-medium.onnx", "German voice"),
-    ("voice-fr", "fr_FR-siwis-medium.onnx", "French voice"),
-];
-const SPEAKERS: &str = "3dspeaker_speech_campplus_sv_en_voxceleb_16k.onnx";
-const TRANSLATION: &[(&str, &str, &str, &str)] = &[
-    ("mt-pt-en", "pt", "en", "Portuguese to English"),
-    ("mt-en-pt", "en", "pt", "English to Portuguese"),
-    ("mt-pt-es", "pt", "es", "Portuguese to Spanish"),
-    ("mt-es-pt", "es", "pt", "Spanish to Portuguese"),
-    ("mt-pt-fr", "pt", "fr", "Portuguese to French"),
-    ("mt-fr-pt", "fr", "pt", "French to Portuguese"),
-    ("mt-pt-it", "pt", "it", "Portuguese to Italian"),
-    ("mt-pt-nl", "pt", "nl", "Portuguese to Dutch"),
-    ("mt-pt-ru", "pt", "ru", "Portuguese to Russian"),
-    ("mt-en-es", "en", "es", "English to Spanish"),
-    ("mt-en-fr", "en", "fr", "English to French"),
-    ("mt-en-it", "en", "it", "English to Italian"),
-    ("mt-de-en", "de", "en", "German to English"),
-    ("mt-fr-de", "fr", "de", "French to German"),
-    ("mt-es-en", "es", "en", "Spanish to English"),
-];
-
 pub const DICTATION_UNITS: &[&str] = &["parakeet"];
-pub const REMAINING_UNITS: &[&str] = &[
-    "voice-pt", "voice-en", "voice-de", "voice-fr", "mt-pt-en", "mt-en-pt", "mt-pt-es", "mt-es-pt",
-    "mt-pt-fr", "mt-fr-pt", "mt-pt-it", "mt-pt-nl", "mt-pt-ru", "mt-en-es", "mt-en-fr", "mt-en-it",
-    "mt-de-en", "mt-fr-de", "mt-es-en",
-];
+pub fn remaining_units() -> Vec<&'static str> {
+    crate::registry::remaining_units()
+}
 
 pub struct Model {
     pub id: &'static str,
@@ -69,12 +42,7 @@ impl Default for Lifecycle {
 }
 
 pub fn unit_of(id: &str) -> Option<&'static str> {
-    match id {
-        "parakeet" | "whisper" => Some("recognition"),
-        "voice-pt" | "voice-en" | "voice-de" | "voice-fr" => Some("voice"),
-        id if TRANSLATION.iter().any(|(unit, _, _, _)| *unit == id) => Some("translation"),
-        _ => None,
-    }
+    crate::registry::model(id).and_then(|spec| spec.unit)
 }
 
 pub fn cascade_dir() -> PathBuf {
@@ -124,56 +92,33 @@ fn voice_size(directory: &Path, file: &str) -> (bool, u64) {
 
 pub fn status() -> Vec<Model> {
     let root = models_root();
-    let (parakeet_installed, parakeet_bytes) = size(&root.join("parakeet"), PARAKEET_FILES);
-    let mut models = vec![Model {
-        id: "parakeet",
-        name: "Parakeet 0.6B v3".to_string(),
-        kind: "recogniser",
-        feature: "Dictation",
-        installed: parakeet_installed,
-        bytes: parakeet_bytes,
-    }];
-    let whisper_bytes = whisper_cache().and_then(|cache| whisper_installed(&cache));
-    models.push(Model {
-        id: "whisper",
-        name: "Whisper base".to_string(),
-        kind: "recogniser",
-        feature: "Dictation",
-        installed: whisper_bytes.is_some(),
-        bytes: whisper_bytes.unwrap_or(0),
-    });
-    for (id, file, label) in VOICES {
-        let (installed, bytes) = voice_size(&root, file);
-        models.push(Model {
-            id,
-            name: (*label).to_string(),
-            kind: "voice",
-            feature: "Read aloud",
-            installed,
-            bytes,
-        });
-    }
-    let (speakers_installed, speakers_bytes) = size(&root, &[SPEAKERS]);
-    models.push(Model {
-        id: "speakers",
-        name: "Speaker separation".to_string(),
-        kind: "speaker",
-        feature: "Meetings",
-        installed: speakers_installed,
-        bytes: speakers_bytes,
-    });
-    for (id, source, target, label) in TRANSLATION {
-        let (installed, bytes) = translation_size(&root, source, target);
-        models.push(Model {
-            id,
-            name: (*label).to_string(),
-            kind: "translation",
-            feature: "Translation",
-            installed,
-            bytes,
-        });
-    }
-    models
+    crate::registry::MODELS
+        .iter()
+        .map(|spec| {
+            let (installed, bytes) = match spec.source {
+                crate::registry::Source::Parakeet => size(&root.join("parakeet"), PARAKEET_FILES),
+                crate::registry::Source::Whisper => {
+                    match whisper_cache().and_then(|cache| whisper_installed(&cache)) {
+                        Some(bytes) => (true, bytes),
+                        None => (false, 0),
+                    }
+                }
+                crate::registry::Source::Voice(file) => voice_size(&root, file),
+                crate::registry::Source::Translation(source, target) => {
+                    translation_size(&root, source, target)
+                }
+                crate::registry::Source::Speaker(file) => size(&root, &[file]),
+            };
+            Model {
+                id: spec.id,
+                name: spec.name.to_string(),
+                kind: spec.kind,
+                feature: spec.feature,
+                installed,
+                bytes,
+            }
+        })
+        .collect()
 }
 
 pub fn ready(models: &[Model]) -> bool {
@@ -265,34 +210,20 @@ fn translation_paths(root: &Path, source: &str, target: &str) -> Vec<PathBuf> {
 
 fn paths_for(id: &str) -> Option<Vec<PathBuf>> {
     let root = models_root();
-    match id {
-        "parakeet" => Some(vec![root.join("parakeet")]),
-        "voice-pt" => Some(vec![
-            root.join("pt_PT-tugão-medium.onnx"),
-            root.join("pt_PT-tugão-medium.onnx.json"),
-        ]),
-        "voice-en" => Some(vec![
-            root.join("en_US-lessac-medium.onnx"),
-            root.join("en_US-lessac-medium.onnx.json"),
-        ]),
-        "voice-de" => Some(vec![
-            root.join("de_DE-thorsten-medium.onnx"),
-            root.join("de_DE-thorsten-medium.onnx.json"),
-        ]),
-        "voice-fr" => Some(vec![
-            root.join("fr_FR-siwis-medium.onnx"),
-            root.join("fr_FR-siwis-medium.onnx.json"),
-        ]),
-        id if TRANSLATION.iter().any(|(unit, _, _, _)| *unit == id) => TRANSLATION
-            .iter()
-            .find(|(unit, _, _, _)| *unit == id)
-            .map(|(_, source, target, _)| translation_paths(&root, source, target)),
-        "speakers" => Some(vec![root.join(SPEAKERS)]),
-        "whisper" => {
-            whisper_cache().map(|cache| vec![cache.join("models--Systran--faster-whisper-base")])
+    let spec = crate::registry::model(id)?;
+    Some(match spec.source {
+        crate::registry::Source::Parakeet => vec![root.join("parakeet")],
+        crate::registry::Source::Voice(file) => {
+            vec![root.join(file), root.join(format!("{file}.json"))]
         }
-        _ => None,
-    }
+        crate::registry::Source::Translation(source, target) => {
+            translation_paths(&root, source, target)
+        }
+        crate::registry::Source::Speaker(file) => vec![root.join(file)],
+        crate::registry::Source::Whisper => {
+            whisper_cache().map(|cache| vec![cache.join("models--Systran--faster-whisper-base")])?
+        }
+    })
 }
 
 fn python() -> PathBuf {
@@ -380,9 +311,9 @@ pub fn cancel() -> Result<(), String> {
 }
 
 fn feature_of(id: &str) -> Option<&'static str> {
-    match id {
-        "voice-pt" | "voice-en" | "voice-de" | "voice-fr" => Some("voice"),
-        id if TRANSLATION.iter().any(|(unit, _, _, _)| *unit == id) => Some("translation"),
+    match crate::registry::model(id)?.kind {
+        "voice" => Some("voice"),
+        "translation" => Some("translation"),
         _ => None,
     }
 }
@@ -1215,13 +1146,14 @@ mod tests {
 
     #[test]
     fn the_portuguese_voice_is_european() {
-        let voice = VOICES
-            .iter()
-            .find(|(id, _, _)| *id == "voice-pt")
-            .expect("a Portuguese voice is offered");
-        assert!(voice.1.starts_with("pt_PT-"), "{}", voice.1);
+        let voice = crate::registry::model("voice-pt").expect("a Portuguese voice is offered");
+        let file = match voice.source {
+            crate::registry::Source::Voice(file) => file,
+            _ => panic!("the Portuguese voice must point at a file"),
+        };
+        assert!(file.starts_with("pt_PT-"), "{file}");
         let paths = paths_for("voice-pt").unwrap();
-        assert_eq!(paths[0].file_name().unwrap(), voice.1);
+        assert_eq!(paths[0].file_name().unwrap(), file);
     }
 
     #[test]

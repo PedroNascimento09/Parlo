@@ -2222,7 +2222,7 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        if let Err(error) = models::install(models::REMAINING_UNITS) {
+        if let Err(error) = models::install(&models::remaining_units()) {
             return respond_json(
                 stream,
                 "500 Internal Server Error",
@@ -2860,6 +2860,7 @@ fn handle(
         let data: Vec<serde_json::Value> = models::status()
             .iter()
             .map(|model| {
+                let spec = crate::registry::model(model.id);
                 serde_json::json!({
                     "id": model.id,
                     "object": "model",
@@ -2867,6 +2868,12 @@ fn handle(
                     "kind": model.kind,
                     "feature": model.feature,
                     "installed": model.installed,
+                    "licence": spec.map(|spec| spec.licence).unwrap_or_default(),
+                    "languages": spec.map(|spec| spec.languages).unwrap_or(&[]),
+                    "devices": spec.map(|spec| spec.devices).unwrap_or(&[]),
+                    "bytes": spec.map(|spec| spec.bytes).unwrap_or(0),
+                    "capabilities": spec.map(|spec| spec.capabilities).unwrap_or(&[]),
+                    "default": spec.map(|spec| spec.default).unwrap_or(false),
                 })
             })
             .collect();
@@ -3505,6 +3512,8 @@ mod tests {
         assert!(listed.starts_with("HTTP/1.1 200 OK"));
         assert!(listed.contains("\"object\":\"list\""));
         assert!(listed.contains("\"owned_by\":\"parlo\""));
+        assert!(listed.contains("\"licence\":"));
+        assert!(listed.contains("\"languages\":"));
 
         let foreign = ask(port, "GET /state HTTP/1.1\r\nHost: evil.example\r\n\r\n");
         assert!(foreign.starts_with("HTTP/1.1 400"));

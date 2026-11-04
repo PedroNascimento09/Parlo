@@ -31,6 +31,7 @@ mod models;
 mod notes;
 mod playback;
 mod record;
+mod registry;
 mod retention;
 mod sample;
 mod serve;
@@ -330,7 +331,7 @@ fn list_engines() -> Result<(), String> {
         .map(|engine| engine.license.label().len())
         .max()
         .unwrap_or(0);
-    for engine in engines::ENGINES {
+    for engine in engines::ENGINES.iter() {
         let state = if engine.available {
             "available"
         } else {
