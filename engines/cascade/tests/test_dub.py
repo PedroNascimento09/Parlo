@@ -117,7 +117,7 @@ class CueBuildTest(unittest.TestCase):
 
         spoken = []
 
-        def fake_speak(engine, text, slot):
+        def fake_speak(engine, text):
             spoken.append(text)
             return np.full(int(0.1 * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
 
@@ -136,6 +136,49 @@ class CueBuildTest(unittest.TestCase):
         self.assertEqual([line.source for line in lines], ["hello", "world"])
         self.assertAlmostEqual(lines[0].start, 0.1)
         self.assertAlmostEqual(lines[0].end, 0.2)
+
+
+@unittest.skipUnless(HAS_NUMPY, "numpy is required for the cue build")
+class VoiceReuseTest(unittest.TestCase):
+    def test_the_batch_loads_one_voice_for_every_segment(self):
+        import numpy as np
+
+        class Engine:
+            def __init__(self, voice):
+                self.voice_path = voice
+                self.loads = 0
+                self.spoken = []
+
+            def _load_voice(self):
+                self.loads += 1
+
+            def _synthesize(self, text):
+                self.spoken.append(text)
+                silence = np.zeros(int(0.1 * dub.SAMPLE_RATE), dtype=np.float32)
+                return dub.float_to_pcm16(silence)
+
+            def _transcribe(self, audio):
+                return "hello"
+
+            def _translate(self, text):
+                return "T:" + text
+
+        voice = Path(tempfile.mkdtemp()) / "voice.onnx"
+        voice.write_bytes(b"")
+        engine = Engine(voice)
+        cues = [dub.Cue("p-0", 0.1, 0.4, "hello"), dub.Cue("p-1", 0.6, 0.9, "world")]
+        samples = np.zeros(dub.SAMPLE_RATE, dtype=np.float32)
+
+        track, lines = dub.build(engine, samples, lambda _: None, cues)
+
+        self.assertEqual(len(track), len(samples))
+        self.assertEqual([line.translated for line in lines], ["T:hello", "T:world"])
+        self.assertEqual(engine.spoken, ["T:hello", "T:world"])
+        self.assertEqual(
+            engine.loads,
+            1,
+            f"the batch asked for the voice {engine.loads} times",
+        )
 
 
 @unittest.skipUnless(HAS_NUMPY, "numpy is required for the segmentation helpers")

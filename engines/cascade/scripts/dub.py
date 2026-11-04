@@ -1,11 +1,11 @@
 import argparse
-import io
 import json
 import math
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import wave
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,15 +22,13 @@ from parlo_cascade.engine import (
     float_to_pcm16,
     pcm16_to_float,
 )
+from parlo_cascade.tts import VoiceUnavailable
 
 FRAME_SECONDS = 0.02
 MIN_SEGMENT_SECONDS = 0.8
 MAX_SEGMENT_SECONDS = 15.0
 PAUSE_SECONDS = 0.28
 VOICED_RMS = 0.008
-SLOT_GROWTH = 1.15
-SLOT_MAX_GROWTH_SECONDS = 3.0
-FASTEST_LENGTH_SCALE = 0.82
 BACKGROUND_GAIN = 0.55
 DUCKING_FLOOR = 0.18
 VIDEO_SUFFIXES = {".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v"}
@@ -243,26 +241,25 @@ def segment(samples: np.ndarray) -> list[Segment]:
     return segments
 
 
-def speak(engine: CascadeEngine, text: str, slot_seconds: float) -> np.ndarray:
-    audio = engine._synthesize(text)
-    samples = np.asarray(pcm16_to_float(audio), dtype=np.float32)
-    if samples.size == 0:
-        return np.zeros(0, dtype=np.float32)
-    length = len(samples) / SAMPLE_RATE
-    if length <= slot_seconds:
-        return samples
-    scale = max(FASTEST_LENGTH_SCALE, slot_seconds / length)
-    from piper import PiperVoice, SynthesisConfig
+def speak(engine: CascadeEngine, text: str) -> np.ndarray:
+    return np.asarray(pcm16_to_float(engine._synthesize(text)), dtype=np.float32)
 
-    if engine._tts is None:
-        engine._tts = PiperVoice.load(str(engine.voice_path))
-    buffer = io.BytesIO()
-    with wave.open(buffer, "wb") as wav:
-        engine._tts.synthesize_wav(text, wav, syn_config=SynthesisConfig(length_scale=scale))
-    buffer.seek(0)
-    with wave.open(buffer, "rb") as wav:
-        faster = np.asarray(pcm16_to_float(wav.readframes(wav.getnframes())), dtype=np.float32)
-    return faster if faster.size > 0 else samples
+
+def warm_voice(engine: CascadeEngine) -> threading.Thread | None:
+    load = getattr(engine, "_load_voice", None)
+    voice = getattr(engine, "voice_path", None)
+    if load is None or voice is None or not Path(voice).is_file():
+        return None
+
+    def boot() -> None:
+        try:
+            load().start()
+        except VoiceUnavailable:
+            pass
+
+    thread = threading.Thread(target=boot, daemon=True)
+    thread.start()
+    return thread
 
 
 def select_voice(
@@ -310,6 +307,7 @@ def build(
 
     engine_voice = getattr(engine, "voice_path", None)
     default_voice = Path(engine_voice) if engine_voice else None
+    warming = warm_voice(engine)
     track = np.zeros(len(samples), dtype=np.float32)
     lines: list[Line] = []
     for number, (piece, cue) in enumerate(pieces, start=1):
@@ -323,10 +321,7 @@ def build(
         if not translated:
             progress(f"[{number}/{len(pieces)}] skipped, nothing translated")
             continue
-        following = pieces[number][0].start if number < len(pieces) else len(samples)
-        gap = max((following - piece.end) / SAMPLE_RATE, 0.0)
-        slot = piece.seconds() * SLOT_GROWTH + min(gap, SLOT_MAX_GROWTH_SECONDS)
-        audio = speak(engine, translated, slot)
+        audio = speak(engine, translated)
         end = min(piece.start + len(audio), len(track))
         track[piece.start : end] += audio[: end - piece.start]
         lines.append(
@@ -342,6 +337,8 @@ def build(
         progress(
             f"[{number}/{len(pieces)}] {piece.start / SAMPLE_RATE:7.1f}s  {translated}"
         )
+    if warming is not None:
+        warming.join()
     return np.clip(track, -1.0, 1.0), lines
 
 
