@@ -21,6 +21,7 @@ class WriteKeepsTheWordsTest(unittest.TestCase):
         engine.transcribe = lambda pcm16: "Bom dia, tudo bem?"
         engine._load_writer = lambda language: translator
         engine._touch = lambda name: None
+        engine.clean_mode = "light"
         return engine
 
     def test_a_broken_translation_stage_keeps_the_words(self):
