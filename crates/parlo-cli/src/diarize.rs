@@ -14,6 +14,7 @@ pub struct Turn {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Diarization {
     pub speakers: usize,
+    pub hint: Option<usize>,
     pub turns: Vec<Turn>,
 }
 
@@ -23,7 +24,8 @@ pub fn group(
     ends: &[u64],
     hint: Option<usize>,
 ) -> Diarization {
-    let limit = hint.unwrap_or(MAX_SPEAKERS).clamp(1, 20);
+    let hint = hint.map(|value| value.clamp(1, 20));
+    let limit = hint.unwrap_or(MAX_SPEAKERS);
     let count = vectors.len().min(starts.len()).min(ends.len());
     let mut centroids: Vec<Vec<f32>> = Vec::new();
     let mut lines: Vec<usize> = Vec::new();
@@ -72,6 +74,7 @@ pub fn group(
     }
     Diarization {
         speakers: centroids.len(),
+        hint,
         turns,
     }
 }
