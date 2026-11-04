@@ -110,6 +110,7 @@ impl Manager {
         }
     }
 
+    #[cfg(not(test))]
     pub fn new() -> Self {
         let mut manager = Self::empty(Store::open_default().ok());
         manager.register("models", |handle| {
@@ -648,17 +649,12 @@ mod tests {
         });
         let events = manager.subscribe(&id).unwrap();
         let mut saw_progress = false;
-        loop {
-            match events.recv_timeout(Duration::from_secs(2)) {
-                Ok(event) => {
-                    if event.job.progress >= 0.4 {
-                        saw_progress = true;
-                    }
-                    if event.job.state.terminal() {
-                        break;
-                    }
-                }
-                Err(_) => break,
+        while let Ok(event) = events.recv_timeout(Duration::from_secs(2)) {
+            if event.job.progress >= 0.4 {
+                saw_progress = true;
+            }
+            if event.job.state.terminal() {
+                break;
             }
         }
         assert!(saw_progress);
