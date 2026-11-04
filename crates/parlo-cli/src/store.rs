@@ -2,7 +2,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
+use serde::Serialize;
 
 const SCHEMA: &str = r#"
 PRAGMA foreign_keys = ON;
@@ -177,6 +178,52 @@ pub struct JobRecord<'a> {
     pub error: Option<&'a str>,
     pub created_at: i64,
     pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct DubProject {
+    pub id: String,
+    pub title: String,
+    pub source_path: Option<String>,
+    pub from: String,
+    pub to: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub segments: Vec<DubSegment>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct DubSegment {
+    pub id: String,
+    pub position: usize,
+    pub start_ms: u64,
+    pub end_ms: u64,
+    pub speaker: Option<String>,
+    pub source_text: String,
+    pub target_text: Option<String>,
+    pub state: String,
+}
+
+impl DubProject {
+    pub fn new(
+        id: String,
+        title: String,
+        from: &str,
+        to: &str,
+        source_path: Option<String>,
+    ) -> Self {
+        let stamp = now();
+        Self {
+            id,
+            title,
+            source_path,
+            from: from.to_string(),
+            to: to.to_string(),
+            created_at: stamp,
+            updated_at: stamp,
+            segments: Vec::new(),
+        }
+    }
 }
 
 impl Store {
@@ -410,6 +457,122 @@ impl Store {
             .map_err(sql)?;
         rows.collect::<Result<Vec<_>, _>>().map_err(sql)
     }
+
+    pub fn save_dub_project(&mut self, project: &mut DubProject) -> Result<(), String> {
+        let stamp = now();
+        if project.created_at == 0 {
+            project.created_at = stamp;
+        }
+        project.updated_at = stamp;
+        let settings = serde_json::json!({
+            "from": project.from,
+            "to": project.to,
+        })
+        .to_string();
+        let transaction = self.connection.transaction().map_err(sql)?;
+        transaction
+            .execute(
+                "INSERT INTO projects (id, kind, title, source_path, source_hash, created_at, updated_at, settings_json) VALUES (?1, 'dub', ?2, ?3, NULL, ?4, ?5, ?6) ON CONFLICT(id) DO UPDATE SET title = excluded.title, source_path = excluded.source_path, updated_at = excluded.updated_at, settings_json = excluded.settings_json",
+                params![
+                    project.id,
+                    project.title,
+                    project.source_path,
+                    project.created_at,
+                    project.updated_at,
+                    settings
+                ],
+            )
+            .map_err(sql)?;
+        transaction
+            .execute(
+                "DELETE FROM segments WHERE project_id = ?1",
+                params![project.id],
+            )
+            .map_err(sql)?;
+        for (position, segment) in project.segments.iter_mut().enumerate() {
+            segment.position = position;
+            if segment.id.is_empty() {
+                segment.id = format!("{}-{position}", project.id);
+            }
+            transaction
+                .execute(
+                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, ?7, ?8, ?9, NULL)",
+                    params![
+                        segment.id,
+                        project.id,
+                        segment.position as i64,
+                        segment.start_ms as i64,
+                        segment.end_ms as i64,
+                        segment.speaker,
+                        segment.source_text,
+                        segment.target_text,
+                        segment.state
+                    ],
+                )
+                .map_err(sql)?;
+        }
+        transaction.commit().map_err(sql)
+    }
+
+    pub fn load_dub_project(&self, id: &str) -> Result<Option<DubProject>, String> {
+        let project = self
+            .connection
+            .query_row(
+                "SELECT id, title, source_path, created_at, updated_at, settings_json FROM projects WHERE id = ?1 AND kind = 'dub'",
+                params![id],
+                |row| {
+                    let settings: serde_json::Value = row
+                        .get::<_, Option<String>>(5)?
+                        .and_then(|text| serde_json::from_str(&text).ok())
+                        .unwrap_or_default();
+                    Ok(DubProject {
+                        id: row.get(0)?,
+                        title: row.get(1)?,
+                        source_path: row.get(2)?,
+                        from: settings
+                            .get("from")
+                            .and_then(|value| value.as_str())
+                            .unwrap_or("pt")
+                            .to_string(),
+                        to: settings
+                            .get("to")
+                            .and_then(|value| value.as_str())
+                            .unwrap_or("en")
+                            .to_string(),
+                        created_at: row.get::<_, Option<i64>>(3)?.unwrap_or_default(),
+                        updated_at: row.get::<_, Option<i64>>(4)?.unwrap_or_default(),
+                        segments: Vec::new(),
+                    })
+                },
+            )
+            .optional()
+            .map_err(sql)?;
+        let Some(mut project) = project else {
+            return Ok(None);
+        };
+        let mut statement = self
+            .connection
+            .prepare("SELECT id, position, start_ms, end_ms, speaker, source_text, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
+            .map_err(sql)?;
+        let rows = statement
+            .query_map(params![id], |row| {
+                Ok(DubSegment {
+                    id: row.get(0)?,
+                    position: row.get::<_, i64>(1)?.max(0) as usize,
+                    start_ms: row.get::<_, i64>(2)?.max(0) as u64,
+                    end_ms: row.get::<_, i64>(3)?.max(0) as u64,
+                    speaker: row.get(4)?,
+                    source_text: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    target_text: row.get(6)?,
+                    state: row
+                        .get::<_, Option<String>>(7)?
+                        .unwrap_or_else(|| "imported".to_string()),
+                })
+            })
+            .map_err(sql)?;
+        project.segments = rows.collect::<Result<Vec<_>, _>>().map_err(sql)?;
+        Ok(Some(project))
+    }
 }
 
 fn sql(error: rusqlite::Error) -> String {
@@ -600,5 +763,49 @@ mod tests {
         job.updated_at = 12;
         store.save_job(&job).unwrap();
         assert_eq!(store.count("jobs").unwrap(), 1);
+    }
+
+    #[test]
+    fn a_dub_project_round_trips_with_its_segments() {
+        let mut store = Store::open_memory().unwrap();
+        let mut project = DubProject::new(
+            "p1".to_string(),
+            "Launch".to_string(),
+            "pt",
+            "en",
+            Some("launch.srt".to_string()),
+        );
+        project.segments.push(DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            source_text: "Bom dia".to_string(),
+            target_text: Some("Good morning".to_string()),
+            state: "imported".to_string(),
+        });
+        project.segments.push(DubSegment {
+            id: "p1-1".to_string(),
+            position: 1,
+            start_ms: 4_000,
+            end_ms: 5_000,
+            speaker: None,
+            source_text: "Até logo".to_string(),
+            target_text: None,
+            state: "imported".to_string(),
+        });
+        store.save_dub_project(&mut project).unwrap();
+
+        let loaded = store.load_dub_project("p1").unwrap().unwrap();
+        assert_eq!(loaded.id, "p1");
+        assert_eq!(loaded.title, "Launch");
+        assert_eq!(loaded.from, "pt");
+        assert_eq!(loaded.to, "en");
+        assert_eq!(loaded.segments, project.segments);
+        assert_eq!(loaded.segments[0].speaker.as_deref(), Some("Ana"));
+        assert_eq!(loaded.segments[0].start_ms, 1_250);
+        assert_eq!(loaded.segments[1].target_text, None);
+        assert!(store.load_dub_project("missing").unwrap().is_none());
     }
 }

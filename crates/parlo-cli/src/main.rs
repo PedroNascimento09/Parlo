@@ -42,6 +42,7 @@ mod sidecar;
 mod speakers;
 mod store;
 mod style;
+mod subtitles;
 mod summary;
 mod undo;
 mod update;

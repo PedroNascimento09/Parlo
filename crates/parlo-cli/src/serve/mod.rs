@@ -17,6 +17,8 @@ use crate::commands;
 use crate::dub;
 use crate::insert;
 use crate::models;
+use crate::store::Store as ProjectStore;
+use crate::subtitles;
 use crate::undo;
 
 use crate::update;
@@ -1883,6 +1885,116 @@ fn handle(
         };
     }
 
+    if method == "POST" && path == "/dub/import" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let requested = header(&headers, "x-parlo-filename")
+            .map(|value| percent_decode(&value))
+            .unwrap_or_else(|| "subtitles.srt".to_string());
+        let name = dub::safe_name(&requested);
+        let lower = name.to_ascii_lowercase();
+        if !lower.ends_with(".srt") && !lower.ends_with(".vtt") {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json("choose an .srt or .vtt subtitle file"),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let stored = crate::config::load();
+        let from = header(&headers, "x-parlo-from")
+            .unwrap_or_else(|| stored.from.clone())
+            .to_ascii_lowercase();
+        let to = header(&headers, "x-parlo-to")
+            .unwrap_or_else(|| stored.to.clone())
+            .to_ascii_lowercase();
+        if let Err(error) = crate::config::check_pair(&from, &to) {
+            return respond_json(stream, "400 Bad Request", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        let mut project = match subtitles::project(new_token(), &name, &body, &from, &to) {
+            Ok(project) => project,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let mut store = match ProjectStore::open_default() {
+            Ok(store) => store,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot open the project store: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        if let Err(error) = store.save_dub_project(&mut project) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot save the imported project: {error}")),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return match serde_json::to_string(&project) {
+            Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot encode the imported project: {error}")),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "GET" && path.starts_with("/dub/project/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = path
+            .trim_start_matches("/dub/project/")
+            .trim_end_matches('/');
+        if id.is_empty() {
+            return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                .map(|()| Flow::Serve);
+        }
+        let store = match ProjectStore::open_default() {
+            Ok(store) => store,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot open the project store: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        return match store.load_dub_project(id) {
+            Ok(Some(project)) => match serde_json::to_string(&project) {
+                Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
+                Err(error) => respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot encode the project: {error}")),
+                )
+                .map(|()| Flow::Serve),
+            },
+            Ok(None) => respond_json(stream, "404 Not Found", &error_json("project not found"))
+                .map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot load the project: {error}")),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path.starts_with("/dub/") {
         let id = path.trim_start_matches("/dub/");
         let Some((file, name)) = recall(id) else {
@@ -3563,7 +3675,9 @@ fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>), String> {
 
 fn body_limit(head: &str) -> usize {
     let path = head.split_whitespace().nth(1).unwrap_or_default();
-    if path.starts_with("/dub") {
+    if path.starts_with("/dub/import") {
+        MAX_BODY
+    } else if path.starts_with("/dub") {
         MAX_DUB_BODY
     } else if path.starts_with("/v1/audio/") {
         MAX_AUDIO_BODY
@@ -3766,6 +3880,7 @@ mod tests {
     #[test]
     fn dub_uploads_get_their_own_size_limit() {
         assert_eq!(body_limit("POST /dub HTTP/1.1"), MAX_DUB_BODY);
+        assert_eq!(body_limit("POST /dub/import HTTP/1.1"), MAX_BODY);
         assert_eq!(body_limit("POST /translate HTTP/1.1"), MAX_BODY);
         assert_eq!(body_limit(""), MAX_BODY);
     }

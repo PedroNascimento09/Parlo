@@ -48,6 +48,9 @@ const dubResult = document.getElementById("dub-result");
 const dubDownload = document.getElementById("dub-download");
 const dubCount = document.getElementById("dub-count");
 const dubLines = document.getElementById("dub-lines");
+const dubImport = document.getElementById("dub-import");
+const dubSubtitles = document.getElementById("dub-subtitles");
+const dubProjectLabel = document.getElementById("dub-project");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
 const settingsStt = document.getElementById("settings-stt");
@@ -2146,6 +2149,8 @@ function describeDubError(detail) {
 }
 
 function showDub(result) {
+  dubProjectLabel.textContent = "";
+  dubDownload.hidden = false;
   dubDownload.href = "/dub/" + encodeURIComponent(result.id);
   dubDownload.textContent = "Download " + (result.name || "the dubbed file");
   const lines = result.lines || [];
@@ -2180,6 +2185,93 @@ function showDub(result) {
     dubLines.append(item);
   }
   dubResult.hidden = false;
+}
+
+function showProject(project) {
+  dubDownload.hidden = true;
+  const lines = project.segments || [];
+  dubProjectLabel.textContent =
+    (project.title || "Imported subtitles") +
+    " · " +
+    lines.length +
+    (lines.length === 1 ? " cue" : " cues");
+  dubCount.textContent =
+    lines.length + (lines.length === 1 ? " line" : " lines") + " · imported";
+  dubLines.replaceChildren();
+  for (const line of lines) {
+    const item = document.createElement("li");
+    item.className = "dub-line";
+
+    const time = document.createElement("span");
+    time.className = "dub-time";
+    time.textContent = formatClock((line.start_ms || 0) / 1000);
+
+    const body = document.createElement("div");
+    const translated = document.createElement("p");
+    translated.className = "dub-translated";
+    translated.textContent = line.source_text || "";
+    const source = document.createElement("p");
+    source.className = "dub-source";
+    const range =
+      formatClock((line.start_ms || 0) / 1000) +
+      " to " +
+      formatClock((line.end_ms || 0) / 1000);
+    source.textContent = (line.speaker ? line.speaker + " · " : "") + range;
+    body.append(translated, source);
+
+    item.append(time, body);
+    dubLines.append(item);
+  }
+  dubResult.hidden = false;
+}
+
+async function importSubtitles(file) {
+  if (!file || dubbing) {
+    return;
+  }
+  clearError();
+  dubImport.disabled = true;
+  dubStart.disabled = true;
+  setDubStatus("Reading " + file.name + " on this computer.");
+  try {
+    const response = await fetch("/dub/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-Parlo-Filename": encodeURIComponent(file.name),
+        "X-Parlo-From": savedSettings.from,
+        "X-Parlo-To": savedSettings.to,
+        Authorization: "Bearer " + token,
+      },
+      body: file,
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error("Parlo lost the connection to its engine. Close Parlo and open it again.");
+    }
+    if (!response.ok) {
+      throw new Error(detail.error || "The subtitle file could not be imported.");
+    }
+    const reload = await fetch("/dub/project/" + encodeURIComponent(detail.id), {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const project = await reload.json().catch(() => ({}));
+    if (!reload.ok) {
+      throw new Error(project.error || "The imported project could not be reloaded.");
+    }
+    showProject(project);
+    setDubStatus(
+      "Imported " +
+        (project.segments || []).length +
+        " cues. The project is saved on this computer.",
+    );
+  } catch (failure) {
+    setDubStatus("");
+    showError(failure.message || "The subtitle file could not be imported.");
+  } finally {
+    dubImport.disabled = false;
+    dubStart.disabled = !chosenFile;
+  }
 }
 
 async function startDub() {
@@ -2254,6 +2346,14 @@ fileInput.addEventListener("change", () => {
 });
 
 dubStart.addEventListener("click", () => startDub());
+
+dubImport.addEventListener("click", () => dubSubtitles.click());
+
+dubSubtitles.addEventListener("change", () => {
+  const file = dubSubtitles.files && dubSubtitles.files[0];
+  importSubtitles(file);
+  dubSubtitles.value = "";
+});
 
 document.addEventListener("dragover", (event) => {
   if (!event.dataTransfer) {
