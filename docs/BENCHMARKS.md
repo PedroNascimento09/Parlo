@@ -364,6 +364,45 @@ When a machine has the memory, these two commands produce the numbers, the secon
 
 `--speak` is new: it says one sentence through the engine and reports the first call and the median of the warm ones, so the voice path can be measured without the recogniser.
 
+### The translate memory wall, 4 November 2026
+
+`parlo translate` reads the whole file, pushes it through the pipeline in 480 sample frames and writes back the audio it receives. At the start of the week it died here with `bad allocation` while 2.3 GB of the machine's 16 GB were free. With 6.7 GB free the same command finishes, and the memory it needs does not depend on the length of the file:
+
+| Clip | Wall | Peak RSS | Exit |
+|---|---|---|---|
+| 24.30 s, three utterances | 32.37 s | 1128 MB | 0 |
+| 49.50 s, six utterances | 56.57 s | 1133 MB | 0 |
+
+The six utterance run holds that peak for 56 s without growing, so nothing is retained per segment. The memory is three models resident at once, and they stay until the process ends:
+
+| Stage | RSS in the sidecar |
+|---|---|
+| interpreter and imports | 18 MB |
+| engine object | 25 MB |
+| parakeet int8 loaded | 720 MB |
+| parakeet unloaded | 51 MB |
+| translation model loaded | 154 MB |
+| voice adapter started | 151 MB |
+| voice and translator released | 61 MB |
+
+The recogniser costs 695 MB and the translator 130 MB in the same process, and the piper adapter adds 220 MB in its own: 881 MB in the sidecar, 220 MB in the adapter, 18 MB of Rust, which is the 1128 MB measured.
+
+They are resident together because the pipeline is a stream. Every segment is transcribed, translated and spoken before the next one starts, so the recogniser cannot be dropped while the translator and the voice are in use. Two passes over the file would fix it, transcribe everything, drop the recogniser, then translate and speak, and the peak would be about 750 MB instead of 1128 MB: 720 MB for the recogniser alone, then 350 MB for translator and voice.
+
+That needs an offline entry point that hands the whole file to the engine, and the only caller of the frame loop is `translate` in `crates/parlo-cli/src/main.rs`, off limits in this round, so the change is not in this repository yet. The smaller-looking alternative, unloading the recogniser between segments and reloading it for the next one, costs a reload every 2.5 s of audio and would make the live path unusable, so it was measured out instead of forced in.
+
+The translations below are the engine's own on the 24.3 s clip, chunked the way the command chunks it. This clip is synthetic and the recogniser mishears words on it, which the translations carry:
+
+```
+line 1: This is your copyright symbol.
+line 2: And he's got to talk about Tilalphuminian Portugal, that's what it is.
+line 3: til for free graphil or works well.
+```
+
+```bash
+target/debug/parlo.exe translate .tmp-clip-pt-three.wav .tmp-translate.wav --engine cascade --from pt --to en
+```
+
 ### Translation on the corpus
 
 `benchmarks/corpus/translation.jsonl` holds 24 sentence pairs written for this project, 12 in each direction, with times, dates, numbers, negations, clitics, reported speech and idioms. `engines/cascade/scripts/mt_bench.py` runs one checkpoint over one direction and prints every row, so any number below arrives with the text that produced it.
