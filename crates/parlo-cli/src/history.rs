@@ -157,6 +157,16 @@ pub fn recent(limit: usize) -> Vec<Entry> {
     recent_at(&path(), limit)
 }
 
+pub fn favourites(limit: usize) -> Vec<Entry> {
+    let mut entries: Vec<Entry> = entries_at(&path())
+        .into_iter()
+        .rev()
+        .filter(|entry| entry.favourite)
+        .collect();
+    entries.truncate(limit);
+    entries
+}
+
 pub fn clear() -> Result<(), String> {
     clear_at(&path())
 }

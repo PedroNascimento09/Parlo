@@ -91,6 +91,81 @@ fn tools() -> Value {
                 "additionalProperties": false,
             },
         },
+        {
+            "name": "list_models",
+            "description": "Every model in the catalogue with its licence, download size, languages, devices and whether it is installed.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+        },
+        {
+            "name": "list_engines",
+            "description": "The speech and translation engines Parlo knows, with their licence, hardware, fidelity and availability.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+        },
+        {
+            "name": "capabilities",
+            "description": "What this Parlo server can do, which transports it speaks, how it authenticates and where audio stays.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+        },
+        {
+            "name": "search_dictations",
+            "description": "Search past dictations by their text, translation or program, newest first.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "The words to look for." },
+                    "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+                },
+                "required": ["query"],
+                "additionalProperties": false,
+            },
+        },
+        {
+            "name": "favourite_dictations",
+            "description": "The dictations marked as favourites, newest first.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+                },
+                "additionalProperties": false,
+            },
+        },
+        {
+            "name": "meeting_transcript",
+            "description": "One meeting's transcript as structured lines, with millisecond times, speaker labels and the names applied to them.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "description": "The meeting id from list_meetings." },
+                },
+                "required": ["id"],
+                "additionalProperties": false,
+            },
+        },
+        {
+            "name": "meeting_actions",
+            "description": "The action items found in one meeting, with the owner, the due phrase and the line that supports each one.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "description": "The meeting id from list_meetings." },
+                },
+                "required": ["id"],
+                "additionalProperties": false,
+            },
+        },
+        {
+            "name": "meeting_decisions",
+            "description": "The decisions found in one meeting, with the speaker, the time and the decision each one replaces.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string", "description": "The meeting id from list_meetings." },
+                },
+                "required": ["id"],
+                "additionalProperties": false,
+            },
+        },
     ])
 }
 
@@ -114,6 +189,26 @@ fn call(params: &Value) -> Value {
             None => return failure("meeting_notes needs a meeting id"),
         },
         "recent_dictations" => recent_dictations(&arguments),
+        "list_models" => list_models(),
+        "list_engines" => list_engines(),
+        "capabilities" => capabilities(),
+        "search_dictations" => match arguments.get("query").and_then(Value::as_str) {
+            Some(query) if !query.trim().is_empty() => search_dictations(query, &arguments),
+            _ => return failure("search_dictations needs a query"),
+        },
+        "favourite_dictations" => favourite_dictations(&arguments),
+        "meeting_transcript" => match render_meeting(&arguments, name, transcript_json) {
+            Ok(text) => text,
+            Err(error) => return failure(&error),
+        },
+        "meeting_actions" => match render_meeting(&arguments, name, actions_json) {
+            Ok(text) => text,
+            Err(error) => return failure(&error),
+        },
+        "meeting_decisions" => match render_meeting(&arguments, name, decisions_json) {
+            Ok(text) => text,
+            Err(error) => return failure(&error),
+        },
         other => return failure(&format!("this server has no tool called {other}")),
     };
     json!({ "content": [{ "type": "text", "text": text }], "isError": false })
@@ -150,28 +245,173 @@ fn ask_meetings(question: &str) -> String {
 }
 
 fn recent_dictations(arguments: &Value) -> String {
-    let limit = arguments
+    let entries: Vec<Value> = crate::history::recent(limit_of(arguments))
+        .iter()
+        .map(entry_json)
+        .collect();
+    json!(entries).to_string()
+}
+
+fn search_dictations(query: &str, arguments: &Value) -> String {
+    let entries: Vec<Value> = crate::history::search(query, limit_of(arguments))
+        .iter()
+        .map(entry_json)
+        .collect();
+    json!(entries).to_string()
+}
+
+fn favourite_dictations(arguments: &Value) -> String {
+    let entries: Vec<Value> = crate::history::favourites(limit_of(arguments))
+        .iter()
+        .map(entry_json)
+        .collect();
+    json!(entries).to_string()
+}
+
+fn limit_of(arguments: &Value) -> usize {
+    arguments
         .get("limit")
         .and_then(Value::as_u64)
         .unwrap_or(10)
-        .clamp(1, 50) as usize;
-    let entries: Vec<Value> = crate::history::recent(limit)
+        .clamp(1, 50) as usize
+}
+
+fn entry_json(entry: &crate::history::Entry) -> Value {
+    json!({
+        "id": entry.id,
+        "at": entry.at,
+        "text": entry.text,
+        "translation": entry.translation,
+        "from": entry.from,
+        "to": entry.to,
+        "app": entry.app,
+        "mode": entry.mode,
+        "favourite": entry.favourite,
+        "seconds": entry.seconds,
+    })
+}
+
+fn list_models() -> String {
+    let models: Vec<Value> = crate::models::status()
         .iter()
-        .map(|entry| {
+        .map(|model| {
+            let spec = crate::registry::model(model.id);
             json!({
-                "id": entry.id,
-                "at": entry.at,
-                "text": entry.text,
-                "translation": entry.translation,
-                "from": entry.from,
-                "to": entry.to,
-                "app": entry.app,
-                "mode": entry.mode,
-                "favourite": entry.favourite,
+                "id": model.id,
+                "name": model.name,
+                "kind": model.kind,
+                "feature": model.feature,
+                "installed": model.installed,
+                "installed_bytes": model.bytes,
+                "download_bytes": spec.map(|spec| spec.bytes).unwrap_or(0),
+                "licence": spec.map(|spec| spec.licence).unwrap_or(""),
+                "languages": spec.map(|spec| spec.languages).unwrap_or(&[]),
+                "devices": spec.map(|spec| spec.devices).unwrap_or(&[]),
+                "capabilities": spec.map(|spec| spec.capabilities).unwrap_or(&[]),
+                "default": spec.map(|spec| spec.default).unwrap_or(false),
             })
         })
         .collect();
-    json!(entries).to_string()
+    json!(models).to_string()
+}
+
+fn list_engines() -> String {
+    let engines: Vec<Value> = crate::registry::PIPELINES
+        .iter()
+        .map(|spec| {
+            json!({
+                "id": spec.id,
+                "name": spec.name,
+                "licence": spec.licence,
+                "hardware": spec.hardware,
+                "requires_gpu": spec.requires_gpu,
+                "available": spec.available,
+                "default": spec.default,
+                "fidelity": spec.fidelity,
+            })
+        })
+        .collect();
+    json!(engines).to_string()
+}
+
+fn capabilities() -> String {
+    json!({
+        "name": "Parlo",
+        "version": env!("CARGO_PKG_VERSION"),
+        "api": "v1",
+        "local": true,
+        "transports": ["http", "websocket", "mcp-http", "mcp-stdio"],
+        "authentication": "x-parlo-token or Authorization: Bearer",
+        "capabilities": ["dictation", "translation", "meetings", "voices", "dubbing", "diarisation"],
+        "privacy": "audio stays on this computer",
+    })
+    .to_string()
+}
+
+fn render_meeting(
+    arguments: &Value,
+    tool: &str,
+    render: fn(&crate::meeting::Meeting) -> String,
+) -> Result<String, String> {
+    let id = arguments
+        .get("id")
+        .and_then(Value::as_str)
+        .ok_or_else(|| format!("{tool} needs a meeting id"))?;
+    let meeting = crate::meeting::load(id)?;
+    Ok(render(&meeting))
+}
+
+fn transcript_json(meeting: &crate::meeting::Meeting) -> String {
+    let segments: Vec<Value> = meeting
+        .segments
+        .iter()
+        .map(|segment| {
+            json!({
+                "at_ms": segment.at_ms,
+                "speaker": segment.speaker,
+                "name": segment.name.as_ref().map(|name| name.name.as_str()),
+                "text": segment.text,
+            })
+        })
+        .collect();
+    json!({
+        "id": meeting.id,
+        "title": meeting.title,
+        "started_at": meeting.started_at,
+        "segments": segments,
+    })
+    .to_string()
+}
+
+fn actions_json(meeting: &crate::meeting::Meeting) -> String {
+    let actions: Vec<Value> = crate::actions::for_meeting(meeting)
+        .iter()
+        .map(|action| {
+            json!({
+                "at_ms": action.at_ms,
+                "speaker": action.speaker,
+                "owner": action.owner,
+                "due": action.due,
+                "text": action.text,
+            })
+        })
+        .collect();
+    json!(actions).to_string()
+}
+
+fn decisions_json(meeting: &crate::meeting::Meeting) -> String {
+    let decisions: Vec<Value> = crate::decisions::for_meeting(meeting)
+        .iter()
+        .map(|decision| {
+            json!({
+                "at_ms": decision.at_ms,
+                "speaker": decision.speaker,
+                "text": decision.text,
+                "supersedes": decision.supersedes,
+            })
+        })
+        .collect();
+    json!(decisions).to_string()
 }
 
 #[cfg(test)]
@@ -223,10 +463,23 @@ mod tests {
             .iter()
             .filter_map(|tool| tool["name"].as_str())
             .collect();
-        assert!(names.contains(&"list_meetings"));
-        assert!(names.contains(&"ask_meetings"));
-        assert!(names.contains(&"meeting_notes"));
-        assert!(names.contains(&"recent_dictations"));
+        assert_eq!(tools.len(), 12);
+        for name in [
+            "list_meetings",
+            "ask_meetings",
+            "meeting_notes",
+            "recent_dictations",
+            "list_models",
+            "list_engines",
+            "capabilities",
+            "search_dictations",
+            "favourite_dictations",
+            "meeting_transcript",
+            "meeting_actions",
+            "meeting_decisions",
+        ] {
+            assert!(names.contains(&name), "{name} is missing");
+        }
         for tool in tools {
             assert!(tool["inputSchema"]["type"] == "object");
             assert!(!tool["description"].as_str().unwrap_or("").is_empty());
@@ -239,6 +492,11 @@ mod tests {
             ("list_meetings", json!({})),
             ("recent_dictations", json!({ "limit": 5 })),
             ("ask_meetings", json!({ "question": "decisions" })),
+            ("list_models", json!({})),
+            ("list_engines", json!({})),
+            ("capabilities", json!({})),
+            ("search_dictations", json!({ "query": "test" })),
+            ("favourite_dictations", json!({ "limit": 5 })),
         ];
         for (name, arguments) in calls {
             let reply = call_tool(name, arguments);
