@@ -51,6 +51,7 @@ const dubLines = document.getElementById("dub-lines");
 const dubImport = document.getElementById("dub-import");
 const dubSubtitles = document.getElementById("dub-subtitles");
 const dubProjectLabel = document.getElementById("dub-project");
+const dubSave = document.getElementById("dub-save");
 const dubClear = document.getElementById("dub-clear");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
@@ -2151,6 +2152,7 @@ function describeDubError(detail) {
 }
 
 function showDub(result) {
+  dubSave.hidden = true;
   if (!dubProject) {
     dubProjectLabel.textContent = "";
     dubClear.hidden = true;
@@ -2196,40 +2198,129 @@ function showProject(project) {
   dubProject = project;
   dubDownload.hidden = true;
   dubClear.hidden = false;
+  dubSave.hidden = false;
   const lines = project.segments || [];
   dubProjectLabel.textContent =
     (project.title || "Imported subtitles") +
     " · " +
     lines.length +
     (lines.length === 1 ? " cue" : " cues");
+  const edited = lines.some((line) => line.state === "edited");
   dubCount.textContent =
-    lines.length + (lines.length === 1 ? " line" : " lines") + " · imported";
+    lines.length +
+    (lines.length === 1 ? " line" : " lines") +
+    (edited ? " · edited" : " · imported");
   dubLines.replaceChildren();
+  const field = (labelText, input) => {
+    const label = document.createElement("label");
+    label.className = "dub-field";
+    const title = document.createElement("span");
+    title.textContent = labelText;
+    label.append(title, input);
+    return label;
+  };
   for (const line of lines) {
     const item = document.createElement("li");
-    item.className = "dub-line";
-
-    const time = document.createElement("span");
-    time.className = "dub-time";
-    time.textContent = formatClock((line.start_ms || 0) / 1000);
+    item.className = "dub-line dub-edit-line";
+    item.dataset.segment = line.id;
 
     const body = document.createElement("div");
-    const translated = document.createElement("p");
-    translated.className = "dub-translated";
-    translated.textContent = line.source_text || "";
-    const source = document.createElement("p");
-    source.className = "dub-source";
-    const range =
-      formatClock((line.start_ms || 0) / 1000) +
-      " to " +
-      formatClock((line.end_ms || 0) / 1000);
-    source.textContent = (line.speaker ? line.speaker + " · " : "") + range;
-    body.append(translated, source);
+    body.className = "dub-edit";
+    const times = document.createElement("div");
+    times.className = "dub-times";
+    const start = document.createElement("input");
+    start.className = "dub-input dub-start";
+    start.type = "number";
+    start.step = "0.001";
+    start.min = "0";
+    start.required = true;
+    start.value = ((line.start_ms || 0) / 1000).toFixed(3);
+    const end = document.createElement("input");
+    end.className = "dub-input dub-end";
+    end.type = "number";
+    end.step = "0.001";
+    end.min = "0";
+    end.required = true;
+    end.value = ((line.end_ms || 0) / 1000).toFixed(3);
+    times.append(field("Start (s)", start), field("End (s)", end));
+    const speaker = document.createElement("input");
+    speaker.className = "dub-input dub-speaker";
+    speaker.type = "text";
+    speaker.maxLength = 120;
+    speaker.placeholder = "Optional";
+    speaker.value = line.speaker || "";
+    const text = document.createElement("textarea");
+    text.className = "dub-input dub-text";
+    text.rows = 2;
+    text.required = true;
+    text.value = line.source_text || "";
+    body.append(times, field("Speaker", speaker), field("Text", text));
 
-    item.append(time, body);
+    item.append(body);
     dubLines.append(item);
   }
   dubResult.hidden = false;
+}
+
+function editedProjectSegments() {
+  return Array.from(dubLines.querySelectorAll("[data-segment]")).map((row) => {
+    const start = Number(row.querySelector(".dub-start").value);
+    const end = Number(row.querySelector(".dub-end").value);
+    const sourceText = row.querySelector(".dub-text").value;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) {
+      throw new Error("Each line needs a start before its end.");
+    }
+    if (!sourceText.trim()) {
+      throw new Error("Each line needs text.");
+    }
+    return {
+      id: row.dataset.segment,
+      start_ms: Math.round(start * 1000),
+      end_ms: Math.round(end * 1000),
+      speaker: row.querySelector(".dub-speaker").value.trim() || null,
+      source_text: sourceText,
+    };
+  });
+}
+
+async function saveProject() {
+  if (!dubProject || dubbing) {
+    return;
+  }
+  clearError();
+  let segments;
+  try {
+    segments = editedProjectSegments();
+  } catch (failure) {
+    showError(failure.message);
+    return;
+  }
+  dubSave.disabled = true;
+  setDubStatus("Saving the edited lines on this computer.");
+  try {
+    const response = await fetch("/dub/project/" + encodeURIComponent(dubProject.id), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ segments }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error("Parlo lost the connection to its engine. Close Parlo and open it again.");
+    }
+    if (!response.ok) {
+      throw new Error(detail.error || "The edited lines could not be saved.");
+    }
+    showProject(detail);
+    setDubStatus("Saved. The next dub uses these lines.");
+  } catch (failure) {
+    setDubStatus("");
+    showError(failure.message || "The edited lines could not be saved.");
+  } finally {
+    dubSave.disabled = false;
+  }
 }
 
 async function importSubtitles(file) {
@@ -2358,6 +2449,8 @@ fileInput.addEventListener("change", () => {
 
 dubStart.addEventListener("click", () => startDub());
 
+dubSave.addEventListener("click", () => saveProject());
+
 dubImport.addEventListener("click", () => dubSubtitles.click());
 
 dubSubtitles.addEventListener("change", () => {
@@ -2370,6 +2463,7 @@ dubClear.addEventListener("click", () => {
   dubProject = null;
   dubProjectLabel.textContent = "";
   dubClear.hidden = true;
+  dubSave.hidden = true;
   dubResult.hidden = true;
   setDubStatus("Imported subtitles removed. The next dub will use speech recognition.");
 });

@@ -1995,6 +1995,78 @@ fn handle(
         };
     }
 
+    if method == "POST" && path.starts_with("/dub/project/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = path
+            .trim_start_matches("/dub/project/")
+            .trim_end_matches('/');
+        if id.is_empty() {
+            return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                .map(|()| Flow::Serve);
+        }
+        let edit: ProjectEdit = match serde_json::from_slice(&body) {
+            Ok(edit) => edit,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &error_json(&format!("the project edit is not valid JSON: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        let mut store = match ProjectStore::open_default() {
+            Ok(store) => store,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot open the project store: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        let mut project = match store.load_dub_project(id) {
+            Ok(Some(project)) => project,
+            Ok(None) => {
+                return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                    .map(|()| Flow::Serve);
+            }
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot load the project: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        if let Err(error) = apply_project_edits(&mut project, &edit.segments) {
+            return respond_json(stream, "400 Bad Request", &error_json(&error))
+                .map(|()| Flow::Serve);
+        }
+        if let Err(error) = store.save_dub_project(&mut project) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot save the project: {error}")),
+            )
+            .map(|()| Flow::Serve);
+        }
+        return match serde_json::to_string(&project) {
+            Ok(answer) => respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot encode the project: {error}")),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path.starts_with("/dub/") {
         let id = path.trim_start_matches("/dub/");
         let Some((file, name)) = recall(id) else {
@@ -3608,6 +3680,93 @@ fn write_cues(
     Ok(Some(path))
 }
 
+const MAX_SEGMENT_TEXT: usize = 10_000;
+
+#[derive(serde::Deserialize)]
+struct ProjectEdit {
+    segments: Vec<SegmentEdit>,
+}
+
+#[derive(serde::Deserialize)]
+struct SegmentEdit {
+    id: String,
+    start_ms: u64,
+    end_ms: u64,
+    #[serde(default)]
+    speaker: Option<String>,
+    source_text: String,
+}
+
+fn apply_project_edits(
+    project: &mut crate::store::DubProject,
+    edits: &[SegmentEdit],
+) -> Result<(), String> {
+    if project.segments.is_empty() {
+        return Err("the project has no segments to edit".to_string());
+    }
+    if edits.len() != project.segments.len() {
+        return Err("send every segment exactly once".to_string());
+    }
+    let mut seen = std::collections::HashSet::new();
+    for edit in edits {
+        if edit.id.is_empty() {
+            return Err("a segment has no id".to_string());
+        }
+        if !seen.insert(edit.id.as_str()) {
+            return Err(format!("segment {} appears twice", edit.id));
+        }
+        if edit.start_ms >= edit.end_ms {
+            return Err(format!("segment {} ends before it starts", edit.id));
+        }
+        if edit.source_text.trim().is_empty() {
+            return Err(format!("segment {} has no text", edit.id));
+        }
+        if edit.source_text.chars().count() > MAX_SEGMENT_TEXT {
+            return Err(format!("segment {} has too much text", edit.id));
+        }
+        if edit
+            .speaker
+            .as_deref()
+            .map(str::trim)
+            .map(|speaker| speaker.chars().count() > 120)
+            .unwrap_or(false)
+        {
+            return Err(format!(
+                "segment {} has a speaker name that is too long",
+                edit.id
+            ));
+        }
+        if !project.segments.iter().any(|segment| segment.id == edit.id) {
+            return Err(format!("segment {} is not in this project", edit.id));
+        }
+    }
+    for segment in &mut project.segments {
+        let edit = edits
+            .iter()
+            .find(|edit| edit.id == segment.id)
+            .ok_or_else(|| format!("segment {} is missing", segment.id))?;
+        let speaker = edit
+            .speaker
+            .as_deref()
+            .map(str::trim)
+            .filter(|speaker| !speaker.is_empty())
+            .map(ToOwned::to_owned);
+        if segment.start_ms != edit.start_ms
+            || segment.end_ms != edit.end_ms
+            || segment.speaker != speaker
+            || segment.source_text != edit.source_text
+        {
+            segment.target_text = None;
+            segment.state = "edited".to_string();
+        }
+        segment.start_ms = edit.start_ms;
+        segment.end_ms = edit.end_ms;
+        segment.speaker = speaker;
+        segment.source_text = edit.source_text.clone();
+    }
+    Ok(())
+}
+
 #[derive(serde::Serialize)]
 struct DubCue<'a> {
     id: &'a str,
@@ -4016,6 +4175,45 @@ mod tests {
         assert_eq!(body_limit("POST /dub/import HTTP/1.1"), MAX_BODY);
         assert_eq!(body_limit("POST /translate HTTP/1.1"), MAX_BODY);
         assert_eq!(body_limit(""), MAX_BODY);
+    }
+
+    #[test]
+    fn edited_segments_survive_the_store_and_invalidate_the_translation() {
+        let mut store = crate::store::Store::open_memory().unwrap();
+        let mut project =
+            crate::store::DubProject::new("p1".to_string(), "launch".to_string(), "pt", "en", None);
+        project.segments.push(crate::store::DubSegment {
+            id: "p1-0".to_string(),
+            position: 0,
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            source_text: "Bom dia".to_string(),
+            target_text: Some("Good morning".to_string()),
+            state: "dubbed".to_string(),
+        });
+        store.save_dub_project(&mut project).unwrap();
+
+        apply_project_edits(
+            &mut project,
+            &[SegmentEdit {
+                id: "p1-0".to_string(),
+                start_ms: 500,
+                end_ms: 2_750,
+                speaker: Some("Beatriz".to_string()),
+                source_text: "Bom dia a todos".to_string(),
+            }],
+        )
+        .unwrap();
+        store.save_dub_project(&mut project).unwrap();
+        let loaded = store.load_dub_project("p1").unwrap().unwrap();
+
+        assert_eq!(loaded.segments[0].start_ms, 500);
+        assert_eq!(loaded.segments[0].end_ms, 2_750);
+        assert_eq!(loaded.segments[0].speaker.as_deref(), Some("Beatriz"));
+        assert_eq!(loaded.segments[0].source_text, "Bom dia a todos");
+        assert!(loaded.segments[0].target_text.is_none());
+        assert_eq!(loaded.segments[0].state, "edited");
     }
 
     #[test]

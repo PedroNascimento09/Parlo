@@ -1676,6 +1676,54 @@ select.field-input {
   color: var(--ink);
 }
 
+.dub-edit-line {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dub-edit {
+  display: grid;
+  gap: 10px;
+}
+
+.dub-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dub-field {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dub-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.dub-times .dub-field {
+  flex: 1 1 110px;
+}
+
+.dub-text {
+  min-height: 64px;
+  resize: vertical;
+  font-size: 13.5px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .over {
   display: none;
 }
