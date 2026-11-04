@@ -1778,9 +1778,16 @@ async function saveSettings() {
     stt: savedSettings.stt,
     write: savedSettings.write,
   };
+  const pairChanged =
+    settingsFrom.value !== savedSettings.from || settingsTo.value !== savedSettings.to;
+  const reloads = settingsStt.value !== savedSettings.stt;
   lockSettings(true);
-  settingsApply.textContent = "Loading models…";
-  settingsNote.textContent = "Parlo is loading the models again. This takes about twenty seconds.";
+  settingsApply.textContent = reloads ? "Loading models…" : "Switching…";
+  settingsNote.textContent = reloads
+    ? "Parlo is loading the models again. This takes about twenty seconds."
+    : pairChanged
+      ? "Parlo keeps the models it already has and changes the pair in place."
+      : "Parlo saves that in place, without touching the models.";
 
   try {
     const response = await fetch("/settings", {
