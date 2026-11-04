@@ -3516,13 +3516,7 @@ fn handle(
     let mut pipeline = session.pipeline();
     for chunk in wav.samples.chunks(320) {
         for output in pipeline.push(chunk) {
-            if let Some(text) = output.transcript {
-                if !transcript.is_empty() {
-                    transcript.push(' ');
-                }
-                transcript.push_str(&text);
-            }
-            if let Some(error) = output.error {
+            if let Some(error) = absorb(output, &mut samples, &mut transcript) {
                 return respond_json(
                     stream,
                     "500 Internal Server Error",
@@ -3530,9 +3524,16 @@ fn handle(
                 )
                 .map(|()| Flow::Serve);
             }
-            if let Some(frame) = output.frame {
-                samples.extend_from_slice(frame.samples());
-            }
+        }
+    }
+    for output in pipeline.finish() {
+        if let Some(error) = absorb(output, &mut samples, &mut transcript) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve);
         }
     }
 
@@ -4071,6 +4072,23 @@ fn text_field(request: &serde_json::Value, name: &str) -> String {
         .unwrap_or("")
         .trim()
         .to_string()
+}
+
+fn absorb(
+    output: parlo_core::PipelineOutput,
+    samples: &mut Vec<f32>,
+    transcript: &mut String,
+) -> Option<String> {
+    if let Some(text) = output.transcript {
+        if !transcript.is_empty() {
+            transcript.push(' ');
+        }
+        transcript.push_str(&text);
+    }
+    if let Some(frame) = output.frame {
+        samples.extend_from_slice(frame.samples());
+    }
+    output.error
 }
 
 fn json_string(value: &str) -> String {
