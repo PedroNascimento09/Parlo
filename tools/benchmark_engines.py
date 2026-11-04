@@ -92,7 +92,11 @@ def measure(name: str, command: list[str], cwd: Path, environment: dict[str, str
         result["rss_hello_mb"] = round(tree_rss(session.process.pid), 1)
         texts = []
         for index in range(runs):
-            answer, elapsed = session.call({"op": "dictate", "seq": index + 1, "pcm16": audio})
+            try:
+                answer, elapsed = session.call({"op": "dictate", "seq": index + 1, "pcm16": audio})
+            except (RuntimeError, ValueError) as error:
+                result["error"] = str(error)
+                break
             if answer.get("op") == "error":
                 result["error"] = answer.get("error")
                 break
