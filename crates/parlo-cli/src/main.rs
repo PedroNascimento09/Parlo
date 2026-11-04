@@ -522,6 +522,14 @@ fn translate(args: &[String]) -> Result<(), String> {
             }
         }
     }
+    for out in pipeline.finish() {
+        if let Some(error) = out.error {
+            return Err(format!("engine failed: {error}"));
+        }
+        if let Some(frame) = out.frame {
+            translated.extend_from_slice(frame.samples());
+        }
+    }
 
     if translated.is_empty() {
         return Err(format!(
