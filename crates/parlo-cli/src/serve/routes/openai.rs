@@ -1,4 +1,6 @@
 use std::net::TcpStream;
+use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use parlo_core::wav::write_pcm16;
 use parlo_core::{AudioFormat, Wav};
@@ -169,13 +171,13 @@ pub(crate) fn speech(
     let format = request
         .response_format
         .as_deref()
-        .unwrap_or("wav")
+        .unwrap_or("mp3")
         .to_ascii_lowercase();
-    if !matches!(format.as_str(), "wav" | "pcm") {
+    if !matches!(format.as_str(), "wav" | "pcm" | "mp3") {
         return fail(
             stream,
             "400 Bad Request",
-            "response_format must be wav or pcm in this build",
+            "response_format must be wav, pcm or mp3 in this build",
             "invalid_request_error",
             Some("response_format"),
         )
@@ -228,7 +230,70 @@ pub(crate) fn speech(
         format: audio_format,
         samples,
     });
+    if format == "mp3" {
+        return match encode_mp3(&wav) {
+            Ok(audio) => respond(stream, "200 OK", "audio/mpeg", &audio).map(|()| Flow::Serve),
+            Err(error) => fail(
+                stream,
+                "500 Internal Server Error",
+                &error,
+                "server_error",
+                None,
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
     respond(stream, "200 OK", "audio/wav", &wav).map(|()| Flow::Serve)
+}
+
+fn encode_mp3(wav: &[u8]) -> Result<Vec<u8>, String> {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_nanos())
+        .unwrap_or_default();
+    let base = std::env::temp_dir().join(format!("parlo-speech-{}-{stamp}", std::process::id()));
+    let source = base.with_extension("wav");
+    let target = base.with_extension("mp3");
+    if let Err(error) = std::fs::write(&source, wav) {
+        let _ = std::fs::remove_file(&source);
+        return Err(format!("the mp3 encoder could not read the audio: {error}"));
+    }
+    let output = Command::new("ffmpeg")
+        .args(["-hide_banner", "-loglevel", "error", "-y", "-i"])
+        .arg(&source)
+        .args([
+            "-ac",
+            "1",
+            "-ar",
+            "24000",
+            "-codec:a",
+            "libmp3lame",
+            "-b:a",
+            "128k",
+            "-f",
+            "mp3",
+        ])
+        .arg(&target)
+        .output();
+    let _ = std::fs::remove_file(&source);
+    let result = match output {
+        Ok(output) if output.status.success() => std::fs::read(&target)
+            .map_err(|error| format!("the mp3 encoder produced no readable audio: {error}"))
+            .and_then(|audio| {
+                if audio.is_empty() {
+                    Err("the mp3 encoder produced no audio".to_string())
+                } else {
+                    Ok(audio)
+                }
+            }),
+        Ok(output) => Err(format!(
+            "the mp3 encoder failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        )),
+        Err(error) => Err(format!("the mp3 encoder could not start: {error}")),
+    };
+    let _ = std::fs::remove_file(&target);
+    result
 }
 
 fn prepare(
