@@ -22,6 +22,7 @@ use crate::update;
 
 mod auth;
 mod http;
+mod multipart;
 mod routes;
 pub(crate) mod sse;
 use auth::authorised;
@@ -39,6 +40,7 @@ enum Flow {
 
 const MAX_HEAD: usize = 16 * 1024;
 const MAX_BODY: usize = 20 * 1024 * 1024;
+const MAX_AUDIO_BODY: usize = 25 * 1024 * 1024;
 const MAX_DUB_BODY: usize = 512 * 1024 * 1024;
 const KEPT_DUBS: usize = 8;
 
@@ -2843,6 +2845,10 @@ fn handle(
         return answer;
     }
 
+    if method == "POST" && path == "/v1/audio/transcriptions" {
+        return routes::openai::transcriptions(stream, &headers, token, &body, session);
+    }
+
     if method == "POST" && path == "/v1/jobs" {
         return routes::jobs::create(stream, &headers, token, &body);
     }
@@ -3434,6 +3440,8 @@ fn body_limit(head: &str) -> usize {
     let path = head.split_whitespace().nth(1).unwrap_or_default();
     if path.starts_with("/dub") {
         MAX_DUB_BODY
+    } else if path.starts_with("/v1/audio/") {
+        MAX_AUDIO_BODY
     } else {
         MAX_BODY
     }
