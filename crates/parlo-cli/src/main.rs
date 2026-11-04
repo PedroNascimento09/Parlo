@@ -22,6 +22,7 @@ mod dub;
 mod engines;
 mod hardware;
 mod history;
+mod ingest;
 mod insert;
 mod install;
 mod intelligence;

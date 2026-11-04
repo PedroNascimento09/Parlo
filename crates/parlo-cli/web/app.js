@@ -56,6 +56,9 @@ const dubCast = document.getElementById("dub-cast");
 const dubCastRows = document.getElementById("dub-cast-rows");
 const dubLanguage = document.getElementById("dub-language");
 const dubTarget = document.getElementById("dub-target");
+const dubUrlForm = document.getElementById("dub-url-form");
+const dubUrl = document.getElementById("dub-url");
+const dubUrlStart = document.getElementById("dub-url-start");
 const dubClear = document.getElementById("dub-clear");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
@@ -2441,6 +2444,87 @@ async function refreshDubProject(language) {
   }
 }
 
+function describeLinkProblem(value) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return "Paste the whole link, starting with http or https.";
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return "Only http and https links can be dubbed.";
+  }
+  return "";
+}
+
+async function startDubUrl(value) {
+  const url = (value || "").trim();
+  if (dubbing) {
+    return;
+  }
+  if (recording) {
+    showError("Let go of the record button before dubbing a link.");
+    return;
+  }
+  const problem = describeLinkProblem(url);
+  if (problem) {
+    showError(problem);
+    return;
+  }
+  clearError();
+  clearTranslation();
+  stopPlayback();
+  dubbing = true;
+  dubUrlStart.disabled = true;
+  dubStart.disabled = true;
+  dubUrlStart.textContent = "Dubbing…";
+  dubResult.hidden = true;
+  const started = Date.now();
+  const tick = () =>
+    setDubStatus(
+      "Downloading and dubbing the link locally, " +
+        formatClock((Date.now() - started) / 1000) +
+        " elapsed.",
+    );
+  tick();
+  dubTimer = setInterval(tick, 1000);
+  try {
+    const headers = {
+      "X-Parlo-Url": url,
+      Authorization: "Bearer " + token,
+    };
+    if (dubProject) {
+      headers["X-Parlo-Project"] = dubProject.id;
+      if (dubTarget.value) {
+        headers["X-Parlo-To"] = dubTarget.value;
+      }
+    }
+    const response = await fetch("/dub", { method: "POST", headers });
+    const detail = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      throw new Error("Parlo lost the connection to its engine. Close Parlo and open it again.");
+    }
+    if (!response.ok) {
+      throw new Error(detail.error || "The link could not be dubbed.");
+    }
+    showDub(detail);
+    if (dubProject && detail.project_id) {
+      refreshDubProject(detail.to);
+    }
+    setDubStatus("Dubbed from the link in " + formatClock((Date.now() - started) / 1000) + ". Download it above, or keep using Parlo.");
+  } catch (failure) {
+    setDubStatus("");
+    showError(failure.message || "The link could not be dubbed. Check that it points at a video or audio file and try again.");
+  } finally {
+    clearInterval(dubTimer);
+    dubTimer = null;
+    dubbing = false;
+    dubUrlStart.disabled = false;
+    dubUrlStart.textContent = "Dub this link";
+    dubStart.disabled = !chosenFile;
+  }
+}
+
 async function importSubtitles(file) {
   if (!file || dubbing) {
     return;
@@ -2572,6 +2656,11 @@ fileInput.addEventListener("change", () => {
 });
 
 dubStart.addEventListener("click", () => startDub());
+
+dubUrlForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  startDubUrl(dubUrl.value);
+});
 
 dubSave.addEventListener("click", () => saveProject());
 

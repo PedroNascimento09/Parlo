@@ -840,6 +840,14 @@
       <p class="drop-hint" id="drop-hint">Or press Enter to choose one. The file is read on this machine and never uploaded.</p>
     </div>
     <input id="file" type="file" accept="video/*,audio/*" hidden>
+    <form class="dub-url" id="dub-url-form" autocomplete="off">
+      <label class="dub-url-label" for="dub-url">Paste a media link</label>
+      <div class="dub-url-row">
+        <input id="dub-url" class="dub-input" type="url" inputmode="url" placeholder="https://example.com/video.mp4" spellcheck="false">
+        <button id="dub-url-start" class="swap" type="submit">Dub this link</button>
+      </div>
+      <p class="dub-url-hint">Only http and https links to public addresses. The file is downloaded on this machine.</p>
+    </form>
     <div class="dub-actions">
       <button id="dub-start" class="install" type="button" disabled>Dub this file</button>
       <button id="dub-import" class="swap" type="button">Import SRT or VTT</button>

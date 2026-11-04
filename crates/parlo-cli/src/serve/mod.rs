@@ -25,7 +25,7 @@ use crate::update;
 
 mod audio;
 mod auth;
-mod http;
+pub(crate) mod http;
 mod multipart;
 mod routes;
 pub(crate) mod sse;
@@ -2329,7 +2329,18 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        if body.is_empty() {
+        let requested_url = header(&headers, "x-parlo-url")
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        if requested_url.is_some() && !body.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json("send either a file or a link, not both"),
+            )
+            .map(|()| Flow::Serve);
+        }
+        if body.is_empty() && requested_url.is_none() {
             return respond_json(
                 stream,
                 "400 Bad Request",
@@ -2374,7 +2385,10 @@ fn handle(
 
         let requested = header(&headers, "x-parlo-filename")
             .map(|value| percent_decode(&value))
-            .unwrap_or_else(|| "upload.mp4".to_string());
+            .unwrap_or_else(|| match &requested_url {
+                Some(url) => crate::ingest::name_from_url(url),
+                None => "upload.mp4".to_string(),
+            });
         let name = dub::safe_name(&requested);
         let id = new_token();
         let directory = std::env::temp_dir().join("parlo-dub");
@@ -2400,7 +2414,23 @@ fn handle(
         };
 
         let upload = directory.join(format!("{id}-{name}"));
-        if let Err(error) = fs::write(&upload, &body) {
+        if let Some(url) = &requested_url {
+            if let Err(failure) = crate::ingest::download(url, &upload) {
+                if let Some(path) = &cues {
+                    fs::remove_file(path).ok();
+                }
+                return respond_json(stream, failure.status, &error_json(&failure.message))
+                    .map(|()| Flow::Serve);
+            }
+            if let Err(reason) = crate::ingest::probe(&upload) {
+                fs::remove_file(&upload).ok();
+                if let Some(path) = &cues {
+                    fs::remove_file(path).ok();
+                }
+                return respond_json(stream, "400 Bad Request", &error_json(&reason))
+                    .map(|()| Flow::Serve);
+            }
+        } else if let Err(error) = fs::write(&upload, &body) {
             return respond_json(
                 stream,
                 "500 Internal Server Error",

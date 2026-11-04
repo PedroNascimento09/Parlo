@@ -1609,6 +1609,34 @@ select.field-input {
   font-size: 12.5px;
 }
 
+.dub-url {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.dub-url-label {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.dub-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dub-url-row .dub-input {
+  flex: 1 1 260px;
+}
+
+.dub-url-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .dub-actions {
   align-items: center;
   margin-top: 16px;
