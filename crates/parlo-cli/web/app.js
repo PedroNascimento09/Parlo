@@ -4577,6 +4577,7 @@ async function meetingStep() {
     meetingFailures = 0;
     if (text) {
       meetingLines += 1;
+      await loadMeetings();
     }
     meetingStatus(text);
   } catch (failure) {

@@ -29,6 +29,8 @@ mod ingest;
 mod insert;
 mod install;
 mod intelligence;
+#[cfg(test)]
+mod interface;
 mod jobs;
 mod loopback;
 mod mcp;
