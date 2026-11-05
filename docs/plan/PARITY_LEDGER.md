@@ -33,8 +33,8 @@ Rules:
 | D2 | Insertion into the focused app | Win, macOS, X11 validated | Windows validated; macOS/X11 written, unverified | All three validated | 1 | One sentence lands in Notepad, TextEdit and xterm |
 | D3 | Clipboard snapshot and restore | Yes, with generation lease | Done · 7ac7ac4: copied text and images come back after a copy, and a clipboard holding files or formatted text is never cleared | Parity | 1 | A copied image survives a dictation |
 | D4 | Pause and resume while recording | Yes | Done · fc42061: the island counts the take in m:ss, pause freezes the clock and the audio, and resume continues one session | Parity | 1 | Pause freezes the timer, resume keeps one session |
-| D5 | Partials, stable, final | Yes | Yes | Keep, add WebSocket | 1 | Partial within 300 ms of speech |
-| D6 | Cleanup levels and spoken commands | Yes | Yes | Keep, extend languages | 1 | "scratch that" removes the phrase, both languages |
+| D5 | Partials, stable, final | Yes | Partial: partials, stable and final work and the WebSocket landed in P3, but the first partial arrives at 849 ms on 20 sentences, not 300 ms | Keep, add WebSocket | 1 | Partial within 300 ms of speech |
+| D6 | Cleanup levels and spoken commands | Yes | Done · 50f4b6b: ``scratch that``, ``risca isso`` and ``apaga isso`` drop the phrase it follows, and cleanup keeps the three levels original, light and intelligent | Keep, extend languages | 1 | "scratch that" removes the phrase, both languages |
 | D7 | Undo the last dictation | Yes (session-bound) | Yes, 5-minute window | Keep | 0 | Refuses when another window is in front |
 | D8 | Style, language and voice per program | Per program style | Style and language | Add voice | 2 | Slack reads in the cloned voice, Mail in the neutral one |
 | D9 | Snippets and vocabulary | Yes | Yes | Keep | 0 | `{{date}}` fills; a term survives cleanup |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-31 of 80 rows are Done (38.8%). Nine Partial rows counted at half give 44.4%.
+32 of 80 rows are Done (40.0%). Ten Partial rows counted at half give 46.3%.
 
 ## Next
 
-D5 Partials, stable and final: measure the first partial against the 300 ms target and close the ledger row.
+D7 Undo the last dictation: prove the erase refuses when another window is in front, then close the ledger row.
