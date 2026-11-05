@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- An MCP client that says its name when it connects can bind one of the voices on this computer: the binding is kept in `agents.json`, and `bind_voice` and `agent_voice` resolve it for every later call from that client.
+- Settings has a processor switch, the computer decides or the processor only. `/engine` names the device and the reason, and forcing the processor lowers the profile honestly instead of claiming a graphics card.
+- A voice moves between machines as one file: the export imports on another machine with its consent record, and a revoked, foreign or sample-less file is refused.
+- MCP carries 14 tools: the voice binding pair joins the 12 that serve the library and the meetings.
 - A meeting can be told how many voices to expect: the count is kept with the transcript, caps the speaker separation at that many, and the meeting screen now has the field.
 - The meeting transcript redraws after every five-second window, so the lines appear while the meeting is still running.
 - Every release runs a network audit: the suite fails if a page or the CLI reaches any host besides the release check and the model registry.
