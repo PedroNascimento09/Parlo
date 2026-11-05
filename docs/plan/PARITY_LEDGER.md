@@ -31,7 +31,7 @@ Rules:
 |---|---|---|---|---|---|---|
 | D1 | Global shortcut, hold and toggle | Yes | Yes | Parity, plus per-program profiles | 0 | Hold inserts, tap stays listening, both on a clean install |
 | D2 | Insertion into the focused app | Win, macOS, X11 validated | Windows validated; macOS/X11 written, unverified | All three validated | 1 | One sentence lands in Notepad, TextEdit and xterm |
-| D3 | Clipboard snapshot and restore | Yes, with generation lease | No | Parity | 1 | A copied image survives a dictation |
+| D3 | Clipboard snapshot and restore | Yes, with generation lease | Done · 7ac7ac4: copied text and images come back after a copy, and a clipboard holding files or formatted text is never cleared | Parity | 1 | A copied image survives a dictation |
 | D4 | Pause and resume while recording | Yes | No | Parity | 1 | Pause freezes the timer, resume keeps one session |
 | D5 | Partials, stable, final | Yes | Yes | Keep, add WebSocket | 1 | Partial within 300 ms of speech |
 | D6 | Cleanup levels and spoken commands | Yes | Yes | Keep, extend languages | 1 | "scratch that" removes the phrase, both languages |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-29 of 80 rows are Done (36.3%). Nine Partial rows counted at half give 41.9%.
+30 of 80 rows are Done (37.5%). Nine Partial rows counted at half give 43.1%.
 
 ## Next
 
-D3 Clipboard snapshot and restore: keep a copied image across a dictation and close the ledger row.
+D4 Pause and resume while recording: freeze the timer and keep one session across the pause, then close the ledger row.
