@@ -488,6 +488,13 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
+    fn erasing_refuses_a_window_that_is_not_in_front() {
+        let error = erase(usize::MAX, 3).unwrap_err();
+        assert!(error.contains("not in front"), "{error}");
+    }
+
+    #[cfg(windows)]
+    #[test]
     fn a_letter_becomes_one_sixteen_bit_unit() {
         let encoded: Vec<u16> = "ã".encode_utf16().collect();
         assert_eq!(encoded, vec![0x00E3]);
