@@ -112,8 +112,8 @@ Rules:
 |---|---|---|---|---|---|---|
 | P1 | OpenAI transcription | Yes | Done · 181d5f2: SDK-style multipart audio reaches the dictation pipeline and returns the transcript | Parity | 1 | The OpenAI SDK works against `/v1` |
 | P2 | OpenAI speech, translation, models | Yes | No | Parity | 2 | Four endpoints answer with the documented shapes |
-| P3 | WebSocket streaming | Yes, versioned | No | Parity | 1 | Partial, stable and final over one socket |
-| P4 | Capabilities document | Yes | No | Parity | 1 | `/.well-known/parlo` lists engines and limits |
+| P3 | WebSocket streaming | Yes, versioned | Done · 1236c51: one socket emits partial, stable and final with a session id | Parity | 1 | Partial, stable and final over one socket |
+| P4 | Capabilities document | Yes | Done · 1236c51: engines and request limits published at `/.well-known/parlo` | Parity | 1 | `/.well-known/parlo` lists engines and limits |
 | P5 | MCP HTTP and stdio | 8 tools | 4 tools, stdio | 12 tools, both transports | 1 | One agent uses each transport |
 | P6 | LAN sharing with a PIN | Yes | No | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
 | P7 | Remote backend | Yes | No | Parity, HTTPS only | 5 | A laptop drives a desktop GPU |
@@ -183,7 +183,7 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-25 of 80 rows are Done (31.2%). Nine Partial rows counted at half give 36.9%.
+27 of 80 rows are Done (33.8%). Nine Partial rows counted at half give 39.4%.
 
 ## Next
 
