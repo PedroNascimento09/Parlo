@@ -28,6 +28,7 @@ pub struct Config {
     pub history_days: u32,
     pub port: u16,
     pub device: Option<usize>,
+    pub compute: String,
     pub unload: u32,
     pub manage_memory: bool,
     pub policies: BTreeMap<String, u32>,
@@ -133,6 +134,7 @@ impl Default for Config {
             history_days: 0,
             port: 8787,
             device: None,
+            compute: "auto".to_string(),
             unload: 30,
             manage_memory: true,
             policies: BTreeMap::new(),
@@ -140,6 +142,14 @@ impl Default for Config {
             intelligence: Intelligence::default(),
             features: Features::default(),
         }
+    }
+}
+
+pub fn check_compute(value: &str) -> Result<String, String> {
+    let wanted = value.trim().to_ascii_lowercase();
+    match wanted.as_str() {
+        "auto" | "cpu" => Ok(wanted),
+        _ => Err("the processor setting is either auto or cpu".to_string()),
     }
 }
 

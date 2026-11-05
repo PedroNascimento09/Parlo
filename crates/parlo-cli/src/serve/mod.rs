@@ -90,6 +90,8 @@ struct Settings {
     unload: Option<u32>,
     #[serde(default)]
     manage_memory: Option<bool>,
+    #[serde(default)]
+    compute: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -432,7 +434,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{}}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\"}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -445,7 +447,8 @@ impl Session {
             stored.manage_memory,
             stored.unload,
             json_string(&stored.name),
-            stored.history_days
+            stored.history_days,
+            json_string(&stored.compute)
         )
     }
 }
@@ -1811,6 +1814,30 @@ fn handle(
             }
         }
 
+        if let Some(compute) = requested.compute.as_deref() {
+            let wanted = match parlo_core::settings::check_compute(compute) {
+                Ok(value) => value,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+            };
+            let mut config = crate::config::load();
+            config.compute = wanted;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
         if let Some(manage) = requested.manage_memory {
             let mut config = crate::config::load();
             config.manage_memory = manage;
@@ -1830,7 +1857,8 @@ fn handle(
             && requested.to.is_none()
             && requested.write.is_none()
             && requested.unload.is_none()
-            && requested.manage_memory.is_none();
+            && requested.manage_memory.is_none()
+            && requested.compute.is_none();
         if only_settings {
             return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
         }
@@ -3951,10 +3979,14 @@ fn handle(
     }
 
     if method == "GET" && path == "/engine" {
-        let choice = crate::engines::choose(
+        let stored_compute = crate::config::load().compute;
+        let gpu = crate::engines::detect_gpu_memory_mb();
+        let choice = crate::engines::choose_preferred(
             crate::engines::detect_cores(),
-            crate::engines::detect_gpu_memory_mb(),
+            gpu,
             crate::engines::Fidelity::Cloned,
+            &stored_compute,
+            &parlo_core::device::profile().describe(),
         );
         let logged = crate::engines::log_choice(&choice);
         let steps: Vec<&str> = crate::engines::chain(choice.requested)
@@ -3967,6 +3999,8 @@ fn handle(
             "chosen": choice.chosen.label(),
             "chain": steps,
             "reason": choice.reason,
+            "compute": stored_compute,
+            "device": crate::engines::device_label(&stored_compute, gpu),
             "log": logged.map(|path| path.display().to_string()),
             "switches": crate::engines::recent_switches(5),
         })
@@ -5953,6 +5987,30 @@ mod tests {
             super::ws::MAX_MESSAGE as u64
         );
 
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
+    }
+
+    #[test]
+    fn the_processor_setting_is_shown_and_checked() {
+        let (port, stop) = start_server();
+        let refused = send(port, "POST", "/settings", "{\"compute\":\"tpu\"}");
+        assert!(refused.starts_with("HTTP/1.1 400 Bad Request"), "{refused}");
+        assert!(refused.contains("auto or cpu"), "{refused}");
+        let settings = send(port, "GET", "/settings", "");
+        let values = body_json(&settings);
+        assert!(
+            matches!(values["compute"].as_str(), Some("auto" | "cpu")),
+            "{values}"
+        );
+        let engine = send(port, "GET", "/engine", "");
+        assert!(engine.starts_with("HTTP/1.1 200 OK"), "{engine}");
+        let detail = body_json(&engine);
+        assert!(
+            matches!(detail["device"].as_str(), Some("cpu" | "gpu")),
+            "{detail}"
+        );
+        assert!(detail["compute"].is_string(), "{detail}");
         stop.store(false, Ordering::Relaxed);
         let _ = TcpStream::connect(("127.0.0.1", port));
     }

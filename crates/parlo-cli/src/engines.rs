@@ -253,6 +253,41 @@ pub fn choose_with(
     }
 }
 
+pub fn compute_is_forced_to_cpu(value: &str) -> bool {
+    value.trim().eq_ignore_ascii_case("cpu")
+}
+
+pub fn choose_preferred(
+    cores: usize,
+    gpu_memory_mb: Option<u32>,
+    requested: Fidelity,
+    compute: &str,
+    machine: &str,
+) -> Choice {
+    let forced = compute_is_forced_to_cpu(compute);
+    let mut choice = choose_with(
+        cores,
+        if forced { None } else { gpu_memory_mb },
+        requested,
+        machine,
+    );
+    if forced {
+        choice.reason = format!(
+            "The processor is used because the setting says so, not the graphics card. {}",
+            choice.reason
+        );
+    }
+    choice
+}
+
+pub fn device_label(compute: &str, gpu_memory_mb: Option<u32>) -> &'static str {
+    if compute_is_forced_to_cpu(compute) || gpu_memory_mb.is_none() {
+        "cpu"
+    } else {
+        "gpu"
+    }
+}
+
 fn log_path() -> std::path::PathBuf {
     crate::config::data_root()
         .join("logs")
@@ -324,6 +359,20 @@ mod tests {
         assert_eq!(steps[0], Fidelity::Cloned);
         assert_eq!(*steps.last().unwrap(), Fidelity::Captions);
         assert_eq!(steps.len(), 4);
+    }
+
+    #[test]
+    fn choosing_the_processor_lowers_the_profile_and_says_why() {
+        let choice = choose_preferred(12, Some(16_384), Fidelity::Cloned, "cpu", "8 cores");
+        assert_eq!(choice.profile, Profile::Medium);
+        assert_eq!(choice.chosen, Fidelity::Neutral);
+        assert!(choice.reason.contains("because the setting says so"));
+        assert_eq!(device_label("cpu", Some(16_384)), "cpu");
+        let automatic = choose_preferred(12, Some(16_384), Fidelity::Cloned, "auto", "8 cores");
+        assert_eq!(automatic.profile, Profile::Ultra);
+        assert_eq!(automatic.chosen, Fidelity::Cloned);
+        assert_eq!(device_label("auto", Some(16_384)), "gpu");
+        assert_eq!(device_label("auto", None), "cpu");
     }
 
     #[test]

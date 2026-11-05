@@ -82,6 +82,7 @@ mod tests {
             history_days: 30,
             port: 9100,
             device: Some(2),
+            compute: "auto".to_string(),
             unload: 15,
             manage_memory: true,
             policies: Default::default(),

@@ -96,6 +96,8 @@ const settingsSwap = document.getElementById("settings-swap");
 const settingsApply = document.getElementById("settings-apply");
 const settingsUnload = document.getElementById("settings-unload");
 const settingsManageMemory = document.getElementById("settings-manage-memory");
+const settingsCompute = document.getElementById("settings-compute");
+const computeNote = document.getElementById("compute-note");
 const memoryNote = document.getElementById("memory-note");
 const settingsNote = document.getElementById("settings-note");
 const intelligenceMode = document.getElementById("intelligence-mode");
@@ -1798,7 +1800,11 @@ async function loadSettings() {
     if (!response.ok) {
       return;
     }
-    reflectSettings(await response.json());
+    const values = await response.json();
+    if (settingsCompute) {
+      settingsCompute.value = values.compute === "cpu" ? "cpu" : "auto";
+    }
+    reflectSettings(values);
   } catch (failure) {
     settingsNote.textContent = describePair(savedSettings.from, savedSettings.to);
   }
@@ -1915,6 +1921,27 @@ settingsSwap.addEventListener("click", () => {
 });
 
 settingsApply.addEventListener("click", () => saveSettings());
+
+if (settingsCompute) {
+  settingsCompute.addEventListener("change", async () => {
+    try {
+      const response = await fetch("/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ compute: settingsCompute.value }),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "That setting cannot be used.");
+      }
+      computeNote.textContent = settingsCompute.value === "cpu"
+        ? "Parlo uses the processor only. The graphics card is left to other programs."
+        : "Parlo uses the graphics card when this machine has one.";
+    } catch (failure) {
+      showError(failure.message);
+    }
+  });
+}
 
 settingsUnload.addEventListener("change", async () => {
   const minutes = Number(settingsUnload.value);

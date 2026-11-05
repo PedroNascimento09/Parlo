@@ -356,6 +356,16 @@
         </select>
       </label>
     </div>
+    <div class="settings-row">
+      <label class="field field-wide" for="settings-compute">
+        <span class="field-label">Work on</span>
+        <select id="settings-compute" class="field-input">
+          <option value="auto">This computer decides, using the graphics card when it helps</option>
+          <option value="cpu">The processor only</option>
+        </select>
+      </label>
+      <p class="settings-note field-wide" id="compute-note" aria-live="polite">The processor is slower but leaves the graphics card to other programs.</p>
+    </div>
     <dl class="stage-facts" id="settings-facts">
       <div>
         <dt>Microphone</dt>
