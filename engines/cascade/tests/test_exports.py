@@ -63,6 +63,22 @@ class SidecarTest(unittest.TestCase):
                     ["voice.wav", "original.wav", "mix.wav", "lines.srt"],
                 )
 
+    def test_stems_include_the_separated_music(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)
+            for name in ("voice.wav", "music.wav", "original.wav", "mix.wav", "lines.srt"):
+                (path / name).write_bytes(b"data")
+            archive = exports.stems(
+                path / "stems.zip",
+                path / "voice.wav",
+                path / "original.wav",
+                path / "mix.wav",
+                path / "lines.srt",
+                path / "music.wav",
+            )
+            with zipfile.ZipFile(archive) as opened:
+                self.assertIn("music.wav", opened.namelist())
+
 
 if __name__ == "__main__":
     unittest.main()

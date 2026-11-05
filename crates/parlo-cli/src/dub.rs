@@ -47,6 +47,10 @@ pub struct Dub {
     pub lines: Vec<Line>,
     #[serde(default)]
     pub exports: Vec<Export>,
+    #[serde(default)]
+    pub separation: String,
+    #[serde(default)]
+    pub separation_note: Option<String>,
 }
 
 pub struct Request<'a> {

@@ -47,6 +47,7 @@ const dubStatus = document.getElementById("dub-status");
 const dubResult = document.getElementById("dub-result");
 const dubDownload = document.getElementById("dub-download");
 const dubCount = document.getElementById("dub-count");
+const dubSeparation = document.getElementById("dub-separation");
 const dubLines = document.getElementById("dub-lines");
 const dubExports = document.getElementById("dub-exports");
 const dubQc = document.getElementById("dub-qc");
@@ -65,6 +66,7 @@ const dubCastRows = document.getElementById("dub-cast-rows");
 const dubLanguage = document.getElementById("dub-language");
 const dubTarget = document.getElementById("dub-target");
 const dubTiming = document.getElementById("dub-timing");
+const dubBackground = document.getElementById("dub-background");
 const dubSpeed = document.getElementById("dub-speed");
 const dubFastest = document.getElementById("dub-fastest");
 const dubSlowest = document.getElementById("dub-slowest");
@@ -2212,6 +2214,14 @@ function showDub(result) {
     dubExports.append(link);
   }
   dubExports.hidden = dubExports.childElementCount === 0;
+  if (result.separation && result.separation !== "off") {
+    dubSeparation.hidden = false;
+    dubSeparation.textContent =
+      (result.separation === "ducking" ? "Degraded: " : "") +
+      (result.separation_note || "The background was kept.");
+  } else {
+    dubSeparation.hidden = true;
+  }
   const flagged = lines.filter((line) => (line.issues || []).length > 0);
   issueCursor = -1;
   dubQc.hidden = false;
@@ -2784,6 +2794,9 @@ function describeLinkProblem(value) {
 function timingHeaders() {
   const mode = dubTiming.value;
   const headers = { "X-Parlo-Timing": mode };
+  if (dubBackground.checked) {
+    headers["X-Parlo-Background"] = "1";
+  }
   if (mode === "smart-fit") {
     const fastest = Number(dubFastest.value);
     const slowest = Number(dubSlowest.value);

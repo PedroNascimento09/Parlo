@@ -34,6 +34,10 @@ pub struct Job {
     pub fastest: f64,
     pub slowest: f64,
     pub keep_background: bool,
+    #[serde(default)]
+    pub separation: String,
+    #[serde(default)]
+    pub separation_note: Option<String>,
     pub seconds: f64,
     pub lines: usize,
     pub created_at: u64,
@@ -170,6 +174,8 @@ mod tests {
             fastest: 1.25,
             slowest: 0.9,
             keep_background: false,
+            separation: "off".to_string(),
+            separation_note: None,
             seconds: 0.0,
             lines: 0,
             created_at: 1,
@@ -190,7 +196,9 @@ mod tests {
         fs::write(dir.join("work").join("part.wav"), b"part").unwrap();
         let mut job = sample();
         write(&dir, &mut job).unwrap();
-        assert_eq!(read(&dir).unwrap().title, "Demo");
+        let loaded = read(&dir).unwrap();
+        assert_eq!(loaded.title, "Demo");
+        assert_eq!(loaded.separation, "off");
         clean_outputs(&dir);
         assert!(dir.join("source.mp4").exists());
         assert!(dir.join("abc-cues.json").exists());

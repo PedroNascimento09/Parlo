@@ -1675,6 +1675,20 @@ select.field-input {
   max-width: 220px;
 }
 
+.dub-background {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dub-separation {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
 .dub-speed {
   display: flex;
   flex-wrap: wrap;

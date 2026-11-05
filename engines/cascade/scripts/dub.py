@@ -10,6 +10,7 @@ import threading
 import wave
 
 import exports
+import separation
 import timing
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -607,6 +608,8 @@ def write_report(
     samples: np.ndarray,
     lines: list[Line],
     written: list[dict],
+    separation_mode: str,
+    separation_note: str | None,
 ) -> None:
     path.write_text(
         json.dumps(
@@ -622,6 +625,8 @@ def write_report(
                 "seconds": round(len(samples) / SAMPLE_RATE, 2),
                 "lines": [line_document(line) for line in lines],
                 "exports": written,
+                "separation": separation_mode,
+                "separation_note": separation_note,
             },
             ensure_ascii=False,
             indent=2,
@@ -817,9 +822,18 @@ def main() -> int:
             raise SystemExit("nothing was translated")
         active = [line for line in lines if not line.failed and not line.skipped]
         voice = track.copy()
+        background = None
+        separation_mode = "off"
+        separation_note = "Background was not requested."
         if args.keep_background:
-            envelope = ducking(len(samples), active)
-            track = np.clip(track + samples * BACKGROUND_GAIN * envelope, -1.0, 1.0)
+            background, separation_mode, separation_note = separation.separate(
+                ffmpeg, args.source, work / "background.wav", work
+            )
+            if background is not None:
+                track = np.clip(track + read_wav(background) * BACKGROUND_GAIN, -1.0, 1.0)
+            else:
+                envelope = ducking(len(samples), active)
+                track = np.clip(track + samples * BACKGROUND_GAIN * envelope, -1.0, 1.0)
         write_wav(track_path, track)
         mux(ffmpeg, args.source, track_path, out, video)
         write_srt(srt, lines)
@@ -839,14 +853,26 @@ def main() -> int:
             video,
             args.mp3_bitrate,
             work,
+            background,
         )
 
     if args.json:
-        write_report(args.json, args, out, srt, samples, lines, written)
+        write_report(
+            args.json,
+            args,
+            out,
+            srt,
+            samples,
+            lines,
+            written,
+            separation_mode,
+            separation_note,
+        )
     print(f"wrote {out}")
     print(f"wrote {srt}")
     print(f"  lines        {len(active)}")
     print(f"  exports      {len(written)}")
+    print(f"  separation   {separation_mode}")
     failed = sum(1 for line in lines if line.failed)
     if failed:
         print(f"  failed       {failed} (retry them from the app)")

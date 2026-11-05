@@ -200,25 +200,30 @@ def audio(ffmpeg, track, wav, mp3, bitrate):
     return wav, mp3
 
 
-def stems(target, voice, original, mix, srt):
+def stems(target, voice, original, mix, srt, background=None):
     target = Path(target).resolve()
     voice = Path(voice).resolve()
     original = Path(original).resolve()
     mix = Path(mix).resolve()
     srt = Path(srt).resolve()
+    entries = [
+        (voice, "voice.wav"),
+        (original, "original.wav"),
+        (mix, "mix.wav"),
+        (srt, "lines.srt"),
+    ]
+    if background is not None:
+        entries.insert(1, (background, "music.wav"))
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path, name in (
-            (voice, "voice.wav"),
-            (original, "original.wav"),
-            (mix, "mix.wav"),
-            (srt, "lines.srt"),
-        ):
+        for path, name in entries:
             if path.is_file():
                 archive.write(path, arcname=name)
     return target
 
 
-def export_all(ffmpeg, source, out, srt, track, voice, original, mix, lines, video, bitrate, work):
+def export_all(
+    ffmpeg, source, out, srt, track, voice, original, mix, lines, video, bitrate, work, background=None
+):
     vtt = srt.with_suffix(".vtt")
     ass = srt.with_suffix(".ass")
     karaoke = srt.with_name(f"{srt.stem}.karaoke.ass")
@@ -278,7 +283,7 @@ def export_all(ffmpeg, source, out, srt, track, voice, original, mix, lines, vid
     )
 
     archive = out.with_name(f"{out.stem}.stems.zip")
-    stems(archive, voice, original, mix, srt)
+    stems(archive, voice, original, mix, srt, background)
     exports.append({"format": "stems", "label": "Stems ZIP", "path": archive})
 
     return [

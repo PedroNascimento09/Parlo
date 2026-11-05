@@ -600,6 +600,8 @@ struct DubFile {
     slowest: f64,
     project_id: Option<String>,
     keep_background: bool,
+    separation: String,
+    separation_note: Option<String>,
     seconds: f64,
     lines: Vec<dub::Line>,
     exports: Vec<DubExport>,
@@ -679,7 +681,7 @@ fn dub_body(file: &DubFile) -> String {
         })
         .collect();
     format!(
-        "{{\"id\":\"{}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"lines\":[{}],\"exports\":[{}]{}}}",
+        "{{\"id\":\"{}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"separation\":\"{}\",\"separation_note\":{},\"lines\":[{}],\"exports\":[{}]{}}}",
         json_string(&file.id),
         json_string(&file.name),
         json_string(&file.to),
@@ -687,6 +689,11 @@ fn dub_body(file: &DubFile) -> String {
         file.fastest,
         file.slowest,
         file.seconds,
+        json_string(&file.separation),
+        file.separation_note
+            .as_ref()
+            .map(|note| format!("\"{}\"", json_string(note)))
+            .unwrap_or_else(|| "null".to_string()),
         lines.join(","),
         written.join(","),
         project
@@ -2403,6 +2410,8 @@ fn handle(
                     job.progress = 1.0;
                     job.seconds = result.seconds;
                     job.lines = result.lines.len();
+                    job.separation = result.separation.clone();
+                    job.separation_note = result.separation_note.clone();
                     job.error = None;
                     job.exports = written
                         .iter()
@@ -2439,6 +2448,8 @@ fn handle(
                         slowest: job.slowest,
                         project_id: Some(project.id.clone()),
                         keep_background: job.keep_background,
+                        separation: job.separation.clone(),
+                        separation_note: job.separation_note.clone(),
                         seconds: result.seconds,
                         lines: result.lines,
                         exports: written,
@@ -2607,6 +2618,8 @@ fn handle(
                     job.progress = 1.0;
                     job.seconds = updated.seconds;
                     job.lines = updated.lines.len();
+                    job.separation = updated.separation.clone();
+                    job.separation_note = updated.separation_note.clone();
                     job.error = None;
                     job.exports = updated
                         .exports
@@ -3145,6 +3158,8 @@ fn handle(
             fastest,
             slowest,
             keep_background,
+            separation: "off".to_string(),
+            separation_note: None,
             seconds: 0.0,
             lines: 0,
             created_at: unix_now(),
@@ -3204,6 +3219,8 @@ fn handle(
                 job.progress = 1.0;
                 job.seconds = result.seconds;
                 job.lines = result.lines.len();
+                job.separation = result.separation.clone();
+                job.separation_note = result.separation_note.clone();
                 job.exports = written
                     .iter()
                     .map(|item| dub_jobs::Export {
@@ -3238,6 +3255,8 @@ fn handle(
                     slowest,
                     project_id,
                     keep_background,
+                    separation: result.separation.clone(),
+                    separation_note: result.separation_note.clone(),
                     seconds: result.seconds,
                     lines: result.lines,
                     exports: written,
