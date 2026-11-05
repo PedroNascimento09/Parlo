@@ -111,7 +111,7 @@ Rules:
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
 | P1 | OpenAI transcription | Yes | Done · 181d5f2: SDK-style multipart audio reaches the dictation pipeline and returns the transcript | Parity | 1 | The OpenAI SDK works against `/v1` |
-| P2 | OpenAI speech, translation, models | Yes | No | Parity | 2 | Four endpoints answer with the documented shapes |
+| P2 | OpenAI speech, translation, models | Yes | Done · a94d130: speech, translation and models tested end to end with transcriptions | Parity | 2 | Four endpoints answer with the documented shapes |
 | P3 | WebSocket streaming | Yes, versioned | Done · 1236c51: one socket emits partial, stable and final with a session id | Parity | 1 | Partial, stable and final over one socket |
 | P4 | Capabilities document | Yes | Done · 1236c51: engines and request limits published at `/.well-known/parlo` | Parity | 1 | `/.well-known/parlo` lists engines and limits |
 | P5 | MCP HTTP and stdio | 8 tools | 4 tools, stdio | 12 tools, both transports | 1 | One agent uses each transport |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-27 of 80 rows are Done (33.8%). Nine Partial rows counted at half give 39.4%.
+28 of 80 rows are Done (35.0%). Nine Partial rows counted at half give 40.6%.
 
 ## Next
 
-P2 OpenAI speech, translation, models: verify the four documented endpoints and close the ledger row.
+P5 MCP HTTP and stdio: verify an agent over HTTP and over stdio, and close the ledger row.
