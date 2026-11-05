@@ -21,10 +21,11 @@ pub(crate) fn stream(
     headers: &[(String, String)],
     token: &str,
     query_token: &str,
+    query_ticket: &str,
     port: u16,
     session: &Session,
 ) -> Result<Flow, String> {
-    if !authorised(headers, token) && query_token != token {
+    if !authorised(headers, token) && query_token != token && !super::ticket::redeem(query_ticket) {
         return respond_json(stream, "401 Unauthorized", &error_json("wrong token"))
             .map(|()| Flow::Serve);
     }

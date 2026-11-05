@@ -30,6 +30,7 @@ pub(crate) mod http;
 mod multipart;
 mod routes;
 pub(crate) mod sse;
+mod ticket;
 mod ws;
 use auth::authorised;
 pub use auth::new_token;
@@ -3824,12 +3825,28 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "POST" && path == "/ticket" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", &error_json("wrong token"))
+                .map(|()| Flow::Serve);
+        }
+        let (granted, lifetime) = ticket::issue();
+        let answer = serde_json::json!({
+            "ticket": granted,
+            "expires_in": lifetime,
+            "protocol": ws::PROTOCOL,
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/v1/audio/transcriptions/stream" {
         return ws::stream(
             stream,
             &headers,
             token,
             &parameter(query, "t"),
+            &parameter(query, "ticket"),
             port,
             session,
         );
@@ -5704,6 +5721,58 @@ mod tests {
     fn body_json(answer: &str) -> serde_json::Value {
         let body = answer.split("\r\n\r\n").nth(1).unwrap_or("");
         serde_json::from_str(body).unwrap()
+    }
+
+    fn websocket_attempt(port: u16, query: &str) -> Result<TcpStream, String> {
+        let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        let key = BASE64.encode([0u8; 16]);
+        let request = format!(
+            "GET /v1/audio/transcriptions/stream{query} HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\nOrigin: http://127.0.0.1:{port}\r\n\r\n"
+        );
+        stream.write_all(request.as_bytes()).unwrap();
+        let mut response = Vec::new();
+        let mut byte = [0u8; 1];
+        while !response.ends_with(b"\r\n\r\n") {
+            stream.read_exact(&mut byte).unwrap();
+            response.push(byte[0]);
+        }
+        let head = String::from_utf8_lossy(&response).to_string();
+        if head.starts_with("HTTP/1.1 101") {
+            Ok(stream)
+        } else {
+            Err(head)
+        }
+    }
+
+    #[test]
+    fn a_ticket_opens_one_socket_and_cannot_be_replayed() {
+        let (port, stop) = start_server();
+        let granted = send(port, "POST", "/ticket", "");
+        assert!(granted.starts_with("HTTP/1.1 200"), "{granted}");
+        let value = body_json(&granted);
+        let ticket = value["ticket"].as_str().unwrap().to_string();
+        assert!(!ticket.is_empty());
+        assert_eq!(value["expires_in"], 30);
+        assert_eq!(value["protocol"], ws::PROTOCOL);
+        let query = format!("?ticket={ticket}");
+        let mut socket = websocket_attempt(port, &query).unwrap();
+        let started = read_websocket_json(&mut socket);
+        assert_eq!(started["type"], "session.started");
+        drop(socket);
+        let refused = websocket_attempt(port, &query).unwrap_err();
+        assert!(refused.starts_with("HTTP/1.1 401"), "{refused}");
+        stop.store(false, Ordering::Relaxed);
+    }
+
+    #[test]
+    fn a_ticket_cannot_be_made_up() {
+        let (port, stop) = start_server();
+        let refused = websocket_attempt(port, "?ticket=not-a-ticket").unwrap_err();
+        assert!(refused.starts_with("HTTP/1.1 401"), "{refused}");
+        stop.store(false, Ordering::Relaxed);
     }
 
     fn websocket_client(port: u16) -> TcpStream {
