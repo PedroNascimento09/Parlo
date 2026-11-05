@@ -110,7 +110,7 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| P1 | OpenAI transcription | Yes | No | Parity | 1 | The OpenAI SDK works against `/v1` |
+| P1 | OpenAI transcription | Yes | Done · 181d5f2: SDK-style multipart audio reaches the dictation pipeline and returns the transcript | Parity | 1 | The OpenAI SDK works against `/v1` |
 | P2 | OpenAI speech, translation, models | Yes | No | Parity | 2 | Four endpoints answer with the documented shapes |
 | P3 | WebSocket streaming | Yes, versioned | No | Parity | 1 | Partial, stable and final over one socket |
 | P4 | Capabilities document | Yes | No | Parity | 1 | `/.well-known/parlo` lists engines and limits |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-24 of 80 rows are Done (30.0%). Nine Partial rows counted at half give 35.6%.
+25 of 80 rows are Done (31.2%). Nine Partial rows counted at half give 36.9%.
 
 ## Next
 
-P1 OpenAI transcription: verify the documented `/v1` transcription flow against the OpenAI SDK and close the ledger row.
+P2 OpenAI speech, translation, models: verify the four documented endpoints and close the ledger row.
