@@ -825,6 +825,33 @@
       </div>
     </form>
     <ul class="voice-list" id="voice-list"></ul>
+    <div class="settings-row">
+      <label class="field field-wide" for="compare-text">
+        <span class="field-label">Sentence to compare</span>
+        <input id="compare-text" class="field-input" type="text" maxlength="200" placeholder="Bom dia, tudo bem?" autocomplete="off">
+      </label>
+      <label class="field" for="compare-first">
+        <span class="field-label">First voice</span>
+        <select id="compare-first" class="field-input">
+          <option value="voice-pt">Portuguese voice</option>
+          <option value="voice-en">English voice</option>
+          <option value="voice-de">German voice</option>
+          <option value="voice-fr">French voice</option>
+        </select>
+      </label>
+      <label class="field" for="compare-second">
+        <span class="field-label">Second voice</span>
+        <select id="compare-second" class="field-input">
+          <option value="voice-en">English voice</option>
+          <option value="voice-pt">Portuguese voice</option>
+          <option value="voice-de">German voice</option>
+          <option value="voice-fr">French voice</option>
+        </select>
+      </label>
+      <button id="compare-run" class="install" type="button">Read it in both</button>
+      <p class="voice-note field-wide" id="compare-note" aria-live="polite"></p>
+      <ol class="voice-list field-wide" id="compare-readings"></ol>
+    </div>
     <div class="voice-submit">
       <button id="voice-import" class="swap" type="button">Import a voice file</button>
       <input id="voice-import-file" type="file" accept=".txt,application/json" hidden>

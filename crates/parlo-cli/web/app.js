@@ -6309,6 +6309,57 @@ voiceForm.addEventListener("submit", async (event) => {
   }
 });
 
+const compareRun = document.getElementById("compare-run");
+const compareText = document.getElementById("compare-text");
+const compareFirst = document.getElementById("compare-first");
+const compareSecond = document.getElementById("compare-second");
+const compareNote = document.getElementById("compare-note");
+const compareReadings = document.getElementById("compare-readings");
+
+if (compareRun) {
+  compareRun.addEventListener("click", async () => {
+    const sentence = compareText.value.trim();
+    compareReadings.replaceChildren();
+    if (!sentence) {
+      compareNote.textContent = "Write the sentence both voices should read.";
+      return;
+    }
+    compareRun.disabled = true;
+    compareNote.textContent = "Reading it twice. This takes a few seconds.";
+    try {
+      const response = await fetch("/voice/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ text: sentence, voices: [compareFirst.value, compareSecond.value] }),
+      });
+      const answer = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(answer.error || "The two voices could not be read.");
+      }
+      for (const reading of answer.readings) {
+        const line = document.createElement("li");
+        line.textContent =
+          reading.label + ", " + reading.language + ", from " +
+          (reading.start_ms / 1000).toFixed(2) + " s for " +
+          (reading.duration_ms / 1000).toFixed(2) + " s";
+        compareReadings.append(line);
+      }
+      const decoded = atob(answer.audio);
+      const bytes = new Uint8Array(decoded.length);
+      for (let index = 0; index < decoded.length; index += 1) {
+        bytes[index] = decoded.charCodeAt(index);
+      }
+      play(new Blob([bytes], { type: "audio/wav" }));
+      compareNote.textContent = "First voice, then the second, in the order chosen.";
+    } catch (failure) {
+      compareNote.textContent = failure.message;
+      showError(failure.message);
+    } finally {
+      compareRun.disabled = false;
+    }
+  });
+}
+
 const voiceImport = document.getElementById("voice-import");
 const voiceImportFile = document.getElementById("voice-import-file");
 const voiceImportNote = document.getElementById("voice-import-note");

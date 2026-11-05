@@ -17,6 +17,7 @@ mod captions;
 mod catalog;
 mod clipboard;
 mod commands;
+mod compare;
 mod config;
 mod decisions;
 mod diarize;

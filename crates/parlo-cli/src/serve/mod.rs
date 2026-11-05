@@ -343,6 +343,25 @@ impl Session {
         pipeline.speak(text).map_err(|error| error.to_string())
     }
 
+    fn speak_with_voice(
+        &self,
+        file: &std::path::Path,
+        text: &str,
+    ) -> Result<(Vec<u8>, u32), String> {
+        let _working = self.working();
+        let chosen = self.chosen();
+        let previous = std::env::var("PARLO_CASCADE_VOICE").ok();
+        std::env::set_var("PARLO_CASCADE_VOICE", file);
+        let started = build(&chosen.from, &chosen.to, &chosen.engine, &chosen.stt);
+        match previous {
+            Some(value) => std::env::set_var("PARLO_CASCADE_VOICE", value),
+            None => std::env::remove_var("PARLO_CASCADE_VOICE"),
+        }
+        drop(chosen);
+        let mut pipeline = started?;
+        pipeline.speak(text).map_err(|error| error.to_string())
+    }
+
     fn diarize(
         &self,
         pcm16: &[u8],
@@ -2964,6 +2983,79 @@ fn handle(
             )
             .map(|()| Flow::Serve),
         };
+    }
+
+    if method == "POST" && path == "/voice/compare" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        #[derive(serde::Deserialize)]
+        struct CompareRequest {
+            text: String,
+            #[serde(default)]
+            voices: Vec<String>,
+        }
+        let request: CompareRequest = match serde_json::from_slice(&body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error.to_string())),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let specs = match crate::compare::plan(
+            &request.text,
+            &request.voices,
+            crate::compare::revoked_in_store,
+        ) {
+            Ok(specs) => specs,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let (readings, samples, rate) =
+            match crate::compare::render(&specs, &request.text, |spec, text| {
+                session.speak_with_voice(&spec.file, text)
+            }) {
+                Ok(result) => result,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "500 Internal Server Error",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+            };
+        let wav = match crate::compare::to_wav(&samples, rate) {
+            Ok(wav) => wav,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        use base64::Engine as _;
+        let body = serde_json::json!({
+            "text": request.text.trim(),
+            "readings": readings,
+            "sample_rate": rate,
+            "audio": base64::engine::general_purpose::STANDARD.encode(&wav),
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
     if method == "POST" && path == "/dub" {
