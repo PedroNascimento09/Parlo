@@ -4971,15 +4971,76 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 mod tests {
     use super::*;
 
-    fn ask(port: u16, request: &str) -> String {
+    use parlo_core::audio::Frame;
+    use parlo_core::engine::{Engine, EngineOutput};
+
+    struct RecordingEngine {
+        heard: Arc<Mutex<Vec<u8>>>,
+    }
+
+    impl Engine for RecordingEngine {
+        fn id(&self) -> &str {
+            "recording"
+        }
+
+        fn target_languages(&self) -> Vec<String> {
+            Vec::new()
+        }
+
+        fn latency_ms(&self) -> u32 {
+            1
+        }
+
+        fn process(&mut self, _input: &Frame) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::empty())
+        }
+
+        fn dictate(&mut self, pcm16: &[u8]) -> Result<String, EngineError> {
+            self.heard
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .extend_from_slice(pcm16);
+            Ok("ola mundo".to_string())
+        }
+    }
+
+    impl Session {
+        fn with_engine(engine: Box<dyn Engine>, from: &str, to: &str) -> Self {
+            let format = AudioFormat::mono(16_000).unwrap();
+            let pipeline = Pipeline::new(PipelineConfig::new(format, format), engine).unwrap();
+            Self {
+                pipeline: Mutex::new(pipeline),
+                settings: RwLock::new(Chosen {
+                    engine: "recording".to_string(),
+                    stt: "parakeet".to_string(),
+                    from: from.to_string(),
+                    to: to.to_string(),
+                    write: String::new(),
+                    shortcut: String::new(),
+                    hands_free: String::new(),
+                    captions: String::new(),
+                    undo: String::new(),
+                }),
+                target: Mutex::new(None),
+                busy: AtomicBool::new(false),
+                known: Mutex::new(None),
+            }
+        }
+    }
+
+    fn ask_bytes(port: u16, request: &[u8]) -> String {
         let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
         stream
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();
-        stream.write_all(request.as_bytes()).unwrap();
+        stream.write_all(request).unwrap();
         let mut answer = String::new();
         stream.read_to_string(&mut answer).unwrap();
         answer
+    }
+
+    fn ask(port: u16, request: &str) -> String {
+        ask_bytes(port, request.as_bytes())
     }
 
     #[test]
@@ -5546,15 +5607,19 @@ mod tests {
         assert_ne!(token, new_token());
     }
 
-    fn start_server() -> (u16, Arc<AtomicBool>) {
+    fn start_server_with(session: Session) -> (u16, Arc<AtomicBool>) {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let port = listener.local_addr().unwrap().port();
-        let session =
-            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap();
         let accepting = Arc::new(AtomicBool::new(true));
         let stop = Arc::clone(&accepting);
         std::thread::spawn(move || listen(listener, "t0ken".into(), port, session, accepting));
         (port, stop)
+    }
+
+    fn start_server() -> (u16, Arc<AtomicBool>) {
+        start_server_with(
+            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap(),
+        )
     }
 
     fn send(port: u16, method: &str, path: &str, body: &str) -> String {
@@ -5568,6 +5633,87 @@ mod tests {
     fn body_json(answer: &str) -> serde_json::Value {
         let body = answer.split("\r\n\r\n").nth(1).unwrap_or("");
         serde_json::from_str(body).unwrap()
+    }
+
+    fn multipart(boundary: &str, model: &str, audio: &[u8]) -> Vec<u8> {
+        let mut body = Vec::new();
+        body.extend_from_slice(
+            format!(
+                "--{boundary}\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n{model}\r\n"
+            )
+            .as_bytes(),
+        );
+        body.extend_from_slice(
+            format!(
+                "--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"sample.wav\"\r\nContent-Type: audio/wav\r\n\r\n"
+            )
+            .as_bytes(),
+        );
+        body.extend_from_slice(audio);
+        body.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+        body
+    }
+
+    fn post_transcription(port: u16, body: &[u8], boundary: &str) -> String {
+        let head = format!(
+            "POST /v1/audio/transcriptions HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer t0ken\r\nContent-Type: multipart/form-data; boundary={boundary}\r\nContent-Length: {}\r\n\r\n",
+            body.len()
+        );
+        let mut request = head.into_bytes();
+        request.extend_from_slice(body);
+        ask_bytes(port, &request)
+    }
+
+    #[test]
+    fn an_openai_transcription_runs_through_the_pipeline() {
+        let heard = Arc::new(Mutex::new(Vec::new()));
+        let session = Session::with_engine(
+            Box::new(RecordingEngine {
+                heard: Arc::clone(&heard),
+            }),
+            "pt",
+            "en",
+        );
+        let (port, stop) = start_server_with(session);
+
+        let format = AudioFormat::mono(16_000).unwrap();
+        let samples: Vec<f32> = (0..16_000)
+            .map(|index| (index as f32 * 0.07).sin() * 0.2)
+            .collect();
+        let wav = write_pcm16(&Wav { format, samples });
+        let boundary = "----parlo-openai-test";
+        let body = multipart(boundary, "whisper-1", &wav);
+        let request = String::from_utf8_lossy(&body);
+        assert!(request.contains("name=\"model\""));
+        assert!(request.contains("name=\"file\"; filename=\"sample.wav\""));
+        assert!(request.contains("whisper-1"));
+        assert!(request.contains("audio/wav"));
+
+        let answer = post_transcription(port, &body, boundary);
+        assert!(answer.starts_with("HTTP/1.1 200 OK"), "{answer}");
+        assert!(
+            answer.contains("Content-Type: application/json"),
+            "{answer}"
+        );
+        assert_eq!(body_json(&answer)["text"], "ola mundo");
+
+        let decoded = read_pcm16(&wav).unwrap();
+        let expected: Vec<u8> = decoded
+            .samples
+            .iter()
+            .flat_map(|sample| {
+                (((*sample).clamp(-1.0, 1.0) * i16::MAX as f32) as i16).to_le_bytes()
+            })
+            .collect();
+        assert_eq!(*heard.lock().unwrap(), expected);
+
+        let rejected =
+            post_transcription(port, &multipart(boundary, "not-a-model", &wav), boundary);
+        assert!(rejected.starts_with("HTTP/1.1 400"), "{rejected}");
+        assert!(rejected.contains("\"param\":\"model\""), "{rejected}");
+
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
     }
 
     #[test]

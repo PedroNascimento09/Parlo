@@ -10,6 +10,8 @@ use super::super::http::{header, respond, respond_json};
 use super::super::multipart::{self, Part};
 use super::super::{Flow, Session};
 
+const OPENAI_AUDIO_MODELS: [&str; 3] = ["whisper-1", "whisper", "parakeet"];
+
 #[derive(serde::Deserialize)]
 struct SpeechRequest {
     input: String,
@@ -332,6 +334,26 @@ fn prepare(
             "the file is empty",
             "invalid_request_error",
             Some("file"),
+        );
+        return Err(());
+    }
+    let Some(model) = field(&parts, "model") else {
+        let _ = fail(
+            stream,
+            "400 Bad Request",
+            "the form needs a model",
+            "invalid_request_error",
+            Some("model"),
+        );
+        return Err(());
+    };
+    if !OPENAI_AUDIO_MODELS.contains(&model) {
+        let _ = fail(
+            stream,
+            "400 Bad Request",
+            "model must be whisper-1, whisper or parakeet in this build",
+            "invalid_request_error",
+            Some("model"),
         );
         return Err(());
     }
