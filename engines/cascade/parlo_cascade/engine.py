@@ -90,12 +90,14 @@ def policy_table() -> tuple[int, dict[str, int], bool]:
     return configured_unload(), policies, manage
 
 
-def pcm16_to_float(pcm16: bytes) -> list[float]:
+def pcm16_to_float(pcm16: bytes):
+    import numpy as np
+
     usable = len(pcm16) - (len(pcm16) % 2)
-    return [
-        int.from_bytes(pcm16[index : index + 2], "little", signed=True) / 32_768.0
-        for index in range(0, usable, 2)
-    ]
+    if usable == 0:
+        return np.zeros(0, dtype="float32")
+    samples = np.frombuffer(pcm16, dtype="<i2", count=usable // 2)
+    return samples.astype("float32") / 32_768.0
 
 
 def float_to_pcm16(samples) -> bytes:
@@ -420,7 +422,7 @@ class CascadeEngine:
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
             )
         samples = pcm16_to_float(pcm16)
-        if not samples:
+        if len(samples) == 0:
             return Translation(b"", None, 0)
 
         started = time.perf_counter()
@@ -467,7 +469,7 @@ class CascadeEngine:
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
             )
         samples = pcm16_to_float(pcm16)
-        if not samples:
+        if len(samples) == 0:
             return ""
         return self._transcribe(samples)
 

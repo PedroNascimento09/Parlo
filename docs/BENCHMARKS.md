@@ -416,6 +416,8 @@ Two runs of the two-pass path on the same clip wrote 22.83 s and 22.41 s of audi
 
 The live path is unchanged: the same clip posted to `/translate` still returns 22.77 s of audio in 6.24 s, with the tail in the transcript.
 
+The stage split of that run is 6.24 s of recognition, 6.91 s of voice and 1.49 s of translation on a warm machine, both model loads included. The one cost that was ours to remove is the sample conversion: reading the clip's 388,803 samples from pcm16 was 185.1 ms in a Python loop and is now 0.94–1.04 ms through numpy, which also shortens every live segment by about 19 ms.
+
 The translations below are the engine's own on the 24.3 s clip, chunked the way the command chunks it. This clip is synthetic and the recogniser mishears words on it, which the translations carry:
 
 ```
