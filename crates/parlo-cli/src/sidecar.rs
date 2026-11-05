@@ -704,6 +704,10 @@ impl Engine for SidecarEngine {
             clean: None,
         })?;
 
+        if response.op == "unsupported" {
+            return parlo_core::engine::translate_frames(self, frame);
+        }
+
         if response.op == "error" {
             return Err(EngineError::Unavailable(
                 response
