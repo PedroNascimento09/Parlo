@@ -2942,18 +2942,28 @@ fn handle(
             }
         };
         let sample = store.sample(&target.id).unwrap_or_default();
-        let header = serde_json::json!({
-            "format": "parlo-voice-profile",
-            "version": 1,
-            "synthetic": true,
-            "notice": "Audio from this profile is synthetic voice. The person who authorised it is named in the consent record below.",
-            "profile": profile,
-        });
-        let mut exported = header.to_string().into_bytes();
-        exported.extend_from_slice(b"\n\n");
-        exported.extend_from_slice(&sample);
+        let exported = crate::voicefile::export(&profile, &sample);
         return respond_named(stream, &format!("parlo-voice-{}.txt", target.id), &exported)
             .map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/voice/import" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match crate::voicefile::import_into(&voice_store(), &body) {
+            Ok(profile) => {
+                let text = serde_json::to_string(&profile).unwrap_or_else(|_| "{}".to_string());
+                respond_json(stream, "201 Created", &text).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
     }
 
     if method == "POST" && path == "/dub" {

@@ -56,6 +56,7 @@ mod subtitles;
 mod summary;
 mod undo;
 mod update;
+mod voicefile;
 mod watch;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");

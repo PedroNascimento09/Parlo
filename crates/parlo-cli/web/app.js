@@ -6309,6 +6309,37 @@ voiceForm.addEventListener("submit", async (event) => {
   }
 });
 
+const voiceImport = document.getElementById("voice-import");
+const voiceImportFile = document.getElementById("voice-import-file");
+const voiceImportNote = document.getElementById("voice-import-note");
+
+if (voiceImport && voiceImportFile) {
+  voiceImport.addEventListener("click", () => voiceImportFile.click());
+  voiceImportFile.addEventListener("change", async () => {
+    const file = voiceImportFile.files && voiceImportFile.files[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const response = await fetch("/voice/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/octet-stream", Authorization: "Bearer " + token },
+        body: await file.arrayBuffer(),
+      });
+      const answer = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(answer.error || "The voice file could not be read.");
+      }
+      voiceImportNote.textContent = "Imported " + answer.label + ", and its consent record came with it.";
+      await loadVoices();
+    } catch (failure) {
+      showError(failure.message);
+    } finally {
+      voiceImportFile.value = "";
+    }
+  });
+}
+
 loadVoices();
 
 

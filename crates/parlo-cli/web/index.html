@@ -825,6 +825,11 @@
       </div>
     </form>
     <ul class="voice-list" id="voice-list"></ul>
+    <div class="voice-submit">
+      <button id="voice-import" class="swap" type="button">Import a voice file</button>
+      <input id="voice-import-file" type="file" accept=".txt,application/json" hidden>
+      <p class="voice-note" id="voice-import-note" aria-live="polite"></p>
+    </div>
   </section>
 
   <section class="models" id="models" aria-labelledby="models-title" hidden>
