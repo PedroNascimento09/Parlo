@@ -184,6 +184,11 @@ fn tools() -> Value {
             "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
         },
         {
+            "name": "list_voice_packs",
+            "description": "The voice packs kept on this computer, each with the voices it carries.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+        },
+        {
             "name": "meeting_decisions",
             "description": "The decisions found in one meeting, with the speaker, the time and the decision each one replaces.",
             "inputSchema": {
@@ -257,6 +262,10 @@ fn call(params: &Value) -> Value {
                 None => json!({ "client": client, "voice": "", "bound": false }).to_string(),
             },
             None => json!({ "client": "", "voice": "", "bound": false }).to_string(),
+        },
+        "list_voice_packs" => match crate::packs::list() {
+            Ok(packs) => json!({ "packs": packs }).to_string(),
+            Err(error) => return failure(&error),
         },
         other => return failure(&format!("this server has no tool called {other}")),
     };
@@ -512,7 +521,7 @@ mod tests {
             .iter()
             .filter_map(|tool| tool["name"].as_str())
             .collect();
-        assert_eq!(tools.len(), 14);
+        assert_eq!(tools.len(), 15);
         for name in [
             "list_meetings",
             "ask_meetings",
@@ -528,6 +537,7 @@ mod tests {
             "meeting_decisions",
             "bind_voice",
             "agent_voice",
+            "list_voice_packs",
         ] {
             assert!(names.contains(&name), "{name} is missing");
         }
@@ -642,6 +652,6 @@ mod tests {
         let initialized: Value = serde_json::from_str(lines[0]).unwrap();
         assert_eq!(initialized["result"]["serverInfo"]["name"], "parlo");
         let listed: Value = serde_json::from_str(lines[1]).unwrap();
-        assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 14);
+        assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 15);
     }
 }

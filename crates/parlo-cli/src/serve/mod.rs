@@ -2995,6 +2995,8 @@ fn handle(
             text: String,
             #[serde(default)]
             voices: Vec<String>,
+            #[serde(default)]
+            pack: Option<String>,
         }
         let request: CompareRequest = match serde_json::from_slice(&body) {
             Ok(request) => request,
@@ -3007,21 +3009,38 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        let specs = match crate::compare::plan(
-            &request.text,
-            &request.voices,
-            crate::compare::revoked_in_store,
-        ) {
-            Ok(specs) => specs,
-            Err(error) => {
-                return respond_json(
-                    stream,
-                    "400 Bad Request",
-                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
-                )
-                .map(|()| Flow::Serve)
+        let voices = match request.pack.as_deref() {
+            Some(name) => {
+                if !request.voices.is_empty() {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &error_json("send either two voices or a pack, not both"),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+                match crate::packs::read(name) {
+                    Ok(pack) => pack.voices,
+                    Err(error) => {
+                        return respond_json(stream, "400 Bad Request", &error_json(&error))
+                            .map(|()| Flow::Serve)
+                    }
+                }
             }
+            None => request.voices.clone(),
         };
+        let specs =
+            match crate::compare::plan(&request.text, &voices, crate::compare::revoked_in_store) {
+                Ok(specs) => specs,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+            };
         let (readings, samples, rate) =
             match crate::compare::render(&specs, &request.text, |spec, text| {
                 session.speak_with_voice(&spec.file, text)
@@ -3056,6 +3075,49 @@ fn handle(
         })
         .to_string();
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/voice/packs" {
+        return match crate::packs::list() {
+            Ok(packs) => respond_json(
+                stream,
+                "200 OK",
+                &serde_json::json!({ "packs": packs }).to_string(),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/voice/packs" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match crate::packs::import(&body, crate::compare::revoked_in_store) {
+            Ok(pack) => respond_json(
+                stream,
+                "201 Created",
+                &serde_json::to_string(&pack).unwrap_or_else(|_| "{}".to_string()),
+            )
+            .map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "400 Bad Request", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
+    if method == "GET" && path.starts_with("/voice/packs/") {
+        let name = path["/voice/packs/".len()..].trim();
+        return match crate::packs::export(name) {
+            Ok(bytes) => {
+                respond_named(stream, &format!("{name}.json"), &bytes).map(|()| Flow::Serve)
+            }
+            Err(error) => {
+                respond_json(stream, "404 Not Found", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
     }
 
     if method == "POST" && path == "/dub" {
@@ -6094,6 +6156,26 @@ mod tests {
     }
 
     #[test]
+    fn a_comparison_that_names_a_missing_pack_is_refused() {
+        let (port, stop) = start_server();
+        let refused = send(
+            port,
+            "POST",
+            "/voice/compare",
+            "{\"text\":\"Bom dia\",\"pack\":\"no such pack\"}",
+        );
+        assert!(refused.starts_with("HTTP/1.1 400"), "{refused}");
+        assert!(refused.contains("no voice pack"), "{refused}");
+        let broken = send(port, "POST", "/voice/packs", "{\"format\":\"other\"}");
+        assert!(broken.starts_with("HTTP/1.1 400"), "{broken}");
+        assert!(broken.contains("not a Parlo voice pack"), "{broken}");
+        let listed = send(port, "GET", "/voice/packs", "");
+        assert!(listed.starts_with("HTTP/1.1 200"), "{listed}");
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
+    }
+
+    #[test]
     fn the_processor_setting_is_shown_and_checked() {
         let (port, stop) = start_server();
         let refused = send(port, "POST", "/settings", "{\"compute\":\"tpu\"}");
@@ -6156,7 +6238,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .len(),
-            14
+            15
         );
 
         stop.store(false, Ordering::Relaxed);

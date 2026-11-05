@@ -42,6 +42,7 @@ mod models;
 #[cfg(test)]
 mod network;
 mod notes;
+mod packs;
 mod playback;
 mod record;
 mod registry;

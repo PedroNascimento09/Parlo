@@ -6360,6 +6360,107 @@ if (compareRun) {
   });
 }
 
+const packName = document.getElementById("pack-name");
+const packSave = document.getElementById("pack-save");
+const packImport = document.getElementById("pack-import");
+const packImportFile = document.getElementById("pack-import-file");
+const packNote = document.getElementById("pack-note");
+const packList = document.getElementById("pack-list");
+
+async function sendPack(body) {
+  const response = await fetch("/voice/packs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body,
+  });
+  const answer = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(answer.error || "The pack could not be saved.");
+  }
+  return answer;
+}
+
+async function loadPacks() {
+  if (!packList) {
+    return;
+  }
+  try {
+    const response = await fetch("/voice/packs", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const values = await response.json();
+    packList.replaceChildren();
+    for (const pack of values.packs || []) {
+      const item = document.createElement("li");
+      const use = document.createElement("button");
+      use.type = "button";
+      use.className = "swap";
+      use.textContent = "Use " + pack.name;
+      use.addEventListener("click", () => {
+        compareFirst.value = pack.voices[0];
+        compareSecond.value = pack.voices[1];
+        compareNote.textContent =
+          "Pack " + pack.name + " is chosen. Write the sentence and read it in both.";
+        compareText.focus();
+      });
+      item.textContent = pack.name + ": " + pack.voices.join(", ") + " ";
+      item.append(use);
+      packList.append(item);
+    }
+  } catch (failure) {
+    showError(failure.message);
+  }
+}
+
+if (packSave) {
+  packSave.addEventListener("click", async () => {
+    const name = packName.value.trim();
+    if (!name) {
+      packNote.textContent = "Give the pack a name first.";
+      return;
+    }
+    try {
+      const saved = await sendPack(
+        JSON.stringify({
+          format: "parlo-voice-pack",
+          version: 1,
+          name,
+          voices: [compareFirst.value, compareSecond.value],
+          notice: "Nothing in this pack leaves this computer.",
+        }),
+      );
+      packNote.textContent = "Saved " + saved.name + " on this computer.";
+      await loadPacks();
+    } catch (failure) {
+      packNote.textContent = failure.message;
+    }
+  });
+}
+
+if (packImport) {
+  packImport.addEventListener("click", () => packImportFile.click());
+  packImportFile.addEventListener("change", async () => {
+    const file = packImportFile.files && packImportFile.files[0];
+    if (!file) {
+      return;
+    }
+    try {
+      const saved = await sendPack(await file.text());
+      packNote.textContent =
+        "Imported " + saved.name + " with " + saved.voices.length + " voices.";
+      await loadPacks();
+    } catch (failure) {
+      packNote.textContent = failure.message;
+      showError(failure.message);
+    } finally {
+      packImportFile.value = "";
+    }
+  });
+}
+
+loadPacks();
+
 const voiceImport = document.getElementById("voice-import");
 const voiceImportFile = document.getElementById("voice-import-file");
 const voiceImportNote = document.getElementById("voice-import-note");

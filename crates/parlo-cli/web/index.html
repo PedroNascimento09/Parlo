@@ -852,6 +852,17 @@
       <p class="voice-note field-wide" id="compare-note" aria-live="polite"></p>
       <ol class="voice-list field-wide" id="compare-readings"></ol>
     </div>
+    <div class="settings-row">
+      <label class="field field-wide" for="pack-name">
+        <span class="field-label">Pack name</span>
+        <input id="pack-name" class="field-input" type="text" maxlength="48" placeholder="Studio pair" autocomplete="off">
+      </label>
+      <button id="pack-save" class="swap" type="button">Save the two voices as a pack</button>
+      <button id="pack-import" class="swap" type="button">Import a pack file</button>
+      <input id="pack-import-file" type="file" accept=".json,application/json" hidden>
+      <p class="voice-note field-wide" id="pack-note" aria-live="polite"></p>
+      <ul class="voice-list field-wide" id="pack-list"></ul>
+    </div>
     <div class="voice-submit">
       <button id="voice-import" class="swap" type="button">Import a voice file</button>
       <input id="voice-import-file" type="file" accept=".txt,application/json" hidden>

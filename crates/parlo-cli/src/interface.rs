@@ -30,6 +30,12 @@ mod tests {
             "compare-second",
             "compare-note",
             "compare-readings",
+            "pack-name",
+            "pack-save",
+            "pack-import",
+            "pack-import-file",
+            "pack-note",
+            "pack-list",
         ] {
             assert!(
                 page.contains(&format!("id=\"{id}\"")),
