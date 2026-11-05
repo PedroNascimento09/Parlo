@@ -47,11 +47,11 @@ Rules:
 | T1 | Recogniser breadth | 11 engines | 2 | 12 engines | 1 | Each adapter has a WER row on the FalAR corpus |
 | T2 | Language breadth | 646 | 2 | 646 class, permissive weights only | 1 | Published count equals the measured count; NLLB excluded by licence |
 | T3 | Speaker diarisation | pyannote, Sortformer | None | Rust clustering on sherpa embeddings; DER under 15% | 1 | Ten minutes, two speakers, DER under 15% |
-| T4 | Word timestamps | Yes | No | Parity | 1 | An SRT from a dictation has word bounds |
+| T4 | Word timestamps | Yes | Blocked: word bounds need the recogniser's word times, and the engine in `engines/cascade/parlo_cascade/engine.py` joins `segment.text` and drops them | Parity | 1 | An SRT from a dictation has word bounds |
 | T5 | History, search, export | Yes | Yes | Keep | 0 | Find a line by app and by text |
-| T6 | System audio capture | Yes, into captions and dubbing | `record --system` only | Wire into captions and meetings | 1 | A call recording transcribes with no microphone |
+| T6 | System audio capture | Yes, into captions and dubbing | Done · 55f5a4d: the meeting screen and the captions page both take the computer's sound, and the captions page shows which sound it uses | Wire into captions and meetings | 1 | A call recording transcribes with no microphone |
 | T7 | URL and media ingest | yt-dlp, cookies | Partial: public video pages via yt-dlp, no cookies; private videos refused | Parity, public URLs only | 3 | A public video transcribes; a private address is refused |
-| T8 | Speaker count hints | 1–20 | No | Parity | 1 | A hint reaches the engine and is recorded |
+| T8 | Speaker count hints | 1–20 | Done · bbff8cc: the count is saved with the meeting, caps the live room at that many voices, and arrives from the app's Voices field | Parity | 1 | A hint reaches the engine and is recorded |
 | T9 | Transcript correction and QC | Yes | Partial: a corrected line keeps its original in the project and editor | Parity | 3 | A corrected line keeps the original beside it |
 
 ## Meetings
@@ -59,7 +59,7 @@ Rules:
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
 | M1 | Record and import | Yes | Yes | Keep | 0 | A transcript imports and lists |
-| M2 | Live transcription | Yes | No | Parity | 1 | Lines appear while the meeting runs |
+| M2 | Live transcription | Yes | Done · 454d8a0: the transcript redraws after every five-second window, so lines appear while the meeting runs | Parity | 1 | Lines appear while the meeting runs |
 | M3 | Decisions and action items | LLM summary | Rule-based, cited | Keep as an edge | 0 | Each item links to speaker and minute |
 | M4 | Ask with citations | Not documented | Yes | Keep as an edge | 0 | An answer with no match says so |
 | M5 | Local summary model | Yes | Done · c0e8ce5: the meeting summary asks the local model, falls back to the local rules when it cannot answer, and the screen names which one wrote it with the reason for the fallback | Local model, rule fallback | 4 | The screen says which produced the summary |
@@ -124,7 +124,7 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| X1 | Model catalogue | Yes | 52 entries | Keep, generated from the registry | 0 | A card cannot exist without a licence |
+| X1 | Model catalogue | Yes | Done · dfb8b40: 52 entries, and every card carries a licence, a source and its languages | Keep, generated from the registry | 0 | A card cannot exist without a licence |
 | X2 | Per-engine benchmarks | Yes | Partial | One row per engine and device | 6 | No card claims a number without a row |
 | X3 | GPU auto-detect | Yes | No | Parity | 2 | The chosen device is shown and overridable |
 | X4 | Download resume and repair | Yes | Partial | Parity | 1 | A killed download resumes at the byte |
@@ -148,10 +148,10 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| Q1 | Automated tests | Large suite | 311 Rust + full Python suite | 600+, route and flow tests | 6 | Every route has a test |
+| Q1 | Automated tests | Large suite | 344 Rust + full Python suite | 600+, route and flow tests | 6 | Every route has a test |
 | Q2 | Published benchmarks | Yes | Yes, one machine | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Yes | Keep, cover every model | 6 | A copyleft crate fails the build |
-| Q4 | Network audit | Documented | Partial | Automated, per release | 6 | A release fails if a request leaves the machine |
+| Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
 | Q5 | Crash-free sessions | Claimed | Unproven | Two hours, no crash | 6 | A recorded two-hour run |
 | Q6 | External testers | Community | None | Ten testers before 1.0 | 6 | Their hardware rows are in BENCHMARKS |
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-37 of 80 rows are Done (46.3%). Ten Partial rows counted at half give 52.5%.
+42 of 80 rows are Done (52.5%). Nine Partial rows counted at half give 58.1%.
 
 ## Next
 
-D10 Pronunciation dictionary stays parked while `engines/cascade/engine.py` and `tts.py` are edited elsewhere. The next unblocked row is T8, speaker count hints, then T4, word timestamps in an SRT.
+D5 and D10 stay parked on the engine files, and T4 waits for the recogniser to return word times. The next unblocked rows are V10, per-agent voices, then Q1, one test per route.
