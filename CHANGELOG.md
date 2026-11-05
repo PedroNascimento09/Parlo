@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Voice packs are local files: `POST /voice/packs` keeps a named pack of two to eight voices on this computer, `GET /voice/packs` lists them, a pack refills both voices of the comparison, and a pack naming an unknown or revoked voice is refused before anything is written.
+- Agents see the packs through the fifteenth MCP tool, `list_voice_packs`.
 - Two voices read the same sentence back to back: the voice page takes the sentence and the two voices, `/voice/compare` returns one WAV with the readings in the order chosen and their labels, languages and times, and an unknown or revoked voice is refused before any audio.
 - An MCP client that says its name when it connects can bind one of the voices on this computer: the binding is kept in `agents.json`, and `bind_voice` and `agent_voice` resolve it for every later call from that client.
 - Settings has a processor switch, the computer decides or the processor only. `/engine` names the device and the reason, and forcing the processor lowers the profile honestly instead of claiming a graphics card.
