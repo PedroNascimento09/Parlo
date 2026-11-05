@@ -38,6 +38,7 @@ pub fn project(
             translations: std::collections::BTreeMap::new(),
             source_text: cue.text,
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });

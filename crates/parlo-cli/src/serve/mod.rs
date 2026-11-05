@@ -4502,6 +4502,8 @@ struct SegmentEdit {
     speaker: Option<String>,
     #[serde(default)]
     voice_id: Option<String>,
+    #[serde(default)]
+    pace: Option<f64>,
     source_text: String,
 }
 
@@ -4558,6 +4560,14 @@ fn apply_project_edits(
                 return Err(format!("{voice} is not a voice Parlo can cast"));
             }
         }
+        if let Some(pace) = edit.pace {
+            if !pace.is_finite() || !(0.8..=1.25).contains(&pace) {
+                return Err(format!(
+                    "segment {} needs a pace between 0.8 and 1.25",
+                    edit.id
+                ));
+            }
+        }
         if !project.segments.iter().any(|segment| segment.id == edit.id) {
             return Err(format!("segment {} is not in this project", edit.id));
         }
@@ -4584,6 +4594,12 @@ fn apply_project_edits(
             .filter(|speaker| !speaker.is_empty())
             .map(ToOwned::to_owned);
         let source_changed = segment.source_text != edit.source_text;
+        let pace = match edit.pace {
+            Some(pace) if (pace - 1.0).abs() > f64::EPSILON => Some(pace),
+            Some(_) => None,
+            None => segment.pace,
+        };
+        let pace_changed = segment.pace != pace;
         let text_changed = segment.start_ms != edit.start_ms
             || segment.end_ms != edit.end_ms
             || segment.speaker != speaker
@@ -4591,6 +4607,7 @@ fn apply_project_edits(
         segment.start_ms = edit.start_ms;
         segment.end_ms = edit.end_ms;
         segment.speaker = speaker;
+        segment.pace = pace;
         if source_changed {
             if segment.original_text.is_none() {
                 segment.original_text = Some(segment.source_text.clone());
@@ -4611,7 +4628,7 @@ fn apply_project_edits(
                 .and_then(|speaker| cast.get(speaker))
                 .cloned()
         });
-        if text_changed || before.get(&segment.id).cloned().flatten() != after {
+        if text_changed || pace_changed || before.get(&segment.id).cloned().flatten() != after {
             if text_changed {
                 segment.target_text = None;
                 segment.translations.clear();
@@ -4631,6 +4648,8 @@ struct DubCue<'a> {
     source: &'a str,
     speaker: Option<&'a str>,
     voice: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pace: Option<f64>,
 }
 
 #[derive(serde::Serialize)]
@@ -4649,6 +4668,7 @@ fn cue_document(project: &crate::store::DubProject) -> Result<String, serde_json
             source: segment.source_text.as_str(),
             speaker: segment.speaker.as_deref(),
             voice: effective_voice(project, segment),
+            pace: segment.pace,
         })
         .collect();
     serde_json::to_string(&DubCueDocument { cues })
@@ -5142,6 +5162,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             original_text: None,
+            pace: None,
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
         });
@@ -5155,6 +5176,7 @@ mod tests {
                 end_ms: 2_750,
                 speaker: Some("Beatriz".to_string()),
                 voice_id: None,
+                pace: None,
                 source_text: "Bom dia a todos".to_string(),
             }],
             &std::collections::BTreeMap::new(),
@@ -5179,6 +5201,7 @@ mod tests {
                 end_ms: 2_750,
                 speaker: Some("Beatriz".to_string()),
                 voice_id: None,
+                pace: None,
                 source_text: "Bom dia".to_string(),
             }],
             &std::collections::BTreeMap::new(),
@@ -5202,14 +5225,17 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             original_text: None,
+            pace: Some(1.1),
             target_text: None,
             state: "imported".to_string(),
         });
 
-        let document: serde_json::Value =
-            serde_json::from_str(&cue_document(&project).unwrap()).unwrap();
+        let json = cue_document(&project).unwrap();
+        assert!(json.contains("\"pace\":1.1"), "{json}");
+        let document: serde_json::Value = serde_json::from_str(&json).unwrap();
 
         assert_eq!(document["cues"][0]["id"], "p1-0");
+        assert_eq!(document["cues"][0]["pace"], 1.1);
         assert_eq!(document["cues"][0]["start_ms"], 1_250);
         assert_eq!(document["cues"][0]["end_ms"], 3_500);
         assert_eq!(document["cues"][0]["source"], "Bom dia");
@@ -5235,6 +5261,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5248,6 +5275,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Até logo".to_string(),
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5261,6 +5289,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Sem voz".to_string(),
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5288,6 +5317,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             original_text: None,
+            pace: None,
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
         });
@@ -5298,6 +5328,7 @@ mod tests {
             end_ms: 3_500,
             speaker: Some("Ana".to_string()),
             voice_id: Some("voice-fr".to_string()),
+            pace: Some(0.9),
             source_text: "Bom dia".to_string(),
         }];
         let mut cast = std::collections::BTreeMap::new();
@@ -5309,6 +5340,7 @@ mod tests {
 
         assert_eq!(loaded.cast.get("Ana").map(String::as_str), Some("voice-en"));
         assert_eq!(loaded.segments[0].voice_id.as_deref(), Some("voice-fr"));
+        assert_eq!(loaded.segments[0].pace, Some(0.9));
         assert_eq!(
             loaded.segments[0].target_text.as_deref(),
             Some("Good morning")
@@ -5319,6 +5351,18 @@ mod tests {
         wrong.insert("Ana".to_string(), "voice-klingon".to_string());
         let refused = apply_project_edits(&mut project, &edit, &wrong).unwrap_err();
         assert!(refused.contains("is not a voice"), "{refused}");
+
+        let too_fast = [SegmentEdit {
+            id: "p1-0".to_string(),
+            start_ms: 1_250,
+            end_ms: 3_500,
+            speaker: Some("Ana".to_string()),
+            voice_id: None,
+            pace: Some(1.5),
+            source_text: "Bom dia".to_string(),
+        }];
+        let refused = apply_project_edits(&mut project, &too_fast, &cast).unwrap_err();
+        assert!(refused.contains("pace"), "{refused}");
     }
 
     #[test]
@@ -5335,6 +5379,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5382,6 +5427,7 @@ mod tests {
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });

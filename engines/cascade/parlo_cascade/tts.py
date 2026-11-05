@@ -98,16 +98,19 @@ class PiperVoice:
             )
         return process
 
-    def synthesize(self, text: str) -> tuple[bytes, int]:
+    def synthesize(self, text: str, length_scale: float | None = None) -> tuple[bytes, int]:
         try:
-            return self._synthesize(text)
+            return self._synthesize(text, length_scale)
         except _Stopped:
-            return self._synthesize(text)
+            return self._synthesize(text, length_scale)
 
-    def _synthesize(self, text: str) -> tuple[bytes, int]:
+    def _synthesize(self, text: str, length_scale: float | None = None) -> tuple[bytes, int]:
         with self._lock:
             self.start()
-            self._send({"op": "synthesize", "text": text})
+            request = {"op": "synthesize", "text": text}
+            if length_scale is not None:
+                request["length_scale"] = length_scale
+            self._send(request)
             response = self._read()
             if "error" in response:
                 raise VoiceUnavailable(str(response["error"]))

@@ -2487,6 +2487,19 @@ function showProject(project) {
     speaker.maxLength = 120;
     speaker.placeholder = "Optional";
     speaker.value = line.speaker || "";
+    const pace = document.createElement("select");
+    pace.className = "dub-input dub-pace";
+    for (const [value, label] of [
+      ["0.9", "Slower"],
+      ["1", "Natural"],
+      ["1.1", "Faster"],
+    ]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      pace.append(option);
+    }
+    pace.value = String(line.pace || 1);
     const text = document.createElement("textarea");
     text.className = "dub-input dub-text";
     text.rows = 2;
@@ -2496,6 +2509,7 @@ function showProject(project) {
       times,
       field("Speaker", speaker),
       field("Voice", voiceSelect(line.voice_id, "Speaker voice")),
+      field("Pace", pace),
       field("Text", text)
     );
     if (line.original_text && line.original_text !== line.source_text) {
@@ -2705,6 +2719,7 @@ function editedProjectSegments() {
       end_ms: Math.round(end * 1000),
       speaker: row.querySelector(".dub-speaker").value.trim() || null,
       voice_id: row.querySelector(".dub-voice").value || null,
+      pace: Number(row.querySelector(".dub-pace").value),
       source_text: sourceText,
     };
   });

@@ -38,8 +38,10 @@ One JSON object per line on stdin and stdout.
 {"op": "hello"}
 {"op": "hello", "engine": "piper", "available": true}
 
-{"op": "synthesize", "text": "bom dia"}
+{"op": "synthesize", "text": "bom dia", "length_scale": 0.9}
 {"op": "synthesized", "pcm16": "<base64 little endian pcm16>", "sample_rate": 22050}
+
+`length_scale` is optional and must be between 0.5 and 2.0. Values below 1 speak faster; values above 1 speak slower.
 ```
 
 An error answers `{"op": "error", "error": "..."}` and the process stays alive.

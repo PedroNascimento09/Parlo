@@ -29,6 +29,8 @@ On Windows use `.venv/Scripts/python`. The other direction is `--to pt --from en
 
 The input can be a video (`mp4`, `mkv`, `mov`, `webm`, `avi`, `m4v`) or an audio file. A file without a video stream produces audio only. The link box in the app accepts a public video page and downloads it with yt-dlp; a direct media link skips that step. Private, age-gated and members-only videos are refused, and Parlo does not read cookies.
 
+In the app, each imported line has a **Pace** choice: Slower, Natural or Faster. It is saved with the project and changes the synthesised line on the next render; the source text and the subtitle timing stay untouched.
+
 ## Requirements
 
 - `ffmpeg` and `ffprobe` on `PATH`. They do the decoding, the encoding and the muxing; Parlo does not link a media library.

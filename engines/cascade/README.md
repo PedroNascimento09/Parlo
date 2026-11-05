@@ -115,7 +115,7 @@ Synthetic speech is a fair stand-in for a regression test, not for a user: it sh
 
 ## Dubbing
 
-`scripts/dub.py` uses the same recogniser, translator and voice on a whole file instead of a live stream: ffmpeg decodes to 16 kHz mono, the audio is split on pauses with a 15 s ceiling, every segment is recognised, translated and spoken, and each line is placed at the time its sentence started. A line longer than its slot is spoken again up to about 18 percent faster, and overlaps the next one if that is not enough.
+`scripts/dub.py` uses the same recogniser, translator and voice on a whole file instead of a live stream: ffmpeg decodes to 16 kHz mono, the audio is split on pauses with a 15 s ceiling, every segment is recognised, translated and spoken, and each line is placed at the time its sentence started. A line longer than its slot is spoken again up to about 18 percent faster, and overlaps the next one if that is not enough. An imported cue can carry a pace from 0.8 to 1.25; the renderer passes its inverse to Piper as `length_scale`, and the project keeps the chosen pace.
 
 ```bash
 python engines/cascade/scripts/dub.py video.mp4 --to en

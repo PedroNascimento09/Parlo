@@ -613,7 +613,7 @@ class CascadeEngine:
         self._touch("translation")
         return self._load_translation()(text)
 
-    def _synthesize(self, text: str) -> bytes:
+    def _synthesize(self, text: str, length_scale: float | None = None) -> bytes:
         self._touch("voice")
-        pcm16, rate = self._load_voice().synthesize(text)
+        pcm16, rate = self._load_voice().synthesize(text, length_scale)
         return float_to_pcm16(resample(pcm16_to_float(pcm16), rate, SAMPLE_RATE))

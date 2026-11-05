@@ -76,7 +76,13 @@ class CueTest(unittest.TestCase):
         path = self.write(
             {
                 "cues": [
-                    {"id": "p-0", "start_ms": 1250, "end_ms": 3500, "source": "Bom dia"},
+                    {
+                        "id": "p-0",
+                        "start_ms": 1250,
+                        "end_ms": 3500,
+                        "source": "Bom dia",
+                        "pace": 1.1,
+                    },
                     {"id": "p-1", "start_ms": 4000, "end_ms": 6000, "source": "Até logo"},
                 ]
             }
@@ -88,6 +94,16 @@ class CueTest(unittest.TestCase):
         self.assertEqual(cues[0].start, 1.25)
         self.assertEqual(cues[0].end, 3.5)
         self.assertEqual(cues[0].source, "Bom dia")
+        self.assertEqual(cues[0].pace, 1.1)
+        self.assertEqual(cues[1].pace, 1.0)
+
+    def test_load_cues_rejects_a_pace_outside_the_range(self):
+        path = self.write(
+            {"cues": [{"id": "p-0", "start_ms": 0, "end_ms": 1000, "source": "x", "pace": 2}]}
+        )
+
+        with self.assertRaisesRegex(SystemExit, "invalid pace"):
+            dub.load_cues(path)
 
     def test_load_cues_rejects_a_cue_that_ends_before_it_starts(self):
         path = self.write(
@@ -133,6 +149,40 @@ class QualityTest(unittest.TestCase):
         self.assertEqual(inspected.issues, ("failed", "unverified"))
 
 
+@unittest.skipUnless(HAS_NUMPY, "numpy is required for pacing")
+class PaceTest(unittest.TestCase):
+    def test_a_faster_pace_becomes_a_shorter_length_scale(self):
+        class Engine:
+            def __init__(self):
+                self.scales = []
+
+            def _synthesize(self, text, length_scale=None):
+                self.scales.append(length_scale)
+                return b"\x00\x00" * 10
+
+        engine = Engine()
+
+        audio = dub.speak(engine, "hello", 1.25)
+
+        self.assertEqual(engine.scales, [0.8])
+        self.assertEqual(audio.size, 10)
+
+    def test_natural_pace_leaves_the_voice_alone(self):
+        class Engine:
+            def __init__(self):
+                self.scales = []
+
+            def _synthesize(self, text, length_scale=None):
+                self.scales.append(length_scale)
+                return b"\x00\x00" * 10
+
+        engine = Engine()
+
+        dub.speak(engine, "hello")
+
+        self.assertEqual(engine.scales, [None])
+
+
 @unittest.skipUnless(HAS_NUMPY, "numpy is required for the cue build")
 class CueBuildTest(unittest.TestCase):
     def test_one_failed_line_does_not_stop_the_next(self):
@@ -144,7 +194,7 @@ class CueBuildTest(unittest.TestCase):
                     raise RuntimeError("the engine refused this line")
                 return text
 
-        def fake_speak(engine, text):
+        def fake_speak(engine, text, pace=1.0):
             return np.full(int(0.2 * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
 
         cues = [
@@ -173,7 +223,7 @@ class CueBuildTest(unittest.TestCase):
             def _translate(self, text):
                 return text
 
-        def fake_speak(engine, text):
+        def fake_speak(engine, text, pace=1.0):
             return np.full(2 * dub.SAMPLE_RATE, 0.2, dtype=np.float32)
 
         cues = [dub.Cue("p-0", 0.0, 1.0, "hello")]
@@ -207,7 +257,7 @@ class CueBuildTest(unittest.TestCase):
 
         spoken = []
 
-        def fake_speak(engine, text):
+        def fake_speak(engine, text, pace=1.0):
             spoken.append(text)
             words = len(text.split())
             return np.full(int(0.4 * words * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
@@ -234,13 +284,15 @@ class CueBuildTest(unittest.TestCase):
                 return "T:" + text
 
         spoken = []
+        paces = []
 
-        def fake_speak(engine, text):
+        def fake_speak(engine, text, pace=1.0):
             spoken.append(text)
+            paces.append(pace)
             return np.full(int(0.1 * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
 
         cues = [
-            dub.Cue("p-0", 0.1, 0.5, "hello"),
+            dub.Cue("p-0", 0.1, 0.5, "hello", pace=1.1),
             dub.Cue("p-1", 1.0, 1.5, "world"),
         ]
         samples = np.zeros(dub.SAMPLE_RATE * 2, dtype=np.float32)
@@ -250,6 +302,7 @@ class CueBuildTest(unittest.TestCase):
 
         self.assertEqual(len(track), len(samples))
         self.assertEqual(spoken, ["T:hello", "T:world"])
+        self.assertEqual(paces, [1.1, 1.0])
         self.assertEqual([line.id for line in lines], ["p-0", "p-1"])
         self.assertEqual([line.source for line in lines], ["hello", "world"])
         self.assertAlmostEqual(lines[0].start, 0.1)

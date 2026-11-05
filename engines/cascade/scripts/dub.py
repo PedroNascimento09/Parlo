@@ -71,6 +71,7 @@ class Cue:
     end: float
     source: str
     voice: str | None = None
+    pace: float = 1.0
 
 
 def require(tool: str) -> str:
@@ -119,7 +120,15 @@ def load_cues(path: Path) -> list[Cue]:
         voice = item.get("voice")
         if voice is not None and (not isinstance(voice, str) or not voice.strip()):
             raise SystemExit(f"cue {number} has an invalid voice")
-        cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source, voice))
+        pace = item.get("pace", 1.0)
+        if (
+            not isinstance(pace, (int, float))
+            or isinstance(pace, bool)
+            or not math.isfinite(pace)
+            or not 0.8 <= pace <= 1.25
+        ):
+            raise SystemExit(f"cue {number} has an invalid pace")
+        cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source, voice, float(pace)))
     cues.sort(key=lambda cue: cue.start)
     identifiers = [cue.id for cue in cues]
     duplicate = next((name for name in identifiers if identifiers.count(name) > 1), None)
@@ -256,8 +265,12 @@ def segment(samples: np.ndarray) -> list[Segment]:
     return segments
 
 
-def speak(engine: CascadeEngine, text: str) -> np.ndarray:
-    return np.asarray(pcm16_to_float(engine._synthesize(text)), dtype=np.float32)
+def speak(engine: CascadeEngine, text: str, pace: float = 1.0) -> np.ndarray:
+    if pace == 1.0:
+        audio = engine._synthesize(text)
+    else:
+        audio = engine._synthesize(text, length_scale=1.0 / pace)
+    return np.asarray(pcm16_to_float(audio), dtype=np.float32)
 
 
 def warm_voice(engine: CascadeEngine) -> threading.Thread | None:
@@ -433,13 +446,13 @@ def render_line(
     translated = engine._translate(source)
     if not translated:
         raise ValueError("nothing was translated")
-    audio = speak(engine, translated)
+    audio = speak(engine, translated, cue.pace if cue is not None else 1.0)
     if mode == "concise":
         words = translated.split()
         while len(words) > 1 and len(audio) / SAMPLE_RATE > piece.seconds():
             words.pop()
             translated = " ".join(words)
-            audio = speak(engine, translated)
+            audio = speak(engine, translated, cue.pace if cue is not None else 1.0)
     start = piece.start / SAMPLE_RATE
     placed = timing.plan(
         mode,

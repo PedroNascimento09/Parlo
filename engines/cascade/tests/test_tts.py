@@ -49,6 +49,18 @@ CRASHING = textwrap.dedent(
     """
 )
 
+LENGTH = textwrap.dedent(
+    """
+    import base64, json, sys
+    print(json.dumps({"op": "hello", "engine": "piper", "available": True}), flush=True)
+    for line in sys.stdin:
+        request = json.loads(line)
+        if request.get("op") == "synthesize":
+            audio = base64.b64encode(bytes([1, 0]) * 4).decode("ascii")
+            print(json.dumps({"op": "synthesized", "pcm16": audio, "sample_rate": int(request.get("length_scale", 1) * 10000)}), flush=True)
+    """
+)
+
 UNAVAILABLE = textwrap.dedent(
     """
     import json
@@ -93,6 +105,13 @@ class AdapterTest(unittest.TestCase):
         pcm16, rate = voice.synthesize("bom dia")
         self.assertEqual(rate, 22050)
         self.assertEqual(pcm16, bytes([1, 0]) * 4)
+        voice.close()
+
+    def test_length_scale_reaches_the_adapter(self):
+        directory, model = self.make(LENGTH)
+        voice = PiperVoice(model, directory=directory)
+        _, rate = voice.synthesize("bom dia", 0.8)
+        self.assertEqual(rate, 8000)
         voice.close()
 
     def test_a_dead_adapter_is_replaced_for_the_next_sentence(self):

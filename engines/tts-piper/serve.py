@@ -1,5 +1,6 @@
 import base64
 import json
+import math
 import os
 import sys
 
@@ -9,10 +10,23 @@ def reply(payload: dict) -> None:
     sys.stdout.flush()
 
 
-def synthesize(voice, text: str) -> tuple[bytes, int]:
+def synthesize(voice, text: str, length_scale: float | None = None) -> tuple[bytes, int]:
+    if length_scale is None:
+        chunks = voice.synthesize(text)
+    else:
+        if (
+            not isinstance(length_scale, (int, float))
+            or isinstance(length_scale, bool)
+            or not math.isfinite(length_scale)
+            or not 0.5 <= length_scale <= 2.0
+        ):
+            raise ValueError("length_scale must be between 0.5 and 2.0")
+        from piper import SynthesisConfig
+
+        chunks = voice.synthesize(text, syn_config=SynthesisConfig(length_scale=float(length_scale)))
     rate = int(voice.config.sample_rate)
     audio = bytearray()
-    for chunk in voice.synthesize(text):
+    for chunk in chunks:
         rate = int(chunk.sample_rate)
         audio.extend(chunk.audio_int16_bytes)
     return bytes(audio), rate
@@ -69,7 +83,7 @@ def main() -> int:
             reply({"op": "error", "error": "text must be a non empty string"})
             continue
         try:
-            pcm16, rate = synthesize(voice, text)
+            pcm16, rate = synthesize(voice, text, request.get("length_scale"))
         except Exception as error:
             reply({"op": "error", "error": str(error)})
             continue

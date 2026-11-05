@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS segments (
     voice_id TEXT,
     source_text TEXT,
     original_text TEXT,
+    pace REAL,
     target_text TEXT,
     state TEXT,
     qc_json TEXT
@@ -229,6 +230,8 @@ pub struct DubSegment {
     pub source_text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub original_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pace: Option<f64>,
     pub target_text: Option<String>,
     pub state: String,
 }
@@ -288,7 +291,7 @@ impl Store {
 
     fn prepare(&self) -> Result<(), String> {
         self.connection.execute_batch(SCHEMA).map_err(sql)?;
-        let present = {
+        let columns = {
             let mut statement = self
                 .connection
                 .prepare("PRAGMA table_info(segments)")
@@ -296,17 +299,20 @@ impl Store {
             let columns = statement
                 .query_map([], |row| row.get::<_, String>(1))
                 .map_err(sql)?;
-            let mut present = false;
+            let mut names = std::collections::HashSet::new();
             for column in columns {
-                if column.map_err(sql)? == "original_text" {
-                    present = true;
-                }
+                names.insert(column.map_err(sql)?);
             }
-            present
+            names
         };
-        if !present {
+        if !columns.contains("original_text") {
             self.connection
                 .execute("ALTER TABLE segments ADD COLUMN original_text TEXT", [])
+                .map_err(sql)?;
+        }
+        if !columns.contains("pace") {
+            self.connection
+                .execute("ALTER TABLE segments ADD COLUMN pace REAL", [])
                 .map_err(sql)?;
         }
         Ok(())
@@ -551,7 +557,7 @@ impl Store {
             }
             transaction
                 .execute(
-                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, NULL)",
+                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, pace, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, NULL)",
                     params![
                         segment.id,
                         project.id,
@@ -562,6 +568,7 @@ impl Store {
                         segment.voice_id,
                         segment.source_text,
                         segment.original_text,
+                        segment.pace,
                         segment.target_text,
                         segment.state
                     ],
@@ -684,7 +691,7 @@ impl Store {
         };
         let mut statement = self
             .connection
-            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
+            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, pace, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
             .map_err(sql)?;
         let rows = statement
             .query_map(params![id], |row| {
@@ -698,9 +705,10 @@ impl Store {
                     translations: BTreeMap::new(),
                     source_text: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
                     original_text: row.get(7)?,
-                    target_text: row.get(8)?,
+                    pace: row.get(8)?,
+                    target_text: row.get(9)?,
                     state: row
-                        .get::<_, Option<String>>(9)?
+                        .get::<_, Option<String>>(10)?
                         .unwrap_or_else(|| "imported".to_string()),
                 })
             })
@@ -952,6 +960,7 @@ mod tests {
             ]),
             source_text: "Bom dia".to_string(),
             original_text: Some("Bom dia antes".to_string()),
+            pace: Some(0.9),
             target_text: Some("Good morning".to_string()),
             state: "imported".to_string(),
         });
@@ -965,6 +974,7 @@ mod tests {
             translations: BTreeMap::new(),
             source_text: "Até logo".to_string(),
             original_text: None,
+            pace: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -984,6 +994,7 @@ mod tests {
             loaded.segments[0].original_text.as_deref(),
             Some("Bom dia antes")
         );
+        assert_eq!(loaded.segments[0].pace, Some(0.9));
         assert_eq!(
             loaded.segments[0]
                 .translations
@@ -1025,7 +1036,7 @@ mod tests {
     }
 
     #[test]
-    fn an_old_segment_table_gains_the_original_column() {
+    fn an_old_segment_table_gains_the_new_columns() {
         let root = scratch();
         fs::create_dir_all(&root).unwrap();
         let path = root.join("parlo.db");
@@ -1041,12 +1052,12 @@ mod tests {
         let present: i64 = store
             .connection
             .query_row(
-                "SELECT COUNT(*) FROM pragma_table_info('segments') WHERE name = 'original_text'",
+                "SELECT COUNT(*) FROM pragma_table_info('segments') WHERE name IN ('original_text', 'pace')",
                 [],
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(present, 1);
+        assert_eq!(present, 2);
         let _ = fs::remove_dir_all(&root);
     }
 }
