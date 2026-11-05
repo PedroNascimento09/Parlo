@@ -4,6 +4,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A meeting can be told how many voices to expect: the count is kept with the transcript, caps the speaker separation at that many, and the meeting screen now has the field.
+- The meeting transcript redraws after every five-second window, so the lines appear while the meeting is still running.
+- Every release runs a network audit: the suite fails if a page or the CLI reaches any host besides the release check and the model registry.
 - The local API hands out a single-use ticket for the streaming socket: `POST /ticket` returns one that opens exactly one WebSocket within 30 seconds and is refused on replay.
 - Every model card states its licence before the download, in the app and in `/models`.
 - A meeting summary names what wrote it: the local model when it answers, the local rules when it cannot, with the reason on screen.
