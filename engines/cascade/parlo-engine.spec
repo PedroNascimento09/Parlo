@@ -21,6 +21,8 @@ hiddenimports = [
     "faster_whisper",
 ]
 
+conversion_only = ("ctranslate2.converters", "ctranslate2.specs")
+
 for package in (
     "sherpa_onnx",
     "faster_whisper",
@@ -34,7 +36,9 @@ for package in (
         continue
     datas += package_datas
     binaries += package_binaries
-    hiddenimports += package_hidden
+    hiddenimports += [
+        name for name in package_hidden if not name.startswith(conversion_only)
+    ]
 
 dropped = (
     "torch",
@@ -50,7 +54,12 @@ dropped = (
 
 
 def kept(entry: str) -> bool:
-    return not any(part in dropped for part in Path(entry).parts)
+    path = Path(entry)
+    if path.name.startswith("cudnn"):
+        return False
+    if path.parent.name in ("converters", "specs", "models"):
+        return False
+    return not any(part in dropped for part in path.parts)
 
 
 binaries = [entry for entry in binaries if kept(entry[0])]
@@ -78,7 +87,20 @@ analysis = Analysis(
         "hf_xet",
         "av",
         "pandas",
-        "matplotlib",
+        "spacy",
+        "thinc",
+        "weasel",
+        "pydantic",
+        "pydantic_core",
+        "cryptography",
+        "rich",
+        "pygments",
+        "click",
+        "setuptools",
+        "jinja2",
+        "safetensors",
+        "google",
+        "sqlite3",
     ],
     noarchive=False,
 )

@@ -197,7 +197,6 @@ jobs:
           Copy-Item release/WebView2Loader.dll $payload/
           Copy-Item release/parlo.png $payload/
           Copy-Item release/parlo-engine "$payload/parlo-engine" -Recurse
-          Copy-Item release/parlo-engine-rs "$payload/parlo-engine-rs" -Recurse
           $version = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw "Inno Setup is missing, so the one click installer cannot be built" }
