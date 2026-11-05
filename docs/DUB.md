@@ -27,7 +27,7 @@ On Windows use `.venv/Scripts/python`. The other direction is `--to pt --from en
 | `--keep-background` | off | Keep the original music and effects, ducked under each translated line |
 | `--json` | off | Write every line with its times, source text and translation |
 
-The input can be a video (`mp4`, `mkv`, `mov`, `webm`, `avi`, `m4v`) or an audio file. A file without a video stream produces audio only.
+The input can be a video (`mp4`, `mkv`, `mov`, `webm`, `avi`, `m4v`) or an audio file. A file without a video stream produces audio only. The link box in the app accepts a public video page and downloads it with yt-dlp; a direct media link skips that step. Private, age-gated and members-only videos are refused, and Parlo does not read cookies.
 
 ## Requirements
 
@@ -68,6 +68,7 @@ No timing quality metric exists yet: the line starts where the sentence started,
 - Timing is approximate. Each line starts at the right second, but it is a fresh recording of a different sentence length, so it drifts inside the sentence.
 - Fast speech overlaps the next line. If a translation is still longer than its slot after the speed-up, the two lines are audible at once.
 - `--keep-background` keeps music and effects, and the original speech with them: the original sits at 0.55 between lines and about 0.10 while the dub speaks, so the music comes back up between sentences but the original voice is audible there too. No source separation is performed.
+- A video page can redirect yt-dlp to a media address on another host. Parlo checks the page address before the download and does not re-check every redirect after it.
 - Everything runs on the CPU. A long file takes minutes, and the terminal prints one line per segment while it works.
 - Machine translation quality, not human quality, and the voice is a neutral one, not the speaker's.
 - Portuguese and English only.

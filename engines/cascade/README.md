@@ -8,6 +8,7 @@ The default Parlo engine: streaming speech recognition, translation, and speech 
 | Speech recognition | Parakeet TDT 0.6B v3 int8 via sherpa-onnx | CC-BY-4.0 model, Apache-2.0 runtime |
 | Translation | Argos Translate (OpenNMT/CTranslate2) | MIT |
 | Speech synthesis | Piper (`pt_PT-tugão-medium`, `en_US-lessac-medium`) | **GPL-3.0-or-later** |
+| Media page download | yt-dlp | Unlicense |
 
 Piper is not MIT. The PyPI package `piper-tts` is GPL-3.0-or-later, and each voice model carries its own terms. Parlo's own code is Apache-2.0. The engine imports no Piper: synthesis is the optional adapter in [engines/tts-piper](../tts-piper), started as a separate process and driven over JSON lines, so `parlo-engine` contains no GPL code and the adapter is where the GPL applies. [docs/LICENSES.md](../../docs/LICENSES.md) states the split and its limits.
 
@@ -121,7 +122,9 @@ python engines/cascade/scripts/dub.py video.mp4 --to en
 python engines/cascade/scripts/dub.py talk.wav --from en --to pt --keep-background
 ```
 
-It writes the media file plus an `.srt`, and `--json` adds the times and both texts per line. `ffmpeg` and `ffprobe` must be on `PATH`; nothing else is new. Details, measured output and limits: [../../docs/DUB.md](../../docs/DUB.md).
+It writes the media file plus an `.srt`, and `--json` adds the times and both texts per line. `ffmpeg` and `ffprobe` must be on `PATH`.
+
+A public video page is fetched with yt-dlp after the same public-address check as a direct file. Private, age-gated and members-only videos are refused, and no cookies are read. The page's own media redirects are followed by yt-dlp, not re-checked by Parlo. Details, measured output and limits: [../../docs/DUB.md](../../docs/DUB.md).
 
 ## Tests
 

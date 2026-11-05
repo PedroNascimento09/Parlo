@@ -3,9 +3,11 @@ import subprocess
 import sys
 import tempfile
 import threading
+import types
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from unittest import mock
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -79,9 +81,70 @@ class IngestTest(unittest.TestCase):
     def url(self, path):
         return f"http://127.0.0.1:{self.port}{path}"
 
+    def ytdlp(self, failure=None, seen=None):
+        class YoutubeDL:
+            def __init__(self, options):
+                self.options = options
+                if seen is not None:
+                    seen.update(options)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def extract_info(self, url, download=True):
+                if failure is not None:
+                    raise RuntimeError(failure)
+                path = Path(self.options["paths"]["home"]) / "video.mp4"
+                path.write_bytes(CLIP)
+                return {"requested_downloads": [{"filepath": str(path)}]}
+
+        return types.SimpleNamespace(YoutubeDL=YoutubeDL)
+
     def test_downloads_a_public_media_link(self):
         ingest.download(self.url("/clip.mp4"), self.out, allow_local=True)
         self.assertEqual(self.out.read_bytes(), CLIP)
+
+    def test_downloads_a_public_video_page(self):
+        with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp()}):
+            ingest.download(self.url("/page"), self.out, allow_local=True)
+        self.assertEqual(self.out.read_bytes(), CLIP)
+
+    def test_video_download_uses_no_cookies_and_one_item(self):
+        seen = {}
+        with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp(seen=seen)}):
+            ingest.download(self.url("/page"), self.out, allow_local=True)
+        self.assertTrue(seen["noplaylist"])
+        self.assertNotIn("cookiefile", seen)
+        self.assertNotIn("cookiesfrombrowser", seen)
+        self.assertEqual(seen["paths"]["home"], seen["paths"]["temp"])
+        self.assertGreater(seen["max_filesize"], 0)
+
+    def test_refuses_a_private_video(self):
+        failure = "ERROR: [youtube] abc: Private video. Sign in if you've been granted access"
+        with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp(failure=failure)}):
+            with self.assertRaises(ingest.Refused) as refused:
+                ingest.download(self.url("/page"), self.out, allow_local=True)
+        self.assertIn("private", str(refused.exception))
+        self.assertFalse(self.out.exists())
+
+    def test_refuses_an_unsupported_page(self):
+        failure = "ERROR: Unsupported URL: https://example.com/page"
+        with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp(failure=failure)}):
+            with self.assertRaises(ingest.Refused) as refused:
+                ingest.download(self.url("/page"), self.out, allow_local=True)
+        self.assertIn("web page", str(refused.exception))
+        self.assertFalse(self.out.exists())
+
+    def test_reports_a_missing_ytdlp(self):
+        with mock.patch.dict(sys.modules, {"yt_dlp": None}):
+            with self.assertRaises(ingest.FetchFailed) as failed:
+                ingest.download(self.url("/page"), self.out, allow_local=True)
+        self.assertIn("yt-dlp", str(failed.exception))
+        self.assertIn("web page", str(failed.exception))
+        self.assertFalse(self.out.exists())
 
     def test_refuses_localhost_without_the_override(self):
         with self.assertRaises(ingest.Refused) as refused:
@@ -105,12 +168,6 @@ class IngestTest(unittest.TestCase):
         with self.assertRaises(ingest.Refused) as refused:
             ingest.download(self.url("/redirect"), self.out, allow_local=True)
         self.assertIn("redirects", str(refused.exception))
-        self.assertFalse(self.out.exists())
-
-    def test_refuses_a_web_page(self):
-        with self.assertRaises(ingest.Refused) as refused:
-            ingest.download(self.url("/page"), self.out, allow_local=True)
-        self.assertIn("web page", str(refused.exception))
         self.assertFalse(self.out.exists())
 
     def test_refuses_an_empty_file(self):

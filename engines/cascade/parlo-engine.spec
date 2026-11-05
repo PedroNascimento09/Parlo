@@ -19,6 +19,7 @@ hiddenimports = [
     "numpy",
     "wave",
     "faster_whisper",
+    "yt_dlp",
 ]
 
 conversion_only = ("ctranslate2.converters", "ctranslate2.specs")
@@ -29,6 +30,7 @@ for package in (
     "ctranslate2",
     "tokenizers",
     "huggingface_hub",
+    "yt_dlp",
 ):
     try:
         package_datas, package_binaries, package_hidden = collect_all(package)
