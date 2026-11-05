@@ -114,7 +114,7 @@ Rules:
 | P2 | OpenAI speech, translation, models | Yes | Done · a94d130: speech, translation and models tested end to end with transcriptions | Parity | 2 | Four endpoints answer with the documented shapes |
 | P3 | WebSocket streaming | Yes, versioned | Done · 1236c51: one socket emits partial, stable and final with a session id | Parity | 1 | Partial, stable and final over one socket |
 | P4 | Capabilities document | Yes | Done · 1236c51: engines and request limits published at `/.well-known/parlo` | Parity | 1 | `/.well-known/parlo` lists engines and limits |
-| P5 | MCP HTTP and stdio | 8 tools | 4 tools, stdio | 12 tools, both transports | 1 | One agent uses each transport |
+| P5 | MCP HTTP and stdio | 8 tools | Done · 2f10f47: 12 tools over `/mcp` and stdio | 12 tools, both transports | 1 | One agent uses each transport |
 | P6 | LAN sharing with a PIN | Yes | No | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
 | P7 | Remote backend | Yes | No | Parity, HTTPS only | 5 | A laptop drives a desktop GPU |
 | P8 | Keys and tickets | API key, WS ticket | Token per start | Parity | 5 | A short-lived ticket cannot be replayed |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-28 of 80 rows are Done (35.0%). Nine Partial rows counted at half give 40.6%.
+29 of 80 rows are Done (36.3%). Nine Partial rows counted at half give 41.9%.
 
 ## Next
 
-P5 MCP HTTP and stdio: verify an agent over HTTP and over stdio, and close the ledger row.
+D3 Clipboard snapshot and restore: keep a copied image across a dictation and close the ledger row.
