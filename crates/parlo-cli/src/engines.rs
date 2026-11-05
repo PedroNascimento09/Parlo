@@ -213,15 +213,6 @@ pub fn chain(requested: Fidelity) -> Vec<Fidelity> {
     steps
 }
 
-pub fn choose(cores: usize, gpu_memory_mb: Option<u32>, requested: Fidelity) -> Choice {
-    choose_with(
-        cores,
-        gpu_memory_mb,
-        requested,
-        &parlo_core::device::profile().describe(),
-    )
-}
-
 pub fn choose_with(
     cores: usize,
     gpu_memory_mb: Option<u32>,
