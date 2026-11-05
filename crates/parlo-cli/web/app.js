@@ -74,6 +74,16 @@ const dubUrlForm = document.getElementById("dub-url-form");
 const dubUrl = document.getElementById("dub-url");
 const dubUrlStart = document.getElementById("dub-url-start");
 const dubClear = document.getElementById("dub-clear");
+const batchFrom = document.getElementById("batch-from");
+const batchTargets = document.getElementById("batch-targets");
+const batchTiming = document.getElementById("batch-timing");
+const batchBackground = document.getElementById("batch-background");
+const batchChoose = document.getElementById("batch-choose");
+const batchFiles = document.getElementById("batch-files");
+const batchCreate = document.getElementById("batch-create");
+const batchSelected = document.getElementById("batch-selected");
+const batchStatus = document.getElementById("batch-status");
+const batchList = document.getElementById("batch-list");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
 const settingsStt = document.getElementById("settings-stt");
@@ -2702,6 +2712,279 @@ if (dubProjectsRefresh) {
 }
 loadDubProjects();
 
+let batchSelection = [];
+let batchTimer = null;
+
+function setBatchStatus(message) {
+  batchStatus.textContent = message || "";
+  batchStatus.hidden = !message;
+}
+
+function fillBatchTargets(preferred) {
+  const checked = preferred || Array.from(batchTargets.querySelectorAll("input:checked")).map((input) => input.value);
+  const from = batchFrom.value;
+  batchTargets.replaceChildren();
+  for (const code of Object.keys(LANGUAGE_NAMES)) {
+    if (code === from) {
+      continue;
+    }
+    const label = document.createElement("label");
+    label.className = "check";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = code;
+    input.checked = checked.includes(code);
+    const text = document.createElement("span");
+    text.textContent = LANGUAGE_NAMES[code];
+    label.append(input, text);
+    batchTargets.append(label);
+  }
+}
+
+function fillBatchSource() {
+  const codes = Object.keys(LANGUAGE_NAMES);
+  batchFrom.replaceChildren();
+  for (const code of codes) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = LANGUAGE_NAMES[code];
+    batchFrom.append(option);
+  }
+  batchFrom.value = codes.includes(savedSettings.from) ? savedSettings.from : codes[0];
+  fillBatchTargets(codes.includes(savedSettings.to) ? [savedSettings.to] : []);
+}
+
+function selectedBatchTargets() {
+  return Array.from(batchTargets.querySelectorAll("input:checked")).map((input) => input.value);
+}
+
+function batchSummary(batch) {
+  const done = batch.items.filter((item) => item.state === "done").length;
+  const failed = batch.items.filter((item) => item.state === "failed").length;
+  const targets = batch.targets.map((code) => LANGUAGE_NAMES[code] || code.toUpperCase()).join(", ");
+  return (
+    batch.items.length +
+    (batch.items.length === 1 ? " render · " : " renders · ") +
+    (LANGUAGE_NAMES[batch.from] || batch.from) +
+    " to " +
+    targets +
+    " · " +
+    done +
+    " done" +
+    (failed ? " · " + failed + " failed" : "")
+  );
+}
+
+function renderBatches(batches) {
+  batchList.replaceChildren();
+  if (!batches.length) {
+    const empty = document.createElement("p");
+    empty.className = "batch-empty";
+    empty.textContent = "No batch yet. Choose files and at least one language.";
+    batchList.append(empty);
+    return;
+  }
+  for (const batch of batches) {
+    const card = document.createElement("article");
+    card.className = "batch-card " + batch.state;
+    const head = document.createElement("div");
+    head.className = "batch-card-head";
+    const title = document.createElement("h3");
+    title.textContent = "Batch " + batch.id.slice(-6);
+    const state = document.createElement("span");
+    state.className = "batch-badge";
+    state.textContent = batch.state;
+    head.append(title, state);
+    const summary = document.createElement("p");
+    summary.className = "batch-summary";
+    summary.textContent = batchSummary(batch);
+    card.append(head, summary);
+    if (batch.state === "done" || batch.state === "failed") {
+      const report = document.createElement("a");
+      report.className = "batch-report";
+      report.href = "/batch/" + encodeURIComponent(batch.id) + "/report";
+      report.textContent = "Download report";
+      card.append(report);
+    }
+    if (batch.state === "draft" && batch.items.length) {
+      const start = document.createElement("button");
+      start.type = "button";
+      start.className = "install";
+      start.textContent = "Start queue";
+      start.addEventListener("click", () => startBatch(batch.id, start));
+      card.append(start);
+    }
+    const items = document.createElement("ul");
+    items.className = "batch-items";
+    for (const item of batch.items) {
+      const row = document.createElement("li");
+      row.className = "batch-item " + item.state;
+      const text = document.createElement("span");
+      text.textContent =
+        item.title + " → " + (LANGUAGE_NAMES[item.to] || item.to.toUpperCase());
+      const status = document.createElement("span");
+      status.className = "batch-item-state";
+      status.textContent = item.state === "running" ? "Rendering" : item.state;
+      row.append(text, status);
+      if (item.state === "done") {
+        const link = document.createElement("a");
+        link.className = "batch-download";
+        link.href = "/batch/" + encodeURIComponent(batch.id) + "/items/" + encodeURIComponent(item.id);
+        link.textContent = "Download";
+        row.append(link);
+      }
+      if (item.state === "failed") {
+        const reason = document.createElement("span");
+        reason.className = "batch-error";
+        reason.textContent = item.error || "the render failed";
+        row.append(reason);
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "swap";
+        retry.textContent = "Retry";
+        retry.addEventListener("click", () => retryBatchItem(batch.id, item.id, retry));
+        row.append(retry);
+      }
+      items.append(row);
+    }
+    card.append(items);
+    batchList.append(card);
+  }
+}
+
+async function loadBatches() {
+  try {
+    const response = await fetch("/batch", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "The batch queue could not be listed.");
+    }
+    const batches = Array.isArray(payload.batches) ? payload.batches : [];
+    renderBatches(batches);
+    if (batches.some((batch) => batch.state === "queued" || batch.state === "running")) {
+      clearTimeout(batchTimer);
+      batchTimer = setTimeout(loadBatches, 1500);
+    }
+  } catch (failure) {
+    setBatchStatus(failure.message || "The batch queue could not be listed.");
+  }
+}
+
+async function startBatch(batchId, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch("/batch/" + encodeURIComponent(batchId) + "/start", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "This batch could not start.");
+    }
+    await loadBatches();
+  } catch (failure) {
+    setBatchStatus(failure.message || "This batch could not start.");
+    button.disabled = false;
+  }
+}
+
+async function retryBatchItem(batchId, itemId, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch(
+      "/batch/" + encodeURIComponent(batchId) + "/retry/" + encodeURIComponent(itemId),
+      { method: "POST", headers: { Authorization: "Bearer " + token } },
+    );
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "This render could not be retried.");
+    }
+    await loadBatches();
+  } catch (failure) {
+    setBatchStatus(failure.message || "This render could not be retried.");
+    button.disabled = false;
+  }
+}
+
+async function createBatch() {
+  if (!batchSelection.length) {
+    return;
+  }
+  const targets = selectedBatchTargets();
+  if (!targets.length) {
+    setBatchStatus("Choose at least one language.");
+    return;
+  }
+  batchCreate.disabled = true;
+  try {
+    const response = await fetch("/batch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({
+        from: batchFrom.value,
+        targets,
+        timing: batchTiming.value,
+        keep_background: batchBackground.checked,
+      }),
+    });
+    const created = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(created.error || "The batch could not be created.");
+    }
+    for (let index = 0; index < batchSelection.length; index += 1) {
+      const file = batchSelection[index];
+      setBatchStatus("Adding " + (index + 1) + " of " + batchSelection.length + " files.");
+      const upload = await fetch("/batch/" + encodeURIComponent(created.id) + "/files", {
+        method: "POST",
+        headers: {
+          "X-Parlo-Filename": encodeURIComponent(file.name),
+          Authorization: "Bearer " + token,
+        },
+        body: file,
+      });
+      const detail = await upload.json().catch(() => ({}));
+      if (!upload.ok) {
+        throw new Error(detail.error || file.name + " could not be added.");
+      }
+    }
+    const started = await fetch("/batch/" + encodeURIComponent(created.id) + "/start", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await started.json().catch(() => ({}));
+    if (!started.ok) {
+      throw new Error(detail.error || "The batch could not start.");
+    }
+    setBatchStatus("Added " + batchSelection.length + " files. The queue runs one render at a time.");
+    batchSelection = [];
+    batchSelected.textContent = "";
+    batchFiles.value = "";
+    batchCreate.disabled = true;
+    await loadBatches();
+  } catch (failure) {
+    setBatchStatus(failure.message || "The batch could not be created.");
+    batchCreate.disabled = !batchSelection.length;
+  }
+}
+
+batchChoose.addEventListener("click", () => batchFiles.click());
+batchFiles.addEventListener("change", () => {
+  batchSelection = Array.from(batchFiles.files || []);
+  batchSelected.textContent = batchSelection.length
+    ? batchSelection.length + (batchSelection.length === 1 ? " file ready" : " files ready")
+    : "";
+  batchCreate.disabled = batchSelection.length === 0;
+});
+batchFrom.addEventListener("change", () => fillBatchTargets());
+batchCreate.addEventListener("click", () => createBatch());
+fillBatchSource();
+loadBatches();
+
 function editedProjectSegments() {
   return Array.from(dubLines.querySelectorAll("[data-segment]")).map((row) => {
     const start = Number(row.querySelector(".dub-start").value);
@@ -4947,7 +5230,7 @@ const ROUTES = {
     "status-list",
     "recent",
   ],
-  library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub"],
+  library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub", "batch"],
   meetings: ["meetings"],
   voice: ["voice"],
   insights: ["insights"],
@@ -5025,6 +5308,7 @@ const LIBRARY_TABS = {
   models: ["models", "catalog"],
   vocabulary: ["vocabulary"],
   files: ["dub"],
+  batch: ["batch"],
 };
 
 let libraryTab = "history";

@@ -2394,6 +2394,164 @@ select.field-input {
   }
 }
 
+.batch {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+}
+
+.batch-head {
+  display: grid;
+  gap: 8px;
+  max-width: 68ch;
+}
+
+.batch-note {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+}
+
+.batch-setup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.batch-setup .field-wide {
+  grid-column: 1 / -1;
+}
+
+.batch-languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-top: 6px;
+}
+
+.batch-languages .check {
+  min-width: 110px;
+}
+
+.batch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.batch-file {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.batch-status {
+  margin: 0;
+}
+
+.batch-list {
+  display: grid;
+  gap: 14px;
+}
+
+.batch-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.batch-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.batch-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.batch-badge {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.batch-summary,
+.batch-empty {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.batch-report {
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 4px;
+}
+
+.batch-items {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.batch-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.batch-item-state {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.batch-download {
+  color: var(--ink-soft);
+  font-size: 12px;
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-underline-offset: 3px;
+}
+
+.batch-error {
+  grid-column: 1 / -1;
+  color: var(--danger, #a33);
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .batch {
+    padding: 18px;
+  }
+
+  .batch-setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .batch-setup .field-wide {
+    grid-column: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

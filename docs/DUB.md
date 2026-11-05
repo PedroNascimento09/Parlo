@@ -31,6 +31,12 @@ The input can be a video (`mp4`, `mkv`, `mov`, `webm`, `avi`, `m4v`) or an audio
 
 In the app, each imported line has a **Pace** choice: Slower, Natural or Faster. It is saved with the project and changes the synthesised line on the next render; the source text and the subtitle timing stay untouched.
 
+## Batch
+
+Library → Batch dubs many files in one pass. Choose the source language, tick one or more target languages, add the files and press **Add files to queue**. Every file becomes one render per target language, up to 100 renders, and the queue keeps its place on disk: closing the app does not lose it, and the next start resumes work that was interrupted.
+
+One render runs at a time, so a batch does not compete with itself for the CPU. Each finished item has its own download; the whole batch ends with one JSON report listing every item, its language, state, output and error. A failed item can be retried without rerunning the rest. The queue uses the same timing, pace, background and subtitle settings as a single dub, and every item writes its own output and `.srt` beside the batch, not next to the source file.
+
 ## Requirements
 
 - `ffmpeg` and `ffprobe` on `PATH`. They do the decoding, the encoding and the muxing; Parlo does not link a media library.

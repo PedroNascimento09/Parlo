@@ -592,6 +592,7 @@
     <button type="button" class="tab" data-tab="models">Models</button>
     <button type="button" class="tab" data-tab="vocabulary">Words &amp; snippets</button>
     <button type="button" class="tab" data-tab="files">Files</button>
+    <button type="button" class="tab" data-tab="batch">Batch</button>
   </nav>
 
   <section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
@@ -907,6 +908,44 @@
       </div>
       <ol class="dub-lines" id="dub-lines" aria-label="Translated lines"></ol>
     </div>
+  </section>
+  <section class="batch" id="batch" aria-labelledby="batch-title">
+    <div class="batch-head">
+      <h2 id="batch-title">Batch</h2>
+      <p class="batch-note">Dub many files into more than one language. Parlo renders one at a time and keeps the queue after a restart.</p>
+    </div>
+    <div class="batch-setup">
+      <label class="field" for="batch-from">
+        <span class="field-label">Source language</span>
+        <select id="batch-from" class="field-input"></select>
+      </label>
+      <div class="field field-wide">
+        <span class="field-label">Into</span>
+        <div class="batch-languages" id="batch-targets" role="group" aria-label="Target languages"></div>
+      </div>
+      <label class="field" for="batch-timing">
+        <span class="field-label">Timing</span>
+        <select id="batch-timing" class="field-input">
+          <option value="natural">Natural</option>
+          <option value="concise">Concise</option>
+          <option value="smart-fit">Smart Fit</option>
+          <option value="stretch">Stretch</option>
+          <option value="lip-sync">Lip sync (video only)</option>
+        </select>
+      </label>
+      <label class="check" for="batch-background">
+        <input id="batch-background" type="checkbox">
+        <span>Keep music and background</span>
+      </label>
+    </div>
+    <div class="batch-actions">
+      <button id="batch-choose" class="swap" type="button">Choose files</button>
+      <input id="batch-files" type="file" accept="video/*,audio/*" multiple hidden>
+      <button id="batch-create" class="install" type="button" disabled>Add files to queue</button>
+      <span class="batch-file" id="batch-selected" aria-live="polite"></span>
+    </div>
+    <p class="progress batch-status" id="batch-status" aria-live="polite" hidden></p>
+    <div class="batch-list" id="batch-list"></div>
   </section>
 </main>
 

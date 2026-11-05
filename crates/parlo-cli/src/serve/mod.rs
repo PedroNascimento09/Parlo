@@ -4002,6 +4002,10 @@ fn handle(
             .unwrap_or(Ok(Flow::Serve));
     }
 
+    if let Some(answer) = routes::batch::route(method, path, stream, &headers, token, &body) {
+        return answer;
+    }
+
     if method == "POST" && path == "/v1/jobs" {
         return routes::jobs::create(stream, &headers, token, &body);
     }
@@ -4761,7 +4765,7 @@ fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line], langua
     }
 }
 
-fn respond_file(stream: &mut TcpStream, path: &Path, name: &str) -> Result<(), String> {
+pub(crate) fn respond_file(stream: &mut TcpStream, path: &Path, name: &str) -> Result<(), String> {
     let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
     let head = format!(
@@ -4781,7 +4785,7 @@ fn wav_seconds(bytes: &[u8]) -> f64 {
     data / 2.0 / f64::from(rate)
 }
 
-fn respond_named(stream: &mut TcpStream, name: &str, body: &[u8]) -> Result<(), String> {
+pub(crate) fn respond_named(stream: &mut TcpStream, name: &str, body: &[u8]) -> Result<(), String> {
     let head = format!(
         "HTTP/1.1 200 OK\nContent-Type: {}\nContent-Length: {}\nContent-Disposition: attachment; filename=\"{name}\"\nConnection: close\n\n",
         content_type(name),
@@ -4939,7 +4943,7 @@ fn body_limit(head: &str) -> usize {
     let path = head.split_whitespace().nth(1).unwrap_or_default();
     if path.starts_with("/dub/import") {
         MAX_BODY
-    } else if path.starts_with("/dub") {
+    } else if path.starts_with("/dub") || path.starts_with("/batch") {
         MAX_DUB_BODY
     } else if path.starts_with("/v1/audio/") {
         MAX_AUDIO_BODY

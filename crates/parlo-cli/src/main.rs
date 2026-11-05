@@ -9,6 +9,7 @@ use parlo_core::{AudioFormat, EchoEngine, Engine, LatencyBudget, Pipeline, Pipel
 
 mod actions;
 mod ask;
+mod batch;
 mod calls;
 mod captions;
 mod catalog;
