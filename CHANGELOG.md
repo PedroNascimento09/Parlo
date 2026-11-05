@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Correcting a subtitle line keeps the original text beside the current one in the editor, and the note survives a restart. Returning the line to its original clears the note.
 - A public video page can be dubbed from its link: yt-dlp downloads it locally, direct media links still skip yt-dlp, and private, age-gated or members-only videos are refused without reading cookies.
 - The Windows installer is 43.3 MB instead of 45.0 MB and puts 167 MB on disk instead of 215 MB: the engine bundle no longer carries packages nothing imports, the CUDA libraries, or the model conversion code of ctranslate2, and the setup ships the Python engine alone.
 - Changing language no longer restarts the engine: the session keeps the recogniser loaded, swaps the translator and the voice in place, and keeps the previous dictation language warm, so a new pair arrives without a process start.

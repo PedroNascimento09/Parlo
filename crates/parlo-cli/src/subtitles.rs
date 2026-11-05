@@ -37,6 +37,7 @@ pub fn project(
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: cue.text,
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });

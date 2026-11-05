@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS segments (
     speaker TEXT,
     voice_id TEXT,
     source_text TEXT,
+    original_text TEXT,
     target_text TEXT,
     state TEXT,
     qc_json TEXT
@@ -226,6 +227,8 @@ pub struct DubSegment {
     pub voice_id: Option<String>,
     pub translations: BTreeMap<String, String>,
     pub source_text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub original_text: Option<String>,
     pub target_text: Option<String>,
     pub state: String,
 }
@@ -284,7 +287,29 @@ impl Store {
     }
 
     fn prepare(&self) -> Result<(), String> {
-        self.connection.execute_batch(SCHEMA).map_err(sql)
+        self.connection.execute_batch(SCHEMA).map_err(sql)?;
+        let present = {
+            let mut statement = self
+                .connection
+                .prepare("PRAGMA table_info(segments)")
+                .map_err(sql)?;
+            let columns = statement
+                .query_map([], |row| row.get::<_, String>(1))
+                .map_err(sql)?;
+            let mut present = false;
+            for column in columns {
+                if column.map_err(sql)? == "original_text" {
+                    present = true;
+                }
+            }
+            present
+        };
+        if !present {
+            self.connection
+                .execute("ALTER TABLE segments ADD COLUMN original_text TEXT", [])
+                .map_err(sql)?;
+        }
+        Ok(())
     }
 
     pub fn import_legacy(&mut self, root: &Path) -> Result<Imported, String> {
@@ -526,7 +551,7 @@ impl Store {
             }
             transaction
                 .execute(
-                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, NULL)",
+                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, NULL)",
                     params![
                         segment.id,
                         project.id,
@@ -536,6 +561,7 @@ impl Store {
                         segment.speaker,
                         segment.voice_id,
                         segment.source_text,
+                        segment.original_text,
                         segment.target_text,
                         segment.state
                     ],
@@ -658,7 +684,7 @@ impl Store {
         };
         let mut statement = self
             .connection
-            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
+            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
             .map_err(sql)?;
         let rows = statement
             .query_map(params![id], |row| {
@@ -671,9 +697,10 @@ impl Store {
                     voice_id: row.get(5)?,
                     translations: BTreeMap::new(),
                     source_text: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
-                    target_text: row.get(7)?,
+                    original_text: row.get(7)?,
+                    target_text: row.get(8)?,
                     state: row
-                        .get::<_, Option<String>>(8)?
+                        .get::<_, Option<String>>(9)?
                         .unwrap_or_else(|| "imported".to_string()),
                 })
             })
@@ -924,6 +951,7 @@ mod tests {
                 ("de".to_string(), "Guten Morgen".to_string()),
             ]),
             source_text: "Bom dia".to_string(),
+            original_text: Some("Bom dia antes".to_string()),
             target_text: Some("Good morning".to_string()),
             state: "imported".to_string(),
         });
@@ -936,6 +964,7 @@ mod tests {
             voice_id: None,
             translations: BTreeMap::new(),
             source_text: "Até logo".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -951,6 +980,10 @@ mod tests {
         assert_eq!(loaded.segments, project.segments);
         assert_eq!(loaded.segments[0].speaker.as_deref(), Some("Ana"));
         assert_eq!(loaded.segments[0].voice_id.as_deref(), Some("voice-de"));
+        assert_eq!(
+            loaded.segments[0].original_text.as_deref(),
+            Some("Bom dia antes")
+        );
         assert_eq!(
             loaded.segments[0]
                 .translations
@@ -989,5 +1022,31 @@ mod tests {
         assert!(listed[0].error.is_some());
         assert!(store.delete_dub_project("p1").unwrap());
         assert!(store.list_dub_projects().unwrap().is_empty());
+    }
+
+    #[test]
+    fn an_old_segment_table_gains_the_original_column() {
+        let root = scratch();
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("parlo.db");
+        {
+            let connection = Connection::open(&path).unwrap();
+            connection
+                .execute_batch(
+                    "CREATE TABLE segments (id TEXT PRIMARY KEY, project_id TEXT, position INTEGER NOT NULL, start_ms INTEGER, end_ms INTEGER, speaker TEXT, voice_id TEXT, source_text TEXT, target_text TEXT, state TEXT, qc_json TEXT)",
+                )
+                .unwrap();
+        }
+        let store = Store::open(&path).unwrap();
+        let present: i64 = store
+            .connection
+            .query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('segments') WHERE name = 'original_text'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(present, 1);
+        let _ = fs::remove_dir_all(&root);
     }
 }

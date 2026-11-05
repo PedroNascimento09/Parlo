@@ -2498,6 +2498,12 @@ function showProject(project) {
       field("Voice", voiceSelect(line.voice_id, "Speaker voice")),
       field("Text", text)
     );
+    if (line.original_text && line.original_text !== line.source_text) {
+      const original = document.createElement("p");
+      original.className = "dub-original";
+      original.textContent = "Original: " + line.original_text;
+      body.append(original);
+    }
 
     item.append(body);
     dubLines.append(item);

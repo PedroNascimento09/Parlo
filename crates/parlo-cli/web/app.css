@@ -1909,6 +1909,15 @@ select.field-input {
   gap: 10px;
 }
 
+.dub-original {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
 .dub-cast {
   display: grid;
   gap: 8px;

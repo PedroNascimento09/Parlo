@@ -4583,14 +4583,23 @@ fn apply_project_edits(
             .map(str::trim)
             .filter(|speaker| !speaker.is_empty())
             .map(ToOwned::to_owned);
+        let source_changed = segment.source_text != edit.source_text;
         let text_changed = segment.start_ms != edit.start_ms
             || segment.end_ms != edit.end_ms
             || segment.speaker != speaker
-            || segment.source_text != edit.source_text;
+            || source_changed;
         segment.start_ms = edit.start_ms;
         segment.end_ms = edit.end_ms;
         segment.speaker = speaker;
-        segment.source_text = edit.source_text.clone();
+        if source_changed {
+            if segment.original_text.is_none() {
+                segment.original_text = Some(segment.source_text.clone());
+            }
+            segment.source_text = edit.source_text.clone();
+            if segment.original_text.as_deref() == Some(segment.source_text.as_str()) {
+                segment.original_text = None;
+            }
+        }
         segment.voice_id = edit
             .voice_id
             .clone()
@@ -5132,6 +5141,7 @@ mod tests {
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
+            original_text: None,
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
         });
@@ -5157,8 +5167,25 @@ mod tests {
         assert_eq!(loaded.segments[0].end_ms, 2_750);
         assert_eq!(loaded.segments[0].speaker.as_deref(), Some("Beatriz"));
         assert_eq!(loaded.segments[0].source_text, "Bom dia a todos");
+        assert_eq!(loaded.segments[0].original_text.as_deref(), Some("Bom dia"));
         assert!(loaded.segments[0].target_text.is_none());
         assert_eq!(loaded.segments[0].state, "edited");
+
+        apply_project_edits(
+            &mut project,
+            &[SegmentEdit {
+                id: "p1-0".to_string(),
+                start_ms: 500,
+                end_ms: 2_750,
+                speaker: Some("Beatriz".to_string()),
+                voice_id: None,
+                source_text: "Bom dia".to_string(),
+            }],
+            &std::collections::BTreeMap::new(),
+        )
+        .unwrap();
+        assert_eq!(project.segments[0].source_text, "Bom dia");
+        assert!(project.segments[0].original_text.is_none());
     }
 
     #[test]
@@ -5174,6 +5201,7 @@ mod tests {
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5206,6 +5234,7 @@ mod tests {
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5218,6 +5247,7 @@ mod tests {
             voice_id: Some("voice-fr".to_string()),
             translations: std::collections::BTreeMap::new(),
             source_text: "Até logo".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5230,6 +5260,7 @@ mod tests {
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: "Sem voz".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5256,6 +5287,7 @@ mod tests {
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
+            original_text: None,
             target_text: Some("Good morning".to_string()),
             state: "dubbed".to_string(),
         });
@@ -5302,6 +5334,7 @@ mod tests {
             voice_id: None,
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
@@ -5348,6 +5381,7 @@ mod tests {
             voice_id: Some("voice-en".to_string()),
             translations: std::collections::BTreeMap::new(),
             source_text: "Bom dia".to_string(),
+            original_text: None,
             target_text: None,
             state: "imported".to_string(),
         });
