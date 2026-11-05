@@ -32,7 +32,7 @@ Rules:
 | D1 | Global shortcut, hold and toggle | Yes | Yes | Parity, plus per-program profiles | 0 | Hold inserts, tap stays listening, both on a clean install |
 | D2 | Insertion into the focused app | Win, macOS, X11 validated | Windows validated; macOS/X11 written, unverified | All three validated | 1 | One sentence lands in Notepad, TextEdit and xterm |
 | D3 | Clipboard snapshot and restore | Yes, with generation lease | Done · 7ac7ac4: copied text and images come back after a copy, and a clipboard holding files or formatted text is never cleared | Parity | 1 | A copied image survives a dictation |
-| D4 | Pause and resume while recording | Yes | No | Parity | 1 | Pause freezes the timer, resume keeps one session |
+| D4 | Pause and resume while recording | Yes | Done · fc42061: the island counts the take in m:ss, pause freezes the clock and the audio, and resume continues one session | Parity | 1 | Pause freezes the timer, resume keeps one session |
 | D5 | Partials, stable, final | Yes | Yes | Keep, add WebSocket | 1 | Partial within 300 ms of speech |
 | D6 | Cleanup levels and spoken commands | Yes | Yes | Keep, extend languages | 1 | "scratch that" removes the phrase, both languages |
 | D7 | Undo the last dictation | Yes (session-bound) | Yes, 5-minute window | Keep | 0 | Refuses when another window is in front |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-30 of 80 rows are Done (37.5%). Nine Partial rows counted at half give 43.1%.
+31 of 80 rows are Done (38.8%). Nine Partial rows counted at half give 44.4%.
 
 ## Next
 
-D4 Pause and resume while recording: freeze the timer and keep one session across the pause, then close the ledger row.
+D5 Partials, stable and final: measure the first partial against the 300 ms target and close the ledger row.
