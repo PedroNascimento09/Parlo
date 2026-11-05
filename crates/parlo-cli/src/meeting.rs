@@ -159,10 +159,6 @@ pub fn import(title: &str, text: &str) -> Result<Meeting, String> {
     })
 }
 
-pub fn start(title: &str) -> Meeting {
-    build(title, None)
-}
-
 pub fn start_with(title: &str, hint: Option<usize>) -> Result<Meeting, String> {
     if let Some(count) = hint {
         if !(1..=20).contains(&count) {
@@ -423,16 +419,16 @@ mod tests {
 
     #[test]
     fn a_live_meeting_starts_empty_and_named() {
-        let meeting = start("  Design review  ");
+        let meeting = start_with("  Design review  ", None).unwrap();
         assert_eq!(meeting.title, "Design review");
         assert!(meeting.segments.is_empty());
-        assert_eq!(start("   ").title, "Meeting");
+        assert_eq!(start_with("   ", None).unwrap().title, "Meeting");
     }
 
     #[test]
     fn a_meeting_records_the_speaker_count_it_was_given() {
         assert_eq!(start_with("Retro", Some(3)).unwrap().speaker_hint, Some(3));
-        assert_eq!(start("Retro").speaker_hint, None);
+        assert_eq!(start_with("Retro", None).unwrap().speaker_hint, None);
         assert!(start_with("Retro", Some(0)).is_err());
         assert!(start_with("Retro", Some(21)).is_err());
     }
@@ -448,7 +444,7 @@ mod tests {
 
     #[test]
     fn a_segment_is_appended_with_the_speaker_and_the_moment() {
-        let mut meeting = start("Retro");
+        let mut meeting = start_with("Retro", None).unwrap();
         assert_eq!(
             append(&mut meeting, "", "Primeira frase.", 1500).unwrap(),
             1
@@ -462,7 +458,7 @@ mod tests {
 
     #[test]
     fn an_empty_segment_is_refused() {
-        let mut meeting = start("Retro");
+        let mut meeting = start_with("Retro", None).unwrap();
         assert!(append(&mut meeting, "Me", "   ", 0).is_err());
         assert!(meeting.segments.is_empty());
     }
@@ -470,7 +466,7 @@ mod tests {
     #[test]
     fn a_live_meeting_round_trips_through_the_folder() {
         let folder = scratch("live");
-        let mut meeting = start("Planning");
+        let mut meeting = start_with("Planning", None).unwrap();
         append(&mut meeting, "Me", "Fica para sexta.", 2000).unwrap();
         save_in(&folder, &meeting).unwrap();
         let kept = load_in(&folder, &meeting.id).unwrap();
