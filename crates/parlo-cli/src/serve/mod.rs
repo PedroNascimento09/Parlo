@@ -15,6 +15,7 @@ use parlo_core::{AudioFormat, Consent, Pipeline, PipelineConfig, Store, Wav};
 
 use crate::commands;
 use crate::dub;
+use crate::dub_jobs;
 use crate::insert;
 use crate::models;
 use crate::store::Store as ProjectStore;
@@ -583,6 +584,7 @@ struct DubExport {
 #[derive(Clone)]
 struct DubFile {
     id: String,
+    job_dir: PathBuf,
     upload: PathBuf,
     dubbed: PathBuf,
     srt: PathBuf,
@@ -621,11 +623,18 @@ fn remember(file: DubFile) {
 }
 
 fn recall(id: &str) -> Option<(PathBuf, String)> {
-    let files = dub_files().lock().ok()?;
-    files
-        .iter()
-        .find(|file| file.id == id)
-        .map(|file| (file.dubbed.clone(), file.name.clone()))
+    if let Ok(files) = dub_files().lock() {
+        if let Some(file) = files.iter().find(|file| file.id == id) {
+            return Some((file.dubbed.clone(), file.name.clone()));
+        }
+    }
+    let directory = dub_jobs::directory(id).ok()?;
+    let job = dub_jobs::read(&directory).ok()?;
+    if job.state != dub_jobs::DONE {
+        return None;
+    }
+    let path = dub_jobs::name(&directory, &job.out)?;
+    Some((path, job.out))
 }
 
 fn dub_exports(items: &[dub::Export]) -> Vec<DubExport> {
@@ -684,19 +693,96 @@ fn dub_body(file: &DubFile) -> String {
     )
 }
 
+fn projects_body() -> Result<String, String> {
+    let store = ProjectStore::open_default()?;
+    let projects = store.list_dub_projects()?;
+    let mut values = Vec::new();
+    for project in projects {
+        let mut status = "draft";
+        let mut error = project.error.clone();
+        let mut job_id = None;
+        let mut seconds = 0.0;
+        let mut exports = Vec::new();
+        if project.invalid {
+            status = "invalid";
+        } else {
+            match dub_jobs::directory(&project.id) {
+                Err(reason) => {
+                    status = "invalid";
+                    error = Some(reason);
+                }
+                Ok(directory) => match dub_jobs::read(&directory) {
+                    Ok(job) => {
+                        job_id = Some(job.id.clone());
+                        if job.state == dub_jobs::RENDERING {
+                            status = "interrupted";
+                            error = Some("the render stopped before it finished".to_string());
+                        } else if job.state == dub_jobs::FAILED {
+                            status = "failed";
+                            error = job.error.clone();
+                        } else if job.state == dub_jobs::DONE
+                            && dub_jobs::name(&directory, &job.out).is_some()
+                        {
+                            status = "done";
+                            seconds = job.seconds;
+                            exports = job
+                                .exports
+                                .iter()
+                                .map(|item| {
+                                    serde_json::json!({
+                                        "format": item.format,
+                                        "label": item.label,
+                                        "name": item.name,
+                                        "url": format!("/dub/{}/export/{}", job.id, item.format),
+                                    })
+                                })
+                                .collect();
+                        } else {
+                            status = "invalid";
+                            error = Some("the finished render is missing its file".to_string());
+                        }
+                    }
+                    Err(reason) if dub_jobs::has_manifest(&directory) => {
+                        status = "invalid";
+                        error = Some(reason);
+                    }
+                    Err(_) => {}
+                },
+            }
+        }
+        values.push(serde_json::json!({
+            "id": project.id,
+            "job_id": job_id,
+            "title": project.title,
+            "from": project.from,
+            "to": project.to,
+            "status": status,
+            "seconds": seconds,
+            "segments": project.segments,
+            "updated_at": project.updated_at,
+            "error": error,
+            "exports": exports,
+        }));
+    }
+    Ok(serde_json::json!({ "projects": values }).to_string())
+}
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_secs())
+        .unwrap_or_default()
+}
+
 fn forget_dub(file: &DubFile) {
-    fs::remove_file(&file.upload).ok();
-    fs::remove_file(&file.dubbed).ok();
-    fs::remove_file(&file.srt).ok();
-    fs::remove_file(&file.track).ok();
-    fs::remove_file(&file.report).ok();
-    if let Some(path) = &file.cues {
-        fs::remove_file(path).ok();
+    if file.project_id.is_some() {
+        return;
     }
-    fs::remove_dir_all(&file.lines_dir).ok();
-    for item in &file.exports {
-        fs::remove_file(&item.path).ok();
-    }
+    discard_dub(file);
+}
+
+fn discard_dub(file: &DubFile) {
+    fs::remove_dir_all(&file.job_dir).ok();
 }
 
 fn handle(
@@ -2084,6 +2170,71 @@ fn handle(
         };
     }
 
+    if method == "GET" && path == "/dub/projects" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        return match projects_body() {
+            Ok(body) => respond_json(stream, "200 OK", &body).map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot list the projects: {error}")),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "DELETE" && path.starts_with("/dub/project/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let id = path
+            .trim_start_matches("/dub/project/")
+            .trim_end_matches('/');
+        if id.is_empty() || id.contains('/') {
+            return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                .map(|()| Flow::Serve);
+        }
+        let store = match ProjectStore::open_default() {
+            Ok(store) => store,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot open the project store: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        let deleted = match store.delete_dub_project(id) {
+            Ok(deleted) => deleted,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot remove the project: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+        };
+        let directory = dub_jobs::directory(id).ok();
+        let existed = deleted || directory.as_ref().is_some_and(|path| path.is_dir());
+        if let Some(directory) = directory {
+            fs::remove_dir_all(directory).ok();
+        }
+        if let Ok(mut files) = dub_files().lock() {
+            files.retain(|file| file.id != id);
+        }
+        if !existed {
+            return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                .map(|()| Flow::Serve);
+        }
+        return respond_json(stream, "200 OK", "{\"removed\":true}").map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path.starts_with("/dub/project/") {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -2095,6 +2246,218 @@ fn handle(
         if id.is_empty() {
             return respond_json(stream, "404 Not Found", &error_json("project not found"))
                 .map(|()| Flow::Serve);
+        }
+        if let Some(project_id) = id.strip_suffix("/recover") {
+            if project_id.is_empty() || project_id.contains('/') {
+                return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                    .map(|()| Flow::Serve);
+            }
+            let mut store = match ProjectStore::open_default() {
+                Ok(store) => store,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "500 Internal Server Error",
+                        &error_json(&format!("cannot open the project store: {error}")),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            };
+            let mut project = match store.load_dub_project(project_id) {
+                Ok(Some(project)) if !project.segments.is_empty() => project,
+                Ok(Some(_)) => {
+                    return respond_json(
+                        stream,
+                        "409 Conflict",
+                        &error_json("the project has no cues to recover"),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+                Ok(None) => {
+                    return respond_json(stream, "404 Not Found", &error_json("project not found"))
+                        .map(|()| Flow::Serve);
+                }
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "500 Internal Server Error",
+                        &error_json(&format!("cannot load the project: {error}")),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            };
+            let directory = match dub_jobs::directory(project_id) {
+                Ok(directory) => directory,
+                Err(error) => {
+                    return respond_json(stream, "400 Bad Request", &error_json(&error))
+                        .map(|()| Flow::Serve);
+                }
+            };
+            let mut job = match dub_jobs::read(&directory) {
+                Ok(job) => job,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "409 Conflict",
+                        &error_json(&format!("the render cannot be recovered: {error}")),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            };
+            if job.state == dub_jobs::DONE {
+                return respond_json(
+                    stream,
+                    "409 Conflict",
+                    &error_json("the render is already complete"),
+                )
+                .map(|()| Flow::Serve);
+            }
+            let Some(source) = dub_jobs::name(&directory, &job.source) else {
+                return respond_json(
+                    stream,
+                    "409 Conflict",
+                    &error_json("the saved source file is missing"),
+                )
+                .map(|()| Flow::Serve);
+            };
+            let cues = job
+                .cues
+                .as_deref()
+                .and_then(|name| dub_jobs::name(&directory, name));
+            if job.cues.is_some() && cues.is_none() {
+                return respond_json(
+                    stream,
+                    "409 Conflict",
+                    &error_json("the saved cues file is missing"),
+                )
+                .map(|()| Flow::Serve);
+            }
+            let Some(out) = dub_jobs::path(&directory, &job.out) else {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json("the saved output name is invalid"),
+                )
+                .map(|()| Flow::Serve);
+            };
+            let Some(srt) = dub_jobs::path(&directory, &job.srt) else {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json("the saved subtitle name is invalid"),
+                )
+                .map(|()| Flow::Serve);
+            };
+            dub_jobs::clean_outputs(&directory);
+            job.state = dub_jobs::RENDERING.to_string();
+            job.stage = "synthesizing".to_string();
+            job.progress = 0.05;
+            job.error = None;
+            if let Err(error) = dub_jobs::write(&directory, &mut job) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &error_json(&format!("cannot save the recovery: {error}")),
+                )
+                .map(|()| Flow::Serve);
+            }
+            let track = directory.join(format!("{}-track.wav", job.id));
+            let lines_dir = directory.join("lines");
+            let report = directory.join(format!("{}-report.json", job.id));
+            let work = directory.join("work");
+            let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
+            let result = dub::run(&dub::Request {
+                source: &source,
+                from: &job.from,
+                to: &job.to,
+                out: Some(out.clone()),
+                srt: Some(srt.clone()),
+                cues: cues.clone(),
+                track: Some(track.clone()),
+                lines_dir: Some(lines_dir.clone()),
+                work: Some(work.clone()),
+                report: Some(report.clone()),
+                previous: None,
+                retry: None,
+                skip: None,
+                keep_background: job.keep_background,
+                timing: &job.timing,
+                fastest: job.fastest,
+                slowest: job.slowest,
+            });
+            let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+            return match result {
+                Ok(result) => {
+                    apply_dub(&mut project, &result.lines, &job.to);
+                    if let Err(error) = store.save_dub_project(&mut project) {
+                        return respond_json(
+                            stream,
+                            "500 Internal Server Error",
+                            &error_json(&format!("the project could not be saved: {error}")),
+                        )
+                        .map(|()| Flow::Serve);
+                    }
+                    let written = dub_exports(&result.exports);
+                    job.state = dub_jobs::DONE.to_string();
+                    job.stage = "done".to_string();
+                    job.progress = 1.0;
+                    job.seconds = result.seconds;
+                    job.lines = result.lines.len();
+                    job.error = None;
+                    job.exports = written
+                        .iter()
+                        .map(|item| dub_jobs::Export {
+                            format: item.format.clone(),
+                            label: item.label.clone(),
+                            name: item.name.clone(),
+                        })
+                        .collect();
+                    if let Err(error) = dub_jobs::write(&directory, &mut job) {
+                        return respond_json(
+                            stream,
+                            "500 Internal Server Error",
+                            &error_json(&format!("cannot save the recovered render: {error}")),
+                        )
+                        .map(|()| Flow::Serve);
+                    }
+                    fs::remove_dir_all(&work).ok();
+                    let file = DubFile {
+                        id: job.id.clone(),
+                        job_dir: directory.clone(),
+                        upload: source,
+                        dubbed: out,
+                        srt,
+                        track,
+                        lines_dir,
+                        report,
+                        cues,
+                        name: job.out.clone(),
+                        from: job.from.clone(),
+                        to: job.to.clone(),
+                        timing: job.timing.clone(),
+                        fastest: job.fastest,
+                        slowest: job.slowest,
+                        project_id: Some(project.id.clone()),
+                        keep_background: job.keep_background,
+                        seconds: result.seconds,
+                        lines: result.lines,
+                        exports: written,
+                    };
+                    let body = dub_body(&file);
+                    remember(file);
+                    respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
+                }
+                Err(error) => {
+                    job.state = dub_jobs::FAILED.to_string();
+                    job.stage = "stopped".to_string();
+                    job.error = Some(error.clone());
+                    if let Err(write_error) = dub_jobs::write(&directory, &mut job) {
+                        eprintln!("cannot save the failed recovery: {write_error}");
+                    }
+                    respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                        .map(|()| Flow::Serve)
+                }
+            };
         }
         let edit: ProjectEdit = match serde_json::from_slice(&body) {
             Ok(edit) => edit,
@@ -2221,6 +2584,7 @@ fn handle(
             cues: state.cues.clone(),
             track: Some(state.track.clone()),
             lines_dir: Some(state.lines_dir.clone()),
+            work: Some(state.job_dir.join("work")),
             report: Some(state.report.clone()),
             previous: Some(state.report.clone()),
             retry,
@@ -2237,6 +2601,26 @@ fn handle(
                 updated.lines = result.lines;
                 updated.seconds = result.seconds;
                 updated.exports = dub_exports(&result.exports);
+                if let Ok(mut job) = dub_jobs::read(&updated.job_dir) {
+                    job.state = dub_jobs::DONE.to_string();
+                    job.stage = "done".to_string();
+                    job.progress = 1.0;
+                    job.seconds = updated.seconds;
+                    job.lines = updated.lines.len();
+                    job.error = None;
+                    job.exports = updated
+                        .exports
+                        .iter()
+                        .map(|item| dub_jobs::Export {
+                            format: item.format.clone(),
+                            label: item.label.clone(),
+                            name: item.name.clone(),
+                        })
+                        .collect();
+                    if let Err(error) = dub_jobs::write(&updated.job_dir, &mut job) {
+                        eprintln!("cannot save the line change: {error}");
+                    }
+                }
                 if let Ok(mut files) = dub_files().lock() {
                     if let Some(slot) = files.iter_mut().find(|file| file.id == updated.id) {
                         *slot = updated.clone();
@@ -2278,6 +2662,11 @@ fn handle(
                 }),
                 Err(_) => None,
             };
+            let found = found.or_else(|| {
+                dub_jobs::directory(id)
+                    .ok()
+                    .and_then(|directory| dub_jobs::export_path(&directory, format))
+            });
             let Some((file, name)) = found else {
                 return respond_json(stream, "404 Not Found", &error_json("not found"))
                     .map(|()| Flow::Serve);
@@ -2642,8 +3031,15 @@ fn handle(
                 None => "upload.mp4".to_string(),
             });
         let name = dub::safe_name(&requested);
-        let id = new_token();
-        let directory = std::env::temp_dir().join("parlo-dub");
+        let project_id = project.as_ref().map(|project| project.id.clone());
+        let id = project_id.clone().unwrap_or_else(new_token);
+        let directory = match dub_jobs::directory(&id) {
+            Ok(directory) => directory,
+            Err(error) => {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
         if let Err(error) = fs::create_dir_all(&directory) {
             return respond_json(
                 stream,
@@ -2656,6 +3052,8 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        dub_jobs::clean_outputs(&directory);
+        let source_name = dub_jobs::source_name(&name);
 
         let cues = match write_cues(&directory, &id, project.as_ref()) {
             Ok(cues) => cues,
@@ -2665,7 +3063,7 @@ fn handle(
             }
         };
 
-        let upload = directory.join(format!("{id}-{name}"));
+        let upload = directory.join(&source_name);
         if let Some(url) = &requested_url {
             if let Err(failure) = crate::ingest::download(url, &upload) {
                 if let Some(path) = &cues {
@@ -2715,7 +3113,52 @@ fn handle(
         let track = directory.join(format!("{id}-track.wav"));
         let lines_dir = directory.join(format!("{id}-lines"));
         let report = directory.join(format!("{id}-report.json"));
+        let work = directory.join("work");
         let keep_background = header(&headers, "x-parlo-background").is_some();
+        let mut job = dub_jobs::Job {
+            id: id.clone(),
+            project_id: project_id.clone(),
+            title: project
+                .as_ref()
+                .map(|project| project.title.clone())
+                .unwrap_or_else(|| name.clone()),
+            source: source_name.clone(),
+            cues: cues
+                .as_ref()
+                .and_then(|path| path.file_name())
+                .map(|name| name.to_string_lossy().to_string()),
+            out: dubbed
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+                .unwrap_or_default(),
+            srt: subtitles
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+                .unwrap_or_default(),
+            state: dub_jobs::RENDERING.to_string(),
+            stage: "synthesizing".to_string(),
+            progress: 0.05,
+            error: None,
+            from: from.clone(),
+            to: to.clone(),
+            timing: timing.clone(),
+            fastest,
+            slowest,
+            keep_background,
+            seconds: 0.0,
+            lines: 0,
+            created_at: unix_now(),
+            updated_at: 0,
+            exports: Vec::new(),
+        };
+        if let Err(error) = dub_jobs::write(&directory, &mut job) {
+            return respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("cannot save the render: {error}")),
+            )
+            .map(|()| Flow::Serve);
+        }
         let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
         println!("dubbing {name} from {from} to {to}");
         let result = dub::run(&dub::Request {
@@ -2727,6 +3170,7 @@ fn handle(
             cues: cues.clone(),
             track: Some(track.clone()),
             lines_dir: Some(lines_dir.clone()),
+            work: Some(work.clone()),
             report: Some(report.clone()),
             previous: None,
             retry: None,
@@ -2740,7 +3184,6 @@ fn handle(
 
         return match result {
             Ok(result) => {
-                let project_id = project.as_ref().map(|project| project.id.clone());
                 if let (Some(project), Some(store)) = (project.as_mut(), project_store.as_mut()) {
                     apply_dub(project, &result.lines, &to);
                     if let Err(error) = store.save_dub_project(project) {
@@ -2755,8 +3198,31 @@ fn handle(
                     }
                 }
                 let written = dub_exports(&result.exports);
+                fs::remove_dir_all(&work).ok();
+                job.state = dub_jobs::DONE.to_string();
+                job.stage = "done".to_string();
+                job.progress = 1.0;
+                job.seconds = result.seconds;
+                job.lines = result.lines.len();
+                job.exports = written
+                    .iter()
+                    .map(|item| dub_jobs::Export {
+                        format: item.format.clone(),
+                        label: item.label.clone(),
+                        name: item.name.clone(),
+                    })
+                    .collect();
+                if let Err(error) = dub_jobs::write(&directory, &mut job) {
+                    return respond_json(
+                        stream,
+                        "500 Internal Server Error",
+                        &error_json(&format!("cannot save the finished render: {error}")),
+                    )
+                    .map(|()| Flow::Serve);
+                }
                 let file = DubFile {
                     id: id.clone(),
+                    job_dir: directory.clone(),
                     upload,
                     dubbed,
                     srt: subtitles,
@@ -2781,12 +3247,11 @@ fn handle(
                 respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
             }
             Err(error) => {
-                fs::remove_file(&upload).ok();
-                fs::remove_file(&track).ok();
-                fs::remove_file(&report).ok();
-                fs::remove_dir_all(&lines_dir).ok();
-                if let Some(path) = &cues {
-                    fs::remove_file(path).ok();
+                job.state = dub_jobs::FAILED.to_string();
+                job.stage = "stopped".to_string();
+                job.error = Some(error.clone());
+                if let Err(write_error) = dub_jobs::write(&directory, &mut job) {
+                    eprintln!("cannot save the failed render: {write_error}");
                 }
                 respond_json(
                     stream,

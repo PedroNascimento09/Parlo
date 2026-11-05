@@ -58,6 +58,7 @@ pub struct Request<'a> {
     pub cues: Option<PathBuf>,
     pub track: Option<PathBuf>,
     pub lines_dir: Option<PathBuf>,
+    pub work: Option<PathBuf>,
     pub report: Option<PathBuf>,
     pub previous: Option<PathBuf>,
     pub retry: Option<String>,
@@ -106,6 +107,7 @@ pub fn run(request: &Request) -> Result<Dub, String> {
     let cues = absolute(&request.cues);
     let track = absolute(&request.track);
     let lines_dir = absolute(&request.lines_dir);
+    let work = absolute(&request.work);
     let previous = absolute(&request.previous);
     let report = match absolute(&request.report) {
         Some(path) => path,
@@ -154,6 +156,9 @@ pub fn run(request: &Request) -> Result<Dub, String> {
     }
     if let Some(lines_dir) = &lines_dir {
         command.arg("--lines-dir").arg(lines_dir);
+    }
+    if let Some(work) = &work {
+        command.arg("--work").arg(work);
     }
     if let Some(previous) = &previous {
         command.arg("--previous").arg(previous);

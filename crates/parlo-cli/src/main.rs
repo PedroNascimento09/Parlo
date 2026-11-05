@@ -19,6 +19,7 @@ mod decisions;
 mod diarize;
 mod dictate;
 mod dub;
+mod dub_jobs;
 mod engines;
 mod hardware;
 mod history;
@@ -790,6 +791,7 @@ fn dub_command(args: &[String]) -> Result<(), String> {
         cues: None,
         track: None,
         lines_dir: None,
+        work: None,
         report: None,
         previous: None,
         retry: None,

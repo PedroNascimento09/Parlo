@@ -1719,6 +1719,73 @@ select.field-input {
   font-size: 12.5px;
 }
 
+.dub-projects {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.dub-projects-head,
+.dub-project-head,
+.dub-project-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dub-projects-head h3,
+.dub-project h4 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.dub-projects-note,
+.dub-project-meta,
+.dub-project-error,
+.dub-projects-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dub-project-list {
+  display: grid;
+  gap: 8px;
+}
+
+.dub-project {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.dub-project.interrupted,
+.dub-project.failed,
+.dub-project.invalid {
+  border-color: var(--warn);
+}
+
+.dub-project-badge {
+  color: var(--muted);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dub-project-error {
+  color: var(--warn);
+}
+
+.dub-project-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
 .dub-exports {
   display: flex;
   flex-wrap: wrap;

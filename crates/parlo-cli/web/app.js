@@ -56,6 +56,9 @@ const dubNext = document.getElementById("dub-next");
 const dubImport = document.getElementById("dub-import");
 const dubSubtitles = document.getElementById("dub-subtitles");
 const dubProjectLabel = document.getElementById("dub-project");
+const dubProjectList = document.getElementById("dub-project-list");
+const dubProjectsNote = document.getElementById("dub-projects-note");
+const dubProjectsRefresh = document.getElementById("dub-projects-refresh");
 const dubSave = document.getElementById("dub-save");
 const dubCast = document.getElementById("dub-cast");
 const dubCastRows = document.getElementById("dub-cast-rows");
@@ -2491,6 +2494,183 @@ function showProject(project) {
   }
   dubResult.hidden = false;
 }
+
+const DUB_STATUS = {
+  done: "Ready",
+  interrupted: "Interrupted",
+  failed: "Failed",
+  draft: "Not rendered",
+  invalid: "Invalid",
+};
+
+function projectSummary(project) {
+  const parts = [];
+  if (project.segments) {
+    parts.push(project.segments + (project.segments === 1 ? " line" : " lines"));
+  }
+  if (project.seconds) {
+    parts.push(Math.round(project.seconds) + " s");
+  }
+  if (project.from && project.to) {
+    parts.push(project.from.toUpperCase() + " to " + project.to.toUpperCase());
+  }
+  if (project.updated_at) {
+    parts.push(new Date(project.updated_at * 1000).toLocaleString());
+  }
+  return parts.join(" · ");
+}
+
+async function openProject(id) {
+  const response = await fetch("/dub/project/" + encodeURIComponent(id), {
+    headers: { Authorization: "Bearer " + token },
+  });
+  const detail = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(detail.error || "The project could not be opened.");
+  }
+  showProject(detail);
+  document.getElementById("dub").scrollIntoView({ block: "start" });
+}
+
+async function recoverProject(id, button) {
+  const label = button.textContent;
+  button.disabled = true;
+  button.textContent = "Recovering…";
+  setDubStatus("Recovering the project from the saved source.");
+  try {
+    const response = await fetch("/dub/project/" + encodeURIComponent(id) + "/recover", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || "The project could not be recovered.");
+    }
+    await openProject(id);
+    showDub(result);
+    setDubStatus("Recovered. The exports are ready again.");
+    await loadDubProjects();
+  } catch (failure) {
+    setDubStatus("");
+    showError(failure.message || "The project could not be recovered.");
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
+}
+
+async function removeProject(project) {
+  if (!window.confirm("Remove " + (project.title || "this project") + " and its exports from this computer?")) {
+    return;
+  }
+  const response = await fetch("/dub/project/" + encodeURIComponent(project.id), {
+    method: "DELETE",
+    headers: { Authorization: "Bearer " + token },
+  });
+  const detail = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    showError(detail.error || "The project could not be removed.");
+    return;
+  }
+  if (dubProject && dubProject.id === project.id) {
+    dubProject = null;
+    dubProjectLabel.textContent = "";
+    dubResult.hidden = true;
+  }
+  await loadDubProjects();
+}
+
+function renderDubProjects(projects) {
+  dubProjectList.replaceChildren();
+  if (!projects.length) {
+    const empty = document.createElement("p");
+    empty.className = "dub-projects-empty";
+    empty.textContent = "No projects yet. Import subtitles or dub a file to start one.";
+    dubProjectList.append(empty);
+    return;
+  }
+  for (const project of projects) {
+    const card = document.createElement("article");
+    card.className = "dub-project " + project.status;
+    const head = document.createElement("div");
+    head.className = "dub-project-head";
+    const title = document.createElement("h4");
+    title.textContent = project.title || "Untitled project";
+    const badge = document.createElement("span");
+    badge.className = "dub-project-badge";
+    badge.textContent = DUB_STATUS[project.status] || project.status;
+    head.append(title, badge);
+    const meta = document.createElement("p");
+    meta.className = "dub-project-meta";
+    meta.textContent = projectSummary(project);
+    card.append(head, meta);
+    if (project.error) {
+      const error = document.createElement("p");
+      error.className = "dub-project-error";
+      error.textContent = project.error;
+      card.append(error);
+    }
+    const actions = document.createElement("div");
+    actions.className = "dub-project-actions";
+    if (project.status !== "invalid") {
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "swap";
+      open.textContent = "Open";
+      open.addEventListener("click", () => {
+        openProject(project.id).catch((failure) => showError(failure.message));
+      });
+      actions.append(open);
+    }
+    if (project.status === "interrupted" || project.status === "failed") {
+      const recover = document.createElement("button");
+      recover.type = "button";
+      recover.className = "install";
+      recover.textContent = "Recover";
+      recover.addEventListener("click", () => recoverProject(project.id, recover));
+      actions.append(recover);
+    }
+    if (project.exports && project.exports.length) {
+      const download = document.createElement("a");
+      download.className = "swap";
+      download.href = project.exports[0].url;
+      download.textContent = "Download";
+      actions.append(download);
+    }
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "swap";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () => removeProject(project));
+    actions.append(remove);
+    card.append(actions);
+    dubProjectList.append(card);
+  }
+}
+
+async function loadDubProjects() {
+  if (!dubProjectList) {
+    return;
+  }
+  try {
+    const response = await fetch("/dub/projects", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "The projects could not be listed.");
+    }
+    renderDubProjects(Array.isArray(payload.projects) ? payload.projects : []);
+    dubProjectsNote.textContent = "Finished and interrupted renders stay here after a restart.";
+  } catch (failure) {
+    dubProjectsNote.textContent = failure.message || "The projects could not be listed.";
+  }
+}
+
+if (dubProjectsRefresh) {
+  dubProjectsRefresh.addEventListener("click", () => loadDubProjects());
+}
+loadDubProjects();
 
 function editedProjectSegments() {
   return Array.from(dubLines.querySelectorAll("[data-segment]")).map((row) => {

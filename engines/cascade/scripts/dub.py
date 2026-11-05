@@ -1,4 +1,5 @@
 import argparse
+import contextlib
 import json
 import math
 import shutil
@@ -708,6 +709,7 @@ def main() -> int:
     parser.add_argument("--previous", type=Path)
     parser.add_argument("--retry")
     parser.add_argument("--skip")
+    parser.add_argument("--work", type=Path)
     args = parser.parse_args()
 
     if args.retry and args.skip:
@@ -745,7 +747,12 @@ def main() -> int:
     out = args.out or stem.with_name(f"{stem.name}.{args.to}{suffix}")
     srt = args.srt or out.with_suffix(".srt")
 
-    with tempfile.TemporaryDirectory(prefix="parlo-dub-") as directory:
+    if args.work:
+        workspace = contextlib.nullcontext(args.work.resolve())
+        args.work.mkdir(parents=True, exist_ok=True)
+    else:
+        workspace = tempfile.TemporaryDirectory(prefix="parlo-dub-")
+    with workspace as directory:
         work = Path(directory)
         extracted = work / "source.wav"
         extract_audio(ffmpeg, args.source, extracted)

@@ -202,6 +202,20 @@ pub struct DubProject {
     pub segments: Vec<DubSegment>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct DubSummary {
+    pub id: String,
+    pub title: String,
+    pub source_path: Option<String>,
+    pub from: String,
+    pub to: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub segments: usize,
+    pub invalid: bool,
+    pub error: Option<String>,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct DubSegment {
     pub id: String,
@@ -537,6 +551,59 @@ impl Store {
             }
         }
         transaction.commit().map_err(sql)
+    }
+
+    pub fn list_dub_projects(&self) -> Result<Vec<DubSummary>, String> {
+        let mut statement = self
+            .connection
+            .prepare(
+                "SELECT p.id, p.title, p.source_path, p.created_at, p.updated_at, p.settings_json, (SELECT COUNT(*) FROM segments s WHERE s.project_id = p.id) FROM projects p WHERE p.kind = 'dub' ORDER BY p.updated_at DESC, p.created_at DESC",
+            )
+            .map_err(sql)?;
+        let rows = statement
+            .query_map([], |row| {
+                let settings_text: Option<String> = row.get(5)?;
+                let settings = settings_text
+                    .as_deref()
+                    .and_then(|text| serde_json::from_str::<serde_json::Value>(text).ok());
+                let invalid = settings_text.is_some() && settings.is_none();
+                Ok(DubSummary {
+                    id: row.get(0)?,
+                    title: row
+                        .get::<_, Option<String>>(1)?
+                        .unwrap_or_else(|| "Untitled project".to_string()),
+                    source_path: row.get(2)?,
+                    from: settings
+                        .as_ref()
+                        .and_then(|value| value.get("from"))
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("pt")
+                        .to_string(),
+                    to: settings
+                        .as_ref()
+                        .and_then(|value| value.get("to"))
+                        .and_then(|value| value.as_str())
+                        .unwrap_or("en")
+                        .to_string(),
+                    created_at: row.get::<_, Option<i64>>(3)?.unwrap_or_default(),
+                    updated_at: row.get::<_, Option<i64>>(4)?.unwrap_or_default(),
+                    segments: row.get::<_, i64>(6)?.max(0) as usize,
+                    invalid,
+                    error: invalid.then(|| "the project settings are not valid JSON".to_string()),
+                })
+            })
+            .map_err(sql)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(sql)
+    }
+
+    pub fn delete_dub_project(&self, id: &str) -> Result<bool, String> {
+        self.connection
+            .execute(
+                "DELETE FROM projects WHERE id = ?1 AND kind = 'dub'",
+                params![id],
+            )
+            .map(|changed| changed > 0)
+            .map_err(sql)
     }
 
     pub fn load_dub_project(&self, id: &str) -> Result<Option<DubProject>, String> {
@@ -895,5 +962,32 @@ mod tests {
         assert_eq!(loaded.segments[0].start_ms, 1_250);
         assert_eq!(loaded.segments[1].target_text, None);
         assert!(store.load_dub_project("missing").unwrap().is_none());
+    }
+
+    #[test]
+    fn projects_are_listed_and_corrupt_settings_are_marked() {
+        let mut store = Store::open_memory().unwrap();
+        let mut project = DubProject::new(
+            "p1".to_string(),
+            "Launch".to_string(),
+            "pt",
+            "en",
+            Some("launch.srt".to_string()),
+        );
+        store.save_dub_project(&mut project).unwrap();
+        let listed = store.list_dub_projects().unwrap();
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].title, "Launch");
+        assert!(!listed[0].invalid);
+
+        store
+            .connection
+            .execute("UPDATE projects SET settings_json = '{broken'", [])
+            .unwrap();
+        let listed = store.list_dub_projects().unwrap();
+        assert!(listed[0].invalid);
+        assert!(listed[0].error.is_some());
+        assert!(store.delete_dub_project("p1").unwrap());
+        assert!(store.list_dub_projects().unwrap().is_empty());
     }
 }
