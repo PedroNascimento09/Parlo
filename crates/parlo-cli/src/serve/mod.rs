@@ -485,6 +485,7 @@ pub fn start(
     }
     println!("  input      16 kHz mono wav, POST /translate");
 
+    crate::watch::start();
     let address = format!("http://127.0.0.1:{port}");
     let shared = token.clone();
     let accepting = Arc::new(AtomicBool::new(true));
@@ -4003,6 +4004,10 @@ fn handle(
     }
 
     if let Some(answer) = routes::batch::route(method, path, stream, &headers, token, &body) {
+        return answer;
+    }
+
+    if let Some(answer) = routes::watch::route(method, path, stream, &headers, token, &body) {
         return answer;
     }
 

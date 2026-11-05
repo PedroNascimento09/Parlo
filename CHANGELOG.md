@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Batch can watch folders: a media file dropped in one is queued once, its file identity survives a rename, and the folder's interval and state stay visible in the app.
 - Library has a Batch tab: many files and several target languages share one persistent queue, run one render at a time, and finish with one JSON report.
 - A dubbing line can be set to Slower, Natural or Faster; the pace is saved with the project and reaches Piper as a length scale on the next render.
 - Correcting a subtitle line keeps the original text beside the current one in the editor, and the note survives a restart. Returning the line to its original clears the note.

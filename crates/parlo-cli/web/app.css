@@ -2436,6 +2436,89 @@ select.field-input {
   min-width: 110px;
 }
 
+.batch-watch {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.watch-head h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+
+.watch-head .batch-note {
+  margin: 0;
+}
+
+.watch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px 14px;
+}
+
+.watch-path {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.watch-interval {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.watch-interval .field-label {
+  margin: 0;
+}
+
+.watch-interval .field-input {
+  width: 74px;
+}
+
+.watch-list {
+  display: grid;
+  gap: 8px;
+}
+
+.watch-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.watch-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.watch-card h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.watch-state {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.watch-card-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .batch-actions {
   display: flex;
   flex-wrap: wrap;

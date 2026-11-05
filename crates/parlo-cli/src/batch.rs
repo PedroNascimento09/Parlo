@@ -88,11 +88,15 @@ impl Drop for ActiveGuard {
 }
 
 pub fn create(request: NewBatch) -> Result<Batch, String> {
+    create_with_id(request, new_id())
+}
+
+pub fn create_with_id(request: NewBatch, id: String) -> Result<Batch, String> {
     let (from, targets) = languages(&request.from, &request.targets)?;
     dub::check_timing(&request.timing, request.fastest, request.slowest)?;
     let stamp = now();
     let mut batch = Batch {
-        id: new_id(),
+        id,
         from,
         targets,
         timing: request.timing,

@@ -84,6 +84,11 @@ const batchCreate = document.getElementById("batch-create");
 const batchSelected = document.getElementById("batch-selected");
 const batchStatus = document.getElementById("batch-status");
 const batchList = document.getElementById("batch-list");
+const watchPath = document.getElementById("watch-path");
+const watchInterval = document.getElementById("watch-interval");
+const watchAdd = document.getElementById("watch-add");
+const watchStatus = document.getElementById("watch-status");
+const watchList = document.getElementById("watch-list");
 const settingsFrom = document.getElementById("settings-from");
 const settingsTo = document.getElementById("settings-to");
 const settingsStt = document.getElementById("settings-stt");
@@ -2984,6 +2989,190 @@ batchFrom.addEventListener("change", () => fillBatchTargets());
 batchCreate.addEventListener("click", () => createBatch());
 fillBatchSource();
 loadBatches();
+
+let watchTimer = null;
+let watchIngested = 0;
+
+function setWatchStatus(message) {
+  watchStatus.textContent = message || "";
+  watchStatus.hidden = !message;
+}
+
+function watchSummary(folder) {
+  const targets = folder.targets
+    .map((code) => LANGUAGE_NAMES[code] || code.toUpperCase())
+    .join(", ");
+  return (
+    (LANGUAGE_NAMES[folder.from] || folder.from) +
+    " to " +
+    targets +
+    " · every " +
+    folder.interval_seconds +
+    "s · " +
+    folder.ingested +
+    (folder.ingested === 1 ? " file ingested" : " files ingested") +
+    (folder.pending ? " · " + folder.pending + " settling" : "")
+  );
+}
+
+function renderWatch(folders) {
+  watchList.replaceChildren();
+  if (!folders.length) {
+    const empty = document.createElement("p");
+    empty.className = "batch-empty";
+    empty.textContent = "No folder is watched yet.";
+    watchList.append(empty);
+    return;
+  }
+  for (const folder of folders) {
+    const card = document.createElement("article");
+    card.className = "watch-card";
+    const head = document.createElement("div");
+    head.className = "watch-card-head";
+    const path = document.createElement("h4");
+    path.textContent = folder.path;
+    const state = document.createElement("span");
+    state.className = "watch-state";
+    state.textContent = folder.state;
+    head.append(path, state);
+    const summary = document.createElement("p");
+    summary.className = "batch-summary";
+    summary.textContent = watchSummary(folder);
+    card.append(head, summary);
+    if (folder.last_error) {
+      const error = document.createElement("p");
+      error.className = "batch-error";
+      error.textContent = folder.last_error;
+      card.append(error);
+    }
+    const actions = document.createElement("div");
+    actions.className = "watch-card-actions";
+    const scan = document.createElement("button");
+    scan.type = "button";
+    scan.className = "swap";
+    scan.textContent = "Scan now";
+    scan.addEventListener("click", () => scanWatch(folder.id, scan));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "swap";
+    remove.textContent = "Remove";
+    remove.addEventListener("click", () => removeWatch(folder.id, remove));
+    actions.append(scan, remove);
+    card.append(actions);
+    watchList.append(card);
+  }
+}
+
+async function loadWatch() {
+  try {
+    const response = await fetch("/watch", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "The watched folders could not be listed.");
+    }
+    const folders = Array.isArray(payload.folders) ? payload.folders : [];
+    renderWatch(folders);
+    const ingested = folders.reduce((total, folder) => total + folder.ingested, 0);
+    if (ingested !== watchIngested) {
+      watchIngested = ingested;
+      await loadBatches();
+    }
+    clearTimeout(watchTimer);
+    if (folders.length) {
+      watchTimer = setTimeout(loadWatch, 3000);
+    }
+  } catch (failure) {
+    setWatchStatus(failure.message || "The watched folders could not be listed.");
+  }
+}
+
+async function addWatch() {
+  const path = watchPath.value.trim();
+  if (!path) {
+    setWatchStatus("Choose the folder to watch.");
+    watchPath.focus();
+    return;
+  }
+  const targets = selectedBatchTargets();
+  if (!targets.length) {
+    setWatchStatus("Choose at least one language.");
+    return;
+  }
+  watchAdd.disabled = true;
+  try {
+    const response = await fetch("/watch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({
+        path,
+        from: batchFrom.value,
+        targets,
+        timing: batchTiming.value,
+        interval_seconds: Number(watchInterval.value) || 2,
+        keep_background: batchBackground.checked,
+      }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "This folder could not be watched.");
+    }
+    watchPath.value = "";
+    setWatchStatus("Watching " + detail.path + ". Drop a media file into it.");
+    await loadWatch();
+  } catch (failure) {
+    setWatchStatus(failure.message || "This folder could not be watched.");
+  } finally {
+    watchAdd.disabled = false;
+  }
+}
+
+async function scanWatch(id, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch("/watch/" + encodeURIComponent(id) + "/scan", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "This folder could not be scanned.");
+    }
+    await loadWatch();
+    await loadBatches();
+  } catch (failure) {
+    setWatchStatus(failure.message || "This folder could not be scanned.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function removeWatch(id, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch("/watch/" + encodeURIComponent(id) + "/remove", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "This folder could not be removed.");
+    }
+    setWatchStatus("The folder is no longer watched. Its queue keeps every file already ingested.");
+    await loadWatch();
+  } catch (failure) {
+    setWatchStatus(failure.message || "This folder could not be removed.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+watchAdd.addEventListener("click", () => addWatch());
+loadWatch();
 
 function editedProjectSegments() {
   return Array.from(dubLines.querySelectorAll("[data-segment]")).map((row) => {

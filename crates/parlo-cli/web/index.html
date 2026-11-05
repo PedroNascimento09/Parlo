@@ -914,6 +914,23 @@
       <h2 id="batch-title">Batch</h2>
       <p class="batch-note">Dub many files into more than one language. Parlo renders one at a time and keeps the queue after a restart.</p>
     </div>
+    <div class="batch-watch">
+      <div class="watch-head">
+        <h3>Watched folders</h3>
+        <p class="batch-note">A file dropped in one of these folders joins the queue once. Folders use the source language and target languages below.</p>
+      </div>
+      <div class="watch-actions">
+        <input id="watch-path" class="field-input watch-path" type="text" placeholder="C:\Users\you\Parlo inbox" aria-label="Folder to watch">
+        <label class="watch-interval" for="watch-interval">
+          <span class="field-label">Every</span>
+          <input id="watch-interval" class="field-input" type="number" min="1" max="3600" value="2">
+          <span>seconds</span>
+        </label>
+        <button id="watch-add" class="install" type="button">Watch folder</button>
+      </div>
+      <p class="batch-status" id="watch-status" aria-live="polite" hidden></p>
+      <div class="watch-list" id="watch-list"></div>
+    </div>
     <div class="batch-setup">
       <label class="field" for="batch-from">
         <span class="field-label">Source language</span>

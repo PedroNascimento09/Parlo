@@ -49,6 +49,7 @@ mod subtitles;
 mod summary;
 mod undo;
 mod update;
+mod watch;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ENGINE_LATENCY_MS: u32 = 1_500;

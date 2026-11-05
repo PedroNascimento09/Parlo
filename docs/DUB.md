@@ -37,6 +37,8 @@ Library → Batch dubs many files in one pass. Choose the source language, tick 
 
 One render runs at a time, so a batch does not compete with itself for the CPU. Each finished item has its own download; the whole batch ends with one JSON report listing every item, its language, state, output and error. A failed item can be retried without rerunning the rest. The queue uses the same timing, pace, background and subtitle settings as a single dub, and every item writes its own output and `.srt` beside the batch, not next to the source file.
 
+Watched folders sit above the queue. Point one at a folder, choose the source and target languages above, and every supported media file dropped there joins the queue once. The folder is scanned on its interval without a filesystem notification dependency. A file is read only after it has stayed the same across two scans and can be opened without another process holding it, so a half-written copy is left alone. Identity is the volume serial, file index and size: renaming a file does not queue it twice. The claim is written to a journal before the batch is created, and a deterministic batch id lets a restart recover a claim that was interrupted or a journal whose last line was truncated without adding a second item. A folder that cannot be read keeps its claims and shows the error instead of being silently cleared.
+
 ## Requirements
 
 - `ffmpeg` and `ffprobe` on `PATH`. They do the decoding, the encoding and the muxing; Parlo does not link a media library.
