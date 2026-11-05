@@ -37,7 +37,7 @@ Rules:
 | D6 | Cleanup levels and spoken commands | Yes | Done · 50f4b6b: `scratch that`, `risca isso` and `apaga isso` drop the phrase it follows, and cleanup keeps the three levels original, light and intelligent | Keep, extend languages | 1 | "scratch that" removes the phrase, both languages |
 | D7 | Undo the last dictation | Yes (session-bound) | Done · 587e105: erase refuses a window that is no longer in front, and an undo older than five minutes is refused | Keep | 0 | Refuses when another window is in front |
 | D8 | Style, language and voice per program | Per program style | Partial: a program owns a style and a written language, but the voice is still global because dictation takes one engine voice | Add voice | 2 | Slack reads in the cloned voice, Mail in the neutral one |
-| D9 | Snippets and vocabulary | Yes | Yes | Keep | 0 | `{{date}}` fills; a term survives cleanup |
+| D9 | Snippets and vocabulary | Yes | Done · f9a304c: snippets fill `{{date}}`, `{{time}}` and `{{name}}`, and a personal term is applied after the cleanup pass | Keep | 0 | `{{date}}` fills; a term survives cleanup |
 | D10 | Pronunciation dictionary | Respelling, IPA, CMU | No | Parity | 2 | A respelled name is spoken as written |
 
 ## Transcription
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-33 of 80 rows are Done (41.3%). Eleven Partial rows counted at half give 48.1%.
+34 of 80 rows are Done (42.5%). Eleven Partial rows counted at half give 49.4%.
 
 ## Next
 
-D9 Snippets and vocabulary: prove `{{date}}` fills and a term survives cleanup, then close the ledger row.
+D10 Pronunciation dictionary: write a name as it should be spoken, then close the ledger row.
