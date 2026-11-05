@@ -28,6 +28,7 @@ mod tests {
             id: id.to_string(),
             title: "Sync".to_string(),
             started_at,
+            speaker_hint: None,
             segments: Vec::new(),
         }
     }

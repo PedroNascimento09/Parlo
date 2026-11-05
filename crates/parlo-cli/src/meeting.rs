@@ -40,6 +40,8 @@ pub struct Meeting {
     pub started_at: u64,
     #[serde(default)]
     pub segments: Vec<Segment>,
+    #[serde(default)]
+    pub speaker_hint: Option<usize>,
 }
 
 impl Meeting {
@@ -153,10 +155,24 @@ pub fn import(title: &str, text: &str) -> Result<Meeting, String> {
         title: title.trim().to_string(),
         started_at,
         segments,
+        speaker_hint: None,
     })
 }
 
 pub fn start(title: &str) -> Meeting {
+    build(title, None)
+}
+
+pub fn start_with(title: &str, hint: Option<usize>) -> Result<Meeting, String> {
+    if let Some(count) = hint {
+        if !(1..=20).contains(&count) {
+            return Err("a speaker count must be between 1 and 20".to_string());
+        }
+    }
+    Ok(build(title, hint))
+}
+
+fn build(title: &str, speaker_hint: Option<usize>) -> Meeting {
     let label = title.trim();
     Meeting {
         id: new_id(),
@@ -167,6 +183,7 @@ pub fn start(title: &str) -> Meeting {
         },
         started_at: now(),
         segments: Vec::new(),
+        speaker_hint,
     }
 }
 
@@ -410,6 +427,23 @@ mod tests {
         assert_eq!(meeting.title, "Design review");
         assert!(meeting.segments.is_empty());
         assert_eq!(start("   ").title, "Meeting");
+    }
+
+    #[test]
+    fn a_meeting_records_the_speaker_count_it_was_given() {
+        assert_eq!(start_with("Retro", Some(3)).unwrap().speaker_hint, Some(3));
+        assert_eq!(start("Retro").speaker_hint, None);
+        assert!(start_with("Retro", Some(0)).is_err());
+        assert!(start_with("Retro", Some(21)).is_err());
+    }
+
+    #[test]
+    fn the_speaker_count_survives_a_restart() {
+        let folder = scratch("hint");
+        let meeting = start_with("Planning", Some(4)).unwrap();
+        save_in(&folder, &meeting).unwrap();
+        assert_eq!(load_in(&folder, &meeting.id).unwrap().speaker_hint, Some(4));
+        fs::remove_dir_all(&folder).unwrap();
     }
 
     #[test]

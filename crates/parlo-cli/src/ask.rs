@@ -251,6 +251,7 @@ mod tests {
             id: id.to_string(),
             title: title.to_string(),
             started_at: 0,
+            speaker_hint: None,
             segments: lines
                 .iter()
                 .map(|(at_ms, speaker, text)| Segment {

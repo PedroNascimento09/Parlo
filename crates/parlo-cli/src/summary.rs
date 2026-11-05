@@ -259,6 +259,7 @@ Connection: close
             id: "m1".to_string(),
             title: "Planning".to_string(),
             started_at: 0,
+            speaker_hint: None,
             segments: Vec::new(),
         };
         let value: serde_json::Value =
@@ -293,6 +294,7 @@ Connection: close
             id: "m2".to_string(),
             title: "Planning".to_string(),
             started_at: 0,
+            speaker_hint: None,
             segments: Vec::new(),
         };
         let url = format!("http://127.0.0.1:{port}/v1/chat/completions");
@@ -309,6 +311,7 @@ Connection: close
             id: "m3".to_string(),
             title: "Planning".to_string(),
             started_at: 0,
+            speaker_hint: None,
             segments: Vec::new(),
         };
         let value: serde_json::Value =
@@ -324,6 +327,7 @@ Connection: close
             id: "m1".to_string(),
             title: "Planning".to_string(),
             started_at: 0,
+            speaker_hint: None,
             segments: vec![crate::meeting::Segment {
                 at_ms: 12_000,
                 speaker: "Ana".to_string(),

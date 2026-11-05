@@ -203,6 +203,7 @@ mod tests {
             id: "m1".to_string(),
             title: "Product Sync".to_string(),
             started_at: 0,
+            speaker_hint: None,
             segments: lines
                 .iter()
                 .map(|(at_ms, speaker, text)| Segment {

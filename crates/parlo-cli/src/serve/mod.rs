@@ -937,13 +937,17 @@ fn handle(
             return respond_json(stream, "200 OK", "{\"text\":\"\",\"speaker\":\"\"}")
                 .map(|()| Flow::Serve);
         }
+        let hint = meeting.speaker_hint;
         let label = match session.embed(&pcm16) {
             Ok(vector) => rooms()
                 .lock()
                 .ok()
                 .and_then(|mut open| {
                     open.entry(id.clone())
-                        .or_insert_with(crate::speakers::Room::new)
+                        .or_insert_with(|| match hint {
+                            Some(count) => crate::speakers::Room::with_limit(count),
+                            None => crate::speakers::Room::new(),
+                        })
                         .label(&vector)
                         .ok()
                 })
@@ -1131,7 +1135,17 @@ fn handle(
         };
 
         if path == "/meeting/start" {
-            let meeting = crate::meeting::start(&field("title"));
+            let speakers = request
+                .get("speakers")
+                .and_then(|value| value.as_u64())
+                .map(|count| count as usize);
+            let meeting = match crate::meeting::start_with(&field("title"), speakers) {
+                Ok(meeting) => meeting,
+                Err(error) => {
+                    return respond_json(stream, "400 Bad Request", &error_json(&error))
+                        .map(|()| Flow::Serve)
+                }
+            };
             if let Ok(mut open) = rooms().lock() {
                 open.remove(&meeting.id);
             }
@@ -4422,6 +4436,7 @@ fn meeting_json(meeting: crate::meeting::Meeting) -> serde_json::Value {
         "title": meeting.title,
         "started_at": meeting.started_at,
         "speakers": meeting.speakers(),
+        "speaker_hint": meeting.speaker_hint,
         "segments": segments,
         "actions": crate::actions::for_meeting(&meeting),
         "decisions": crate::decisions::for_meeting(&meeting),
@@ -5699,6 +5714,29 @@ mod tests {
     fn body_json(answer: &str) -> serde_json::Value {
         let body = answer.split("\r\n\r\n").nth(1).unwrap_or("");
         serde_json::from_str(body).unwrap()
+    }
+
+    #[test]
+    fn a_speaker_count_is_kept_with_the_meeting() {
+        let (port, stop) = start_server();
+        let started = send(
+            port,
+            "POST",
+            "/meeting/start",
+            "{\"title\":\"Retro\",\"speakers\":3}",
+        );
+        assert!(started.starts_with("HTTP/1.1 200"), "{started}");
+        assert_eq!(body_json(&started)["speaker_hint"], 3);
+        let listed = send(port, "GET", "/meetings", "");
+        assert!(listed.contains("\"speaker_hint\":3"), "{listed}");
+        let refused = send(
+            port,
+            "POST",
+            "/meeting/start",
+            "{\"title\":\"Retro\",\"speakers\":21}",
+        );
+        assert!(refused.starts_with("HTTP/1.1 400"), "{refused}");
+        stop.store(false, Ordering::Relaxed);
     }
 
     #[test]

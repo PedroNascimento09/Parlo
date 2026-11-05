@@ -801,6 +801,7 @@ mod tests {
             id: "m1".to_string(),
             title: "Launch".to_string(),
             started_at: 1_700_000_100,
+            speaker_hint: None,
             segments: vec![Segment {
                 at_ms: 1_500,
                 speaker: "speaker-1".to_string(),

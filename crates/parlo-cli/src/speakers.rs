@@ -106,6 +106,7 @@ pub struct Voice {
 pub struct Room {
     voices: Vec<Voice>,
     threshold: f32,
+    limit: usize,
 }
 
 impl Default for Room {
@@ -116,9 +117,14 @@ impl Default for Room {
 
 impl Room {
     pub fn new() -> Self {
+        Self::with_limit(MAX_SPEAKERS)
+    }
+
+    pub fn with_limit(limit: usize) -> Self {
         Self {
             voices: Vec::new(),
             threshold: DEFAULT_THRESHOLD,
+            limit: limit.clamp(1, 20),
         }
     }
 
@@ -145,7 +151,7 @@ impl Room {
             .map(|(index, voice)| (index, dot(&unit, &voice.centroid)))
             .max_by(|left, right| left.1.total_cmp(&right.1));
         if let Some((index, score)) = closest {
-            if score >= self.threshold || self.voices.len() >= MAX_SPEAKERS {
+            if score >= self.threshold || self.voices.len() >= self.limit {
                 let label = self.voices[index].label.clone();
                 self.absorb(index, &unit);
                 return Ok(label);
@@ -310,6 +316,24 @@ mod tests {
             room.label(&vector).unwrap();
         }
         assert_eq!(room.speakers().len(), MAX_SPEAKERS);
+    }
+
+    #[test]
+    fn a_room_with_a_hint_stops_at_the_hint() {
+        let mut room = Room::with_limit(2);
+        for index in 0..5 {
+            let mut vector = vec![0.0; 5];
+            vector[index] = 1.0;
+            room.label(&vector).unwrap();
+        }
+        assert_eq!(room.speakers().len(), 2);
+        let mut single = Room::with_limit(40);
+        for index in 0..20 {
+            let mut vector = vec![0.0; 20];
+            vector[index] = 1.0;
+            single.label(&vector).unwrap();
+        }
+        assert_eq!(single.speakers().len(), 20);
     }
 
     #[test]

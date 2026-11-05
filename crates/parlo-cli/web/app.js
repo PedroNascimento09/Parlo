@@ -1524,6 +1524,7 @@ const meetingLive = document.getElementById("meeting-live");
 const meetingLiveNote = document.getElementById("meeting-live-note");
 const meetingPause = document.getElementById("meeting-pause");
 const meetingSystem = document.getElementById("meeting-system");
+const meetingSpeakers = document.getElementById("meeting-speakers");
 const meetingNotesRow = document.getElementById("meeting-notes-row");
 const meetingNotes = document.getElementById("meeting-notes");
 const meetingNoteAdd = document.getElementById("meeting-note-add");
@@ -4499,6 +4500,7 @@ let meetingPausedTotal = 0;
 let meetingTimer = null;
 let meetingLines = 0;
 let meetingFailures = 0;
+let meetingHint = null;
 
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && meetingRecording) {
@@ -4533,8 +4535,9 @@ function meetingStatus(last) {
     return;
   }
   const kept = meetingLines === 1 ? "1 line kept" : meetingLines + " lines kept";
+  const voices = meetingHint ? "listening for " + meetingHint + " voices, " : "";
   meetingLiveNote.textContent =
-    "Recording " + meetingSource() + ", " + kept + ". " + (last ? "Last: " + last : "Speak normally.");
+    "Recording " + meetingSource() + ", " + voices + kept + ". " + (last ? "Last: " + last : "Speak normally.");
 }
 
 async function meetingSegment(wav) {
@@ -4620,11 +4623,16 @@ async function startMeeting() {
     showError(useSystem ? describeSystemAudioError(failure) : describeMicrophoneError(failure));
     return;
   }
+  const request = { title: meetingTitle.value.trim() || "Meeting" };
+  const speakers = Number.parseInt(meetingSpeakers.value, 10);
+  if (Number.isInteger(speakers)) {
+    request.speakers = speakers;
+  }
   try {
     const response = await fetch("/meeting/start", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ title: meetingTitle.value.trim() || "Meeting" }),
+      body: JSON.stringify(request),
     });
     const detail = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -4637,6 +4645,7 @@ async function startMeeting() {
     return;
   }
   meetingRecording = true;
+  meetingHint = Number.isInteger(speakers) ? speakers : null;
   meetingPaused = false;
   meetingPausedAt = 0;
   meetingPausedTotal = 0;
@@ -4722,6 +4731,7 @@ async function stopMeeting(message) {
     return;
   }
   meetingRecording = false;
+  meetingHint = null;
   meetingPaused = false;
   meetingPausedAt = 0;
   meetingPause.textContent = "Pause";
