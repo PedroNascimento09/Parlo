@@ -37,6 +37,8 @@ mod mcp;
 mod meeting;
 mod mic;
 mod models;
+#[cfg(test)]
+mod network;
 mod notes;
 mod playback;
 mod record;

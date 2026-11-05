@@ -4,7 +4,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Mutex, OnceLock};
 
-const LATEST: &str = "https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest";
+pub(crate) const LATEST: &str =
+    "https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest";
 
 pub struct Latest {
     pub version: String,
