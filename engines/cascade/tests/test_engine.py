@@ -37,6 +37,25 @@ class FlushTest(unittest.TestCase):
         self.assertEqual(flushed.text, "good morning")
         self.assertEqual(flushed.pcm16, b"\x01\x00" * 10)
 
+    def test_file_translation_drops_the_recogniser_before_translating(self):
+        events = []
+        engine = CascadeEngine.__new__(CascadeEngine)
+        engine._ready = True
+        engine.dictate = False
+        engine.captions = False
+        engine.min_segment = 2.5
+        engine._transcribe = lambda samples: (events.append("transcribe") or "bom dia")
+        engine._translate = lambda text: (events.append("translate") or "good morning")
+        engine._synthesize = lambda text: (events.append("speak") or b"\x01\x00" * 10)
+        engine.unload_unit = lambda unit: (events.append("unload " + unit) or True)
+
+        result = engine.translate_file(float_to_pcm16([0.25] * 48000))
+
+        self.assertEqual(events[:3], ["transcribe", "transcribe", "unload recognition"])
+        self.assertEqual(events[3:], ["translate", "translate", "speak", "speak"])
+        self.assertEqual(result.text, "good morning good morning")
+        self.assertEqual(result.pcm16, b"\x01\x00" * 20)
+
     def test_flush_without_a_tail_speaks_nothing(self):
         engine = self.engine()
 

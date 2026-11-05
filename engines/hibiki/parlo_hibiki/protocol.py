@@ -93,6 +93,8 @@ def handle_line(line: str, engine) -> dict:
         return translate(request, engine)
     if op == "flush":
         return flush(request, engine)
+    if op == "translate_file":
+        return translate_file(request, engine)
     if op == "dictate":
         return dictate(request, engine)
     if op == "write":
@@ -132,6 +134,30 @@ def translate(request: dict, engine) -> dict:
 
     try:
         result = engine.translate(pcm16)
+    except EngineUnavailable as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+
+    return {
+        "op": "translated",
+        "seq": seq,
+        "pcm16": base64.b64encode(result.pcm16).decode("ascii"),
+        "text": result.text,
+        "latency_ms": result.latency_ms,
+    }
+
+
+def translate_file(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    handler = getattr(engine, "translate_file", None)
+    if handler is None:
+        return {"op": "error", "seq": seq, "error": "engine cannot translate a whole file"}
+
+    pcm16, error = decode_audio(request)
+    if error is not None:
+        return error
+
+    try:
+        result = handler(pcm16)
     except EngineUnavailable as failure:
         return {"op": "error", "seq": seq, "error": str(failure)}
 

@@ -414,6 +414,53 @@ class CascadeEngine:
         elapsed = int((time.perf_counter() - started) * 1000)
         return Translation(pcm16=audio, text=translated, latency_ms=elapsed)
 
+    def translate_file(self, pcm16: bytes) -> Translation:
+        if not self._ready:
+            raise EngineUnavailable(
+                "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
+            )
+        samples = pcm16_to_float(pcm16)
+        if not samples:
+            return Translation(b"", None, 0)
+
+        started = time.perf_counter()
+        step = int(self.min_segment * SAMPLE_RATE)
+        texts = []
+        for start in range(0, len(samples), step):
+            chunk = samples[start:start + step]
+            if rms(chunk) < SILENCE_RMS:
+                continue
+            text = self._transcribe(chunk)
+            if text:
+                texts.append(text)
+        self.unload_unit("recognition")
+        if not texts:
+            return Translation(b"", None, 0)
+
+        if self.dictate:
+            self.intelligence = Intelligence(
+                settings_from_config(self.clean_mode), self.source
+            )
+            edited = []
+            for text in texts:
+                edit = self.intelligence.edit(text)
+                self.last_original = edit.original
+                self.last_engine = edit.engine
+                edited.append(edit.text)
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return Translation(b"", " ".join(edited), elapsed)
+
+        translated = [self._translate(text) for text in texts]
+        if self.captions:
+            elapsed = int((time.perf_counter() - started) * 1000)
+            return Translation(b"", " ".join(translated), elapsed)
+
+        audio = bytearray()
+        for text in translated:
+            audio.extend(self._synthesize(text))
+        elapsed = int((time.perf_counter() - started) * 1000)
+        return Translation(bytes(audio), " ".join(translated), elapsed)
+
     def transcribe(self, pcm16: bytes) -> str:
         if not self._ready:
             raise EngineUnavailable(
