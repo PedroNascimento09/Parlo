@@ -1094,6 +1094,13 @@ function describeModels(state) {
       name.append(policy);
     }
 
+    if (model.licence) {
+      const licence = document.createElement("span");
+      licence.className = "models-kind models-licence";
+      licence.textContent = model.licence;
+      name.append(licence);
+    }
+
     if (model.quality) {
       const quality = document.createElement("span");
       quality.className = "models-kind models-quality";

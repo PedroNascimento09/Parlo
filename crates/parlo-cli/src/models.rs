@@ -895,6 +895,7 @@ pub fn as_json(models: &[Model], lifecycle: &Lifecycle, pair: &str, working: boo
                 "policy": state.map(|state| state.policy),
                 "policy_origin": state.map(|state| state.policy_origin.clone()),
                 "bytes": model.bytes,
+                "licence": crate::registry::model(model.id).map(|spec| spec.licence).unwrap_or_default(),
                 "reason": reason_for(model, &described),
                 "quality": quality_for(model),
                 "previous": has_previous(model.id),

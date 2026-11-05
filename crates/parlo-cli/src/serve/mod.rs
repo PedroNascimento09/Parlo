@@ -5723,6 +5723,21 @@ mod tests {
         serde_json::from_str(body).unwrap()
     }
 
+    #[test]
+    fn every_model_card_carries_its_licence() {
+        let (port, stop) = start_server();
+        let answer = send(port, "GET", "/models", "");
+        assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+        let state = body_json(&answer);
+        let models = state["models"].as_array().unwrap();
+        assert!(!models.is_empty());
+        for model in models {
+            let licence = model["licence"].as_str().unwrap_or("");
+            assert!(!licence.is_empty(), "{} has no licence", model["id"]);
+        }
+        stop.store(false, Ordering::Relaxed);
+    }
+
     fn websocket_attempt(port: u16, query: &str) -> Result<TcpStream, String> {
         let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
         stream
