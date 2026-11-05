@@ -16,6 +16,33 @@ mod tests {
     use super::*;
 
     #[test]
+    fn every_control_the_app_binds_is_on_the_page() {
+        let page = include_str!("../web/index.html");
+        for id in [
+            "settings-compute",
+            "compute-note",
+            "voice-import",
+            "voice-import-file",
+            "voice-import-note",
+            "compare-run",
+            "compare-text",
+            "compare-first",
+            "compare-second",
+            "compare-note",
+            "compare-readings",
+        ] {
+            assert!(
+                page.contains(&format!("id=\"{id}\"")),
+                "{id} is missing from the page"
+            );
+            assert!(
+                APP.contains(&format!("getElementById(\"{id}\")")),
+                "{id} is not read by the script"
+            );
+        }
+    }
+
+    #[test]
     fn the_meeting_screen_redraws_the_lines_while_it_records() {
         let body = function_body(APP, "meetingStep");
         assert!(body.contains("await loadMeetings()"), "{body}");
