@@ -14,7 +14,7 @@ struct Snapshot {
     image: Option<Picture>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Picture {
     width: usize,
     height: usize,
@@ -31,6 +31,43 @@ static NEXT: AtomicU64 = AtomicU64::new(0);
 fn state() -> &'static Mutex<Option<Lease>> {
     static STATE: OnceLock<Mutex<Option<Lease>>> = OnceLock::new();
     STATE.get_or_init(|| Mutex::new(None))
+}
+
+trait Backend {
+    fn text(&mut self) -> Option<String>;
+    fn image(&mut self) -> Option<Picture>;
+    fn set_text(&mut self, text: &str) -> Result<(), String>;
+    fn set_image(&mut self, image: &Picture) -> Result<(), String>;
+}
+
+impl Backend for Clipboard {
+    fn text(&mut self) -> Option<String> {
+        Clipboard::get_text(self).ok()
+    }
+
+    fn image(&mut self) -> Option<Picture> {
+        Clipboard::get_image(self).ok().map(|image| Picture {
+            width: image.width,
+            height: image.height,
+            bytes: image.bytes.into_owned(),
+        })
+    }
+
+    fn set_text(&mut self, text: &str) -> Result<(), String> {
+        Clipboard::set_text(self, text).map_err(|error| error.to_string())
+    }
+
+    fn set_image(&mut self, image: &Picture) -> Result<(), String> {
+        Clipboard::set_image(
+            self,
+            ImageData {
+                width: image.width,
+                height: image.height,
+                bytes: image.bytes.clone().into(),
+            },
+        )
+        .map_err(|error| error.to_string())
+    }
 }
 
 pub fn copy(text: &str) -> Result<u64, String> {
@@ -64,14 +101,21 @@ pub fn copy(text: &str) -> Result<u64, String> {
     Ok(generation)
 }
 
-fn capture(clipboard: &mut Clipboard) -> Snapshot {
-    let text = clipboard.get_text().ok();
-    let image = clipboard.get_image().ok().map(|image| Picture {
-        width: image.width,
-        height: image.height,
-        bytes: image.bytes.into_owned(),
-    });
-    Snapshot { text, image }
+fn capture(backend: &mut dyn Backend) -> Snapshot {
+    Snapshot {
+        text: backend.text(),
+        image: backend.image(),
+    }
+}
+
+fn restore(backend: &mut dyn Backend, snapshot: &Snapshot) -> Result<(), String> {
+    if let Some(image) = &snapshot.image {
+        return backend.set_image(image);
+    }
+    match &snapshot.text {
+        Some(text) => backend.set_text(text),
+        None => Ok(()),
+    }
 }
 
 fn restore_after_lease(snapshot: Snapshot, generation: u64, expected: String) {
@@ -96,18 +140,75 @@ fn restore_after_lease(snapshot: Snapshot, generation: u64, expected: String) {
     let _ = restore(&mut clipboard, &snapshot);
 }
 
-fn restore(clipboard: &mut Clipboard, snapshot: &Snapshot) -> Result<(), String> {
-    if let Some(image) = &snapshot.image {
-        return clipboard
-            .set_image(ImageData {
-                width: image.width,
-                height: image.height,
-                bytes: image.bytes.clone().into(),
-            })
-            .map_err(|error| error.to_string());
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Default)]
+    struct Memory {
+        text: Option<String>,
+        image: Option<Picture>,
+        writes: usize,
     }
-    if let Some(text) = &snapshot.text {
-        return clipboard.set_text(text).map_err(|error| error.to_string());
+
+    impl Backend for Memory {
+        fn text(&mut self) -> Option<String> {
+            self.text.clone()
+        }
+
+        fn image(&mut self) -> Option<Picture> {
+            self.image.clone()
+        }
+
+        fn set_text(&mut self, text: &str) -> Result<(), String> {
+            self.writes += 1;
+            self.text = Some(text.to_string());
+            self.image = None;
+            Ok(())
+        }
+
+        fn set_image(&mut self, image: &Picture) -> Result<(), String> {
+            self.writes += 1;
+            self.image = Some(image.clone());
+            self.text = None;
+            Ok(())
+        }
     }
-    clipboard.clear().map_err(|error| error.to_string())
+
+    fn picture() -> Picture {
+        Picture {
+            width: 2,
+            height: 2,
+            bytes: vec![1, 2, 3, 4],
+        }
+    }
+
+    #[test]
+    fn an_image_comes_back_after_a_copy() {
+        let mut board = Memory {
+            text: None,
+            image: Some(picture()),
+            writes: 0,
+        };
+        let snapshot = capture(&mut board);
+        board.text = Some("translated".to_string());
+        board.image = None;
+
+        restore(&mut board, &snapshot).unwrap();
+
+        assert_eq!(board.image, Some(picture()));
+        assert_eq!(board.text, None);
+    }
+
+    #[test]
+    fn a_format_we_cannot_read_is_left_alone() {
+        let mut files = Memory::default();
+        let snapshot = capture(&mut files);
+        files.text = Some("translated".to_string());
+
+        restore(&mut files, &snapshot).unwrap();
+
+        assert_eq!(files.writes, 0);
+        assert_eq!(files.text.as_deref(), Some("translated"));
+    }
 }

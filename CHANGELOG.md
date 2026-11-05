@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Copying a translation no longer wipes the clipboard when it held something Parlo cannot read: copied text and images come back, and files or formatted text stay where they were.
 - MCP serves its 12 tools over both transports: the running server answers `/mcp`, and `parlo mcp` speaks JSON-RPC on stdio with the same tool list and error results.
 - The OpenAI-compatible speech, translation and models endpoints answer with their documented shapes: speech returns WAV audio, translation returns transcript JSON, and `/v1/models` lists the model cards.
 - The local API streams partial, stable and final transcript events over `/v1/audio/transcriptions/stream`, and `/.well-known/parlo` now lists the engines and request limits.
