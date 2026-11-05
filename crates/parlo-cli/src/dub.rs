@@ -33,11 +33,20 @@ pub struct Line {
 }
 
 #[derive(Deserialize)]
+pub struct Export {
+    pub format: String,
+    pub label: String,
+    pub path: String,
+}
+
+#[derive(Deserialize)]
 pub struct Dub {
     pub out: String,
     pub srt: String,
     pub seconds: f64,
     pub lines: Vec<Line>,
+    #[serde(default)]
+    pub exports: Vec<Export>,
 }
 
 pub struct Request<'a> {

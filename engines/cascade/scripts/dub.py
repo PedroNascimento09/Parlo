@@ -8,6 +8,7 @@ import tempfile
 import threading
 import wave
 
+import exports
 import timing
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -604,6 +605,7 @@ def write_report(
     srt: Path,
     samples: np.ndarray,
     lines: list[Line],
+    written: list[dict],
 ) -> None:
     path.write_text(
         json.dumps(
@@ -618,6 +620,7 @@ def write_report(
                 "slowest": args.slowest,
                 "seconds": round(len(samples) / SAMPLE_RATE, 2),
                 "lines": [line_document(line) for line in lines],
+                "exports": written,
             },
             ensure_ascii=False,
             indent=2,
@@ -698,6 +701,7 @@ def main() -> int:
     parser.add_argument("--timing", default="natural")
     parser.add_argument("--fastest", type=float, default=1.25)
     parser.add_argument("--slowest", type=float, default=0.9)
+    parser.add_argument("--mp3-bitrate", type=int, default=192)
     parser.add_argument("--json", type=Path)
     parser.add_argument("--track", type=Path)
     parser.add_argument("--lines-dir", type=Path)
@@ -722,6 +726,8 @@ def main() -> int:
         timing.check_limits(args.fastest, args.slowest)
     except timing.TimingError as error:
         raise SystemExit(str(error)) from error
+    if not 64 <= args.mp3_bitrate <= 320:
+        raise SystemExit("the MP3 bitrate must be between 64 and 320")
 
     cues = load_cues(args.cues) if args.cues else None
     if resume and cues is None:
@@ -803,18 +809,37 @@ def main() -> int:
         if not lines:
             raise SystemExit("nothing was translated")
         active = [line for line in lines if not line.failed and not line.skipped]
+        voice = track.copy()
         if args.keep_background:
             envelope = ducking(len(samples), active)
             track = np.clip(track + samples * BACKGROUND_GAIN * envelope, -1.0, 1.0)
         write_wav(track_path, track)
         mux(ffmpeg, args.source, track_path, out, video)
+        write_srt(srt, lines)
+        write_wav(work / "voice.wav", voice)
+        write_wav(work / "original.wav", samples)
+        write_wav(work / "mix.wav", track)
+        written = exports.export_all(
+            ffmpeg,
+            args.source,
+            out,
+            srt,
+            track_path,
+            work / "voice.wav",
+            work / "original.wav",
+            work / "mix.wav",
+            lines,
+            video,
+            args.mp3_bitrate,
+            work,
+        )
 
-    write_srt(srt, lines)
     if args.json:
-        write_report(args.json, args, out, srt, samples, lines)
+        write_report(args.json, args, out, srt, samples, lines, written)
     print(f"wrote {out}")
     print(f"wrote {srt}")
     print(f"  lines        {len(active)}")
+    print(f"  exports      {len(written)}")
     failed = sum(1 for line in lines if line.failed)
     if failed:
         print(f"  failed       {failed} (retry them from the app)")

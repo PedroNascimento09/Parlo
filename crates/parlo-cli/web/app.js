@@ -48,6 +48,7 @@ const dubResult = document.getElementById("dub-result");
 const dubDownload = document.getElementById("dub-download");
 const dubCount = document.getElementById("dub-count");
 const dubLines = document.getElementById("dub-lines");
+const dubExports = document.getElementById("dub-exports");
 const dubQc = document.getElementById("dub-qc");
 const dubIssues = document.getElementById("dub-issues");
 const dubPrev = document.getElementById("dub-prev");
@@ -2195,6 +2196,19 @@ function showDub(result) {
   dubDownload.href = "/dub/" + encodeURIComponent(result.id);
   dubDownload.textContent = "Download " + (result.name || "the dubbed file");
   const lines = result.lines || [];
+  dubExports.replaceChildren();
+  for (const item of result.exports || []) {
+    if (!item.url) {
+      continue;
+    }
+    const link = document.createElement("a");
+    link.className = "dub-export";
+    link.href = item.url;
+    link.download = item.name || "";
+    link.textContent = item.label || item.format;
+    dubExports.append(link);
+  }
+  dubExports.hidden = dubExports.childElementCount === 0;
   const flagged = lines.filter((line) => (line.issues || []).length > 0);
   issueCursor = -1;
   dubQc.hidden = false;
@@ -2366,6 +2380,7 @@ function fillDubTargets(project, chosen) {
 function showProject(project) {
   dubProject = project;
   dubQc.hidden = true;
+  dubExports.hidden = true;
   fillDubTargets(project, dubTarget.value);
   dubDownload.hidden = true;
   dubClear.hidden = false;

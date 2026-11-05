@@ -573,6 +573,14 @@ pub fn run(
 }
 
 #[derive(Clone)]
+struct DubExport {
+    format: String,
+    label: String,
+    name: String,
+    path: PathBuf,
+}
+
+#[derive(Clone)]
 struct DubFile {
     id: String,
     upload: PathBuf,
@@ -592,6 +600,7 @@ struct DubFile {
     keep_background: bool,
     seconds: f64,
     lines: Vec<dub::Line>,
+    exports: Vec<DubExport>,
 }
 
 fn dub_files() -> &'static Mutex<Vec<DubFile>> {
@@ -619,6 +628,22 @@ fn recall(id: &str) -> Option<(PathBuf, String)> {
         .map(|file| (file.dubbed.clone(), file.name.clone()))
 }
 
+fn dub_exports(items: &[dub::Export]) -> Vec<DubExport> {
+    items
+        .iter()
+        .filter_map(|item| {
+            let path = PathBuf::from(&item.path);
+            let name = path.file_name()?.to_string_lossy().to_string();
+            Some(DubExport {
+                format: item.format.clone(),
+                label: item.label.clone(),
+                name,
+                path,
+            })
+        })
+        .collect()
+}
+
 fn dub_body(file: &DubFile) -> String {
     let lines: Vec<String> = file
         .lines
@@ -630,8 +655,22 @@ fn dub_body(file: &DubFile) -> String {
         .as_ref()
         .map(|id| format!(",\"project_id\":\"{}\"", json_string(id)))
         .unwrap_or_default();
+    let written: Vec<String> = file
+        .exports
+        .iter()
+        .map(|item| {
+            format!(
+                "{{\"format\":\"{}\",\"label\":\"{}\",\"name\":\"{}\",\"url\":\"/dub/{}/export/{}\"}}",
+                json_string(&item.format),
+                json_string(&item.label),
+                json_string(&item.name),
+                json_string(&file.id),
+                json_string(&item.format)
+            )
+        })
+        .collect();
     format!(
-        "{{\"id\":\"{}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"lines\":[{}]{}}}",
+        "{{\"id\":\"{}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"lines\":[{}],\"exports\":[{}]{}}}",
         json_string(&file.id),
         json_string(&file.name),
         json_string(&file.to),
@@ -640,6 +679,7 @@ fn dub_body(file: &DubFile) -> String {
         file.slowest,
         file.seconds,
         lines.join(","),
+        written.join(","),
         project
     )
 }
@@ -654,6 +694,9 @@ fn forget_dub(file: &DubFile) {
         fs::remove_file(path).ok();
     }
     fs::remove_dir_all(&file.lines_dir).ok();
+    for item in &file.exports {
+        fs::remove_file(&item.path).ok();
+    }
 }
 
 fn handle(
@@ -2193,6 +2236,7 @@ fn handle(
                 let mut updated = state;
                 updated.lines = result.lines;
                 updated.seconds = result.seconds;
+                updated.exports = dub_exports(&result.exports);
                 if let Ok(mut files) = dub_files().lock() {
                     if let Some(slot) = files.iter_mut().find(|file| file.id == updated.id) {
                         *slot = updated.clone();
@@ -2223,7 +2267,24 @@ fn handle(
     }
 
     if method == "GET" && path.starts_with("/dub/") {
-        let id = path.trim_start_matches("/dub/");
+        let rest = path.trim_start_matches("/dub/");
+        if let Some((id, format)) = rest.split_once("/export/") {
+            let found = match dub_files().lock() {
+                Ok(files) => files.iter().find(|file| file.id == id).and_then(|file| {
+                    file.exports
+                        .iter()
+                        .find(|item| item.format == format)
+                        .map(|item| (item.path.clone(), item.name.clone()))
+                }),
+                Err(_) => None,
+            };
+            let Some((file, name)) = found else {
+                return respond_json(stream, "404 Not Found", &error_json("not found"))
+                    .map(|()| Flow::Serve);
+            };
+            return respond_file(stream, &file, &name).map(|()| Flow::Serve);
+        }
+        let id = rest;
         let Some((file, name)) = recall(id) else {
             return respond_json(stream, "404 Not Found", "{\"error\":\"not found\"}")
                 .map(|()| Flow::Serve);
@@ -2693,6 +2754,7 @@ fn handle(
                         .map(|()| Flow::Serve);
                     }
                 }
+                let written = dub_exports(&result.exports);
                 let file = DubFile {
                     id: id.clone(),
                     upload,
@@ -2712,6 +2774,7 @@ fn handle(
                     keep_background,
                     seconds: result.seconds,
                     lines: result.lines,
+                    exports: written,
                 };
                 let body = dub_body(&file);
                 remember(file);
