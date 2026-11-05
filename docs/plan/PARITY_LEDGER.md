@@ -36,7 +36,7 @@ Rules:
 | D5 | Partials, stable, final | Yes | Partial: partials, stable and final work and the WebSocket landed in P3, but the first partial arrives at 849 ms on 20 sentences, not 300 ms | Keep, add WebSocket | 1 | Partial within 300 ms of speech |
 | D6 | Cleanup levels and spoken commands | Yes | Done · 50f4b6b: `scratch that`, `risca isso` and `apaga isso` drop the phrase it follows, and cleanup keeps the three levels original, light and intelligent | Keep, extend languages | 1 | "scratch that" removes the phrase, both languages |
 | D7 | Undo the last dictation | Yes (session-bound) | Done · 587e105: erase refuses a window that is no longer in front, and an undo older than five minutes is refused | Keep | 0 | Refuses when another window is in front |
-| D8 | Style, language and voice per program | Per program style | Style and language | Add voice | 2 | Slack reads in the cloned voice, Mail in the neutral one |
+| D8 | Style, language and voice per program | Per program style | Partial: a program owns a style and a written language, but the voice is still global because dictation takes one engine voice | Add voice | 2 | Slack reads in the cloned voice, Mail in the neutral one |
 | D9 | Snippets and vocabulary | Yes | Yes | Keep | 0 | `{{date}}` fills; a term survives cleanup |
 | D10 | Pronunciation dictionary | Respelling, IPA, CMU | No | Parity | 2 | A respelled name is spoken as written |
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-33 of 80 rows are Done (41.3%). Ten Partial rows counted at half give 47.5%.
+33 of 80 rows are Done (41.3%). Eleven Partial rows counted at half give 48.1%.
 
 ## Next
 
-D8 Style, language and voice per program: let a program own a voice, not only a style, and close the ledger row.
+D9 Snippets and vocabulary: prove `{{date}}` fills and a term survives cleanup, then close the ledger row.
