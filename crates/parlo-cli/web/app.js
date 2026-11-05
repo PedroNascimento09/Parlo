@@ -4854,7 +4854,15 @@ async function summariseMeeting() {
       meetingSummaryText.textContent = answer.error || "The summary failed.";
       return;
     }
-    meetingSummaryText.textContent = answer.summary || "The model answered with nothing.";
+    const produced =
+      answer.by === "rules"
+        ? "the local rules"
+        : "the local model" + (answer.model ? ", " + answer.model : "");
+    meetingSummaryText.textContent =
+      (answer.summary || "The answer was empty.") + " — summarised by " + produced;
+    if (answer.note) {
+      meetingSummaryText.textContent += " · the model could not be used: " + answer.note;
+    }
   } catch (failure) {
     meetingSummaryText.textContent = "The model could not be reached.";
   }

@@ -67,6 +67,76 @@ pub fn extract(answer: &str) -> Result<String, String> {
         .ok_or_else(|| "the model answered without text".to_string())
 }
 
+pub fn answer(meeting: &crate::meeting::Meeting, url: &str, model: &str) -> String {
+    let rules = rules(meeting);
+    if url.trim().is_empty() {
+        return envelope(&meeting.id, &rules, "rules", "", "");
+    }
+    let text = prompt(&meeting.title, &meeting.segments);
+    match ask(url, model, &text) {
+        Ok(summary) => envelope(&meeting.id, &summary, "local", model, ""),
+        Err(error) => envelope(&meeting.id, &rules, "rules", "", &error),
+    }
+}
+
+fn envelope(id: &str, summary: &str, by: &str, model: &str, note: &str) -> String {
+    serde_json::json!({
+        "meeting": id,
+        "summary": summary,
+        "by": by,
+        "model": model,
+        "note": note,
+    })
+    .to_string()
+}
+
+pub fn rules(meeting: &crate::meeting::Meeting) -> String {
+    let agreed = reported(crate::decisions::for_meeting(meeting), "speaker");
+    let todos = reported(crate::actions::for_meeting(meeting), "owner");
+    let mut lines = vec!["Decisions:".to_string()];
+    lines.extend(or_none(agreed));
+    lines.push(String::new());
+    lines.push("Action items:".to_string());
+    lines.extend(or_none(todos));
+    lines.join("\n")
+}
+
+fn or_none(found: Vec<String>) -> Vec<String> {
+    if found.is_empty() {
+        vec!["- none in this transcript".to_string()]
+    } else {
+        found
+    }
+}
+
+fn reported(items: Vec<impl serde::Serialize>, who: &str) -> Vec<String> {
+    let value = serde_json::to_value(items).unwrap_or_default();
+    let mut out = Vec::new();
+    for item in value.as_array().cloned().unwrap_or_default() {
+        let text = item
+            .get("text")
+            .and_then(|text| text.as_str())
+            .unwrap_or("");
+        if text.is_empty() {
+            continue;
+        }
+        let speaker = item
+            .get(who)
+            .and_then(|speaker| speaker.as_str())
+            .filter(|speaker| !speaker.is_empty())
+            .unwrap_or("someone");
+        let second = item
+            .get("at_ms")
+            .and_then(|at| at.as_u64())
+            .map(|ms| ms / 1000);
+        out.push(match second {
+            Some(second) => format!("- {speaker} at {}:{:02}: {text}", second / 60, second % 60),
+            None => format!("- {speaker}: {text}"),
+        });
+    }
+    out
+}
+
 pub fn prompt(title: &str, segments: &[crate::meeting::Segment]) -> String {
     let mut lines = vec![format!("Meeting: {title}"), String::new()];
     for segment in segments {
@@ -181,6 +251,93 @@ Connection: close
     fn an_answer_without_text_is_an_error() {
         let answer = "HTTP/1.1 200 OK\r\n\r\n{\"choices\":[]}";
         assert!(extract(answer).unwrap_err().contains("without text"));
+    }
+
+    #[test]
+    fn a_machine_without_a_model_answers_with_the_rules_and_says_so() {
+        let meeting = crate::meeting::Meeting {
+            id: "m1".to_string(),
+            title: "Planning".to_string(),
+            started_at: 0,
+            segments: Vec::new(),
+        };
+        let value: serde_json::Value =
+            serde_json::from_str(&answer(&meeting, "", "local")).unwrap();
+        assert_eq!(value["by"], "rules");
+        assert_eq!(value["meeting"], "m1");
+        assert!(value["summary"].as_str().unwrap().contains("Decisions:"));
+        assert_eq!(value["note"], "");
+    }
+
+    #[test]
+    fn a_model_that_answers_is_named_as_the_one_that_wrote_it() {
+        use std::io::{Read, Write};
+        use std::net::TcpListener;
+
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            if let Ok((mut stream, _)) = listener.accept() {
+                let mut request = [0u8; 4096];
+                let _ = stream.read(&mut request);
+                let body = "{\"choices\":[{\"message\":{\"content\":\"Decisions: none\"}}]}";
+                let reply = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                let _ = stream.write_all(reply.as_bytes());
+            }
+        });
+        let meeting = crate::meeting::Meeting {
+            id: "m2".to_string(),
+            title: "Planning".to_string(),
+            started_at: 0,
+            segments: Vec::new(),
+        };
+        let url = format!("http://127.0.0.1:{port}/v1/chat/completions");
+        let value: serde_json::Value =
+            serde_json::from_str(&answer(&meeting, &url, "small-model")).unwrap();
+        assert_eq!(value["by"], "local");
+        assert_eq!(value["model"], "small-model");
+        assert_eq!(value["summary"], "Decisions: none");
+    }
+
+    #[test]
+    fn a_model_that_cannot_be_reached_falls_back_to_the_rules_with_the_reason() {
+        let meeting = crate::meeting::Meeting {
+            id: "m3".to_string(),
+            title: "Planning".to_string(),
+            started_at: 0,
+            segments: Vec::new(),
+        };
+        let value: serde_json::Value =
+            serde_json::from_str(&answer(&meeting, "http://127.0.0.1:1/v1", "local")).unwrap();
+        assert_eq!(value["by"], "rules");
+        assert!(value["summary"].as_str().unwrap().contains("Decisions:"));
+        assert!(!value["note"].as_str().unwrap().is_empty());
+    }
+
+    #[test]
+    fn the_rules_summary_says_who_agreed_and_when() {
+        let meeting = crate::meeting::Meeting {
+            id: "m1".to_string(),
+            title: "Planning".to_string(),
+            started_at: 0,
+            segments: vec![crate::meeting::Segment {
+                at_ms: 12_000,
+                speaker: "Ana".to_string(),
+                text: "Fica para sexta, eu envio o convite.".to_string(),
+                name: None,
+            }],
+        };
+        let summary = rules(&meeting);
+        assert!(summary.contains("Decisions:"));
+        assert!(summary.contains("Action items:"));
+        assert!(
+            summary.contains("Ana") || summary.contains("none in this transcript"),
+            "{summary}"
+        );
     }
 
     #[test]

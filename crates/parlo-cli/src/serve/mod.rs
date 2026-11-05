@@ -1005,35 +1005,13 @@ fn handle(
             .map(|()| Flow::Serve);
         };
         let settings = crate::config::load().intelligence;
-        if settings.local_url.trim().is_empty() {
-            return respond_json(
-                stream,
-                "409 Conflict",
-                "{\"error\":\"no model is configured on this machine. Set the local model address in Settings, Cleanup, and the summary stays here\"}",
-            )
-            .map(|()| Flow::Serve);
-        }
         let model = if settings.local_model.trim().is_empty() {
             "local-model".to_string()
         } else {
             settings.local_model.clone()
         };
-        let text = crate::summary::prompt(&meeting.title, &meeting.segments);
-        return match crate::summary::ask(&settings.local_url, &model, &text) {
-            Ok(summary) => respond_json(
-                stream,
-                "200 OK",
-                &format!(
-                    "{{\"meeting\":\"{}\",\"summary\":\"{}\"}}",
-                    json_string(&meeting.id),
-                    json_string(&summary)
-                ),
-            )
-            .map(|()| Flow::Serve),
-            Err(error) => {
-                respond_json(stream, "502 Bad Gateway", &error_json(&error)).map(|()| Flow::Serve)
-            }
-        };
+        let body = crate::summary::answer(&meeting, &settings.local_url, &model);
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
     if method == "POST" && path == "/meetings/clear" {
