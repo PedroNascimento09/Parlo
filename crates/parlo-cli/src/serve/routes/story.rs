@@ -94,6 +94,12 @@ fn handle(
         };
     }
     if method == "GET" {
+        if let Some(id) = rest.strip_suffix("/audiobook") {
+            return match story::audiobook(id) {
+                Ok((path, name)) => respond_file(stream, &path, &name).map(|()| Flow::Serve),
+                Err(error) => failure(stream, "409 Conflict", &error),
+            };
+        }
         if let Some((id, line)) = rest.split_once("/lines/") {
             return match story::line_audio(id, line) {
                 Ok((path, name)) => respond_file(stream, &path, &name).map(|()| Flow::Serve),

@@ -49,6 +49,10 @@ pub struct StoryLine {
     #[serde(default)]
     pub seconds: f64,
     #[serde(default)]
+    pub start: f64,
+    #[serde(default)]
+    pub end: f64,
+    #[serde(default)]
     pub error: Option<String>,
 }
 
@@ -250,6 +254,8 @@ fn normalize(draft: Draft) -> Result<Story, String> {
                 state: PENDING.to_string(),
                 out: None,
                 seconds: 0.0,
+                start: 0.0,
+                end: 0.0,
                 error: None,
             });
         }
@@ -406,6 +412,8 @@ pub fn render(
             if let Some(message) = rendered.get(line.id.as_str()) {
                 line.out = message.file.clone();
                 line.seconds = (message.end - message.start).max(0.0);
+                line.start = message.start;
+                line.end = message.end;
                 line.state = if message.failed { FAILED } else { DONE }.to_string();
                 line.error = message.failure.clone();
             } else {
@@ -429,6 +437,24 @@ pub fn render(
         seconds: report.seconds,
         lines: report.lines.len(),
     })
+}
+
+pub fn audiobook(id: &str) -> Result<(PathBuf, String), String> {
+    let story = read(id)?;
+    if story.state != DONE {
+        return Err("render the story before packaging the audiobook".to_string());
+    }
+    let batch = story
+        .batch
+        .as_deref()
+        .ok_or_else(|| "the story has no render to package".to_string())?;
+    let (source, _) = crate::batch::download(batch, "story")?;
+    let directory = directory(id)?;
+    let target = directory.join("story.m4b");
+    let metadata = directory.join("story.ffmeta");
+    crate::audiobook::package(&story, &source, &metadata, &target)?;
+    fs::remove_file(&metadata).ok();
+    Ok((target, "story.m4b".to_string()))
 }
 
 pub fn line_audio(id: &str, line_id: &str) -> Result<(PathBuf, String), String> {
@@ -547,6 +573,8 @@ mod tests {
                         state: String::new(),
                         out: None,
                         seconds: 0.0,
+                        start: 0.0,
+                        end: 0.0,
                         error: None,
                     },
                     StoryLine {
@@ -557,6 +585,8 @@ mod tests {
                         state: String::new(),
                         out: None,
                         seconds: 0.0,
+                        start: 0.0,
+                        end: 0.0,
                         error: None,
                     },
                 ],

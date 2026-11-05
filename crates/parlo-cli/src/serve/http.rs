@@ -59,6 +59,7 @@ pub(crate) fn content_type(name: &str) -> &'static str {
         Some("wav") => "audio/wav",
         Some("mp3") => "audio/mpeg",
         Some("m4a") => "audio/mp4",
+        Some("m4b") => "audio/mp4",
         Some("srt") => "text/plain; charset=utf-8",
         Some("tsv") => "text/tab-separated-values; charset=utf-8",
         _ => "application/octet-stream",

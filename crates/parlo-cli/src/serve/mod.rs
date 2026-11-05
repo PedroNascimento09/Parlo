@@ -5497,6 +5497,7 @@ mod tests {
     #[test]
     fn content_types_follow_the_suffix() {
         assert_eq!(content_type("a.en.mp4"), "video/mp4");
+        assert_eq!(content_type("story.m4b"), "audio/mp4");
         assert_eq!(content_type("a.en.srt"), "text/plain; charset=utf-8");
         assert_eq!(content_type("a.en.weird"), "application/octet-stream");
     }

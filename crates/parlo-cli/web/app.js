@@ -3013,6 +3013,7 @@ const storyNew = document.getElementById("story-new");
 const storyStatus = document.getElementById("story-status");
 const storyState = document.getElementById("story-state");
 const storyQueue = document.getElementById("story-queue");
+const storyAudiobook = document.getElementById("story-audiobook");
 
 let storyVoices = [];
 let storyCurrent = null;
@@ -3222,6 +3223,7 @@ function updateStoryState(story) {
   if (!story) {
     storyState.hidden = true;
     storyQueue.hidden = true;
+    storyAudiobook.hidden = true;
     return;
   }
   storyState.hidden = false;
@@ -3241,6 +3243,10 @@ function updateStoryState(story) {
   storyQueue.hidden = !story.batch;
   if (story.batch) {
     storyQueue.textContent = "Batch " + story.batch.slice(-6) + " in the queue";
+  }
+  storyAudiobook.hidden = story.state !== "done" || !story.batch;
+  if (!storyAudiobook.hidden) {
+    storyAudiobook.href = "/stories/" + encodeURIComponent(story.id) + "/audiobook";
   }
   const lines = [];
   for (const chapter of story.chapters || []) {
