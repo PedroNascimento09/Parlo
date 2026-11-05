@@ -119,31 +119,7 @@ pub trait Engine: Send {
     }
 
     fn translate_file(&mut self, frame: &Frame) -> Result<EngineOutput, EngineError> {
-        let step = (frame.format().sample_rate() as usize / 50).max(1);
-        let mut audio = Vec::new();
-        let mut texts = Vec::new();
-        for chunk in frame.samples().chunks(step) {
-            let output = self.process(&Frame::new(frame.format(), chunk.to_vec()))?;
-            if let Some(spoken) = output.audio {
-                audio.extend_from_slice(spoken.samples());
-            }
-            if let Some(text) = output.transcript {
-                if !text.trim().is_empty() {
-                    texts.push(text);
-                }
-            }
-        }
-        let audio = if audio.is_empty() {
-            None
-        } else {
-            Some(Frame::new(frame.format(), audio))
-        };
-        let transcript = if texts.is_empty() {
-            None
-        } else {
-            Some(texts.join(" "))
-        };
-        Ok(EngineOutput { audio, transcript })
+        translate_frames(self, frame)
     }
 
     fn loaded_units(&mut self) -> Option<Vec<String>> {
@@ -196,6 +172,37 @@ impl Default for EchoEngine {
     fn default() -> Self {
         Self::new("echo", 1_500, 1.0)
     }
+}
+
+pub fn translate_frames<E: Engine + ?Sized>(
+    engine: &mut E,
+    frame: &Frame,
+) -> Result<EngineOutput, EngineError> {
+    let step = (frame.format().sample_rate() as usize / 50).max(1);
+    let mut audio = Vec::new();
+    let mut texts = Vec::new();
+    for chunk in frame.samples().chunks(step) {
+        let output = engine.process(&Frame::new(frame.format(), chunk.to_vec()))?;
+        if let Some(spoken) = output.audio {
+            audio.extend_from_slice(spoken.samples());
+        }
+        if let Some(text) = output.transcript {
+            if !text.trim().is_empty() {
+                texts.push(text);
+            }
+        }
+    }
+    let audio = if audio.is_empty() {
+        None
+    } else {
+        Some(Frame::new(frame.format(), audio))
+    };
+    let transcript = if texts.is_empty() {
+        None
+    } else {
+        Some(texts.join(" "))
+    };
+    Ok(EngineOutput { audio, transcript })
 }
 
 impl Engine for EchoEngine {
