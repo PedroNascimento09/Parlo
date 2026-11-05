@@ -4,6 +4,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The local API hands out a single-use ticket for the streaming socket: `POST /ticket` returns one that opens exactly one WebSocket within 30 seconds and is refused on replay.
+- Every model card states its licence before the download, in the app and in `/models`.
+- A meeting summary names what wrote it: the local model when it answers, the local rules when it cannot, with the reason on screen.
 - A dictation can be paused without ending it: the clock and the wave freeze, the pause adds no silence to the audio, and resuming continues the same take, so the sentence still arrives whole.
 - Copying a translation no longer wipes the clipboard when it held something Parlo cannot read: copied text and images come back, and files or formatted text stay where they were.
 - MCP serves its 12 tools over both transports: the running server answers `/mcp`, and `parlo mcp` speaks JSON-RPC on stdio with the same tool list and error results.
