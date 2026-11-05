@@ -214,6 +214,14 @@ fn espeak_data_for(engine: &Path) -> Option<PathBuf> {
 
 impl SidecarEngine {
     pub fn spawn(script_dir: &Path) -> Result<Self, EngineError> {
+        Self::start(script_dir, true)
+    }
+
+    pub fn spawn_offline(script_dir: &Path) -> Result<Self, EngineError> {
+        Self::start(script_dir, false)
+    }
+
+    fn start(script_dir: &Path, warmup: bool) -> Result<Self, EngineError> {
         let models = crate::models::models_root();
         let explicit = explicit_engine();
         let candidates = explicit
@@ -222,14 +230,14 @@ impl SidecarEngine {
             .unwrap_or_else(engine_candidates);
         let mut failures = Vec::new();
         for engine in candidates {
-            match Self::spawn_binary(&engine, &models) {
+            match Self::spawn_binary(&engine, &models, warmup) {
                 Ok(sidecar) => return Ok(sidecar),
                 Err(error) => failures.push(format!("{}: {error}", engine.display())),
             }
         }
         if explicit.is_none() {
             let python = python_for(script_dir);
-            match Self::spawn_python(script_dir, &python, &models) {
+            match Self::spawn_python(script_dir, &python, &models, warmup) {
                 Ok(sidecar) => return Ok(sidecar),
                 Err(error) => failures.push(format!("{python}: {error}")),
             }
@@ -241,13 +249,16 @@ impl SidecarEngine {
         }))
     }
 
-    fn spawn_binary(engine: &Path, models: &Path) -> Result<Self, EngineError> {
+    fn spawn_binary(engine: &Path, models: &Path, warmup: bool) -> Result<Self, EngineError> {
         let mut command = Command::new(engine);
         command
             .env("PARLO_MODELS_DIR", models)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
+        if !warmup {
+            command.env("PARLO_CASCADE_WARMUP", "0");
+        }
         if std::env::var_os("PARLO_ESPEAK_DATA").is_none() {
             if let Some(data) = espeak_data_for(engine) {
                 command.env("PARLO_ESPEAK_DATA", data);
@@ -259,22 +270,47 @@ impl SidecarEngine {
         Self::handshake(child)
     }
 
-    fn spawn_python(script_dir: &Path, python: &str, models: &Path) -> Result<Self, EngineError> {
-        let child = Command::new(python)
+    fn spawn_python(
+        script_dir: &Path,
+        python: &str,
+        models: &Path,
+        warmup: bool,
+    ) -> Result<Self, EngineError> {
+        let mut command = Command::new(python);
+        command
             .arg("serve.py")
             .env("PARLO_MODELS_DIR", models)
             .current_dir(script_dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()
-            .map_err(|error| {
-                EngineError::Unavailable(format!(
-                    "cannot start {python} in {}: {error}",
-                    script_dir.display()
-                ))
-            })?;
+            .stderr(Stdio::inherit());
+        if !warmup {
+            command.env("PARLO_CASCADE_WARMUP", "0");
+        }
+        let child = command.spawn().map_err(|error| {
+            EngineError::Unavailable(format!(
+                "cannot start {python} in {}: {error}",
+                script_dir.display()
+            ))
+        })?;
         Self::handshake(child)
+    }
+
+    fn audio_from(&self, response: &Response) -> Result<Option<Frame>, EngineError> {
+        let encoded = match response.pcm16.as_deref() {
+            Some(encoded) if !encoded.is_empty() => encoded,
+            _ => return Ok(None),
+        };
+        let bytes = BASE64
+            .decode(encoded)
+            .map_err(|error| EngineError::Rejected(format!("invalid base64 audio: {error}")))?;
+        let format = AudioFormat::mono(response.sample_rate.unwrap_or(self.sample_rate))
+            .map_err(|error| EngineError::Rejected(error.to_string()))?;
+        let samples = decode_pcm16(&bytes);
+        if samples.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(Frame::new(format, samples)))
     }
 
     fn handshake(mut child: Child) -> Result<Self, EngineError> {
@@ -652,25 +688,32 @@ impl Engine for SidecarEngine {
             ));
         }
 
-        let audio = match response.pcm16 {
-            Some(encoded) if !encoded.is_empty() => {
-                let bytes = BASE64.decode(encoded).map_err(|error| {
-                    EngineError::Rejected(format!("invalid base64 audio: {error}"))
-                })?;
-                let format = AudioFormat::mono(response.sample_rate.unwrap_or(self.sample_rate))
-                    .map_err(|error| EngineError::Rejected(error.to_string()))?;
-                let samples = decode_pcm16(&bytes);
-                if samples.is_empty() {
-                    None
-                } else {
-                    Some(Frame::new(format, samples))
-                }
-            }
-            _ => None,
-        };
+        Ok(EngineOutput {
+            audio: self.audio_from(&response)?,
+            transcript: response.text,
+        })
+    }
+
+    fn translate_file(&mut self, frame: &Frame) -> Result<EngineOutput, EngineError> {
+        self.seq += 1;
+        let response = self.request(&Request {
+            op: "translate_file",
+            seq: Some(self.seq),
+            pcm16: Some(encode_pcm16(frame.samples())),
+            target: None,
+            clean: None,
+        })?;
+
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
 
         Ok(EngineOutput {
-            audio,
+            audio: self.audio_from(&response)?,
             transcript: response.text,
         })
     }
