@@ -4007,6 +4007,10 @@ fn handle(
         return answer;
     }
 
+    if let Some(answer) = routes::story::route(method, path, stream, &headers, token, &body) {
+        return answer;
+    }
+
     if let Some(answer) = routes::watch::route(method, path, stream, &headers, token, &body) {
         return answer;
     }

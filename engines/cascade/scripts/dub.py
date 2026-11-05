@@ -1,5 +1,6 @@
 import argparse
 import contextlib
+import hashlib
 import json
 import math
 import shutil
@@ -62,6 +63,7 @@ class Line:
     failed: bool = False
     failure: str | None = None
     skipped: bool = False
+    cached: bool = False
 
 
 @dataclass(frozen=True)
@@ -299,6 +301,10 @@ def select_voice(
         path = default
     else:
         name = VOICES.get(voice.removeprefix("voice-"))
+        if name is None and (MODEL_DIR / voice).is_file():
+            name = voice
+        if name is None and (MODEL_DIR / f"{voice}.onnx").is_file():
+            name = f"{voice}.onnx"
         if name is None:
             raise ValueError(f"{voice} is not a voice this engine installs")
         path = MODEL_DIR / name
@@ -412,12 +418,16 @@ def build(
     return np.clip(track, -1.0, 1.0), lines
 
 
-def line_file(identifier: str) -> str:
+def line_file(identifier: str, voice: str | None = None, pace: float = 1.0) -> str:
     safe = "".join(
         character if character.isalnum() or character in "-_" else "_"
         for character in identifier
     )
-    return f"{safe[:80] or 'line'}.wav"
+    stem = safe[:80] or "line"
+    if voice is None and pace == 1.0:
+        return f"{stem}.wav"
+    key = hashlib.sha1(f"{voice or ''}|{pace:.4f}".encode("utf-8")).hexdigest()[:10]
+    return f"{stem}-{key}.wav"
 
 
 def render_line(
@@ -435,15 +445,20 @@ def render_line(
     ffmpeg: str | None,
     workdir: Path | None,
     lines_dir: Path | None,
+    spoken: str | None = None,
 ) -> tuple[Line, np.ndarray]:
     voice = cue.voice if cue is not None else None
     engine_voice = getattr(engine, "voice_path", None)
     select_voice(engine, voice, Path(engine_voice) if engine_voice else None)
-    if not source:
-        source = engine._transcribe(samples[piece.start : piece.end])
-    if not source:
-        raise ValueError("nothing was recognised")
-    translated = engine._translate(source)
+    if spoken is None:
+        if not source:
+            source = engine._transcribe(samples[piece.start : piece.end])
+        if not source:
+            raise ValueError("nothing was recognised")
+        translated = engine._translate(source)
+    else:
+        source = spoken
+        translated = spoken
     if not translated:
         raise ValueError("nothing was translated")
     audio = speak(engine, translated, cue.pace if cue is not None else 1.0)
@@ -475,7 +490,7 @@ def render_line(
     identifier = cue.id if cue is not None else f"auto-{number}"
     name = None
     if lines_dir is not None:
-        name = line_file(identifier)
+        name = line_file(identifier, voice, cue.pace if cue is not None else 1.0)
         write_wav(lines_dir / name, audio)
     return (
         Line(
@@ -591,6 +606,7 @@ def line_document(line: Line) -> dict:
         "failed": line.failed,
         "failure": line.failure,
         "skipped": line.skipped,
+        "cached": line.cached,
     }
 
 
@@ -610,6 +626,7 @@ def line_from_document(item: dict) -> Line:
         failed=bool(item.get("failed")),
         failure=item.get("failure"),
         skipped=bool(item.get("skipped")),
+        cached=bool(item.get("cached")),
     )
 
 
@@ -708,9 +725,159 @@ def retry_line(
         )
 
 
+def render_story(args) -> int:
+    try:
+        document = json.loads(args.render_lines.read_text(encoding="utf-8"))
+    except OSError as error:
+        raise SystemExit(f"cannot read the story request: {error}") from error
+    except json.JSONDecodeError as error:
+        raise SystemExit(f"the story request is not valid JSON: {error}") from error
+    if not isinstance(document, dict):
+        raise SystemExit("the story request must be an object")
+    language = document.get("language")
+    items = document.get("lines")
+    if not isinstance(language, str) or not language.strip():
+        raise SystemExit("the story request has no language")
+    if not isinstance(items, list) or not items:
+        raise SystemExit("the story request has no lines")
+    out = args.out or Path("story.wav")
+    srt = args.srt or out.with_suffix(".srt")
+    lines_dir = args.lines_dir or out.parent / "lines"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    lines_dir.mkdir(parents=True, exist_ok=True)
+    engine = CascadeEngine(source=language, target=language)
+    lines: list[Line] = []
+    chunks: list[np.ndarray] = []
+    cursor = 0.0
+    rendered = 0
+    cached = 0
+    failed = 0
+    for number, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            raise SystemExit(f"story line {number} is not an object")
+        identifier = item.get("id")
+        text = item.get("text")
+        voice = item.get("voice")
+        pace = item.get("pace", 1.0)
+        if not isinstance(identifier, str) or not identifier:
+            raise SystemExit(f"story line {number} has no id")
+        if not isinstance(text, str) or not text.strip():
+            raise SystemExit(f"story line {number} has no text")
+        if voice is not None and (not isinstance(voice, str) or not voice.strip()):
+            raise SystemExit(f"story line {number} has an invalid voice")
+        if (
+            not isinstance(pace, (int, float))
+            or isinstance(pace, bool)
+            or not math.isfinite(pace)
+            or not 0.8 <= pace <= 1.25
+        ):
+            raise SystemExit(f"story line {number} has an invalid pace")
+        name = line_file(identifier, voice, float(pace))
+        audio = None
+        if (lines_dir / name).is_file():
+            try:
+                audio = read_wav(lines_dir / name)
+            except (SystemExit, OSError, EOFError):
+                (lines_dir / name).unlink(missing_ok=True)
+        if audio is None:
+            start = int(cursor * SAMPLE_RATE)
+            piece = Segment(start, start + SAMPLE_RATE)
+            try:
+                line, audio = render_line(
+                    engine,
+                    np.zeros(1, dtype=np.float32),
+                    piece,
+                    Cue(identifier, cursor, cursor + 1.0, text, voice, float(pace)),
+                    number,
+                    cursor + 1.0,
+                    text,
+                    "natural",
+                    1.25,
+                    0.9,
+                    False,
+                    None,
+                    None,
+                    lines_dir,
+                    spoken=text.strip(),
+                )
+                rendered += 1
+            except Exception as error:
+                failed += 1
+                lines.append(
+                    inspect(
+                        Line(
+                            start=cursor,
+                            end=cursor,
+                            source=text,
+                            translated=text,
+                            id=identifier,
+                            voice=voice,
+                            slot_end=cursor,
+                            failed=True,
+                            failure=str(error),
+                        ),
+                        cursor,
+                    )
+                )
+                print(f"[{number}/{len(items)}] failed: {error}")
+                continue
+            line = replace(
+                line,
+                start=cursor,
+                end=cursor + len(audio) / SAMPLE_RATE,
+                slot_end=cursor + len(audio) / SAMPLE_RATE,
+                cached=False,
+            )
+        else:
+            cached += 1
+            line = Line(
+                start=cursor,
+                end=cursor + len(audio) / SAMPLE_RATE,
+                source=text,
+                translated=text,
+                id=identifier,
+                voice=voice,
+                slot_end=cursor + len(audio) / SAMPLE_RATE,
+                file=name,
+                cached=True,
+            )
+        lines.append(line)
+        chunks.append(audio)
+        cursor = line.end
+        if number < len(items):
+            chunks.append(np.zeros(int(PAUSE_SECONDS * SAMPLE_RATE), dtype=np.float32))
+            cursor += PAUSE_SECONDS
+        print(f"[{number}/{len(items)}] {line.start:7.1f}s  {text}")
+    track = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+    write_wav(out, np.clip(track, -1.0, 1.0))
+    write_srt(srt, lines)
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        args.json.write_text(
+            json.dumps(
+                {
+                    "language": language,
+                    "out": str(out),
+                    "srt": str(srt),
+                    "seconds": round(len(track) / SAMPLE_RATE, 2),
+                    "rendered": rendered,
+                    "cached": cached,
+                    "failed": failed,
+                    "lines": [line_document(line) for line in lines],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+    print(f"wrote {out}")
+    print(f"  rendered {rendered}  cached {cached}  failed {failed}")
+    return 1 if failed else 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dub a media file offline")
-    parser.add_argument("source", type=Path)
+    parser.add_argument("source", type=Path, nargs="?")
     parser.add_argument("--to", default="en")
     parser.add_argument("--from", dest="source_language", default="pt")
     parser.add_argument("--out", type=Path)
@@ -728,7 +895,13 @@ def main() -> int:
     parser.add_argument("--retry")
     parser.add_argument("--skip")
     parser.add_argument("--work", type=Path)
+    parser.add_argument("--render-lines", type=Path)
     args = parser.parse_args()
+
+    if args.render_lines:
+        return render_story(args)
+    if args.source is None:
+        raise SystemExit("a source file or --render-lines is required")
 
     if args.retry and args.skip:
         raise SystemExit("retry and skip cannot be used together")

@@ -44,6 +44,7 @@ mod serve;
 mod sidecar;
 mod speakers;
 mod store;
+mod story;
 mod style;
 mod subtitles;
 mod summary;

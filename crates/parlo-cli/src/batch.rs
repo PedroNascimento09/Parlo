@@ -54,6 +54,8 @@ pub struct Batch {
     pub created_at: u64,
     pub updated_at: u64,
     pub items: Vec<Item>,
+    #[serde(default)]
+    pub story: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -107,6 +109,42 @@ pub fn create_with_id(request: NewBatch, id: String) -> Result<Batch, String> {
         created_at: stamp,
         updated_at: stamp,
         items: Vec::new(),
+        story: None,
+    };
+    write(&mut batch)?;
+    Ok(batch)
+}
+
+pub fn create_story(story_id: &str, title: &str, language: &str) -> Result<Batch, String> {
+    let stamp = now();
+    let mut batch = Batch {
+        id: new_id(),
+        from: language.to_string(),
+        targets: Vec::new(),
+        timing: "natural".to_string(),
+        fastest: 1.25,
+        slowest: 0.9,
+        keep_background: false,
+        state: DRAFT.to_string(),
+        created_at: stamp,
+        updated_at: stamp,
+        items: vec![Item {
+            id: "story".to_string(),
+            source: String::new(),
+            title: title.to_string(),
+            to: language.to_string(),
+            state: QUEUED.to_string(),
+            stage: "waiting".to_string(),
+            progress: 0.0,
+            error: None,
+            out: Some("story.wav".to_string()),
+            srt: Some("story.srt".to_string()),
+            seconds: 0.0,
+            lines: 0,
+            started_at: None,
+            ended_at: None,
+        }],
+        story: Some(story_id.to_string()),
     };
     write(&mut batch)?;
     Ok(batch)
@@ -382,10 +420,6 @@ fn run(id: &str) {
 fn render(batch: &Batch, index: usize) -> Result<Rendered, String> {
     let item = &batch.items[index];
     let directory = directory(&batch.id)?;
-    let source = relative(&directory, &item.source)?;
-    if !source.is_file() {
-        return Err(format!("the saved source {} is missing", item.source));
-    }
     let out_name = item
         .out
         .as_deref()
@@ -394,6 +428,19 @@ fn render(batch: &Batch, index: usize) -> Result<Rendered, String> {
         .srt
         .as_deref()
         .ok_or_else(|| "the render has no subtitle name".to_string())?;
+    if let Some(story) = batch.story.as_deref() {
+        let rendered = crate::story::render(story, &directory, out_name, srt_name)?;
+        return Ok(Rendered {
+            out: out_name.to_string(),
+            srt: srt_name.to_string(),
+            seconds: rendered.seconds,
+            lines: rendered.lines,
+        });
+    }
+    let source = relative(&directory, &item.source)?;
+    if !source.is_file() {
+        return Err(format!("the saved source {} is missing", item.source));
+    }
     let out = relative(&directory, out_name)?;
     let srt = relative(&directory, srt_name)?;
     let work = directory.join(format!("{}-work", item.id));

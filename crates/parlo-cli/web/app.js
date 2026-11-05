@@ -2766,6 +2766,16 @@ function selectedBatchTargets() {
 function batchSummary(batch) {
   const done = batch.items.filter((item) => item.state === "done").length;
   const failed = batch.items.filter((item) => item.state === "failed").length;
+  if (batch.story) {
+    const title = batch.items[0] ? batch.items[0].title : "Story";
+    return (
+      title +
+      " · story · " +
+      done +
+      " done" +
+      (failed ? " · " + failed + " failed" : "")
+    );
+  }
   const targets = batch.targets.map((code) => LANGUAGE_NAMES[code] || code.toUpperCase()).join(", ");
   return (
     batch.items.length +
@@ -2795,7 +2805,7 @@ function renderBatches(batches) {
     const head = document.createElement("div");
     head.className = "batch-card-head";
     const title = document.createElement("h3");
-    title.textContent = "Batch " + batch.id.slice(-6);
+    title.textContent = batch.story ? "Story render" : "Batch " + batch.id.slice(-6);
     const state = document.createElement("span");
     state.className = "batch-badge";
     state.textContent = batch.state;
@@ -2989,6 +2999,493 @@ batchFrom.addEventListener("change", () => fillBatchTargets());
 batchCreate.addEventListener("click", () => createBatch());
 fillBatchSource();
 loadBatches();
+
+const storyList = document.getElementById("story-list");
+const storyTitle = document.getElementById("story-title");
+const storyLanguage = document.getElementById("story-language");
+const storyCharacters = document.getElementById("story-characters");
+const storyChapters = document.getElementById("story-chapters");
+const storyAddCharacter = document.getElementById("story-add-character");
+const storyAddChapter = document.getElementById("story-add-chapter");
+const storySave = document.getElementById("story-save");
+const storyRender = document.getElementById("story-render");
+const storyNew = document.getElementById("story-new");
+const storyStatus = document.getElementById("story-status");
+const storyState = document.getElementById("story-state");
+const storyQueue = document.getElementById("story-queue");
+
+let storyVoices = [];
+let storyCurrent = null;
+let storyTimer = null;
+let storyCounter = 0;
+
+function setStoryStatus(message) {
+  storyStatus.textContent = message || "";
+  storyStatus.hidden = !message;
+}
+
+function storyIdentifier(prefix) {
+  storyCounter += 1;
+  return prefix + Date.now().toString(36) + storyCounter.toString(36);
+}
+
+function fillStoryLanguages() {
+  storyLanguage.replaceChildren();
+  for (const [code, name] of Object.entries(LANGUAGE_NAMES)) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = name;
+    storyLanguage.append(option);
+  }
+  storyLanguage.value = LANGUAGE_NAMES[savedSettings.from] ? savedSettings.from : "pt";
+}
+
+function storyVoiceOptions(selected) {
+  const select = document.createElement("select");
+  select.className = "field-input story-voice";
+  for (const voice of storyVoices) {
+    const option = document.createElement("option");
+    option.value = voice.id;
+    option.textContent = voice.label + (voice.installed ? "" : " · not installed");
+    select.append(option);
+  }
+  select.value = storyVoices.some((voice) => voice.id === selected)
+    ? selected
+    : storyVoices[0]?.id || "";
+  return select;
+}
+
+function storyCharacterRow(character) {
+  const row = document.createElement("div");
+  row.className = "story-character-row";
+  row.dataset.character = character.id;
+  const name = document.createElement("input");
+  name.className = "field-input story-name";
+  name.type = "text";
+  name.maxLength = 40;
+  name.placeholder = "Character name";
+  name.value = character.name || "";
+  name.setAttribute("aria-label", "Character name");
+  const voice = storyVoiceOptions(character.voice);
+  voice.setAttribute("aria-label", "Voice for " + (character.name || "this character"));
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "swap";
+  remove.textContent = "Remove";
+  remove.addEventListener("click", () => {
+    row.remove();
+    refreshStorySpeakers();
+  });
+  row.append(name, voice, remove);
+  return row;
+}
+
+function storyLineRow(line) {
+  const row = document.createElement("div");
+  row.className = "story-line-row";
+  row.dataset.line = line.id;
+  const speaker = document.createElement("select");
+  speaker.className = "field-input story-speaker";
+  speaker.dataset.selected = line.speaker || "";
+  const text = document.createElement("input");
+  text.className = "field-input story-text";
+  text.type = "text";
+  text.maxLength = 1000;
+  text.placeholder = "Line of dialogue";
+  text.value = line.text || "";
+  text.setAttribute("aria-label", "Line of dialogue");
+  const pace = document.createElement("select");
+  pace.className = "field-input story-pace";
+  for (const [value, label] of [["0.9", "Slower"], ["1", "Natural"], ["1.1", "Faster"]]) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    pace.append(option);
+  }
+  pace.value = String(line.pace || 1);
+  const state = document.createElement("span");
+  state.className = "story-line-state";
+  state.textContent = line.state || "pending";
+  const audio = document.createElement("a");
+  audio.className = "story-line-audio";
+  audio.textContent = "Play line";
+  audio.hidden = !line.out || !storyCurrent;
+  if (storyCurrent && line.out) {
+    audio.href = "/stories/" + encodeURIComponent(storyCurrent.id) + "/lines/" + encodeURIComponent(line.id);
+  }
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "swap";
+  remove.textContent = "Remove";
+  remove.addEventListener("click", () => row.remove());
+  row.append(speaker, text, pace, state, audio, remove);
+  return row;
+}
+
+function refreshStorySpeakers() {
+  const characters = Array.from(storyCharacters.querySelectorAll("[data-character]"));
+  for (const select of storyChapters.querySelectorAll(".story-speaker")) {
+    const chosen = select.value || select.dataset.selected || "";
+    select.replaceChildren();
+    for (const row of characters) {
+      const name = row.querySelector(".story-name").value.trim() || "Unnamed";
+      const option = document.createElement("option");
+      option.value = row.dataset.character;
+      option.textContent = name;
+      select.append(option);
+    }
+    select.value = characters.some((row) => row.dataset.character === chosen)
+      ? chosen
+      : characters[0]?.dataset.character || "";
+    select.dataset.selected = select.value;
+  }
+}
+
+function storyChapterCard(chapter) {
+  const card = document.createElement("article");
+  card.className = "story-chapter";
+  card.dataset.chapter = chapter.id;
+  const head = document.createElement("div");
+  head.className = "story-chapter-head";
+  const title = document.createElement("input");
+  title.className = "field-input story-chapter-title";
+  title.type = "text";
+  title.maxLength = 80;
+  title.placeholder = "Chapter title";
+  title.value = chapter.title || "";
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "swap";
+  remove.textContent = "Remove chapter";
+  remove.addEventListener("click", () => card.remove());
+  const add = document.createElement("button");
+  add.type = "button";
+  add.className = "swap";
+  add.textContent = "Add line";
+  const lines = document.createElement("div");
+  lines.className = "story-lines";
+  add.addEventListener("click", () => {
+    const row = storyLineRow({
+      id: storyIdentifier("l"),
+      speaker: storyCharacters.querySelector("[data-character]")?.dataset.character || "",
+      text: "",
+      pace: 1,
+      state: "pending",
+    });
+    lines.append(row);
+    refreshStorySpeakers();
+  });
+  head.append(title, add, remove);
+  for (const line of chapter.lines || []) {
+    lines.append(storyLineRow(line));
+  }
+  card.append(head, lines);
+  return card;
+}
+
+function fillStoryEditor(story) {
+  storyCurrent = story && story.id ? story : null;
+  storyTitle.value = story?.title || "";
+  storyLanguage.value = story?.language || storyLanguage.value;
+  storyCharacters.replaceChildren();
+  const characters = story?.characters?.length
+    ? story.characters
+    : [
+        { id: "c1", name: "", voice: storyVoices[0]?.id || "" },
+        { id: "c2", name: "", voice: storyVoices[1]?.id || storyVoices[0]?.id || "" },
+        { id: "c3", name: "", voice: storyVoices[2]?.id || storyVoices[0]?.id || "" },
+      ];
+  for (const character of characters) {
+    storyCharacters.append(storyCharacterRow(character));
+  }
+  storyChapters.replaceChildren();
+  const chapters = story?.chapters?.length
+    ? story.chapters
+    : [
+        {
+          id: "ch1",
+          title: "Chapter 1",
+          lines: [
+            { id: "l1", speaker: characters[0]?.id || "c1", text: "", pace: 1, state: "pending" },
+          ],
+        },
+      ];
+  for (const chapter of chapters) {
+    storyChapters.append(storyChapterCard(chapter));
+  }
+  refreshStorySpeakers();
+  updateStoryState(story);
+}
+
+function updateStoryState(story) {
+  storyState.replaceChildren();
+  if (!story) {
+    storyState.hidden = true;
+    storyQueue.hidden = true;
+    return;
+  }
+  storyState.hidden = false;
+  const rows = [
+    ["State", story.state || "draft"],
+    ["Lines rendered", String(story.rendered || 0)],
+    ["Lines reused", String(story.cached || 0)],
+    ["Lines failed", String(story.failed || 0)],
+  ];
+  for (const [label, value] of rows) {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const detail = document.createElement("dd");
+    detail.textContent = value;
+    storyState.append(term, detail);
+  }
+  storyQueue.hidden = !story.batch;
+  if (story.batch) {
+    storyQueue.textContent = "Batch " + story.batch.slice(-6) + " in the queue";
+  }
+  const lines = [];
+  for (const chapter of story.chapters || []) {
+    for (const line of chapter.lines || []) {
+      lines.push(line);
+    }
+  }
+  for (const line of lines) {
+    const row = storyChapters.querySelector('[data-line="' + CSS.escape(line.id) + '"]');
+    if (!row) {
+      continue;
+    }
+    const state = row.querySelector(".story-line-state");
+    state.textContent = line.state || "pending";
+    state.classList.toggle("failed", line.state === "failed");
+    const audio = row.querySelector(".story-line-audio");
+    audio.hidden = !line.out;
+    if (line.out) {
+      audio.href = "/stories/" + encodeURIComponent(story.id) + "/lines/" + encodeURIComponent(line.id);
+    }
+    if (line.error) {
+      state.title = line.error;
+    }
+  }
+}
+
+function collectStory() {
+  return {
+    title: storyTitle.value.trim(),
+    language: storyLanguage.value,
+    characters: Array.from(storyCharacters.querySelectorAll("[data-character]")).map((row) => ({
+      id: row.dataset.character,
+      name: row.querySelector(".story-name").value.trim(),
+      voice: row.querySelector(".story-voice").value,
+    })),
+    chapters: Array.from(storyChapters.querySelectorAll("[data-chapter]")).map((card) => ({
+      id: card.dataset.chapter,
+      title: card.querySelector(".story-chapter-title").value.trim(),
+      lines: Array.from(card.querySelectorAll("[data-line]")).map((row) => ({
+        id: row.dataset.line,
+        speaker: row.querySelector(".story-speaker").value,
+        text: row.querySelector(".story-text").value.trim(),
+        pace: Number(row.querySelector(".story-pace").value),
+      })),
+    })),
+  };
+}
+
+async function saveStory() {
+  const story = collectStory();
+  const path = storyCurrent ? "/stories/" + encodeURIComponent(storyCurrent.id) : "/stories";
+  const response = await fetch(path, {
+    method: storyCurrent ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify(story),
+  });
+  const saved = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(saved.error || "This story could not be saved.");
+  }
+  storyCurrent = saved;
+  fillStoryEditor(saved);
+  await loadStories();
+  return saved;
+}
+
+function renderStoryCards(stories) {
+  storyList.replaceChildren();
+  if (!stories.length) {
+    const empty = document.createElement("p");
+    empty.className = "batch-empty";
+    empty.textContent = "No story yet. Write one and give its characters voices.";
+    storyList.append(empty);
+    return;
+  }
+  for (const story of stories) {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "story-card" + (storyCurrent && storyCurrent.id === story.id ? " current" : "");
+    const title = document.createElement("strong");
+    title.textContent = story.title;
+    const meta = document.createElement("span");
+    meta.textContent =
+      (story.characters.length || 0) +
+      (story.characters.length === 1 ? " character" : " characters") +
+      " · " +
+      (story.chapters.length || 0) +
+      (story.chapters.length === 1 ? " chapter" : " chapters");
+    const state = document.createElement("span");
+    state.className = "story-card-state";
+    state.textContent = story.state || "draft";
+    card.append(title, meta, state);
+    card.addEventListener("click", () => loadStory(story.id));
+    storyList.append(card);
+  }
+}
+
+async function loadStories() {
+  try {
+    const response = await fetch("/stories", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "The stories could not be listed.");
+    }
+    renderStoryCards(Array.isArray(payload.stories) ? payload.stories : []);
+  } catch (failure) {
+    setStoryStatus(failure.message || "The stories could not be listed.");
+  }
+}
+
+async function loadStory(id) {
+  try {
+    const response = await fetch("/stories/" + encodeURIComponent(id), {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const story = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(story.error || "This story could not be opened.");
+    }
+    fillStoryEditor(story);
+    await loadStories();
+    if (story.state === "rendering") {
+      pollStory(story.id);
+    }
+  } catch (failure) {
+    setStoryStatus(failure.message || "This story could not be opened.");
+  }
+}
+
+function pollStory(id) {
+  clearTimeout(storyTimer);
+  storyTimer = setTimeout(async () => {
+    try {
+      const response = await fetch("/stories/" + encodeURIComponent(id), {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const story = await response.json().catch(() => ({}));
+      if (response.ok && storyCurrent && storyCurrent.id === story.id) {
+        storyCurrent = story;
+        updateStoryState(story);
+        if (story.state === "rendering") {
+          pollStory(id);
+        } else if (story.state === "done") {
+          setStoryStatus("The story is ready. Download it from the queue.");
+          await loadStories();
+        } else if (story.state === "failed") {
+          setStoryStatus(story.error || "The story stopped. Retry it from the queue.");
+          await loadStories();
+        }
+      }
+    } catch (failure) {
+      setStoryStatus(failure.message || "The story state could not be read.");
+    }
+  }, 1500);
+}
+
+async function renderStory() {
+  storyRender.disabled = true;
+  setStoryStatus("Saving the story before its render.");
+  try {
+    const saved = await saveStory();
+    const response = await fetch("/stories/" + encodeURIComponent(saved.id) + "/render", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const story = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(story.error || "This story could not start.");
+    }
+    storyCurrent = story;
+    updateStoryState(story);
+    setStoryStatus("Rendering in the queue. Finished lines are kept if you stop it.");
+    await loadBatches();
+    await loadStories();
+    pollStory(story.id);
+  } catch (failure) {
+    setStoryStatus(failure.message || "This story could not start.");
+  } finally {
+    storyRender.disabled = false;
+  }
+}
+
+async function loadStoryVoices() {
+  const fallback = [
+    { id: "pt_PT-tugão-medium", label: "Portuguese Portugal · tugão", installed: false },
+    { id: "pt_BR-cadu-medium", label: "Portuguese Brazil · cadu", installed: false },
+    { id: "pt_BR-faber-medium", label: "Portuguese Brazil · faber", installed: false },
+  ];
+  try {
+    const response = await fetch("/stories/voices", {
+      headers: { Authorization: "Bearer " + token },
+    });
+    const payload = await response.json().catch(() => ({}));
+    storyVoices = response.ok && Array.isArray(payload.voices) ? payload.voices : fallback;
+  } catch {
+    storyVoices = fallback;
+  }
+  fillStoryLanguages();
+  fillStoryEditor(null);
+  await loadStories();
+}
+
+storyAddCharacter.addEventListener("click", () => {
+  storyCharacters.append(
+    storyCharacterRow({ id: storyIdentifier("c"), name: "", voice: storyVoices[0]?.id || "" }),
+  );
+  refreshStorySpeakers();
+});
+storyAddChapter.addEventListener("click", () => {
+  storyChapters.append(
+    storyChapterCard({
+      id: storyIdentifier("ch"),
+      title: "Chapter " + (storyChapters.children.length + 1),
+      lines: [
+        {
+          id: storyIdentifier("l"),
+          speaker: storyCharacters.querySelector("[data-character]")?.dataset.character || "",
+          text: "",
+          pace: 1,
+          state: "pending",
+        },
+      ],
+    }),
+  );
+  refreshStorySpeakers();
+});
+storyNew.addEventListener("click", () => {
+  storyCurrent = null;
+  fillStoryEditor(null);
+  setStoryStatus("");
+  loadStories();
+});
+storySave.addEventListener("click", async () => {
+  setStoryStatus("Saving the story.");
+  try {
+    await saveStory();
+    setStoryStatus("Saved. Render it to hear each character.");
+  } catch (failure) {
+    setStoryStatus(failure.message || "This story could not be saved.");
+  }
+});
+storyRender.addEventListener("click", () => renderStory());
+loadStoryVoices();
 
 let watchTimer = null;
 let watchIngested = 0;
@@ -5419,7 +5916,7 @@ const ROUTES = {
     "status-list",
     "recent",
   ],
-  library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub", "batch"],
+  library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub", "batch", "stories"],
   meetings: ["meetings"],
   voice: ["voice"],
   insights: ["insights"],
@@ -5498,6 +5995,7 @@ const LIBRARY_TABS = {
   vocabulary: ["vocabulary"],
   files: ["dub"],
   batch: ["batch"],
+  stories: ["stories"],
 };
 
 let libraryTab = "history";

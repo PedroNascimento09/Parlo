@@ -6,6 +6,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - Batch can watch folders: a media file dropped in one is queued once, its file identity survives a rename, and the folder's interval and state stay visible in the app.
 - Library has a Batch tab: many files and several target languages share one persistent queue, run one render at a time, and finish with one JSON report.
+- Stories with a cast: each character owns a voice, each chapter keeps its lines, and a render writes one audio file with the voice of the speaker on every line. Changing one voice re-renders only that character's lines, and an interrupted render resumes from the lines already on disk.
 - A dubbing line can be set to Slower, Natural or Faster; the pace is saved with the project and reaches Piper as a length scale on the next render.
 - Correcting a subtitle line keeps the original text beside the current one in the editor, and the note survives a restart. Returning the line to its original clears the note.
 - A public video page can be dubbed from its link: yt-dlp downloads it locally, direct media links still skip yt-dlp, and private, age-gated or members-only videos are refused without reading cookies.

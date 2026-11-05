@@ -30,6 +30,8 @@ pub struct Line {
     pub failure: Option<String>,
     #[serde(default)]
     pub skipped: bool,
+    #[serde(default)]
+    pub cached: bool,
 }
 
 #[derive(Deserialize)]
@@ -71,6 +73,23 @@ pub struct Request<'a> {
     pub timing: &'a str,
     pub fastest: f64,
     pub slowest: f64,
+}
+
+pub struct LinesRequest {
+    pub input: PathBuf,
+    pub out: PathBuf,
+    pub srt: PathBuf,
+    pub report: PathBuf,
+    pub lines_dir: PathBuf,
+}
+
+#[derive(Deserialize)]
+pub struct LinesReport {
+    pub seconds: f64,
+    pub rendered: usize,
+    pub cached: usize,
+    pub failed: usize,
+    pub lines: Vec<Line>,
 }
 
 pub const TIMING_MODES: [&str; 5] = ["natural", "concise", "smart-fit", "stretch", "lip-sync"];
@@ -197,6 +216,67 @@ pub fn run(request: &Request) -> Result<Dub, String> {
         fs::remove_file(&report).ok();
     }
     serde_json::from_str(&text).map_err(|error| format!("invalid dub report: {error}"))
+}
+
+pub fn run_lines(request: &LinesRequest) -> Result<LinesReport, String> {
+    let here = env::current_dir().map_err(|error| error.to_string())?;
+    let absolute = |path: &Path| {
+        if path.is_absolute() {
+            path.to_path_buf()
+        } else {
+            here.join(path)
+        }
+    };
+    let engine_dir = env::var("PARLO_CASCADE_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from(DEFAULT_ENGINE_DIR))
+        .canonicalize()
+        .map_err(|error| format!("{DEFAULT_ENGINE_DIR}: {error}"))?;
+    let script = engine_dir.join("scripts").join("dub.py");
+    if !script.is_file() {
+        return Err(format!(
+            "cannot find {}; run dub from the source checkout",
+            script.display()
+        ));
+    }
+    let input = absolute(&request.input);
+    let out = absolute(&request.out);
+    let srt = absolute(&request.srt);
+    let report = absolute(&request.report);
+    let lines_dir = absolute(&request.lines_dir);
+    let python = crate::sidecar::python_for(&engine_dir);
+    let status = Command::new(&python)
+        .arg(&script)
+        .arg("--render-lines")
+        .arg(&input)
+        .arg("--out")
+        .arg(&out)
+        .arg("--srt")
+        .arg(&srt)
+        .arg("--lines-dir")
+        .arg(&lines_dir)
+        .arg("--json")
+        .arg(&report)
+        .current_dir(&engine_dir)
+        .env("PYTHONPATH", &engine_dir)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()
+        .map_err(|error| {
+            format!("cannot start {python}: {error}; install the cascade requirements first")
+        })?;
+    if !status.success() {
+        return Err(format!(
+            "the story stopped with {}; the reason is printed above",
+            status
+                .code()
+                .map(|code| format!("status {code}"))
+                .unwrap_or_else(|| "a signal".to_string())
+        ));
+    }
+    let text = fs::read_to_string(&report)
+        .map_err(|error| format!("cannot read the story report {}: {error}", report.display()))?;
+    serde_json::from_str(&text).map_err(|error| format!("invalid story report: {error}"))
 }
 
 fn stamp() -> u128 {

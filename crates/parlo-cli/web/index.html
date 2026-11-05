@@ -593,6 +593,7 @@
     <button type="button" class="tab" data-tab="vocabulary">Words &amp; snippets</button>
     <button type="button" class="tab" data-tab="files">Files</button>
     <button type="button" class="tab" data-tab="batch">Batch</button>
+    <button type="button" class="tab" data-tab="stories">Stories</button>
   </nav>
 
   <section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
@@ -963,6 +964,52 @@
     </div>
     <p class="progress batch-status" id="batch-status" aria-live="polite" hidden></p>
     <div class="batch-list" id="batch-list"></div>
+  </section>
+  <section class="batch" id="stories" aria-labelledby="stories-title">
+    <div class="batch-head">
+      <h2 id="stories-title">Stories with a cast</h2>
+      <p class="batch-note">Give every character a voice, write the chapters, and render one audio file in which each line keeps its speaker's voice. Changing a voice only re-renders that character's lines.</p>
+    </div>
+    <div class="stories-layout">
+      <aside class="story-list" aria-label="Saved stories">
+        <div class="story-list-head">
+          <h3>Your stories</h3>
+          <button id="story-new" class="swap" type="button">New story</button>
+        </div>
+        <div id="story-list"></div>
+      </aside>
+      <div class="story-editor">
+        <label class="field" for="story-title">
+          <span class="field-label">Title</span>
+          <input id="story-title" class="field-input" type="text" maxlength="80" placeholder="The lighthouse keeper">
+        </label>
+        <label class="field" for="story-language">
+          <span class="field-label">Language</span>
+          <select id="story-language" class="field-input"></select>
+        </label>
+        <div class="story-section">
+          <div class="story-section-head">
+            <h3>Characters</h3>
+            <button id="story-add-character" class="swap" type="button">Add character</button>
+          </div>
+          <div id="story-characters" class="story-characters"></div>
+        </div>
+        <div class="story-section">
+          <div class="story-section-head">
+            <h3>Chapters</h3>
+            <button id="story-add-chapter" class="swap" type="button">Add chapter</button>
+          </div>
+          <div id="story-chapters" class="story-chapters"></div>
+        </div>
+        <div class="story-actions">
+          <button id="story-save" class="install" type="button">Save story</button>
+          <button id="story-render" class="swap" type="button">Render story</button>
+          <a id="story-queue" class="batch-report" href="#batch" hidden>Open the queue</a>
+        </div>
+        <p class="progress batch-status" id="story-status" aria-live="polite" hidden></p>
+        <dl class="story-state" id="story-state" hidden></dl>
+      </div>
+    </div>
   </section>
 </main>
 
