@@ -10,8 +10,8 @@ use super::auth::authorised;
 use super::http::{error_json, header, origin_allowed, respond_json};
 use super::{Flow, Session};
 
-const PROTOCOL: &str = "parlo.speech.v1";
-const MAX_MESSAGE: usize = 4 * 1024 * 1024;
+pub(crate) const PROTOCOL: &str = "parlo.speech.v1";
+pub(crate) const MAX_MESSAGE: usize = 4 * 1024 * 1024;
 const SOCKET_TIMEOUT: Duration = Duration::from_secs(3_600);
 
 static SESSIONS: AtomicU64 = AtomicU64::new(0);

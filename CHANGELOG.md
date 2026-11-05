@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The local API streams partial, stable and final transcript events over `/v1/audio/transcriptions/stream`, and `/.well-known/parlo` now lists the engines and request limits.
 - The OpenAI-compatible `/v1/audio/transcriptions` endpoint accepts SDK-style multipart audio with a model, sends the decoded PCM through the dictation pipeline, and returns the transcript; an unsupported model is refused with a 400.
 - Batch can watch folders: a media file dropped in one is queued once, its file identity survives a rename, and the folder's interval and state stay visible in the app.
 - Library has a Batch tab: many files and several target languages share one persistent queue, run one render at a time, and finish with one JSON report.

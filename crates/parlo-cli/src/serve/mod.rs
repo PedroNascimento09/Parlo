@@ -4972,7 +4972,7 @@ mod tests {
     use super::*;
 
     use parlo_core::audio::Frame;
-    use parlo_core::engine::{Engine, EngineOutput};
+    use parlo_core::engine::{Engine, EngineOutput, StreamPiece};
 
     struct RecordingEngine {
         heard: Arc<Mutex<Vec<u8>>>,
@@ -5001,6 +5001,53 @@ mod tests {
                 .unwrap_or_else(|error| error.into_inner())
                 .extend_from_slice(pcm16);
             Ok("ola mundo".to_string())
+        }
+    }
+
+    #[derive(Default)]
+    struct StreamingEngine {
+        calls: usize,
+    }
+
+    impl Engine for StreamingEngine {
+        fn id(&self) -> &str {
+            "streaming"
+        }
+
+        fn target_languages(&self) -> Vec<String> {
+            Vec::new()
+        }
+
+        fn latency_ms(&self) -> u32 {
+            1
+        }
+
+        fn process(&mut self, _input: &Frame) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::empty())
+        }
+
+        fn stream(&mut self, samples: &[f32]) -> Result<Vec<StreamPiece>, EngineError> {
+            self.calls += 1;
+            let (state, text) = if self.calls == 1 {
+                ("partial", "bom")
+            } else {
+                ("stable", "bom dia")
+            };
+            Ok(vec![StreamPiece {
+                state: state.to_string(),
+                text: text.to_string(),
+                audio_ms: samples.len() as u64 * 1000 / 16_000,
+                latency_ms: 1,
+            }])
+        }
+
+        fn close_stream(&mut self) -> Result<Vec<StreamPiece>, EngineError> {
+            Ok(vec![StreamPiece {
+                state: "final".to_string(),
+                text: "bom dia.".to_string(),
+                audio_ms: 200,
+                latency_ms: 1,
+            }])
         }
     }
 
@@ -5633,6 +5680,157 @@ mod tests {
     fn body_json(answer: &str) -> serde_json::Value {
         let body = answer.split("\r\n\r\n").nth(1).unwrap_or("");
         serde_json::from_str(body).unwrap()
+    }
+
+    fn websocket_client(port: u16) -> TcpStream {
+        let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        let key = BASE64.encode([0u8; 16]);
+        let request = format!(
+            "GET /v1/audio/transcriptions/stream?t=t0ken HTTP/1.1\r\nHost: 127.0.0.1\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\nOrigin: http://127.0.0.1:{port}\r\n\r\n"
+        );
+        stream.write_all(request.as_bytes()).unwrap();
+        let mut response = Vec::new();
+        let mut byte = [0u8; 1];
+        while !response.ends_with(b"\r\n\r\n") {
+            stream.read_exact(&mut byte).unwrap();
+            response.push(byte[0]);
+        }
+        assert!(
+            response.starts_with(b"HTTP/1.1 101"),
+            "{}",
+            String::from_utf8_lossy(&response)
+        );
+        stream
+    }
+
+    fn send_websocket_frame(stream: &mut TcpStream, opcode: u8, payload: &[u8]) {
+        let mut frame = vec![0x80 | opcode];
+        let length = payload.len();
+        if length < 126 {
+            frame.push(0x80 | length as u8);
+        } else if length <= u16::MAX as usize {
+            frame.push(0x80 | 126);
+            frame.extend_from_slice(&(length as u16).to_be_bytes());
+        } else {
+            frame.push(0x80 | 127);
+            frame.extend_from_slice(&(length as u64).to_be_bytes());
+        }
+        let mask = [0x12, 0x34, 0x56, 0x78];
+        frame.extend_from_slice(&mask);
+        frame.extend(
+            payload
+                .iter()
+                .enumerate()
+                .map(|(index, byte)| byte ^ mask[index % 4]),
+        );
+        stream.write_all(&frame).unwrap();
+    }
+
+    fn read_exact_bytes(stream: &mut TcpStream, length: usize) -> Vec<u8> {
+        let mut bytes = vec![0u8; length];
+        stream.read_exact(&mut bytes).unwrap();
+        bytes
+    }
+
+    fn read_websocket_frame(stream: &mut TcpStream) -> (u8, Vec<u8>) {
+        let head = read_exact_bytes(stream, 2);
+        let opcode = head[0] & 0x0f;
+        let masked = head[1] & 0x80 != 0;
+        let mut length = (head[1] & 0x7f) as usize;
+        if length == 126 {
+            let bytes = read_exact_bytes(stream, 2);
+            length = u16::from_be_bytes([bytes[0], bytes[1]]) as usize;
+        } else if length == 127 {
+            let bytes = read_exact_bytes(stream, 8);
+            length = u64::from_be_bytes([
+                bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            ]) as usize;
+        }
+        let mask = masked.then(|| read_exact_bytes(stream, 4));
+        let mut payload = read_exact_bytes(stream, length);
+        if let Some(mask) = mask {
+            for (index, byte) in payload.iter_mut().enumerate() {
+                *byte ^= mask[index % 4];
+            }
+        }
+        (opcode, payload)
+    }
+
+    fn read_websocket_json(stream: &mut TcpStream) -> serde_json::Value {
+        let (opcode, payload) = read_websocket_frame(stream);
+        assert_eq!(opcode, 1);
+        serde_json::from_slice(&payload).unwrap()
+    }
+
+    #[test]
+    fn a_websocket_stream_emits_partial_stable_and_final() {
+        let session = Session::with_engine(Box::<StreamingEngine>::default(), "pt", "en");
+        let (port, stop) = start_server_with(session);
+        let mut socket = websocket_client(port);
+        let pcm: Vec<u8> = (0..1600i16)
+            .flat_map(|sample| sample.to_le_bytes())
+            .collect();
+
+        send_websocket_frame(&mut socket, 0x2, &pcm);
+        send_websocket_frame(&mut socket, 0x2, &pcm);
+        send_websocket_frame(&mut socket, 0x1, br#"{"type":"input_audio.end"}"#);
+
+        let started = read_websocket_json(&mut socket);
+        assert_eq!(started["type"], "session.started");
+        assert_eq!(started["protocol"], "parlo.speech.v1");
+        let session_id = started["session_id"].clone();
+
+        let partial = read_websocket_json(&mut socket);
+        assert_eq!(partial["type"], "partial");
+        assert_eq!(partial["text"], "bom");
+        assert_eq!(partial["session_id"], session_id);
+
+        let stable = read_websocket_json(&mut socket);
+        assert_eq!(stable["type"], "stable");
+        assert_eq!(stable["text"], "bom dia");
+        assert_eq!(stable["session_id"], session_id);
+
+        let final_piece = read_websocket_json(&mut socket);
+        assert_eq!(final_piece["type"], "final");
+        assert_eq!(final_piece["text"], "bom dia.");
+        assert_eq!(final_piece["session_id"], session_id);
+
+        let ended = read_websocket_json(&mut socket);
+        assert_eq!(ended["type"], "input_audio.end");
+        assert_eq!(ended["session_id"], session_id);
+
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
+    }
+
+    #[test]
+    fn the_capabilities_document_lists_engines_and_limits() {
+        let (port, stop) = start_server();
+        let answer = ask(
+            port,
+            "GET /.well-known/parlo HTTP/1.1\r\nHost: localhost\r\n\r\n",
+        );
+        assert!(answer.starts_with("HTTP/1.1 200 OK"), "{answer}");
+        let document = body_json(&answer);
+        assert_eq!(document["protocol"], "parlo.speech.v1");
+        let engines = document["engines"].as_array().unwrap();
+        assert!(engines.iter().any(|engine| {
+            engine["id"] == "cascade" && engine["available"] == true && engine["default"] == true
+        }));
+        assert!(engines
+            .iter()
+            .any(|engine| engine["id"] == "hibiki" && engine["available"] == false));
+        assert_eq!(document["limits"]["max_audio_bytes"], MAX_AUDIO_BODY as u64);
+        assert_eq!(
+            document["limits"]["max_websocket_message_bytes"],
+            super::ws::MAX_MESSAGE as u64
+        );
+
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
     }
 
     fn multipart(boundary: &str, model: &str, audio: &[u8]) -> Vec<u8> {
