@@ -105,7 +105,7 @@ cargo build --release -p parlo-cli -p parlo-app
 target/release/parlo-app
 ```
 
-The installer is 43.3 MB. On first start the model list offers the recogniser alone, about 640 MB, and nothing else downloads until you press its button. Translation, read aloud and captions are separate switches, and each names the model and its size before anything moves. After that the machine can stay offline. `parlo install` and `parlo uninstall` do the same from a terminal, and uninstalling keeps your models unless you add `--purge`.
+The installer is 40.2 MB. On first start the model list offers the recogniser alone, about 640 MB, and nothing else downloads until you press its button. Translation, read aloud and captions are separate switches, and each names the model and its size before anything moves. After that the machine can stay offline. `parlo install` and `parlo uninstall` do the same from a terminal, and uninstalling keeps your models unless you add `--purge`.
 
 ## From the terminal
 

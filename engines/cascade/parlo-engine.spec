@@ -55,9 +55,14 @@ dropped = (
 )
 
 
+unused = ("silero_vad_v6.onnx", "sherpa-onnx-cxx-api.dll")
+
+
 def kept(entry: str) -> bool:
     path = Path(entry)
-    if path.name.startswith("cudnn"):
+    if path.name.startswith("cudnn") or path.name in unused:
+        return False
+    if path.suffix in (".py", ".pyi", ".lib"):
         return False
     if path.parent.name in ("converters", "specs", "models"):
         return False
@@ -105,6 +110,7 @@ analysis = Analysis(
         "sqlite3",
     ],
     noarchive=False,
+    optimize=2,
 )
 
 for collected in (analysis.binaries, analysis.datas):
