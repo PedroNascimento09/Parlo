@@ -5996,7 +5996,7 @@ mod tests {
                 .as_array()
                 .unwrap()
                 .len(),
-            12
+            14
         );
 
         stop.store(false, Ordering::Relaxed);

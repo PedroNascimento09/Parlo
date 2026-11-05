@@ -7,6 +7,13 @@ const PROTOCOL: &str = "2024-11-05";
 pub fn handle(request: &Value) -> Option<Value> {
     let id = request.get("id")?.clone();
     let method = request.get("method").and_then(Value::as_str).unwrap_or("");
+    if method == "initialize" {
+        let client = request
+            .pointer("/params/clientInfo/name")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let _ = crate::agents::remember(client);
+    }
     let result = match method {
         "initialize" => Ok(json!({
             "protocolVersion": PROTOCOL,
@@ -160,6 +167,23 @@ fn tools() -> Value {
             },
         },
         {
+            "name": "bind_voice",
+            "description": "Bind this client to one of the voices on this computer, so every later call from the same client resolves to it.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "voice": { "type": "string", "description": "A voice id from list_models, such as voice-pt or voice-en." },
+                },
+                "required": ["voice"],
+                "additionalProperties": false,
+            },
+        },
+        {
+            "name": "agent_voice",
+            "description": "The voice bound to the client that is connected, and whether it has one.",
+            "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false },
+        },
+        {
             "name": "meeting_decisions",
             "description": "The decisions found in one meeting, with the speaker, the time and the decision each one replaces.",
             "inputSchema": {
@@ -213,6 +237,26 @@ fn call(params: &Value) -> Value {
         "meeting_decisions" => match render_meeting(&arguments, name, decisions_json) {
             Ok(text) => text,
             Err(error) => return failure(&error),
+        },
+        "bind_voice" => match arguments.get("voice").and_then(Value::as_str) {
+            Some(voice) => match crate::agents::current() {
+                Some(client) => match crate::agents::bind(&client, voice) {
+                    Ok(_) => json!({ "client": client, "voice": voice.trim(), "bound": true })
+                        .to_string(),
+                    Err(error) => return failure(&error),
+                },
+                None => return failure("this client did not say its name when it connected"),
+            },
+            None => return failure("bind_voice needs a voice id"),
+        },
+        "agent_voice" => match crate::agents::current() {
+            Some(client) => match crate::agents::voice_for(&client) {
+                Some(voice) => {
+                    json!({ "client": client, "voice": voice, "bound": true }).to_string()
+                }
+                None => json!({ "client": client, "voice": "", "bound": false }).to_string(),
+            },
+            None => json!({ "client": "", "voice": "", "bound": false }).to_string(),
         },
         other => return failure(&format!("this server has no tool called {other}")),
     };
@@ -468,7 +512,7 @@ mod tests {
             .iter()
             .filter_map(|tool| tool["name"].as_str())
             .collect();
-        assert_eq!(tools.len(), 12);
+        assert_eq!(tools.len(), 14);
         for name in [
             "list_meetings",
             "ask_meetings",
@@ -482,6 +526,8 @@ mod tests {
             "meeting_transcript",
             "meeting_actions",
             "meeting_decisions",
+            "bind_voice",
+            "agent_voice",
         ] {
             assert!(names.contains(&name), "{name} is missing");
         }
@@ -535,6 +581,26 @@ mod tests {
     }
 
     #[test]
+    fn the_client_that_says_its_name_resolves_to_its_voice() {
+        let initialized = handle(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": { "clientInfo": { "name": "claude-code" } },
+        }))
+        .expect("a reply");
+        assert_eq!(initialized["result"]["serverInfo"]["name"], "parlo");
+        let answer = call_tool("agent_voice", json!({}));
+        assert_eq!(answer["result"]["isError"], false);
+        let detail: Value = serde_json::from_str(&text_of(&answer)).expect("json");
+        assert_eq!(detail["client"], "claude-code");
+        assert_eq!(detail["bound"], false);
+        let refused = call_tool("bind_voice", json!({ "voice": "parakeet" }));
+        assert_eq!(refused["result"]["isError"], true);
+        assert!(text_of(&refused).contains("not a voice"));
+    }
+
+    #[test]
     fn an_unknown_tool_says_so() {
         let reply = call_tool("delete_everything", json!({}));
         assert_eq!(reply["result"]["isError"], true);
@@ -576,6 +642,6 @@ mod tests {
         let initialized: Value = serde_json::from_str(lines[0]).unwrap();
         assert_eq!(initialized["result"]["serverInfo"]["name"], "parlo");
         let listed: Value = serde_json::from_str(lines[1]).unwrap();
-        assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 12);
+        assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 14);
     }
 }
