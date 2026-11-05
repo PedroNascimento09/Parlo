@@ -148,7 +148,7 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| Q1 | Automated tests | Large suite | Partial: 368 Rust, 87 core and the full Python suite; not every route has a test | 600+, route and flow tests | 6 | Every route has a test |
+| Q1 | Automated tests | Large suite | Done · 8d0a20b: 380 Rust, 87 core and the full Python suite, 804 tests in all; `ROUTES` names all 90 route rows, the sweep refuses every one without the token, the behaviour tests answer the pages, meetings, vocabulary, voice, models, history, dub, insert and settings routes, and `the_route_table_covers_every_route_the_router_serves` fails when a route arrives without a row | 600+, route and flow tests | 6 | Every route has a test |
 | Q2 | Published benchmarks | Yes | Yes, one machine | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Yes | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-48 of 80 rows are Done (60.0%). Eight Partial rows counted at half give 65.0%.
+49 of 80 rows are Done (61.3%). Seven Partial rows counted at half give 65.6%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are Q1, one test per route and the 600 test target, then V1 and V2, which still need the engine.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are Q2, one benchmark row per engine and device, then T9, a corrected line that keeps its original beside it.
