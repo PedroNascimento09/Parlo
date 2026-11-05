@@ -8,6 +8,11 @@ use crate::story::Story;
 pub struct Inspection {
     pub chapters: usize,
     pub titles: Vec<String>,
+    pub cover_codec: Option<String>,
+    pub cover_attached: bool,
+    pub attached_covers: usize,
+    pub normal_video: bool,
+    pub covr: bool,
     pub media_type: Option<String>,
     pub brand: Option<String>,
     pub chpl: bool,
@@ -21,6 +26,33 @@ fn escape(value: &str) -> String {
         .replace(';', "\\;")
         .replace('#', "\\#")
         .replace('\n', " ")
+}
+
+fn write_cover(path: &Path) -> Result<(), String> {
+    let status = Command::new("ffmpeg")
+        .args([
+            "-nostdin",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=0x1f3a32:s=600x600",
+            "-frames:v",
+            "1",
+            "-c:v",
+            "png",
+            "-f",
+            "image2",
+            &path.to_string_lossy(),
+        ])
+        .status()
+        .map_err(|error| format!("cannot start ffmpeg for the cover: {error}"))?;
+    if !status.success() {
+        return Err(format!("ffmpeg could not write the cover: {status}"));
+    }
+    Ok(())
 }
 
 pub fn chapter_metadata(story: &Story) -> Result<String, String> {
@@ -65,6 +97,8 @@ pub fn package(story: &Story, source: &Path, metadata: &Path, target: &Path) -> 
     let chapters = chapter_metadata(story)?;
     fs::write(metadata, chapters)
         .map_err(|error| format!("cannot write {}: {error}", metadata.display()))?;
+    let cover = metadata.with_file_name("story-cover.png");
+    write_cover(&cover)?;
     let title = format!("title={}", story.title);
     let status = Command::new("ffmpeg")
         .args([
@@ -76,8 +110,16 @@ pub fn package(story: &Story, source: &Path, metadata: &Path, target: &Path) -> 
             &source.to_string_lossy(),
             "-i",
             &metadata.to_string_lossy(),
+            "-i",
+            &cover.to_string_lossy(),
             "-map",
             "0:a:0",
+            "-map",
+            "2:v:0",
+            "-c:v",
+            "png",
+            "-disposition:v:0",
+            "attached_pic",
             "-map_metadata",
             "1",
             "-map_chapters",
@@ -104,6 +146,7 @@ pub fn package(story: &Story, source: &Path, metadata: &Path, target: &Path) -> 
         ])
         .status()
         .map_err(|error| format!("cannot start ffmpeg: {error}"))?;
+    fs::remove_file(&cover).ok();
     if !status.success() {
         return Err(format!("ffmpeg could not write the audiobook: {status}"));
     }
@@ -117,6 +160,7 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
             "-v",
             "error",
             "-show_chapters",
+            "-show_streams",
             "-show_format",
             "-of",
             "json",
@@ -145,6 +189,30 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
                 .collect()
         })
         .unwrap_or_default();
+    let streams = value.get("streams").and_then(serde_json::Value::as_array);
+    let attached = |stream: &&serde_json::Value| {
+        stream
+            .get("disposition")
+            .and_then(|disposition| disposition.get("attached_pic"))
+            .and_then(serde_json::Value::as_u64)
+            == Some(1)
+    };
+    let attached_covers = streams
+        .map(|streams| streams.iter().filter(attached).count())
+        .unwrap_or_default();
+    let normal_video = streams
+        .map(|streams| {
+            streams.iter().any(|stream| {
+                stream.get("codec_type").and_then(serde_json::Value::as_str) == Some("video")
+                    && !attached(&stream)
+            })
+        })
+        .unwrap_or_default();
+    let cover = streams.and_then(|streams| streams.iter().find(attached));
+    let cover_codec = cover
+        .and_then(|stream| stream.get("codec_name"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_string);
     let tags = value
         .get("format")
         .and_then(|format| format.get("tags"))
@@ -160,6 +228,11 @@ pub fn inspect(path: &Path) -> Result<Inspection, String> {
     Ok(Inspection {
         chapters,
         titles,
+        cover_codec,
+        cover_attached: cover.is_some(),
+        attached_covers,
+        normal_video,
+        covr: bytes.windows(4).any(|window| window == b"covr"),
         media_type: tag("media_type").or_else(|| tag("stik")),
         brand: tag("major_brand").or_else(|| tag("brand")),
         chpl: has(b"chpl"),
@@ -274,6 +347,11 @@ mod tests {
         let result = inspect(&target).unwrap();
         assert_eq!(result.chapters, 2);
         assert_eq!(result.titles, vec!["One", "Two"]);
+        assert_eq!(result.cover_codec.as_deref(), Some("png"));
+        assert!(result.cover_attached);
+        assert_eq!(result.attached_covers, 1);
+        assert!(!result.normal_video);
+        assert!(result.covr);
         assert_eq!(result.media_type.as_deref(), Some("2"));
         assert_eq!(result.brand.as_deref(), Some("M4B "));
         assert!(result.chpl);
