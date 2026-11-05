@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Two voices read the same sentence back to back: the voice page takes the sentence and the two voices, `/voice/compare` returns one WAV with the readings in the order chosen and their labels, languages and times, and an unknown or revoked voice is refused before any audio.
 - An MCP client that says its name when it connects can bind one of the voices on this computer: the binding is kept in `agents.json`, and `bind_voice` and `agent_voice` resolve it for every later call from that client.
 - Settings has a processor switch, the computer decides or the processor only. `/engine` names the device and the reason, and forcing the processor lowers the profile honestly instead of claiming a graphics card.
 - A voice moves between machines as one file: the export imports on another machine with its consent record, and a revoked, foreign or sample-less file is refused.
