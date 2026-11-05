@@ -144,6 +144,13 @@ mod tests {
     }
 
     #[test]
+    fn portuguese_scratch_drops_the_phrase_too() {
+        assert_eq!(apply("fica isto. risca isso"), "fica isto.");
+        assert_eq!(apply("fica isto. apaga isso"), "fica isto.");
+        assert_eq!(apply("nada disto risca isso"), "");
+    }
+
+    #[test]
     fn an_ordinary_word_is_left_alone() {
         assert_eq!(apply("the point of it"), "the point of it");
         assert_eq!(apply("commas are useful"), "commas are useful");
