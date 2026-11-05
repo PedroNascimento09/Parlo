@@ -418,6 +418,25 @@ The live path is unchanged: the same clip posted to `/translate` still returns 2
 
 The stage split of that run is 6.24 s of recognition, 6.91 s of voice and 1.49 s of translation on a warm machine, both model loads included. The one cost that was ours to remove is the sample conversion: reading the clip's 388,803 samples from pcm16 was 185.1 ms in a Python loop and is now 0.94–1.04 ms through numpy, which also shortens every live segment by about 19 ms.
 
+### The recogniser floor, 5 November 2026
+
+The parakeet weights are `encoder.int8.onnx` at 622.0 MB, `decoder.int8.onnx` at 11.3 MB and `joiner.int8.onnx` at 6.1 MB, 639.4 MB together. Every lever below was measured on the same 24.30 s clip, in a fresh process, with the recogniser loaded on its own.
+
+| Lever | Loaded | Peak RSS | Recognise |
+| --- | --- | --- | --- |
+| baseline, two threads | 720 MB | 762 MB | 7.08 s |
+| intra-op threads 1 | 720 MB | 763 MB | 8.79 s |
+| intra-op threads 2 | 720 MB | 763 MB | 6.98 s |
+| intra-op threads 4 | 721 MB | 765 MB | 6.25 s |
+| encoder session, ORT arena on | 709 MB | — | load 5.80 s |
+| encoder session, ORT arena off | 710 MB | — | load 6.19 s |
+
+A second decode pass over the same segments leaves the process at 763 MB, so nothing accumulates between segments. Reusing one sherpa stream for every segment is not an option: it keeps the accepted audio, so the text changes and the run takes 15.75 s instead of 3.16 s.
+
+`OfflineRecognizer.from_transducer` exposes `num_threads`, `provider` and `debug`, and no arena or memory-pattern switch; the two arena rows come from `onnxruntime` directly on the encoder and show what the switch is worth, which is one megabyte.
+
+The floor is the 709 MB of the encoder session, which is its weights plus the runtime around them; the 762 MB peak adds the decoder, the joiner and one segment's buffers. Twenty percent below 762 MB is 610 MB, less than the weights alone, so that bar is out of reach without a smaller recogniser, and a smaller recogniser changes the transcript. Both passes on the clip return the same ten lines, the last one `The one for Gafatil Libra works well.`
+
 The translations below are the engine's own on the 24.3 s clip, chunked the way the command chunks it. This clip is synthetic and the recogniser mishears words on it, which the translations carry:
 
 ```
