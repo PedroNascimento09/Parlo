@@ -430,10 +430,13 @@ The parakeet weights are `encoder.int8.onnx` at 622.0 MB, `decoder.int8.onnx` at
 | intra-op threads 4 | 721 MB | 765 MB | 6.25 s |
 | encoder session, ORT arena on | 709 MB | — | load 5.80 s |
 | encoder session, ORT arena off | 710 MB | — | load 6.19 s |
+| encoder re-quantized with `quantize_dynamic` | 732 MB | 765 MB | 5.77 s |
 
 A second decode pass over the same segments leaves the process at 763 MB, so nothing accumulates between segments. Reusing one sherpa stream for every segment is not an option: it keeps the accepted audio, so the text changes and the run takes 15.75 s instead of 3.16 s.
 
 `OfflineRecognizer.from_transducer` exposes `num_threads`, `provider` and `debug`, and no arena or memory-pattern switch; the two arena rows come from `onnxruntime` directly on the encoder and show what the switch is worth, which is one megabyte.
+
+The re-quantization was run rather than assumed. `onnxruntime.quantization.quantize_dynamic` over `encoder.int8.onnx` finished in 9.3 s and wrote 622.1 MB against the 622.0 MB source, because that source already stores 588 of its tensors as uint8 and 612 as float32; the tool warned it could not touch the int4 tensors it found and left the rest alone. Loaded by sherpa in a fresh process it takes 732 MB, peaks at 765 MB and recognises the clip in 5.77 s, against 731 MB, 764 MB and 5.94 s for the shipped file, and the ten lines it returns are identical line by line to the stored baseline. A variant that changes neither the bytes nor the text is not worth a second file on disk, so the shipped encoder stays the default; the recipe is the one line above if a future model needs it.
 
 The floor is the 709 MB of the encoder session, which is its weights plus the runtime around them; the 762 MB peak adds the decoder, the joiner and one segment's buffers. Twenty percent below 762 MB is 610 MB, less than the weights alone, so that bar is out of reach without a smaller recogniser, and a smaller recogniser changes the transcript. Both passes on the clip return the same ten lines, the last one `The one for Gafatil Libra works well.`
 
