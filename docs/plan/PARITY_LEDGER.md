@@ -75,7 +75,7 @@ Rules:
 | V4 | TTS engine breadth | 17 | 1 (Piper) | 20 | 2 | Every engine has a licence row and a measured speed |
 | V5 | Device selection | CUDA, ROCm, MPS, Vulkan | CPU only | Parity, per engine | 2 | A GPU row exists only where measured |
 | V6 | Expressive controls | Emotion, direction, cues | Partial: per-cue pace reaches Piper and is saved; no emotion or pitch | Parity | 3 | A cue changes the render and is saved |
-| V7 | Previews and A/B | Yes | No | Parity | 2 | Two voices play the same sentence back to back |
+| V7 | Previews and A/B | Yes | Done · 20c8632: one request reads the same sentence with the two chosen voices in order, the payload carries each label, language and time, and an unknown or revoked voice is refused before any audio | Parity | 2 | Two voices play the same sentence back to back |
 | V8 | Voice gallery | Online community | None | Local packs, import/export, opt-in LAN | 2 | A pack imports; nothing uploads |
 | V9 | Persona import/export | Yes | Done · 53ff2e7: the exported header and sample import on another machine with the consent record, and a revoked, foreign or sample-less file is refused | Parity | 2 | A voice moves between machines as one file |
 | V10 | Per-agent voices | Yes | Done · a43f158: the MCP handshake remembers the client name, `bind_voice` keeps its voice in `agents.json`, and `agent_voice` resolves it on every later call | Parity | 1 | An MCP client id resolves to its bound voice |
@@ -148,7 +148,7 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| Q1 | Automated tests | Large suite | Partial: 354 Rust, 87 core and the full Python suite; not every route has a test | 600+, route and flow tests | 6 | Every route has a test |
+| Q1 | Automated tests | Large suite | Partial: 361 Rust, 87 core and the full Python suite; not every route has a test | 600+, route and flow tests | 6 | Every route has a test |
 | Q2 | Published benchmarks | Yes | Yes, one machine | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Yes | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-45 of 80 rows are Done (56.3%). Eight Partial rows counted at half give 61.3%.
+46 of 80 rows are Done (57.5%). Eight Partial rows counted at half give 62.5%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are V7, two voices playing the same sentence back to back, then V8, a voice pack imported and kept locally, then P9, one example per endpoint.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are V8, a voice pack imported and kept locally, then P9, one example per endpoint, then Q1, one test per route.
