@@ -62,7 +62,7 @@ Rules:
 | M2 | Live transcription | Yes | No | Parity | 1 | Lines appear while the meeting runs |
 | M3 | Decisions and action items | LLM summary | Rule-based, cited | Keep as an edge | 0 | Each item links to speaker and minute |
 | M4 | Ask with citations | Not documented | Yes | Keep as an edge | 0 | An answer with no match says so |
-| M5 | Local summary model | Yes | Provider only | Local model, rule fallback | 4 | The screen says which produced the summary |
+| M5 | Local summary model | Yes | Done · c0e8ce5: the meeting summary asks the local model, falls back to the local rules when it cannot answer, and the screen names which one wrote it with the reason for the fallback | Local model, rule fallback | 4 | The screen says which produced the summary |
 | M6 | Two-hour reliability | Claimed | Unproven | 2 hours, no crash, flat memory | 6 | A two-hour run with a memory chart |
 
 ## Voice
@@ -117,7 +117,7 @@ Rules:
 | P5 | MCP HTTP and stdio | 8 tools | Done · 2f10f47: 12 tools over `/mcp` and stdio | 12 tools, both transports | 1 | One agent uses each transport |
 | P6 | LAN sharing with a PIN | Yes | No | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
 | P7 | Remote backend | Yes | No | Parity, HTTPS only | 5 | A laptop drives a desktop GPU |
-| P8 | Keys and tickets | API key, WS ticket | Token per start | Parity | 5 | A short-lived ticket cannot be replayed |
+| P8 | Keys and tickets | API key, WS ticket | Done · daa2b0b: `POST /ticket` issues a single-use ticket that opens one WebSocket and is refused on replay, and the token still works alone | Parity | 5 | A short-lived ticket cannot be replayed |
 | P9 | SDK and examples | Python client | No | Parity | 5 | One example per endpoint runs |
 
 ## Models
@@ -129,7 +129,7 @@ Rules:
 | X3 | GPU auto-detect | Yes | No | Parity | 2 | The chosen device is shown and overridable |
 | X4 | Download resume and repair | Yes | Partial | Parity | 1 | A killed download resumes at the byte |
 | X5 | Model packs | Yes | No | Parity | 5 | A pack installs a working set in one action |
-| X6 | Licence inventory in the UI | Yes | Partial | Parity | 1 | Each model shows its licence before download |
+| X6 | Licence inventory in the UI | Yes | Done · 7f1d035: every model card carries the licence from the registry in `/models` and in the app, before the download | Parity | 1 | Each model shows its licence before download |
 
 ## Packaging and reach
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-34 of 80 rows are Done (42.5%). Eleven Partial rows counted at half give 49.4%.
+37 of 80 rows are Done (46.3%). Ten Partial rows counted at half give 52.5%.
 
 ## Next
 
-D10 Pronunciation dictionary: write a name as it should be spoken, then close the ledger row.
+D10 Pronunciation dictionary stays parked while `engines/cascade/engine.py` and `tts.py` are edited elsewhere. The next unblocked row is T8, speaker count hints, then T4, word timestamps in an SRT.
