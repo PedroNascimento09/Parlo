@@ -23,6 +23,9 @@ const MAX_CHARACTERS: usize = 12;
 const MAX_CHAPTERS: usize = 50;
 const MAX_LINES: usize = 500;
 const MAX_TEXT: usize = 1_000;
+const MAX_AUTHOR: usize = 80;
+const MAX_SERIES: usize = 80;
+const MAX_COMMENT: usize = 500;
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
 
@@ -68,6 +71,14 @@ pub struct Chapter {
 pub struct Story {
     pub id: String,
     pub title: String,
+    #[serde(default)]
+    pub author: Option<String>,
+    #[serde(default)]
+    pub year: Option<u16>,
+    #[serde(default)]
+    pub series: Option<String>,
+    #[serde(default)]
+    pub comment: Option<String>,
     pub language: String,
     pub state: String,
     #[serde(default)]
@@ -89,6 +100,14 @@ pub struct Story {
 #[derive(Deserialize)]
 pub struct Draft {
     pub title: String,
+    #[serde(default)]
+    pub author: Option<String>,
+    #[serde(default)]
+    pub year: Option<u16>,
+    #[serde(default)]
+    pub series: Option<String>,
+    #[serde(default)]
+    pub comment: Option<String>,
     pub language: String,
     pub characters: Vec<Character>,
     pub chapters: Vec<Chapter>,
@@ -137,6 +156,20 @@ fn clean(value: &str, field: &str, max: usize) -> Result<String, String> {
     Ok(value.to_string())
 }
 
+fn optional(value: Option<String>, field: &str, max: usize) -> Result<Option<String>, String> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    let value = value.trim();
+    if value.is_empty() {
+        return Ok(None);
+    }
+    if value.chars().count() > max {
+        return Err(format!("{field} is too long"));
+    }
+    Ok(Some(value.to_string()))
+}
+
 pub fn voice_installed(voice: &str) -> bool {
     crate::models::models_root()
         .join(format!("{voice}.onnx"))
@@ -158,6 +191,15 @@ pub fn voices() -> Vec<serde_json::Value> {
 
 fn normalize(draft: Draft) -> Result<Story, String> {
     let title = clean(&draft.title, "the story title", 80)?;
+    let author = optional(draft.author, "the author", MAX_AUTHOR)?;
+    let series = optional(draft.series, "the series", MAX_SERIES)?;
+    let comment = optional(draft.comment, "the comment", MAX_COMMENT)?;
+    let year = match draft.year {
+        Some(0) | Some(10_000..) => {
+            return Err("the story year must be between 1 and 9999".to_string())
+        }
+        year => year,
+    };
     let language = draft.language.trim().to_ascii_lowercase();
     if language.len() != 2
         || !language
@@ -265,6 +307,10 @@ fn normalize(draft: Draft) -> Result<Story, String> {
     Ok(Story {
         id: new_id(),
         title,
+        author,
+        year,
+        series,
+        comment,
         language,
         state: DRAFT.to_string(),
         batch: None,
@@ -543,6 +589,10 @@ mod tests {
     fn draft() -> Draft {
         Draft {
             title: "A story".to_string(),
+            author: None,
+            year: None,
+            series: None,
+            comment: None,
             language: "pt".to_string(),
             characters: vec![
                 Character {

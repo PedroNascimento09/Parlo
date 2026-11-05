@@ -3002,6 +3002,10 @@ loadBatches();
 
 const storyList = document.getElementById("story-list");
 const storyTitle = document.getElementById("story-title");
+const storyAuthor = document.getElementById("story-author");
+const storyYear = document.getElementById("story-year");
+const storySeries = document.getElementById("story-series");
+const storyComment = document.getElementById("story-comment");
 const storyLanguage = document.getElementById("story-language");
 const storyCharacters = document.getElementById("story-characters");
 const storyChapters = document.getElementById("story-chapters");
@@ -3187,6 +3191,10 @@ function storyChapterCard(chapter) {
 function fillStoryEditor(story) {
   storyCurrent = story && story.id ? story : null;
   storyTitle.value = story?.title || "";
+  storyAuthor.value = story?.author || "";
+  storyYear.value = story?.year || "";
+  storySeries.value = story?.series || "";
+  storyComment.value = story?.comment || "";
   storyLanguage.value = story?.language || storyLanguage.value;
   storyCharacters.replaceChildren();
   const characters = story?.characters?.length
@@ -3276,6 +3284,10 @@ function updateStoryState(story) {
 function collectStory() {
   return {
     title: storyTitle.value.trim(),
+    author: storyAuthor.value.trim() || null,
+    year: storyYear.value ? Number(storyYear.value) : null,
+    series: storySeries.value.trim() || null,
+    comment: storyComment.value.trim() || null,
     language: storyLanguage.value,
     characters: Array.from(storyCharacters.querySelectorAll("[data-character]")).map((row) => ({
       id: row.dataset.character,
