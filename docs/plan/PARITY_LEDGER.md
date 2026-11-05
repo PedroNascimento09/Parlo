@@ -77,8 +77,8 @@ Rules:
 | V6 | Expressive controls | Emotion, direction, cues | Partial: per-cue pace reaches Piper and is saved; no emotion or pitch | Parity | 3 | A cue changes the render and is saved |
 | V7 | Previews and A/B | Yes | No | Parity | 2 | Two voices play the same sentence back to back |
 | V8 | Voice gallery | Online community | None | Local packs, import/export, opt-in LAN | 2 | A pack imports; nothing uploads |
-| V9 | Persona import/export | Yes | No | Parity | 2 | A voice moves between machines as one file |
-| V10 | Per-agent voices | Yes | No | Parity | 1 | An MCP client id resolves to its bound voice |
+| V9 | Persona import/export | Yes | Done · 53ff2e7: the exported header and sample import on another machine with the consent record, and a revoked, foreign or sample-less file is refused | Parity | 2 | A voice moves between machines as one file |
+| V10 | Per-agent voices | Yes | Done · a43f158: the MCP handshake remembers the client name, `bind_voice` keeps its voice in `agents.json`, and `agent_voice` resolves it on every later call | Parity | 1 | An MCP client id resolves to its bound voice |
 | V11 | Interface locales | 21 | 1 | 21 | 5 | Zero missing keys per locale |
 
 ## Dubbing
@@ -126,8 +126,8 @@ Rules:
 |---|---|---|---|---|---|---|
 | X1 | Model catalogue | Yes | Done · dfb8b40: 52 entries, and every card carries a licence, a source and its languages | Keep, generated from the registry | 0 | A card cannot exist without a licence |
 | X2 | Per-engine benchmarks | Yes | Partial | One row per engine and device | 6 | No card claims a number without a row |
-| X3 | GPU auto-detect | Yes | No | Parity | 2 | The chosen device is shown and overridable |
-| X4 | Download resume and repair | Yes | Partial | Parity | 1 | A killed download resumes at the byte |
+| X3 | GPU auto-detect | Yes | Done · 62bb7ff: the profile follows the detected graphics card, `/engine` names the device and the reason, and Settings can force the processor | Parity | 2 | The chosen device is shown and overridable |
+| X4 | Download resume and repair | Yes | Blocked · the byte-level resume lives in `engines/cascade`, off limits in this campaign; `crates/parlo-cli/src/models.rs` only reports `download_remaining` | Parity | 1 | A killed download resumes at the byte |
 | X5 | Model packs | Yes | No | Parity | 5 | A pack installs a working set in one action |
 | X6 | Licence inventory in the UI | Yes | Done · 7f1d035: every model card carries the licence from the registry in `/models` and in the app, before the download | Parity | 1 | Each model shows its licence before download |
 
@@ -148,7 +148,7 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| Q1 | Automated tests | Large suite | 344 Rust + full Python suite | 600+, route and flow tests | 6 | Every route has a test |
+| Q1 | Automated tests | Large suite | Partial: 354 Rust, 87 core and the full Python suite; not every route has a test | 600+, route and flow tests | 6 | Every route has a test |
 | Q2 | Published benchmarks | Yes | Yes, one machine | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Yes | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-42 of 80 rows are Done (52.5%). Nine Partial rows counted at half give 58.1%.
+45 of 80 rows are Done (56.3%). Eight Partial rows counted at half give 61.3%.
 
 ## Next
 
-D5 and D10 stay parked on the engine files, and T4 waits for the recogniser to return word times. The next unblocked rows are V10, per-agent voices, then Q1, one test per route.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are V7, two voices playing the same sentence back to back, then V8, a voice pack imported and kept locally, then P9, one example per endpoint.
