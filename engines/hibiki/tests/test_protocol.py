@@ -21,6 +21,11 @@ class BrokenEngine(FakeEngine):
         raise EngineUnavailable("model missing")
 
 
+class FileEngine(FakeEngine):
+    def translate_file(self, pcm16):
+        return Translation(pcm16=pcm16, text="whole file", latency_ms=2_100)
+
+
 class ProtocolTest(unittest.TestCase):
     def test_hello_reports_engine_capabilities(self):
         response = handle_line('{"op": "hello"}', HibikiEngine())
@@ -65,6 +70,24 @@ class ProtocolTest(unittest.TestCase):
         )
         self.assertEqual(response["op"], "error")
         self.assertIn("model missing", response["error"])
+
+    def test_whole_file_without_a_handler_is_unsupported(self):
+        payload = base64.b64encode(b"\x00\x01" * 320).decode()
+        response = handle_line(
+            f'{{"op": "translate_file", "seq": 3, "pcm16": "{payload}"}}', FakeEngine()
+        )
+        self.assertEqual(response["op"], "unsupported")
+        self.assertEqual(response["seq"], 3)
+
+    def test_whole_file_with_a_handler_returns_one_answer(self):
+        payload = base64.b64encode(b"\x00\x01" * 4).decode()
+        response = handle_line(
+            f'{{"op": "translate_file", "seq": 9, "pcm16": "{payload}"}}', FileEngine()
+        )
+        self.assertEqual(response["op"], "translated")
+        self.assertEqual(response["seq"], 9)
+        self.assertEqual(response["text"], "whole file")
+        self.assertEqual(base64.b64decode(response["pcm16"]), b"\x00\x01" * 4)
 
     def test_hibiki_without_torch_is_honest(self):
         engine = HibikiEngine()

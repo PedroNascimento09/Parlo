@@ -150,7 +150,11 @@ def translate_file(request: dict, engine) -> dict:
     seq = request.get("seq", 0)
     handler = getattr(engine, "translate_file", None)
     if handler is None:
-        return {"op": "error", "seq": seq, "error": "engine cannot translate a whole file"}
+        return {
+            "op": "unsupported",
+            "seq": seq,
+            "error": "engine cannot translate a whole file",
+        }
 
     pcm16, error = decode_audio(request)
     if error is not None:
