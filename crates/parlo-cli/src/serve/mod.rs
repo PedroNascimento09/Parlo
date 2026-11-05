@@ -6232,6 +6232,453 @@ mod tests {
         let _ = TcpStream::connect(("127.0.0.1", port));
     }
 
+    const ROUTES: &[(&str, &str, bool)] = &[
+        ("GET", "/call", true),
+        ("GET", "/meetings", true),
+        ("POST", "/meeting/window", true),
+        ("POST", "/meeting/summary", true),
+        ("POST", "/meetings/clear", true),
+        ("ANY", "/meeting/import", false),
+        ("ANY", "/meeting/delete", false),
+        ("POST", "/meeting/start", true),
+        ("POST", "/meeting/segment", true),
+        ("POST", "/meeting/ask", true),
+        ("POST", "/memory/ask", true),
+        ("GET", "/vocabulary", true),
+        ("POST", "/vocabulary", true),
+        ("POST", "/vocabulary/delete", true),
+        ("POST", "/vocabulary/accept", true),
+        ("GET", "/vocabulary/export", true),
+        ("POST", "/vocabulary/import", true),
+        ("GET", "/features", false),
+        ("POST", "/features", true),
+        ("POST", "/style", true),
+        ("GET", "/profiles", true),
+        ("POST", "/profiles", true),
+        ("POST", "/history/restyle", true),
+        ("GET", "/hardware", false),
+        ("GET", "/catalog", false),
+        ("GET", "/history", true),
+        ("GET", "/history/export", true),
+        ("POST", "/history/clear", true),
+        ("ANY", "/history/favourite", false),
+        ("ANY", "/history/edit", false),
+        ("GET", "/settings", false),
+        ("POST", "/settings", true),
+        ("GET", "/intelligence", false),
+        ("POST", "/intelligence", true),
+        ("POST", "/intelligence/key", true),
+        ("POST", "/intelligence/key/delete", true),
+        ("POST", "/intelligence/test", true),
+        ("POST", "/dub/import", true),
+        ("GET", "/dub/projects", true),
+        ("GET", "/voice", false),
+        ("POST", "/voice", true),
+        ("POST", "/voice/revoke", true),
+        ("POST", "/voice/delete", true),
+        ("POST", "/voice/sample", true),
+        ("POST", "/voice/sample/play", true),
+        ("POST", "/voice/export", true),
+        ("POST", "/voice/import", true),
+        ("POST", "/voice/compare", true),
+        ("GET", "/voice/packs", false),
+        ("POST", "/voice/packs", true),
+        ("POST", "/dub", true),
+        ("POST", "/models", true),
+        ("POST", "/models/dictation", true),
+        ("POST", "/models/rest", true),
+        ("POST", "/models/download", true),
+        ("POST", "/models/relocate", true),
+        ("POST", "/models/cancel", true),
+        ("POST", "/models/policy", true),
+        ("GET", "/update/progress", false),
+        ("POST", "/update/restart", true),
+        ("GET", "/update", false),
+        ("POST", "/update", true),
+        ("GET", "/", false),
+        ("GET", "/app.css", false),
+        ("GET", "/island", false),
+        ("GET", "/island.html", false),
+        ("GET", "/captions", false),
+        ("GET", "/captions.html", false),
+        ("POST", "/captions/save", true),
+        ("GET", "/live", false),
+        ("GET", "/live.html", false),
+        ("GET", "/app.js", false),
+        ("POST", "/ticket", true),
+        ("GET", "/v1/audio/transcriptions/stream", false),
+        ("GET", "/target", true),
+        ("POST", "/listen/stream", true),
+        ("POST", "/listen/stream-end", true),
+        ("ANY", "/state", false),
+        ("GET", "/engine", false),
+        ("ANY", "/health", false),
+        ("POST", "/v1/audio/transcriptions", false),
+        ("POST", "/v1/audio/translations", false),
+        ("POST", "/v1/audio/speech", false),
+        ("ANY", "/mcp", true),
+        ("POST", "/v1/jobs", true),
+        ("GET", "/v1/jobs", true),
+        ("POST", "/dictate/begin", true),
+        ("POST", "/undo", true),
+        ("POST", "/insert", true),
+        ("POST", "/dictate", true),
+    ];
+
+    fn router_source() -> &'static str {
+        let source = include_str!("mod.rs");
+        &source[..source.rfind("mod tests {").unwrap_or(source.len())]
+    }
+
+    fn routed_paths() -> Vec<(String, String)> {
+        let mut found: Vec<(String, String)> = Vec::new();
+        for line in router_source().lines() {
+            if !line.contains("path ") || !line.contains("if ") {
+                continue;
+            }
+            let method = line
+                .split_once("method == \"")
+                .map(|(_, rest)| rest.split('"').next().unwrap_or("").to_string())
+                .unwrap_or_else(|| "ANY".to_string());
+            for marker in ["path == \"", "path.starts_with(\""] {
+                let mut rest = line;
+                while let Some(at) = rest.find(marker) {
+                    rest = &rest[at + marker.len()..];
+                    let Some(end) = rest.find('"') else {
+                        break;
+                    };
+                    let path = rest[..end].to_string();
+                    let known = found.iter().any(|(kept_method, kept_path)| {
+                        kept_path == &path
+                            && (kept_method == &method || kept_method == "ANY" || method == "ANY")
+                    });
+                    if !known {
+                        found.push((method.clone(), path));
+                    }
+                }
+            }
+        }
+        found
+    }
+
+    fn probe_path(path: &str) -> String {
+        if path.ends_with('/') {
+            format!("{path}x")
+        } else {
+            path.to_string()
+        }
+    }
+
+    fn ask_with(port: u16, method: &str, path: &str, headers: &str, body: &str) -> String {
+        let request = format!(
+            "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\n{headers}Content-Length: {}\r\n\r\n{body}",
+            body.len()
+        );
+        ask(port, &request)
+    }
+
+    #[test]
+    fn the_route_table_covers_every_route_the_router_serves() {
+        for (method, path) in routed_paths() {
+            let kept = ROUTES.iter().any(|(kept_method, kept_path, _)| {
+                kept_path == &path
+                    && (kept_method == &method || *kept_method == "ANY" || method == "ANY")
+            });
+            assert!(kept, "{method} {path} is routed but has no row in ROUTES");
+        }
+    }
+
+    #[test]
+    fn every_route_that_needs_a_token_refuses_a_wrong_one() {
+        let (port, stop) = start_server();
+        for (method, path, auth) in ROUTES {
+            if !*auth || path.ends_with("transcriptions/stream") {
+                continue;
+            }
+            let probe = if *method == "ANY" { "POST" } else { method };
+            let request = format!(
+                "{probe} {} HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: wrong\r\nContent-Length: 0\r\n\r\n",
+                probe_path(path)
+            );
+            let answer = ask(port, &request);
+            assert!(
+                answer.starts_with("HTTP/1.1 401"),
+                "{method} {path} answered without the token: {answer}"
+            );
+        }
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_extra_pages_answer_with_html() {
+        let (port, stop) = start_server();
+        for path in [
+            "/island",
+            "/island.html",
+            "/captions",
+            "/captions.html",
+            "/live",
+            "/live.html",
+        ] {
+            let answer = send(port, "GET", path, "");
+            assert!(
+                answer.starts_with("HTTP/1.1 200") || answer.starts_with("HTTP/1.1 409"),
+                "{path}: {answer}"
+            );
+            if answer.starts_with("HTTP/1.1 200") {
+                assert!(
+                    answer.contains("text/html; charset=utf-8"),
+                    "{path}: {answer}"
+                );
+            }
+        }
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_read_only_routes_report_their_state() {
+        let (port, stop) = start_server();
+        for path in [
+            "/call",
+            "/hardware",
+            "/catalog",
+            "/features",
+            "/intelligence",
+            "/target",
+            "/update/progress",
+            "/dub/projects",
+            "/history",
+            "/history/export",
+            "/profiles",
+        ] {
+            let answer = send(port, "GET", path, "");
+            assert!(answer.starts_with("HTTP/1.1 200"), "{path}: {answer}");
+        }
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn a_meeting_is_imported_asked_summarised_and_deleted() {
+        let (port, stop) = start_server();
+        let imported = send(
+            port,
+            "POST",
+            "/meeting/import",
+            "{\"title\":\"Retro\",\"text\":\"Ana: bom dia\\nRui: ola\"}",
+        );
+        assert!(imported.starts_with("HTTP/1.1 200"), "{imported}");
+        let id = body_json(&imported)["id"].as_str().unwrap().to_string();
+        let segmented = send(
+            port,
+            "POST",
+            "/meeting/segment",
+            &format!(
+                "{{\"id\":\"{id}\",\"speaker\":\"Ana\",\"text\":\"revimos a frente\",\"at_ms\":1000}}"
+            ),
+        );
+        assert!(segmented.starts_with("HTTP/1.1 200"), "{segmented}");
+        let asked = send(
+            port,
+            "POST",
+            "/meeting/ask",
+            &format!("{{\"id\":\"{id}\",\"question\":\"what did Ana say\"}}"),
+        );
+        assert!(asked.starts_with("HTTP/1.1 200"), "{asked}");
+        let memory = send(
+            port,
+            "POST",
+            "/memory/ask",
+            "{\"question\":\"what did Ana say\"}",
+        );
+        assert!(memory.starts_with("HTTP/1.1 200"), "{memory}");
+        let summary = send(
+            port,
+            "POST",
+            "/meeting/summary",
+            &format!("{{\"id\":\"{id}\"}}"),
+        );
+        assert!(summary.starts_with("HTTP/1.1 200"), "{summary}");
+        let window = send(port, "POST", "/meeting/window", "");
+        assert!(window.starts_with("HTTP/1.1 404"), "{window}");
+        let empty = send(port, "POST", "/meeting/ask", "{\"question\":\"\"}");
+        assert!(empty.starts_with("HTTP/1.1 400"), "{empty}");
+        let deleted = send(
+            port,
+            "POST",
+            "/meeting/delete",
+            &format!("{{\"id\":\"{id}\"}}"),
+        );
+        assert!(deleted.starts_with("HTTP/1.1 200"), "{deleted}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_vocabulary_routes_report_a_missing_engine() {
+        let (port, stop) = start_server();
+        for (method, path, body) in [
+            ("GET", "/vocabulary", ""),
+            (
+                "POST",
+                "/vocabulary",
+                "{\"kind\":\"term\",\"wrong\":\"a\",\"right\":\"b\"}",
+            ),
+            ("GET", "/vocabulary/export", ""),
+            (
+                "POST",
+                "/vocabulary/delete",
+                "{\"kind\":\"term\",\"wrong\":\"a\"}",
+            ),
+        ] {
+            let answer = send(port, method, path, body);
+            assert!(
+                answer.starts_with("HTTP/1.1 500"),
+                "{method} {path}: {answer}"
+            );
+            assert!(
+                answer.contains("engine beside Parlo"),
+                "{method} {path}: {answer}"
+            );
+        }
+        let empty_accept = send(port, "POST", "/vocabulary/accept", "{}");
+        assert!(empty_accept.starts_with("HTTP/1.1 400"), "{empty_accept}");
+        let accepted = send(
+            port,
+            "POST",
+            "/vocabulary/accept",
+            "{\"heard\":\"a\",\"written\":\"b\"}",
+        );
+        assert!(accepted.starts_with("HTTP/1.1 500"), "{accepted}");
+        let empty_import = send(port, "POST", "/vocabulary/import", "{\"text\":\"\"}");
+        assert!(empty_import.starts_with("HTTP/1.1 400"), "{empty_import}");
+        let imported = send(port, "POST", "/vocabulary/import", "{\"text\":\"a\\tb\"}");
+        assert!(imported.starts_with("HTTP/1.1 500"), "{imported}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_voice_routes_refuse_an_unknown_profile() {
+        let (port, stop) = start_server();
+        for (path, body) in [
+            ("/voice/revoke", "{\"id\":\"missing\"}"),
+            ("/voice/delete", "{\"id\":\"missing\"}"),
+            ("/voice/sample/play", "{\"id\":\"missing\"}"),
+            ("/voice/export", "{\"id\":\"missing\"}"),
+        ] {
+            let answer = send(port, "POST", path, body);
+            assert!(answer.starts_with("HTTP/1.1 404"), "{path}: {answer}");
+        }
+        let no_id = send(port, "POST", "/voice/sample", "");
+        assert!(no_id.starts_with("HTTP/1.1 400"), "{no_id}");
+        let foreign = send(port, "POST", "/voice/import", "not a voice file");
+        assert!(foreign.starts_with("HTTP/1.1 400"), "{foreign}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_model_routes_refuse_an_unknown_unit() {
+        let (port, stop) = start_server();
+        let unknown = send(port, "POST", "/models/download/unknown", "");
+        assert!(unknown.starts_with("HTTP/1.1 404"), "{unknown}");
+        let empty = send(port, "POST", "/models/download", "{}");
+        assert!(empty.starts_with("HTTP/1.1 400"), "{empty}");
+        let loading = send(port, "POST", "/models/load/unknown", "");
+        assert!(loading.starts_with("HTTP/1.1 404"), "{loading}");
+        let policy = send(
+            port,
+            "POST",
+            "/models/policy",
+            "{\"id\":\"unknown\",\"minutes\":5}",
+        );
+        assert!(policy.starts_with("HTTP/1.1 409"), "{policy}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_history_routes_report_a_missing_dictation() {
+        let (port, stop) = start_server();
+        for (path, body) in [
+            (
+                "/history/restyle",
+                "{\"id\":\"missing\",\"style\":\"formal\"}",
+            ),
+            ("/history/favourite", "{\"id\":\"missing\"}"),
+            ("/history/edit", "{\"id\":\"missing\",\"text\":\"x\"}"),
+        ] {
+            let answer = send(port, "POST", path, body);
+            assert!(answer.starts_with("HTTP/1.1 404"), "{path}: {answer}");
+        }
+        let exported = send(port, "GET", "/history/export", "");
+        assert!(exported.contains("parlo-dictations.md"), "{exported}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn a_dub_project_is_imported_listed_and_deleted() {
+        let (port, stop) = start_server();
+        let refused = ask_with(
+            port,
+            "POST",
+            "/dub/import",
+            "x-parlo-filename: retro.txt\r\n",
+            "1\n00:00:00,000 --> 00:00:01,000\nBom dia\n",
+        );
+        assert!(refused.starts_with("HTTP/1.1 400"), "{refused}");
+        let imported = ask_with(
+            port,
+            "POST",
+            "/dub/import",
+            "x-parlo-filename: retro.srt\r\n",
+            "1\n00:00:00,000 --> 00:00:01,000\nBom dia\n",
+        );
+        assert!(imported.starts_with("HTTP/1.1 200"), "{imported}");
+        let id = body_json(&imported)["id"].as_str().unwrap().to_string();
+        let listed = send(port, "GET", "/dub/projects", "");
+        assert!(listed.starts_with("HTTP/1.1 200"), "{listed}");
+        assert!(listed.contains(&id), "{listed}");
+        let one = send(port, "GET", &format!("/dub/project/{id}"), "");
+        assert!(one.starts_with("HTTP/1.1 200"), "{one}");
+        let deleted = send(port, "DELETE", &format!("/dub/project/{id}"), "");
+        assert!(deleted.starts_with("HTTP/1.1 200"), "{deleted}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_insert_and_listen_routes_refuse_a_bad_request() {
+        let (port, stop) = start_server();
+        let listen = send(port, "POST", "/listen/stream", "not a wav");
+        assert!(listen.starts_with("HTTP/1.1 400"), "{listen}");
+        let ended = send(port, "POST", "/listen/stream-end", "");
+        assert!(!ended.starts_with("HTTP/1.1 404"), "{ended}");
+        let inserted = send(port, "POST", "/insert", "{}");
+        assert!(inserted.starts_with("HTTP/1.1 400"), "{inserted}");
+        let undone = send(port, "POST", "/undo", "");
+        assert!(!undone.starts_with("HTTP/1.1 404"), "{undone}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn the_settings_routes_refuse_a_value_they_do_not_know() {
+        let (port, stop) = start_server();
+        let key = send(port, "POST", "/intelligence/key", "{\"provider\":\"nope\"}");
+        assert!(key.starts_with("HTTP/1.1 400"), "{key}");
+        let removed = send(
+            port,
+            "POST",
+            "/intelligence/key/delete",
+            "{\"provider\":\"nope\"}",
+        );
+        assert!(removed.starts_with("HTTP/1.1 400"), "{removed}");
+        let settings = send(port, "POST", "/intelligence", "nonsense");
+        assert!(settings.starts_with("HTTP/1.1 400"), "{settings}");
+        let style = send(port, "POST", "/style", "{\"style\":\"angry\"}");
+        assert!(style.starts_with("HTTP/1.1 400"), "{style}");
+        let features = send(port, "POST", "/features", "nonsense");
+        assert!(features.starts_with("HTTP/1.1 400"), "{features}");
+        let profile = send(port, "POST", "/profiles", "{}");
+        assert!(profile.starts_with("HTTP/1.1 400"), "{profile}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
     #[test]
     fn a_comparison_that_names_a_missing_pack_is_refused() {
         let (port, stop) = start_server();
