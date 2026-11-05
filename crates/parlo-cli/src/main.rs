@@ -503,28 +503,18 @@ fn translate(args: &[String]) -> Result<(), String> {
     let output = AudioFormat::mono(16_000).map_err(|e| e.to_string())?;
     let mut pipeline = Pipeline::new(
         PipelineConfig::new(wav.format, output),
-        build_engine(&engine_name)?,
+        build_offline_engine(&engine_name)?,
     )
     .map_err(|e| e.to_string())?;
 
     let mut translated = Vec::new();
     let mut voiced = 0;
-    for chunk in wav.samples.chunks(480) {
-        for out in pipeline.push(chunk) {
-            if let Some(error) = out.error {
-                return Err(format!("engine failed: {error}"));
-            }
-            if out.voice {
-                voiced += 1;
-            }
-            if let Some(frame) = out.frame {
-                translated.extend_from_slice(frame.samples());
-            }
-        }
-    }
-    for out in pipeline.finish() {
+    for out in pipeline.translate_file(&wav.samples) {
         if let Some(error) = out.error {
             return Err(format!("engine failed: {error}"));
+        }
+        if out.voice {
+            voiced += 1;
         }
         if let Some(frame) = out.frame {
             translated.extend_from_slice(frame.samples());
@@ -886,6 +876,25 @@ pub(crate) fn build_engine(name: &str) -> Result<Box<dyn Engine>, String> {
             "unknown engine: {other}, expected echo, sidecar or cascade"
         )),
     }
+}
+
+fn build_offline_engine(name: &str) -> Result<Box<dyn Engine>, String> {
+    match name {
+        "echo" => Ok(Box::new(EchoEngine::new("echo", ENGINE_LATENCY_MS, 1.0))),
+        "sidecar" => spawn_offline_sidecar("PARLO_HIBIKI_DIR", "engines/hibiki"),
+        "cascade" => spawn_offline_sidecar("PARLO_CASCADE_DIR", "engines/cascade"),
+        other => Err(format!(
+            "unknown engine: {other}, expected echo, sidecar or cascade"
+        )),
+    }
+}
+
+fn spawn_offline_sidecar(variable: &str, fallback: &str) -> Result<Box<dyn Engine>, String> {
+    let dir = env::var(variable)
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from(fallback));
+    let engine = sidecar::SidecarEngine::spawn_offline(&dir).map_err(|error| error.to_string())?;
+    Ok(Box::new(engine))
 }
 
 fn spawn_sidecar(variable: &str, fallback: &str) -> Result<Box<dyn Engine>, String> {

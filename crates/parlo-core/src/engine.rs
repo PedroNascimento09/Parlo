@@ -118,6 +118,34 @@ pub trait Engine: Send {
         Ok(EngineOutput::empty())
     }
 
+    fn translate_file(&mut self, frame: &Frame) -> Result<EngineOutput, EngineError> {
+        let step = (frame.format().sample_rate() as usize / 50).max(1);
+        let mut audio = Vec::new();
+        let mut texts = Vec::new();
+        for chunk in frame.samples().chunks(step) {
+            let output = self.process(&Frame::new(frame.format(), chunk.to_vec()))?;
+            if let Some(spoken) = output.audio {
+                audio.extend_from_slice(spoken.samples());
+            }
+            if let Some(text) = output.transcript {
+                if !text.trim().is_empty() {
+                    texts.push(text);
+                }
+            }
+        }
+        let audio = if audio.is_empty() {
+            None
+        } else {
+            Some(Frame::new(frame.format(), audio))
+        };
+        let transcript = if texts.is_empty() {
+            None
+        } else {
+            Some(texts.join(" "))
+        };
+        Ok(EngineOutput { audio, transcript })
+    }
+
     fn loaded_units(&mut self) -> Option<Vec<String>> {
         None
     }

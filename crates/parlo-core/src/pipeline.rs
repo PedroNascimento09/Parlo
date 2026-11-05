@@ -202,6 +202,58 @@ impl Pipeline {
         outputs
     }
 
+    pub fn translate_file(&mut self, samples: &[f32]) -> Vec<PipelineOutput> {
+        let mut outputs = Vec::new();
+        let mut held = Vec::with_capacity(samples.len());
+        let mut index = 0;
+        while index < samples.len() {
+            let end = (index + self.frame_samples).min(samples.len());
+            let mut frame = samples[index..end].to_vec();
+            index = end;
+            frame.resize(self.frame_samples, 0.0);
+            let voice = self.gate.process(&frame);
+            if voice {
+                held.extend_from_slice(&self.shape(&mut frame));
+            }
+            outputs.push(PipelineOutput {
+                voice,
+                frame: None,
+                transcript: None,
+                latency_ms: self.budget.total_ms(),
+                error: None,
+            });
+        }
+
+        let latency_ms = self.budget.total_ms();
+        let result = self
+            .engine
+            .translate_file(&Frame::new(self.config.output, held));
+        outputs.push(match result {
+            Ok(output) => PipelineOutput {
+                voice: true,
+                frame: output.audio,
+                transcript: output.transcript,
+                latency_ms,
+                error: None,
+            },
+            Err(error) => PipelineOutput {
+                voice: true,
+                frame: None,
+                transcript: None,
+                latency_ms,
+                error: Some(error.to_string()),
+            },
+        });
+        outputs
+    }
+
+    fn shape(&mut self, samples: &mut [f32]) -> Vec<f32> {
+        self.gain.process(samples);
+        let mut resampled = Vec::with_capacity(self.frame_samples + 2);
+        self.resampler.process(&samples[..], &mut resampled);
+        resampled
+    }
+
     fn process_frame(&mut self, mut samples: Vec<f32>) -> PipelineOutput {
         let voice = self.gate.process(&samples);
         if !voice {
@@ -214,10 +266,7 @@ impl Pipeline {
             };
         }
 
-        self.gain.process(&mut samples);
-        let mut resampled = Vec::with_capacity(self.frame_samples + 2);
-        self.resampler.process(&samples, &mut resampled);
-        let frame = Frame::new(self.config.output, resampled);
+        let frame = Frame::new(self.config.output, self.shape(&mut samples));
 
         match self.engine.process(&frame) {
             Ok(output) => PipelineOutput {
