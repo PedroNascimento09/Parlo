@@ -403,6 +403,19 @@ The `/translate` route now flushes at end of stream, and two runs of the clip on
 
 The clearest proof is the tail alone. Its last 2.00 s is shorter than a segment, so before the change the command had nothing to write and failed, and now it exits 0, produces 1.82 s of audio in 9.21 s, and peaks at 1027 MB.
 
+### The two passes that halve the peak, 5 November 2026
+
+The sidecar warmed up recognition, translation and voice before the first request, so a whole-file translation paid for all three at once. `parlo translate` now starts its engine without warmup — `PARLO_CASCADE_WARMUP=0`, set by the sidecar spawn for that command only — and sends the file in one `translate_file` operation. The engine transcribes every 2.5 s segment first, calls `unload_unit("recognition")`, and only then loads the translator and starts the voice for the segments it already has.
+
+| Clip | Passes | Wall | Peak RSS |
+| --- | --- | --- | --- |
+| 24.30 s, three utterances | one | 14.98–16.40 s | 1124–1125 MB |
+| 24.30 s, three utterances | two | 15.55–20.76 s | 802–803 MB |
+
+Two runs of the two-pass path on the same clip wrote 22.83 s and 22.41 s of audio and peaked at 802 MB and 803 MB. The peak is now the first pass alone: the recogniser holds about 720 MB inside the sidecar, and the translator (130 MB) and the voice adapter (220 MB, in its own process) only appear after it has been dropped. Ten segments come out of the clip, the last being `The one for Gafatil Libra works well.`
+
+The live path is unchanged: the same clip posted to `/translate` still returns 22.77 s of audio in 6.24 s, with the tail in the transcript.
+
 The translations below are the engine's own on the 24.3 s clip, chunked the way the command chunks it. This clip is synthetic and the recogniser mishears words on it, which the translations carry:
 
 ```
