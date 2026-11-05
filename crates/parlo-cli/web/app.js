@@ -696,6 +696,7 @@ const STATE_WORDS = {
   idle: "Ready to dictate",
   armed: "Opening the microphone",
   listening: "Listening",
+  paused: "Paused",
   processing: "Writing it down",
   inserting: "Typing into your app",
   success: "Done",

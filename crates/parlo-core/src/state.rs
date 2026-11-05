@@ -3,6 +3,7 @@ pub enum State {
     Idle,
     Armed,
     Listening,
+    Paused,
     Processing,
     Inserting,
     Success,
@@ -16,6 +17,7 @@ impl State {
             "idle" => Some(Self::Idle),
             "armed" => Some(Self::Armed),
             "listening" => Some(Self::Listening),
+            "paused" => Some(Self::Paused),
             "processing" => Some(Self::Processing),
             "inserting" => Some(Self::Inserting),
             "success" => Some(Self::Success),
@@ -30,6 +32,7 @@ impl State {
             Self::Idle => "idle",
             Self::Armed => "armed",
             Self::Listening => "listening",
+            Self::Paused => "paused",
             Self::Processing => "processing",
             Self::Inserting => "inserting",
             Self::Success => "success",
@@ -44,7 +47,8 @@ impl State {
             (self, next),
             (Idle, Armed)
                 | (Armed, Listening | Error | Cancelled)
-                | (Listening, Processing | Error | Cancelled)
+                | (Listening, Paused | Processing | Error | Cancelled)
+                | (Paused, Listening | Processing | Error | Cancelled)
                 | (Processing, Inserting | Error | Cancelled)
                 | (Inserting, Success | Error | Cancelled)
                 | (Success | Error | Cancelled, Idle)
@@ -103,6 +107,7 @@ mod tests {
             State::Idle,
             State::Armed,
             State::Listening,
+            State::Paused,
             State::Processing,
             State::Inserting,
             State::Success,
@@ -135,6 +140,22 @@ mod tests {
     }
 
     #[test]
+    fn a_pause_holds_the_same_session_open() {
+        let mut machine = Machine::new();
+        machine.enter(State::Armed).unwrap();
+        machine.enter(State::Listening).unwrap();
+        assert_eq!(machine.enter(State::Paused), Ok(State::Listening));
+        assert!(machine.enter(State::Success).is_err());
+        assert_eq!(machine.enter(State::Listening), Ok(State::Paused));
+        assert_eq!(machine.enter(State::Processing), Ok(State::Listening));
+    }
+
+    #[test]
+    fn a_paused_dictation_is_not_quiet() {
+        assert!(!State::Paused.is_quiet());
+    }
+
+    #[test]
     fn success_cannot_skip_insertion() {
         let mut machine = Machine::new();
         machine.enter(State::Armed).unwrap();
@@ -158,6 +179,7 @@ mod tests {
         for start in [
             State::Armed,
             State::Listening,
+            State::Paused,
             State::Processing,
             State::Inserting,
         ] {
@@ -166,6 +188,7 @@ mod tests {
             for next in [
                 State::Armed,
                 State::Listening,
+                State::Paused,
                 State::Processing,
                 State::Inserting,
             ] {

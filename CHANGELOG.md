@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- A dictation can be paused without ending it: the clock and the wave freeze, the pause adds no silence to the audio, and resuming continues the same take, so the sentence still arrives whole.
 - Copying a translation no longer wipes the clipboard when it held something Parlo cannot read: copied text and images come back, and files or formatted text stay where they were.
 - MCP serves its 12 tools over both transports: the running server answers `/mcp`, and `parlo mcp` speaks JSON-RPC on stdio with the same tool list and error results.
 - The OpenAI-compatible speech, translation and models endpoints answer with their documented shapes: speech returns WAV audio, translation returns transcript JSON, and `/v1/models` lists the model cards.

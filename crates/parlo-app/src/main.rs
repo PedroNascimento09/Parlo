@@ -231,6 +231,7 @@ Connection: close
         "idle",
         "armed",
         "listening",
+        "paused",
         "processing",
         "inserting",
         "success",
