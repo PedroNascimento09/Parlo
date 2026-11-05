@@ -1,6 +1,8 @@
 import os
+import tempfile
 import unittest
 
+from parlo_cascade import vocabulary
 from parlo_cascade.intelligence import (
     CLOUD,
     DETERMINISTIC,
@@ -107,6 +109,24 @@ class EditTests(unittest.TestCase):
         self.assertEqual(edit.text, "Quero comprar 3 bilhetes para o cinema.")
         self.assertEqual(edit.original, text)
         self.assertEqual(edit.engine, DETERMINISTIC)
+
+    def test_a_personal_term_survives_the_cleanup_pass(self):
+        with tempfile.TemporaryDirectory() as folder:
+            previous = os.environ.get("PARLO_DATA_DIR")
+            os.environ["PARLO_DATA_DIR"] = folder
+            try:
+                vocabulary.add("term", "parlo", "Parlo")
+                engine = Intelligence(
+                    Settings(mode="off"), "pt", transport=unreachable, key_lookup=lambda name: ""
+                )
+                edit = engine.edit("o parlo abriu hoje, quer dizer, ontem")
+            finally:
+                if previous is None:
+                    os.environ.pop("PARLO_DATA_DIR", None)
+                else:
+                    os.environ["PARLO_DATA_DIR"] = previous
+        self.assertIn("Parlo", edit.text)
+        self.assertIn("term: parlo → Parlo", edit.changes)
 
     def test_cloud_edits_when_authorised(self):
         calls = []
