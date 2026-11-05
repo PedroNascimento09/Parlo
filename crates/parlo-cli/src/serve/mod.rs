@@ -5857,6 +5857,52 @@ mod tests {
         let _ = TcpStream::connect(("127.0.0.1", port));
     }
 
+    #[test]
+    fn an_agent_uses_mcp_over_http() {
+        let (port, stop) = start_server();
+        let initialized = send(
+            port,
+            "POST",
+            "/mcp",
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "initialize",
+                "params": {},
+            })
+            .to_string(),
+        );
+        assert!(initialized.starts_with("HTTP/1.1 200 OK"), "{initialized}");
+        assert_eq!(
+            body_json(&initialized)["result"]["serverInfo"]["name"],
+            "parlo"
+        );
+
+        let listed = send(
+            port,
+            "POST",
+            "/mcp",
+            &serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 2,
+                "method": "tools/list",
+                "params": {},
+            })
+            .to_string(),
+        );
+        assert!(listed.starts_with("HTTP/1.1 200 OK"), "{listed}");
+        assert_eq!(
+            body_json(&listed)["result"]["tools"]
+                .as_array()
+                .unwrap()
+                .len(),
+            12
+        );
+
+        stop.store(false, Ordering::Relaxed);
+        let _ = TcpStream::connect(("127.0.0.1", port));
+    }
+
     fn multipart(boundary: &str, model: &str, audio: &[u8]) -> Vec<u8> {
         let mut body = Vec::new();
         body.extend_from_slice(

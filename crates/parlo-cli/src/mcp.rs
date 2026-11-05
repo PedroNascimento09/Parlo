@@ -1,3 +1,5 @@
+use std::io::{BufRead, Write};
+
 use serde_json::{json, Value};
 
 const PROTOCOL: &str = "2024-11-05";
@@ -25,10 +27,13 @@ pub fn handle(request: &Value) -> Option<Value> {
 }
 
 pub fn serve() -> Result<(), String> {
-    use std::io::{BufRead, Write};
     let stdin = std::io::stdin();
-    let mut stdout = std::io::stdout();
-    for line in stdin.lock().lines() {
+    let stdout = std::io::stdout();
+    serve_with(stdin.lock(), stdout.lock())
+}
+
+fn serve_with<R: BufRead, W: Write>(input: R, mut output: W) -> Result<(), String> {
+    for line in input.lines() {
         let line = line.map_err(|error| error.to_string())?;
         if line.trim().is_empty() {
             continue;
@@ -42,8 +47,8 @@ pub fn serve() -> Result<(), String> {
             })),
         };
         if let Some(reply) = reply {
-            writeln!(stdout, "{reply}").map_err(|error| error.to_string())?;
-            stdout.flush().map_err(|error| error.to_string())?;
+            writeln!(output, "{reply}").map_err(|error| error.to_string())?;
+            output.flush().map_err(|error| error.to_string())?;
         }
     }
     Ok(())
@@ -555,5 +560,22 @@ mod tests {
             "method": "notifications/initialized",
         }))
         .is_none());
+    }
+
+    #[test]
+    fn stdio_answers_requests_and_ignores_notifications() {
+        let input = concat!(
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n",
+            "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n",
+            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\",\"params\":{}}\n",
+        );
+        let mut output = Vec::new();
+        serve_with(input.as_bytes(), &mut output).unwrap();
+        let lines: Vec<&str> = std::str::from_utf8(&output).unwrap().lines().collect();
+        assert_eq!(lines.len(), 2);
+        let initialized: Value = serde_json::from_str(lines[0]).unwrap();
+        assert_eq!(initialized["result"]["serverInfo"]["name"], "parlo");
+        let listed: Value = serde_json::from_str(lines[1]).unwrap();
+        assert_eq!(listed["result"]["tools"].as_array().unwrap().len(), 12);
     }
 }
