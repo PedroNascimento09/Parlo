@@ -9,7 +9,7 @@ import threading
 import wave
 
 import timing
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
@@ -53,6 +53,12 @@ class Line:
     translated: str
     id: str | None = None
     voice: str | None = None
+    slot_end: float | None = None
+    file: str | None = None
+    issues: tuple[str, ...] = ()
+    failed: bool = False
+    failure: str | None = None
+    skipped: bool = False
 
 
 @dataclass(frozen=True)
@@ -112,6 +118,10 @@ def load_cues(path: Path) -> list[Cue]:
             raise SystemExit(f"cue {number} has an invalid voice")
         cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source, voice))
     cues.sort(key=lambda cue: cue.start)
+    identifiers = [cue.id for cue in cues]
+    duplicate = next((name for name in identifiers if identifiers.count(name) > 1), None)
+    if duplicate is not None:
+        raise SystemExit(f"the imported subtitles repeat the cue id {duplicate}")
     return cues
 
 
@@ -274,10 +284,10 @@ def select_voice(
     else:
         name = VOICES.get(voice.removeprefix("voice-"))
         if name is None:
-            raise SystemExit(f"{voice} is not a voice this engine installs")
+            raise ValueError(f"{voice} is not a voice this engine installs")
         path = MODEL_DIR / name
         if not path.is_file():
-            raise SystemExit(f"the voice {path.name} is not installed")
+            raise ValueError(f"the voice {path.name} is not installed")
     if Path(engine.voice_path) != path:
         engine._release_voice()
         engine.voice_path = path
@@ -307,6 +317,7 @@ def build(
     video: bool = True,
     ffmpeg: str | None = None,
     workdir: Path | None = None,
+    lines_dir: Path | None = None,
 ) -> tuple[np.ndarray, list[Line]]:
     timing.check_mode(mode)
     timing.check_limits(fastest, slowest)
@@ -323,66 +334,177 @@ def build(
     warming = warm_voice(engine)
     track = np.zeros(len(samples), dtype=np.float32)
     lines: list[Line] = []
+    media = len(samples) / SAMPLE_RATE
+    lines_dir = lines_dir or workdir
     for number, (piece, cue) in enumerate(pieces, start=1):
         voice = cue.voice if cue is not None else None
-        select_voice(engine, voice, default_voice)
-        source = cue.source if cue is not None else engine._transcribe(samples[piece.start : piece.end])
-        if not source:
-            progress(f"[{number}/{len(pieces)}] skipped, nothing recognised")
-            continue
-        translated = engine._translate(source)
-        if not translated:
-            progress(f"[{number}/{len(pieces)}] skipped, nothing translated")
-            continue
-        audio = speak(engine, translated)
-        if mode == "concise":
-            words = translated.split()
-            while len(words) > 1 and len(audio) / SAMPLE_RATE > piece.seconds():
-                words.pop()
-                translated = " ".join(words)
-                audio = speak(engine, translated)
+        source = cue.source if cue is not None else ""
+        translated = ""
         start = piece.start / SAMPLE_RATE
         next_start = (
             pieces[number][0].start / SAMPLE_RATE
             if number < len(pieces)
             else len(samples) / SAMPLE_RATE
         )
-        placed = timing.plan(
-            mode,
-            start,
-            piece.end / SAMPLE_RATE,
-            next_start,
-            len(audio) / SAMPLE_RATE,
-            fastest,
-            slowest,
-            video,
-        )
-        if abs(placed.tempo - 1.0) >= 0.01:
-            if ffmpeg is None or workdir is None:
-                raise SystemExit("changing the line speed needs ffmpeg and a work directory")
-            raw = workdir / f"line-{number}.wav"
-            fitted = workdir / f"line-{number}-fit.wav"
-            write_wav(raw, audio)
-            timing.stretch_wav(ffmpeg, raw, fitted, placed.tempo)
-            audio = read_wav(fitted)
-        end = min(piece.start + len(audio), len(track))
-        track[piece.start : end] += audio[: end - piece.start]
-        lines.append(
-            Line(
-                start=start,
-                end=(piece.start + len(audio)) / SAMPLE_RATE,
-                source=source,
-                translated=translated,
-                id=cue.id if cue is not None else None,
-                voice=voice,
+        identifier = cue.id if cue is not None else f"auto-{number}"
+        try:
+            line, audio = render_line(
+                engine,
+                samples,
+                piece,
+                cue,
+                number,
+                next_start,
+                source,
+                mode,
+                fastest,
+                slowest,
+                video,
+                ffmpeg,
+                workdir,
+                lines_dir,
             )
-        )
+        except Exception as error:
+            progress(f"[{number}/{len(pieces)}] failed: {error}")
+            lines.append(
+                inspect(
+                    Line(
+                        start=start,
+                        end=start,
+                        source=source,
+                        translated=translated,
+                        id=identifier,
+                        voice=voice,
+                        slot_end=piece.end / SAMPLE_RATE,
+                        failure=str(error),
+                        failed=True,
+                    ),
+                    media,
+                )
+            )
+            continue
+        end = min(piece.start + len(audio), len(track))
+        if end > piece.start:
+            track[piece.start : end] += audio[: end - piece.start]
+        line = inspect(line, media)
+        lines.append(line)
         progress(
-            f"[{number}/{len(pieces)}] {piece.start / SAMPLE_RATE:7.1f}s  {translated}"
+            f"[{number}/{len(pieces)}] {line.start:7.1f}s  {line.translated}"
         )
     if warming is not None:
         warming.join()
     return np.clip(track, -1.0, 1.0), lines
+
+
+def line_file(identifier: str) -> str:
+    safe = "".join(
+        character if character.isalnum() or character in "-_" else "_"
+        for character in identifier
+    )
+    return f"{safe[:80] or 'line'}.wav"
+
+
+def render_line(
+    engine: CascadeEngine,
+    samples: np.ndarray,
+    piece: Segment,
+    cue: Cue | None,
+    number: int,
+    next_start: float,
+    source: str,
+    mode: str,
+    fastest: float,
+    slowest: float,
+    video: bool,
+    ffmpeg: str | None,
+    workdir: Path | None,
+    lines_dir: Path | None,
+) -> tuple[Line, np.ndarray]:
+    voice = cue.voice if cue is not None else None
+    engine_voice = getattr(engine, "voice_path", None)
+    select_voice(engine, voice, Path(engine_voice) if engine_voice else None)
+    if not source:
+        source = engine._transcribe(samples[piece.start : piece.end])
+    if not source:
+        raise ValueError("nothing was recognised")
+    translated = engine._translate(source)
+    if not translated:
+        raise ValueError("nothing was translated")
+    audio = speak(engine, translated)
+    if mode == "concise":
+        words = translated.split()
+        while len(words) > 1 and len(audio) / SAMPLE_RATE > piece.seconds():
+            words.pop()
+            translated = " ".join(words)
+            audio = speak(engine, translated)
+    start = piece.start / SAMPLE_RATE
+    placed = timing.plan(
+        mode,
+        start,
+        piece.end / SAMPLE_RATE,
+        next_start,
+        len(audio) / SAMPLE_RATE,
+        fastest,
+        slowest,
+        video,
+    )
+    if abs(placed.tempo - 1.0) >= 0.01:
+        if ffmpeg is None or workdir is None:
+            raise ValueError("changing the line speed needs ffmpeg and a work directory")
+        raw = workdir / f"line-{number}.wav"
+        fitted = workdir / f"line-{number}-fit.wav"
+        write_wav(raw, audio)
+        timing.stretch_wav(ffmpeg, raw, fitted, placed.tempo)
+        audio = read_wav(fitted)
+    identifier = cue.id if cue is not None else f"auto-{number}"
+    name = None
+    if lines_dir is not None:
+        name = line_file(identifier)
+        write_wav(lines_dir / name, audio)
+    return (
+        Line(
+            start=start,
+            end=(piece.start + len(audio)) / SAMPLE_RATE,
+            source=source,
+            translated=translated,
+            id=identifier,
+            voice=voice,
+            slot_end=piece.end / SAMPLE_RATE,
+            file=name,
+        ),
+        audio,
+    )
+
+
+def inspect(line: Line, media: float) -> Line:
+    if line.failed:
+        return replace(line, issues=("failed", "unverified"))
+    if line.skipped:
+        return replace(line, issues=("skipped", "unverified"))
+    issues = []
+    slot = line.slot_end if line.slot_end is not None else line.end
+    if line.end > slot + 0.02:
+        issues.append("overlong")
+    if line.end > media + 0.02:
+        issues.append("clipped")
+    return replace(line, issues=tuple(issues))
+
+
+def rebuild(lines: list[Line], length: int, directory: Path) -> np.ndarray:
+    track = np.zeros(length, dtype=np.float32)
+    for line in lines:
+        if line.failed or line.skipped or not line.file:
+            continue
+        path = directory / line.file
+        if not path.is_file():
+            label = line.id or f"{line.start:.2f}s"
+            raise SystemExit(f"the audio for line {label} is missing; dub the file again")
+        audio = read_wav(path)
+        start = max(int(round(line.start * SAMPLE_RATE)), 0)
+        end = min(start + len(audio), length)
+        if end > start:
+            track[start:end] += audio[: end - start]
+    return np.clip(track, -1.0, 1.0)
 
 
 def ducking(length: int, lines: list[Line], fade_seconds: float = 0.15) -> np.ndarray:
@@ -408,7 +530,11 @@ def timestamp(seconds: float) -> str:
 
 def write_srt(path: Path, lines: list[Line]) -> None:
     blocks = []
-    for number, line in enumerate(lines, start=1):
+    number = 0
+    for line in lines:
+        if line.failed or line.skipped:
+            continue
+        number += 1
         blocks.append(
             f"{number}\n{timestamp(line.start)} --> {timestamp(line.end)}\n{line.translated}\n"
         )
@@ -435,6 +561,131 @@ def mux(ffmpeg: str, source: Path, track: Path, target: Path, video: bool) -> No
         raise SystemExit(f"ffmpeg could not write {target.name}: {result.stderr.strip()}")
 
 
+def line_document(line: Line) -> dict:
+    return {
+        "start": round(line.start, 2),
+        "end": round(line.end, 2),
+        "source": line.source,
+        "translated": line.translated,
+        "id": line.id,
+        "voice": line.voice,
+        "slot_end": round(line.slot_end, 2) if line.slot_end is not None else None,
+        "file": line.file,
+        "issues": list(line.issues),
+        "failed": line.failed,
+        "failure": line.failure,
+        "skipped": line.skipped,
+    }
+
+
+def line_from_document(item: dict) -> Line:
+    identifier = item.get("id")
+    if not isinstance(identifier, str) or not identifier:
+        raise SystemExit("the previous dub report has a line without an id")
+    return Line(
+        start=float(item.get("start", 0.0)),
+        end=float(item.get("end", 0.0)),
+        source=str(item.get("source", "")),
+        translated=str(item.get("translated", "")),
+        id=identifier,
+        voice=item.get("voice"),
+        slot_end=item.get("slot_end"),
+        file=item.get("file"),
+        failed=bool(item.get("failed")),
+        failure=item.get("failure"),
+        skipped=bool(item.get("skipped")),
+    )
+
+
+def write_report(
+    path: Path,
+    args,
+    out: Path,
+    srt: Path,
+    samples: np.ndarray,
+    lines: list[Line],
+) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "source": str(args.source),
+                "out": str(out),
+                "srt": str(srt),
+                "from": args.source_language,
+                "to": args.to,
+                "timing": args.timing,
+                "fastest": args.fastest,
+                "slowest": args.slowest,
+                "seconds": round(len(samples) / SAMPLE_RATE, 2),
+                "lines": [line_document(line) for line in lines],
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def retry_line(
+    lines: list[Line],
+    index: int,
+    cues: list[Cue],
+    samples: np.ndarray,
+    args,
+    engine: CascadeEngine,
+    ffmpeg: str,
+    video: bool,
+    work: Path,
+    lines_dir: Path,
+) -> Line:
+    pieces = cue_pieces(cues, len(samples))
+    position = next((number for number, (_, cue) in enumerate(pieces) if cue.id == args.retry), None)
+    if position is None:
+        raise SystemExit(f"line {args.retry} is not inside the audio")
+    piece, cue = pieces[position]
+    next_start = (
+        pieces[position + 1][0].start / SAMPLE_RATE
+        if position + 1 < len(pieces)
+        else len(samples) / SAMPLE_RATE
+    )
+    previous = lines[index]
+    try:
+        line, _ = render_line(
+            engine,
+            samples,
+            piece,
+            cue,
+            index + 1,
+            next_start,
+            cue.source,
+            args.timing,
+            args.fastest,
+            args.slowest,
+            video,
+            ffmpeg,
+            work,
+            lines_dir,
+        )
+        return inspect(line, len(samples) / SAMPLE_RATE)
+    except Exception as error:
+        if previous.file:
+            (lines_dir / previous.file).unlink(missing_ok=True)
+        return inspect(
+            Line(
+                start=previous.start,
+                end=previous.start,
+                source=previous.source,
+                translated=previous.translated,
+                id=previous.id,
+                voice=previous.voice,
+                slot_end=piece.end / SAMPLE_RATE,
+                failed=True,
+                failure=str(error),
+            ),
+            len(samples) / SAMPLE_RATE,
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Dub a media file offline")
     parser.add_argument("source", type=Path)
@@ -448,8 +699,20 @@ def main() -> int:
     parser.add_argument("--fastest", type=float, default=1.25)
     parser.add_argument("--slowest", type=float, default=0.9)
     parser.add_argument("--json", type=Path)
+    parser.add_argument("--track", type=Path)
+    parser.add_argument("--lines-dir", type=Path)
+    parser.add_argument("--previous", type=Path)
+    parser.add_argument("--retry")
+    parser.add_argument("--skip")
     args = parser.parse_args()
 
+    if args.retry and args.skip:
+        raise SystemExit("retry and skip cannot be used together")
+    resume = bool(args.retry or args.skip)
+    if resume and (args.previous is None or args.lines_dir is None or args.track is None):
+        raise SystemExit("retrying or skipping a line needs --previous, --lines-dir and --track")
+    if resume and args.json is None:
+        raise SystemExit("retrying or skipping a line needs --json to update the report")
     if not args.source.is_file():
         raise SystemExit(f"{args.source} does not exist")
     if args.source_language == args.to:
@@ -461,6 +724,8 @@ def main() -> int:
         raise SystemExit(str(error)) from error
 
     cues = load_cues(args.cues) if args.cues else None
+    if resume and cues is None:
+        raise SystemExit("retrying or skipping a line needs imported subtitles")
 
     ffmpeg = require("ffmpeg")
     ffprobe = require("ffprobe")
@@ -474,7 +739,6 @@ def main() -> int:
     out = args.out or stem.with_name(f"{stem.name}.{args.to}{suffix}")
     srt = args.srt or out.with_suffix(".srt")
 
-    engine = CascadeEngine(source=args.source_language, target=args.to)
     with tempfile.TemporaryDirectory(prefix="parlo-dub-") as directory:
         work = Path(directory)
         extracted = work / "source.wav"
@@ -482,65 +746,78 @@ def main() -> int:
         samples = read_wav(extracted)
         if samples.size == 0:
             raise SystemExit("the file has no audio to dub")
+        lines_dir = args.lines_dir or work / "lines"
+        lines_dir.mkdir(parents=True, exist_ok=True)
+        track_path = args.track or work / "dub.wav"
+        media = len(samples) / SAMPLE_RATE
         print(
-            f"dubbing {args.source.name} ({len(samples) / SAMPLE_RATE:.1f} s, "
+            f"dubbing {args.source.name} ({media:.1f} s, "
             f"{args.source_language} to {args.to})"
         )
-        track, lines = build(
-            engine,
-            samples,
-            print,
-            cues,
-            mode=args.timing,
-            fastest=args.fastest,
-            slowest=args.slowest,
-            video=video,
-            ffmpeg=ffmpeg,
-            workdir=work,
-        )
+        if resume:
+            try:
+                previous = json.loads(args.previous.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise SystemExit(f"cannot read the previous dub report: {error}") from error
+            lines = [line_from_document(item) for item in previous.get("lines", [])]
+            identifier = args.retry or args.skip
+            matches = [number for number, line in enumerate(lines) if line.id == identifier]
+            if len(matches) != 1:
+                raise SystemExit(f"line {identifier} is not part of this render")
+            index = matches[0]
+            engine = CascadeEngine(source=args.source_language, target=args.to)
+            if args.retry:
+                lines[index] = retry_line(
+                    lines, index, cues, samples, args, engine, ffmpeg, video, work, lines_dir
+                )
+            else:
+                previous_line = lines[index]
+                if previous_line.file:
+                    (lines_dir / previous_line.file).unlink(missing_ok=True)
+                lines[index] = inspect(
+                    replace(
+                        previous_line,
+                        skipped=True,
+                        failed=False,
+                        failure=None,
+                        issues=(),
+                    ),
+                    media,
+                )
+            track = rebuild(lines, len(samples), lines_dir)
+        else:
+            engine = CascadeEngine(source=args.source_language, target=args.to)
+            track, lines = build(
+                engine,
+                samples,
+                print,
+                cues,
+                mode=args.timing,
+                fastest=args.fastest,
+                slowest=args.slowest,
+                video=video,
+                ffmpeg=ffmpeg,
+                workdir=work,
+                lines_dir=lines_dir,
+            )
         if not lines:
             raise SystemExit("nothing was translated")
+        active = [line for line in lines if not line.failed and not line.skipped]
         if args.keep_background:
-            envelope = ducking(len(samples), lines)
+            envelope = ducking(len(samples), active)
             track = np.clip(track + samples * BACKGROUND_GAIN * envelope, -1.0, 1.0)
-        track_path = work / "dub.wav"
         write_wav(track_path, track)
         mux(ffmpeg, args.source, track_path, out, video)
 
     write_srt(srt, lines)
     if args.json:
-        args.json.write_text(
-            json.dumps(
-                {
-                    "source": str(args.source),
-                    "out": str(out),
-                    "srt": str(srt),
-                    "from": args.source_language,
-                    "to": args.to,
-                    "timing": args.timing,
-                    "fastest": args.fastest,
-                    "slowest": args.slowest,
-                    "seconds": round(len(samples) / SAMPLE_RATE, 2),
-                    "lines": [
-                        {
-                            "start": round(line.start, 2),
-                            "end": round(line.end, 2),
-                            "source": line.source,
-                            "translated": line.translated,
-                            "id": line.id,
-                            "voice": line.voice,
-                        }
-                        for line in lines
-                    ],
-                },
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        write_report(args.json, args, out, srt, samples, lines)
     print(f"wrote {out}")
     print(f"wrote {srt}")
-    print(f"  lines        {len(lines)}")
+    print(f"  lines        {len(active)}")
+    failed = sum(1 for line in lines if line.failed)
+    if failed:
+        print(f"  failed       {failed} (retry them from the app)")
     return 0
 
 

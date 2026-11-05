@@ -48,6 +48,10 @@ const dubResult = document.getElementById("dub-result");
 const dubDownload = document.getElementById("dub-download");
 const dubCount = document.getElementById("dub-count");
 const dubLines = document.getElementById("dub-lines");
+const dubQc = document.getElementById("dub-qc");
+const dubIssues = document.getElementById("dub-issues");
+const dubPrev = document.getElementById("dub-prev");
+const dubNext = document.getElementById("dub-next");
 const dubImport = document.getElementById("dub-import");
 const dubSubtitles = document.getElementById("dub-subtitles");
 const dubProjectLabel = document.getElementById("dub-project");
@@ -125,6 +129,7 @@ let chosenFile = null;
 let dubbing = false;
 let dubTimer = null;
 let dubProject = null;
+let issueCursor = -1;
 let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
 let currentShortcut = "Ctrl+Alt+D";
 let settingsBusy = false;
@@ -2190,6 +2195,15 @@ function showDub(result) {
   dubDownload.href = "/dub/" + encodeURIComponent(result.id);
   dubDownload.textContent = "Download " + (result.name || "the dubbed file");
   const lines = result.lines || [];
+  const flagged = lines.filter((line) => (line.issues || []).length > 0);
+  issueCursor = -1;
+  dubQc.hidden = false;
+  dubIssues.textContent =
+    flagged.length === 0
+      ? "No issues"
+      : flagged.length + (flagged.length === 1 ? " line needs" : " lines need") + " a look";
+  dubPrev.disabled = flagged.length === 0;
+  dubNext.disabled = flagged.length === 0;
   dubCount.textContent =
     lines.length +
     (lines.length === 1 ? " line" : " lines") +
@@ -2203,7 +2217,8 @@ function showDub(result) {
   dubLines.replaceChildren();
   for (const line of lines) {
     const item = document.createElement("li");
-    item.className = "dub-line";
+    item.className = "dub-line" + ((line.issues || []).length ? " issue" : "");
+    item.dataset.line = line.id || "";
 
     const time = document.createElement("span");
     time.className = "dub-time";
@@ -2212,20 +2227,119 @@ function showDub(result) {
     const body = document.createElement("div");
     const translated = document.createElement("p");
     translated.className = "dub-translated";
-    translated.textContent = line.translated || "";
-    const listen = listenButton(line.translated);
-    listen.title = "Hear this dubbed line aloud";
-    translated.append(document.createTextNode(" "), listen);
+    translated.textContent =
+      line.translated ||
+      (line.failed ? "This line failed." : line.skipped ? "This line is skipped." : "");
+    if (line.translated) {
+      const listen = listenButton(line.translated);
+      listen.title = "Hear this dubbed line aloud";
+      translated.append(document.createTextNode(" "), listen);
+    }
     const source = document.createElement("p");
     source.className = "dub-source";
     source.textContent = [line.voice, line.source].filter(Boolean).join(" · ");
     body.append(translated, source);
+
+    if ((line.issues || []).length) {
+      const labels = document.createElement("ul");
+      labels.className = "dub-issues";
+      for (const issue of line.issues) {
+        const badge = document.createElement("li");
+        badge.className = "dub-issue";
+        badge.textContent = issue;
+        labels.append(badge);
+      }
+      body.append(labels);
+    }
+    if (line.failed || line.skipped) {
+      const reason = document.createElement("p");
+      reason.className = "dub-source";
+      reason.textContent = line.failed
+        ? "Failed: " + (line.failure || "the engine could not render it")
+        : "Skipped. Retry it to put the line back.";
+      body.append(reason);
+    }
+    if ((line.issues || []).length || line.failed || line.skipped) {
+      const actions = document.createElement("div");
+      actions.className = "dub-actions";
+      if (line.id) {
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "swap";
+        retry.textContent = line.skipped ? "Put back" : "Retry";
+        retry.addEventListener("click", () =>
+          lineAction("retry", result.id, line.id, retry),
+        );
+        actions.append(retry);
+        if (!line.skipped) {
+          const skip = document.createElement("button");
+          skip.type = "button";
+          skip.className = "swap";
+          skip.textContent = "Skip";
+          skip.addEventListener("click", () =>
+            lineAction("skip", result.id, line.id, skip),
+          );
+          actions.append(skip);
+        }
+      }
+      body.append(actions);
+    }
 
     item.append(time, body);
     dubLines.append(item);
   }
   dubResult.hidden = false;
 }
+
+async function lineAction(action, dubId, lineId, button) {
+  if (!dubId || !lineId) {
+    setDubStatus("This line cannot be changed.");
+    return;
+  }
+  button.disabled = true;
+  setDubStatus(action === "retry" ? "Retrying this line…" : "Skipping this line…");
+  try {
+    const response = await fetch(
+      "/dub/" + encodeURIComponent(dubId) + "/" + action,
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + token,
+          "X-Parlo-Line": lineId,
+        },
+      },
+    );
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "That line could not be changed.");
+    }
+    showDub(detail);
+    setDubStatus(action === "retry" ? "Line retried." : "Line skipped.");
+  } catch (failure) {
+    setDubStatus("");
+    showError(failure.message || "That line could not be changed.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function jumpIssue(direction) {
+  const items = Array.from(dubLines.querySelectorAll(".dub-line.issue"));
+  if (items.length === 0) {
+    setDubStatus("There are no issues to jump to.");
+    return;
+  }
+  issueCursor = (issueCursor + direction + items.length) % items.length;
+  const item = items[issueCursor];
+  item.scrollIntoView({ block: "center", behavior: "smooth" });
+  const focus = item.querySelector("button");
+  if (focus) {
+    focus.focus({ preventScroll: true });
+  }
+}
+
+dubPrev.addEventListener("click", () => jumpIssue(-1));
+dubNext.addEventListener("click", () => jumpIssue(1));
 
 function fillDubTargets(project, chosen) {
   const codes = [];
@@ -2251,6 +2365,7 @@ function fillDubTargets(project, chosen) {
 
 function showProject(project) {
   dubProject = project;
+  dubQc.hidden = true;
   fillDubTargets(project, dubTarget.value);
   dubDownload.hidden = true;
   dubClear.hidden = false;

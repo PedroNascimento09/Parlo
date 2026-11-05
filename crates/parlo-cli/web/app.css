@@ -1719,6 +1719,19 @@ select.field-input {
   font-size: 12.5px;
 }
 
+.dub-qc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.dub-qc span {
+  margin-right: auto;
+}
+
 .dub-lines {
   display: grid;
   gap: 8px;
@@ -1734,6 +1747,40 @@ select.field-input {
   padding: 10px 0;
   border-top: 1px solid var(--line);
   font-size: 13.5px;
+}
+
+.dub-line.issue {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+
+.dub-issues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dub-issue {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.dub-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.dub-actions .swap {
+  font-size: 12px;
+  padding: 4px 10px;
 }
 
 .dub-time {

@@ -103,9 +103,65 @@ class CueTest(unittest.TestCase):
         with self.assertRaisesRegex(SystemExit, "no cues"):
             dub.load_cues(path)
 
+    def test_load_cues_rejects_duplicate_ids(self):
+        path = self.write(
+            {
+                "cues": [
+                    {"id": "p-0", "start_ms": 0, "end_ms": 1000, "source": "one"},
+                    {"id": "p-0", "start_ms": 1000, "end_ms": 2000, "source": "two"},
+                ]
+            }
+        )
+
+        with self.assertRaisesRegex(SystemExit, "repeat the cue id"):
+            dub.load_cues(path)
+
+
+class QualityTest(unittest.TestCase):
+    def test_flags_a_line_that_runs_past_its_cue_and_the_media(self):
+        line = dub.Line(1.0, 4.0, "source", "target", slot_end=2.5)
+
+        inspected = dub.inspect(line, 3.0)
+
+        self.assertEqual(inspected.issues, ("overlong", "clipped"))
+
+    def test_a_failed_line_is_unverified(self):
+        line = dub.Line(1.0, 1.0, "source", "", failed=True, failure="boom")
+
+        inspected = dub.inspect(line, 5.0)
+
+        self.assertEqual(inspected.issues, ("failed", "unverified"))
+
 
 @unittest.skipUnless(HAS_NUMPY, "numpy is required for the cue build")
 class CueBuildTest(unittest.TestCase):
+    def test_one_failed_line_does_not_stop_the_next(self):
+        import numpy as np
+
+        class Engine:
+            def _translate(self, text):
+                if text == "bad":
+                    raise RuntimeError("the engine refused this line")
+                return text
+
+        def fake_speak(engine, text):
+            return np.full(int(0.2 * dub.SAMPLE_RATE), 0.2, dtype=np.float32)
+
+        cues = [
+            dub.Cue("p-0", 0.0, 0.5, "bad"),
+            dub.Cue("p-1", 1.0, 1.5, "good"),
+        ]
+        samples = np.zeros(dub.SAMPLE_RATE * 2, dtype=np.float32)
+
+        with mock.patch.object(dub, "speak", fake_speak):
+            _, lines = dub.build(Engine(), samples, lambda _: None, cues)
+
+        self.assertTrue(lines[0].failed)
+        self.assertIn("refused", lines[0].failure)
+        self.assertEqual(lines[0].issues, ("failed", "unverified"))
+        self.assertEqual(lines[1].translated, "good")
+        self.assertFalse(lines[1].failed)
+
     @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required to change a line's speed")
     def test_smart_fit_speeds_the_rendered_line(self):
         import numpy as np

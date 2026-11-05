@@ -4,11 +4,11 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 const DEFAULT_ENGINE_DIR: &str = "engines/cascade";
 
-#[derive(Deserialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 pub struct Line {
     pub start: f64,
     pub end: f64,
@@ -18,6 +18,18 @@ pub struct Line {
     pub id: Option<String>,
     #[serde(default)]
     pub voice: Option<String>,
+    #[serde(default)]
+    pub slot_end: Option<f64>,
+    #[serde(default)]
+    pub file: Option<String>,
+    #[serde(default)]
+    pub issues: Vec<String>,
+    #[serde(default)]
+    pub failed: bool,
+    #[serde(default)]
+    pub failure: Option<String>,
+    #[serde(default)]
+    pub skipped: bool,
 }
 
 #[derive(Deserialize)]
@@ -35,6 +47,12 @@ pub struct Request<'a> {
     pub out: Option<PathBuf>,
     pub srt: Option<PathBuf>,
     pub cues: Option<PathBuf>,
+    pub track: Option<PathBuf>,
+    pub lines_dir: Option<PathBuf>,
+    pub report: Option<PathBuf>,
+    pub previous: Option<PathBuf>,
+    pub retry: Option<String>,
+    pub skip: Option<String>,
     pub keep_background: bool,
     pub timing: &'a str,
     pub fastest: f64,
@@ -77,6 +95,13 @@ pub fn run(request: &Request) -> Result<Dub, String> {
     let out = absolute(&request.out);
     let srt = absolute(&request.srt);
     let cues = absolute(&request.cues);
+    let track = absolute(&request.track);
+    let lines_dir = absolute(&request.lines_dir);
+    let previous = absolute(&request.previous);
+    let report = match absolute(&request.report) {
+        Some(path) => path,
+        None => env::temp_dir().join(format!("parlo-dub-{}-{}.json", std::process::id(), stamp())),
+    };
     let engine_dir = env::var("PARLO_CASCADE_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from(DEFAULT_ENGINE_DIR))
@@ -90,7 +115,6 @@ pub fn run(request: &Request) -> Result<Dub, String> {
         ));
     }
 
-    let report = env::temp_dir().join(format!("parlo-dub-{}-{}.json", std::process::id(), stamp()));
     let python = crate::sidecar::python_for(&engine_dir);
     let fastest = request.fastest.to_string();
     let slowest = request.slowest.to_string();
@@ -116,6 +140,21 @@ pub fn run(request: &Request) -> Result<Dub, String> {
     if let Some(cues) = &cues {
         command.arg("--cues").arg(cues);
     }
+    if let Some(track) = &track {
+        command.arg("--track").arg(track);
+    }
+    if let Some(lines_dir) = &lines_dir {
+        command.arg("--lines-dir").arg(lines_dir);
+    }
+    if let Some(previous) = &previous {
+        command.arg("--previous").arg(previous);
+    }
+    if let Some(retry) = &request.retry {
+        command.arg("--retry").arg(retry);
+    }
+    if let Some(skip) = &request.skip {
+        command.arg("--skip").arg(skip);
+    }
     if request.keep_background {
         command.arg("--keep-background");
     }
@@ -136,7 +175,9 @@ pub fn run(request: &Request) -> Result<Dub, String> {
 
     let text = fs::read_to_string(&report)
         .map_err(|error| format!("cannot read the dub report {}: {error}", report.display()))?;
-    fs::remove_file(&report).ok();
+    if request.report.is_none() {
+        fs::remove_file(&report).ok();
+    }
     serde_json::from_str(&text).map_err(|error| format!("invalid dub report: {error}"))
 }
 

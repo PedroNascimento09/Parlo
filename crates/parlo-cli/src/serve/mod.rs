@@ -572,11 +572,26 @@ pub fn run(
     }
 }
 
+#[derive(Clone)]
 struct DubFile {
     id: String,
     upload: PathBuf,
     dubbed: PathBuf,
+    srt: PathBuf,
+    track: PathBuf,
+    lines_dir: PathBuf,
+    report: PathBuf,
+    cues: Option<PathBuf>,
     name: String,
+    from: String,
+    to: String,
+    timing: String,
+    fastest: f64,
+    slowest: f64,
+    project_id: Option<String>,
+    keep_background: bool,
+    seconds: f64,
+    lines: Vec<dub::Line>,
 }
 
 fn dub_files() -> &'static Mutex<Vec<DubFile>> {
@@ -584,21 +599,15 @@ fn dub_files() -> &'static Mutex<Vec<DubFile>> {
     FILES.get_or_init(|| Mutex::new(Vec::new()))
 }
 
-fn remember(id: String, upload: PathBuf, dubbed: PathBuf, name: String) {
+fn remember(file: DubFile) {
     let mut files = match dub_files().lock() {
         Ok(files) => files,
         Err(_) => return,
     };
-    files.push(DubFile {
-        id,
-        upload,
-        dubbed,
-        name,
-    });
+    files.push(file);
     while files.len() > KEPT_DUBS {
         let oldest = files.remove(0);
-        fs::remove_file(&oldest.upload).ok();
-        fs::remove_file(&oldest.dubbed).ok();
+        forget_dub(&oldest);
     }
 }
 
@@ -608,6 +617,43 @@ fn recall(id: &str) -> Option<(PathBuf, String)> {
         .iter()
         .find(|file| file.id == id)
         .map(|file| (file.dubbed.clone(), file.name.clone()))
+}
+
+fn dub_body(file: &DubFile) -> String {
+    let lines: Vec<String> = file
+        .lines
+        .iter()
+        .map(|line| serde_json::to_string(line).unwrap_or_else(|_| "null".to_string()))
+        .collect();
+    let project = file
+        .project_id
+        .as_ref()
+        .map(|id| format!(",\"project_id\":\"{}\"", json_string(id)))
+        .unwrap_or_default();
+    format!(
+        "{{\"id\":\"{}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"lines\":[{}]{}}}",
+        json_string(&file.id),
+        json_string(&file.name),
+        json_string(&file.to),
+        json_string(&file.timing),
+        file.fastest,
+        file.slowest,
+        file.seconds,
+        lines.join(","),
+        project
+    )
+}
+
+fn forget_dub(file: &DubFile) {
+    fs::remove_file(&file.upload).ok();
+    fs::remove_file(&file.dubbed).ok();
+    fs::remove_file(&file.srt).ok();
+    fs::remove_file(&file.track).ok();
+    fs::remove_file(&file.report).ok();
+    if let Some(path) = &file.cues {
+        fs::remove_file(path).ok();
+    }
+    fs::remove_dir_all(&file.lines_dir).ok();
 }
 
 fn handle(
@@ -2067,6 +2113,115 @@ fn handle(
         };
     }
 
+    if method == "POST" && path.starts_with("/dub/") {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let rest = path.trim_start_matches("/dub/");
+        let Some((id, action)) = rest.rsplit_once('/') else {
+            return respond_json(stream, "404 Not Found", &error_json("not found"))
+                .map(|()| Flow::Serve);
+        };
+        if action != "retry" && action != "skip" {
+            return respond_json(stream, "404 Not Found", &error_json("not found"))
+                .map(|()| Flow::Serve);
+        }
+        let Some(line_id) = header(&headers, "x-parlo-line")
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+        else {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json("a line id is required"),
+            )
+            .map(|()| Flow::Serve);
+        };
+        let state = match dub_files().lock() {
+            Ok(files) => files.iter().find(|file| file.id == id).cloned(),
+            Err(_) => None,
+        };
+        let Some(state) = state else {
+            return respond_json(stream, "404 Not Found", &error_json("not found"))
+                .map(|()| Flow::Serve);
+        };
+        if !state
+            .lines
+            .iter()
+            .any(|line| line.id.as_deref() == Some(line_id.as_str()))
+        {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json(&format!("line {line_id} is not part of this render")),
+            )
+            .map(|()| Flow::Serve);
+        }
+        if state.cues.is_none() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &error_json("retrying a line needs imported subtitles"),
+            )
+            .map(|()| Flow::Serve);
+        }
+        let retry = (action == "retry").then(|| line_id.clone());
+        let skip = (action == "skip").then(|| line_id.clone());
+        let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
+        let result = dub::run(&dub::Request {
+            source: &state.upload,
+            from: &state.from,
+            to: &state.to,
+            out: Some(state.dubbed.clone()),
+            srt: Some(state.srt.clone()),
+            cues: state.cues.clone(),
+            track: Some(state.track.clone()),
+            lines_dir: Some(state.lines_dir.clone()),
+            report: Some(state.report.clone()),
+            previous: Some(state.report.clone()),
+            retry,
+            skip,
+            keep_background: state.keep_background,
+            timing: &state.timing,
+            fastest: state.fastest,
+            slowest: state.slowest,
+        });
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        return match result {
+            Ok(result) => {
+                let mut updated = state;
+                updated.lines = result.lines;
+                updated.seconds = result.seconds;
+                if let Ok(mut files) = dub_files().lock() {
+                    if let Some(slot) = files.iter_mut().find(|file| file.id == updated.id) {
+                        *slot = updated.clone();
+                    }
+                }
+                if let Some(project_id) = updated.project_id.as_deref() {
+                    if let Ok(mut store) = ProjectStore::open_default() {
+                        if let Ok(Some(mut project)) = store.load_dub_project(project_id) {
+                            apply_dub(&mut project, &updated.lines, &updated.to);
+                            if let Err(error) = store.save_dub_project(&mut project) {
+                                return respond_json(
+                                    stream,
+                                    "500 Internal Server Error",
+                                    &error_json(&format!(
+                                        "the line changed, but the project could not be saved: {error}"
+                                    )),
+                                )
+                                .map(|()| Flow::Serve);
+                            }
+                        }
+                    }
+                }
+                respond_json(stream, "200 OK", &dub_body(&updated)).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                .map(|()| Flow::Serve),
+        };
+    }
+
     if method == "GET" && path.starts_with("/dub/") {
         let id = path.trim_start_matches("/dub/");
         let Some((file, name)) = recall(id) else {
@@ -2496,6 +2651,10 @@ fn handle(
         let out_name = dubbed_name(&name, &to);
         let dubbed = directory.join(format!("{id}-{out_name}"));
         let subtitles = dubbed.with_extension("srt");
+        let track = directory.join(format!("{id}-track.wav"));
+        let lines_dir = directory.join(format!("{id}-lines"));
+        let report = directory.join(format!("{id}-report.json"));
+        let keep_background = header(&headers, "x-parlo-background").is_some();
         let _ = stream.set_write_timeout(Some(DUB_TIMEOUT));
         println!("dubbing {name} from {from} to {to}");
         let result = dub::run(&dub::Request {
@@ -2503,20 +2662,24 @@ fn handle(
             from: &from,
             to: &to,
             out: Some(dubbed.clone()),
-            srt: Some(subtitles),
+            srt: Some(subtitles.clone()),
             cues: cues.clone(),
-            keep_background: header(&headers, "x-parlo-background").is_some(),
+            track: Some(track.clone()),
+            lines_dir: Some(lines_dir.clone()),
+            report: Some(report.clone()),
+            previous: None,
+            retry: None,
+            skip: None,
+            keep_background,
             timing: &timing,
             fastest,
             slowest,
         });
-        if let Some(path) = &cues {
-            fs::remove_file(path).ok();
-        }
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
 
         return match result {
             Ok(result) => {
+                let project_id = project.as_ref().map(|project| project.id.clone());
                 if let (Some(project), Some(store)) = (project.as_mut(), project_store.as_mut()) {
                     apply_dub(project, &result.lines, &to);
                     if let Err(error) = store.save_dub_project(project) {
@@ -2530,45 +2693,38 @@ fn handle(
                         .map(|()| Flow::Serve);
                     }
                 }
-                let output = PathBuf::from(&result.out);
-                remember(id.clone(), upload, output, out_name.clone());
-                let lines: Vec<String> = result
-                    .lines
-                    .iter()
-                    .map(|line| {
-                        let voice = line
-                            .voice
-                            .as_deref()
-                            .map(|voice| format!("\"{}\"", json_string(voice)))
-                            .unwrap_or_else(|| "null".to_string());
-                        format!(
-                            "{{\"start\":{:.2},\"end\":{:.2},\"source\":\"{}\",\"translated\":\"{}\",\"voice\":{}}}",
-                            line.start,
-                            line.end,
-                            json_string(&line.source),
-                            json_string(&line.translated),
-                            voice
-                        )
-                    })
-                    .collect();
-                let project_field = project
-                    .as_ref()
-                    .map(|project| format!(",\"project_id\":\"{}\"", json_string(&project.id)))
-                    .unwrap_or_default();
-                let body = format!(
-                    "{{\"id\":\"{id}\",\"name\":\"{}\",\"to\":\"{}\",\"timing\":\"{}\",\"fastest\":{},\"slowest\":{},\"seconds\":{:.2},\"lines\":[{}]{project_field}}}",
-                    json_string(&out_name),
-                    json_string(&to),
-                    json_string(&timing),
+                let file = DubFile {
+                    id: id.clone(),
+                    upload,
+                    dubbed,
+                    srt: subtitles,
+                    track,
+                    lines_dir,
+                    report,
+                    cues,
+                    name: out_name,
+                    from,
+                    to,
+                    timing,
                     fastest,
                     slowest,
-                    result.seconds,
-                    lines.join(",")
-                );
+                    project_id,
+                    keep_background,
+                    seconds: result.seconds,
+                    lines: result.lines,
+                };
+                let body = dub_body(&file);
+                remember(file);
                 respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
             }
             Err(error) => {
                 fs::remove_file(&upload).ok();
+                fs::remove_file(&track).ok();
+                fs::remove_file(&report).ok();
+                fs::remove_dir_all(&lines_dir).ok();
+                if let Some(path) = &cues {
+                    fs::remove_file(path).ok();
+                }
                 respond_json(
                     stream,
                     "500 Internal Server Error",
@@ -4007,13 +4163,21 @@ fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line], langua
             continue;
         };
         if let Some(segment) = project.segments.iter_mut().find(|segment| segment.id == id) {
-            segment
-                .translations
-                .insert(language.to_string(), line.translated.clone());
-            if primary {
-                segment.target_text = Some(line.translated.clone());
+            if !line.translated.is_empty() {
+                segment
+                    .translations
+                    .insert(language.to_string(), line.translated.clone());
+                if primary {
+                    segment.target_text = Some(line.translated.clone());
+                }
             }
-            segment.state = "dubbed".to_string();
+            segment.state = if line.failed {
+                "failed".to_string()
+            } else if line.skipped {
+                "skipped".to_string()
+            } else {
+                "dubbed".to_string()
+            };
         }
     }
     if !project.targets.iter().any(|target| target == language) {
@@ -4602,6 +4766,7 @@ mod tests {
                 translated: "Good morning".to_string(),
                 id: Some("p1-0".to_string()),
                 voice: None,
+                ..Default::default()
             },
             dub::Line {
                 start: 4.0,
@@ -4610,6 +4775,7 @@ mod tests {
                 translated: "See you".to_string(),
                 id: Some("missing".to_string()),
                 voice: None,
+                ..Default::default()
             },
         ];
 
@@ -4645,6 +4811,7 @@ mod tests {
             translated: text.to_string(),
             id: Some("p1-0".to_string()),
             voice: Some(voice.to_string()),
+            ..Default::default()
         };
 
         apply_dub(&mut project, &[line("Good morning", "voice-en")], "en");
