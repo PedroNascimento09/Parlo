@@ -118,7 +118,7 @@ Rules:
 | P6 | LAN sharing with a PIN | Yes | No | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
 | P7 | Remote backend | Yes | No | Parity, HTTPS only | 5 | A laptop drives a desktop GPU |
 | P8 | Keys and tickets | API key, WS ticket | Done · daa2b0b: `POST /ticket` issues a single-use ticket that opens one WebSocket and is refused on replay, and the token still works alone | Parity | 5 | A short-lived ticket cannot be replayed |
-| P9 | SDK and examples | Python client | No | Parity | 5 | One example per endpoint runs |
+| P9 | SDK and examples | Python client | Done · 273b302: `examples/openai_client.py` calls models, transcriptions, translations and speech on a running server and prints one line per endpoint, `docs/API.md` carries the request and the real response for each, and a test fails when a `/v1` route has no example | Parity | 5 | One example per endpoint runs |
 
 ## Models
 
@@ -148,7 +148,7 @@ Rules:
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| Q1 | Automated tests | Large suite | Partial: 366 Rust, 87 core and the full Python suite; not every route has a test | 600+, route and flow tests | 6 | Every route has a test |
+| Q1 | Automated tests | Large suite | Partial: 368 Rust, 87 core and the full Python suite; not every route has a test | 600+, route and flow tests | 6 | Every route has a test |
 | Q2 | Published benchmarks | Yes | Yes, one machine | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Yes | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-47 of 80 rows are Done (58.8%). Eight Partial rows counted at half give 63.8%.
+48 of 80 rows are Done (60.0%). Eight Partial rows counted at half give 65.0%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are P9, one example per endpoint, then Q1, one test per route.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are Q1, one test per route and the 600 test target, then V1 and V2, which still need the engine.
