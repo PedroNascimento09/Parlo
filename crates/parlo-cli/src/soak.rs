@@ -221,36 +221,6 @@ fn chart_svg(memory: &[u64], interval: u64) -> String {
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_report_keeps_every_sample_and_the_interval() {
-        let body = report_json(30, 1, &[10, 11, 12], 1, 0);
-        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
-        assert_eq!(value["interval"], 1);
-        assert_eq!(value["seconds"], 30);
-        assert_eq!(value["memory_bytes"].as_array().unwrap().len(), 3);
-        assert_eq!(value["memory_bytes"][2], 12);
-        assert_eq!(value["sessions"], 1);
-    }
-
-    #[test]
-    fn the_chart_draws_one_point_per_sample() {
-        let svg = chart_svg(&[10, 12, 11], 15);
-        let points = svg
-            .split("points=\"")
-            .nth(1)
-            .and_then(|rest| rest.split('"').next())
-            .unwrap();
-        assert_eq!(points.split(' ').count(), 3, "{svg}");
-        assert!(svg.contains("0 minutes"), "{svg}");
-        let flat = chart_svg(&[10, 10], 15);
-        assert_eq!(flat.matches("points=").count(), 1, "{flat}");
-    }
-}
-
 fn tail(path: &std::path::Path) -> String {
     std::fs::read_to_string(path)
         .map(|text| text.lines().last().unwrap_or_default().to_string())
@@ -374,4 +344,34 @@ fn rss_bytes(pid: u32) -> Result<u64, String> {
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
 fn rss_bytes(_pid: u32) -> Result<u64, String> {
     Err("this platform has no memory reader".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_report_keeps_every_sample_and_the_interval() {
+        let body = report_json(30, 1, &[10, 11, 12], 1, 0);
+        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(value["interval"], 1);
+        assert_eq!(value["seconds"], 30);
+        assert_eq!(value["memory_bytes"].as_array().unwrap().len(), 3);
+        assert_eq!(value["memory_bytes"][2], 12);
+        assert_eq!(value["sessions"], 1);
+    }
+
+    #[test]
+    fn the_chart_draws_one_point_per_sample() {
+        let svg = chart_svg(&[10, 12, 11], 15);
+        let points = svg
+            .split("points=\"")
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .unwrap();
+        assert_eq!(points.split(' ').count(), 3, "{svg}");
+        assert!(svg.contains("0 minutes"), "{svg}");
+        let flat = chart_svg(&[10, 10], 15);
+        assert_eq!(flat.matches("points=").count(), 1, "{flat}");
+    }
 }
