@@ -258,6 +258,19 @@
     text-transform: uppercase;
     color: var(--muted);
   }
+  .tidy {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    align-items: flex-start;
+  }
+  .tidy-hint {
+    font-size: 9px;
+    line-height: 1.1;
+    color: var(--muted);
+    opacity: 0.72;
+    transition: opacity 140ms ease;
+  }
   .rule {
     width: 1px;
     height: 18px;
@@ -313,7 +326,7 @@
     to { opacity: 1; transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .island, .switch, .switch .knob, .wave, .wave i, .write-menu, .write-btn, .write-option, .stop { animation: none; transition: none; }
+    .island, .switch, .switch .knob, .wave, .wave i, .write-menu, .write-btn, .write-option, .stop, .tidy-hint { animation: none; transition: none; }
   }
 </style>
 </head>
@@ -336,8 +349,11 @@
         <div class="write-menu" id="write-menu" role="listbox" aria-label="Dictation writes" hidden></div>
       </div>
       <span class="rule" aria-hidden="true"></span>
-      <span class="switch-label" id="tidy-label">Clean</span>
-      <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" title="Removes filler words and repeats before writing">
+      <div class="tidy">
+        <span class="switch-label" id="tidy-label">Clean up</span>
+        <span class="tidy-hint" id="tidy-hint">Drops filler and repeats</span>
+      </div>
+      <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
         <span class="knob"></span>
       </button>
       <button type="button" class="record" id="record">Record</button>
@@ -353,6 +369,7 @@ const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 const stateEl = document.getElementById("state");
 const lineEl = document.getElementById("line");
 const tidyEl = document.getElementById("tidy");
+const tidyHint = document.getElementById("tidy-hint");
 const recordEl = document.getElementById("record");
 const bars = [...document.querySelectorAll(".wave i")];
 const clockEl = document.getElementById("clock");
@@ -887,6 +904,7 @@ function ready() {
 
 function paintTidy() {
   tidyEl.setAttribute("aria-checked", String(tidy));
+  tidyHint.textContent = tidy ? "Drops filler and repeats" : "Keeps every spoken word";
 }
 
 const writeEl = document.getElementById("write");
