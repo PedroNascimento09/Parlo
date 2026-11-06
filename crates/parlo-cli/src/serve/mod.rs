@@ -94,6 +94,12 @@ struct Settings {
     compute: Option<String>,
     #[serde(default)]
     channel: Option<String>,
+    #[serde(default)]
+    share: Option<bool>,
+    #[serde(default)]
+    share_pin: Option<String>,
+    #[serde(default)]
+    share_port: Option<u16>,
 }
 
 #[derive(serde::Deserialize)]
@@ -455,7 +461,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\"}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -470,7 +476,10 @@ impl Session {
             json_string(&stored.name),
             stored.history_days,
             json_string(&stored.compute),
-            json_string(&stored.update_channel)
+            json_string(&stored.update_channel),
+            stored.share,
+            json_string(&stored.share_pin),
+            stored.share_port
         )
     }
 }
@@ -478,6 +487,7 @@ impl Session {
 pub struct Server {
     pub address: String,
     pub token: String,
+    pub share: Option<String>,
 }
 
 impl Server {
@@ -497,7 +507,7 @@ pub fn start(
     if std::env::var("PARLO_APP_GUARD").is_ok() {
         exit_with_parent();
     }
-    let session = Session::open(engine, stt, from, to)?;
+    let session = Arc::new(Session::open(engine, stt, from, to)?);
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|error| format!("cannot bind 127.0.0.1:{port}: {error}"))?;
 
@@ -513,10 +523,43 @@ pub fn start(
 
     crate::watch::start();
     let address = format!("http://127.0.0.1:{port}");
-    let shared = token.clone();
     let accepting = Arc::new(AtomicBool::new(true));
-    std::thread::spawn(move || listen(listener, shared, port, session, accepting));
-    Ok(Server { address, token })
+    let share = match share_target(&crate::config::load()) {
+        Some((bind, share_port, pin)) => {
+            let shared_listener = TcpListener::bind((bind.as_str(), share_port))
+                .map_err(|error| format!("cannot bind {bind}:{share_port}: {error}"))?;
+            println!("  share      http://{bind}:{share_port} with a PIN");
+            let shared_token = token.clone();
+            let shared_session = Arc::clone(&session);
+            let shared_accepting = Arc::clone(&accepting);
+            let gate = Arc::new(Share {
+                pin,
+                port: share_port,
+            });
+            std::thread::spawn(move || {
+                listen(
+                    shared_listener,
+                    shared_token,
+                    share_port,
+                    shared_session,
+                    shared_accepting,
+                    Some(gate),
+                )
+            });
+            Some(format!("http://{bind}:{share_port}"))
+        }
+        None => {
+            println!("  share      off");
+            None
+        }
+    };
+    let shared = token.clone();
+    std::thread::spawn(move || listen(listener, shared, port, session, accepting, None));
+    Ok(Server {
+        address,
+        token,
+        share,
+    })
 }
 
 fn exit_with_parent() {
@@ -543,11 +586,11 @@ fn listen(
     listener: TcpListener,
     token: String,
     port: u16,
-    session: Session,
+    session: Arc<Session>,
     accepting: Arc<AtomicBool>,
+    share: Option<Arc<Share>>,
 ) {
     let started = Instant::now();
-    let session = Arc::new(session);
     for stream in listener.incoming() {
         if !accepting.load(Ordering::Relaxed) {
             break;
@@ -574,9 +617,17 @@ fn listen(
         let token = token.clone();
         let session = Arc::clone(&session);
         let accepting = Arc::clone(&accepting);
+        let share = share.clone();
         std::thread::spawn(move || {
             let _open = open;
-            match handle(&mut stream, &token, port, &session, started) {
+            match handle(
+                &mut stream,
+                &token,
+                port,
+                &session,
+                started,
+                share.as_deref(),
+            ) {
                 Ok(Flow::Serve) => {}
                 Ok(Flow::Stop) => accepting.store(false, Ordering::Relaxed),
                 Err(error) => eprintln!("request failed: {error}"),
@@ -595,6 +646,9 @@ pub fn run(
 ) -> Result<(), String> {
     let server = start(port, token, engine, stt, from, to)?;
     println!("  api        {}", server.app_url());
+    if let Some(share) = &server.share {
+        println!("  share      {share} with a PIN");
+    }
     loop {
         std::thread::park();
     }
@@ -819,12 +873,68 @@ fn discard_dub(file: &DubFile) {
     fs::remove_dir_all(&file.job_dir).ok();
 }
 
+struct Share {
+    pin: String,
+    port: u16,
+}
+
+fn share_target(config: &parlo_core::settings::Config) -> Option<(String, u16, String)> {
+    if !config.share || config.share_port < 1024 {
+        return None;
+    }
+    let pin = parlo_core::settings::check_pin(&config.share_pin).ok()?;
+    Some(("0.0.0.0".to_string(), config.share_port, pin))
+}
+
+fn host_is_share(headers: &[(String, String)], port: u16) -> bool {
+    let Some(host) = header(headers, "host") else {
+        return false;
+    };
+    let host = host.trim();
+    let (name, found) = match host.rsplit_once(':') {
+        Some((name, value)) => (name, value.parse::<u16>().ok()),
+        None => (host, None),
+    };
+    if found != Some(port) {
+        return false;
+    }
+    let bare = name.trim_start_matches('[').trim_end_matches(']');
+    bare.parse::<std::net::IpAddr>().is_ok()
+        || bare.eq_ignore_ascii_case("localhost")
+        || bare.to_ascii_lowercase().ends_with(".local")
+}
+
+fn pin_offered(headers: &[(String, String)], query: &str, pin: &str) -> bool {
+    let offered = header(headers, "x-parlo-pin").or_else(|| {
+        query.split('&').find_map(|pair| {
+            let (name, value) = pair.split_once('=')?;
+            (name == "pin").then(|| value.to_string())
+        })
+    });
+    offered.is_some_and(|value| auth::constant_time_eq(value.trim(), pin))
+}
+
+fn origin_allowed_for(headers: &[(String, String)], port: u16, shared: bool) -> bool {
+    if !shared {
+        return origin_allowed(headers, port);
+    }
+    let Some(origin) = header(headers, "origin") else {
+        return true;
+    };
+    let Some(host) = header(headers, "host") else {
+        return false;
+    };
+    let origin = origin.trim_end_matches('/');
+    origin == format!("http://{host}") || origin == format!("https://{host}")
+}
+
 fn handle(
     stream: &mut TcpStream,
     token: &str,
     port: u16,
     session: &Session,
     started: Instant,
+    share: Option<&Share>,
 ) -> Result<Flow, String> {
     let (head, body) = read_http(stream)?;
     let mut lines = head.lines();
@@ -833,12 +943,27 @@ fn handle(
     let method = parts.next().unwrap_or_default();
     let target = parts.next().unwrap_or_default();
     let (path, query) = target.split_once('?').unwrap_or((target, ""));
-    let headers: Vec<(String, String)> = lines
+    let mut headers: Vec<(String, String)> = lines
         .filter_map(|line| line.split_once(':'))
         .map(|(name, value)| (name.trim().to_ascii_lowercase(), value.trim().to_string()))
         .collect();
 
-    if !host_is_local(&headers) {
+    if let Some(share) = share {
+        if !host_is_share(&headers, share.port) {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"host must name this share port\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        if !pin_offered(&headers, query, &share.pin) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong PIN\"}")
+                .map(|()| Flow::Serve);
+        }
+        headers.retain(|(name, _)| name != "authorization" && name != "x-parlo-token");
+        headers.push(("authorization".to_string(), format!("Bearer {token}")));
+    } else if !host_is_local(&headers) {
         return respond_json(
             stream,
             "400 Bad Request",
@@ -847,7 +972,7 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
-    if method == "POST" && !origin_allowed(&headers, port) {
+    if method == "POST" && !origin_allowed_for(&headers, port, share.is_some()) {
         return respond_json(
             stream,
             "403 Forbidden",
@@ -1766,7 +1891,10 @@ fn handle(
                 && requested.to.is_none()
                 && requested.write.is_none()
                 && requested.unload.is_none()
-                && requested.channel.is_none();
+                && requested.channel.is_none()
+                && requested.share.is_none()
+                && requested.share_pin.is_none()
+                && requested.share_port.is_none();
             if only_shortcut {
                 return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
             }
@@ -1885,6 +2013,60 @@ fn handle(
             }
         }
 
+        if requested.share.is_some()
+            || requested.share_pin.is_some()
+            || requested.share_port.is_some()
+        {
+            let mut config = crate::config::load();
+            if let Some(share) = requested.share {
+                config.share = share;
+            }
+            if let Some(pin) = requested.share_pin.as_deref() {
+                if pin.trim().is_empty() {
+                    config.share_pin.clear();
+                } else {
+                    match parlo_core::settings::check_pin(pin) {
+                        Ok(value) => config.share_pin = value,
+                        Err(error) => {
+                            return respond_json(
+                                stream,
+                                "400 Bad Request",
+                                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                            )
+                            .map(|()| Flow::Serve)
+                        }
+                    }
+                }
+            }
+            if let Some(share_port) = requested.share_port {
+                if share_port < 1024 {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        "{\"error\":\"the share port must be 1024 or higher\"}",
+                    )
+                    .map(|()| Flow::Serve);
+                }
+                config.share_port = share_port;
+            }
+            if config.share && config.share_pin.is_empty() {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"set a PIN before sharing this computer\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
         if let Some(manage) = requested.manage_memory {
             let mut config = crate::config::load();
             config.manage_memory = manage;
@@ -1906,7 +2088,10 @@ fn handle(
             && requested.unload.is_none()
             && requested.manage_memory.is_none()
             && requested.compute.is_none()
-            && requested.channel.is_none();
+            && requested.channel.is_none()
+            && requested.share.is_none()
+            && requested.share_pin.is_none()
+            && requested.share_port.is_none();
         if only_settings {
             return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
         }
@@ -5422,11 +5607,14 @@ mod tests {
     fn the_main_routes_answer_on_a_real_socket() {
         let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
         let port = listener.local_addr().unwrap().port();
-        let session =
-            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap();
+        let session = Arc::new(
+            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap(),
+        );
         let accepting = Arc::new(AtomicBool::new(true));
         let stop = Arc::clone(&accepting);
-        std::thread::spawn(move || listen(listener, "t0ken".into(), port, session, accepting));
+        std::thread::spawn(move || {
+            listen(listener, "t0ken".into(), port, session, accepting, None)
+        });
 
         let health = ask(port, "GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
         assert!(health.starts_with("HTTP/1.1 200 OK"));
@@ -6044,8 +6232,115 @@ mod tests {
         let port = listener.local_addr().unwrap().port();
         let accepting = Arc::new(AtomicBool::new(true));
         let stop = Arc::clone(&accepting);
-        std::thread::spawn(move || listen(listener, "t0ken".into(), port, session, accepting));
+        let session = Arc::new(session);
+        std::thread::spawn(move || {
+            listen(listener, "t0ken".into(), port, session, accepting, None)
+        });
         (port, stop)
+    }
+
+    #[test]
+    fn the_share_listener_refuses_anything_without_the_pin() {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let session = Arc::new(
+            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap(),
+        );
+        let accepting = Arc::new(AtomicBool::new(true));
+        let gate = Arc::new(Share {
+            pin: "1234".to_string(),
+            port,
+        });
+        std::thread::spawn(move || {
+            listen(
+                listener,
+                "t0ken".into(),
+                port,
+                session,
+                accepting,
+                Some(gate),
+            )
+        });
+
+        let missing = ask(
+            port,
+            &format!("GET /state HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n\r\n"),
+        );
+        assert!(missing.starts_with("HTTP/1.1 401"), "{missing}");
+
+        let audio = ask(
+            port,
+            &format!("GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n\r\n"),
+        );
+        assert!(audio.starts_with("HTTP/1.1 401"), "{audio}");
+
+        let wrong = ask(
+            port,
+            &format!("GET /state HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-Parlo-Pin: 4321\r\n\r\n"),
+        );
+        assert!(wrong.starts_with("HTTP/1.1 401"), "{wrong}");
+
+        let right = ask(
+            port,
+            &format!("GET /state HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-Parlo-Pin: 1234\r\n\r\n"),
+        );
+        assert!(right.starts_with("HTTP/1.1 200"), "{right}");
+        assert!(right.contains("\"state\":"));
+
+        let typed = ask(
+            port,
+            &format!("GET /state?pin=1234 HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\n\r\n"),
+        );
+        assert!(typed.starts_with("HTTP/1.1 200"), "{typed}");
+
+        let models = ask(
+            port,
+            &format!(
+                "GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-Parlo-Pin: 1234\r\n\r\n"
+            ),
+        );
+        assert!(models.starts_with("HTTP/1.1 200"), "{models}");
+
+        let rebinding = ask(
+            port,
+            &format!(
+                "GET /state HTTP/1.1\r\nHost: attacker.example:{port}\r\nX-Parlo-Pin: 1234\r\n\r\n"
+            ),
+        );
+        assert!(rebinding.starts_with("HTTP/1.1 400"), "{rebinding}");
+    }
+
+    #[test]
+    fn a_share_port_needs_a_share_flag_and_a_pin() {
+        let mut config = parlo_core::settings::Config::default();
+        assert!(share_target(&config).is_none());
+        config.share = true;
+        assert!(share_target(&config).is_none());
+        config.share_pin = "12".to_string();
+        assert!(share_target(&config).is_none());
+        config.share_pin = "4821".to_string();
+        config.share_port = 9100;
+        assert_eq!(
+            share_target(&config),
+            Some(("0.0.0.0".to_string(), 9100, "4821".to_string()))
+        );
+        config.share = false;
+        assert!(share_target(&config).is_none());
+    }
+
+    #[test]
+    fn a_closed_share_leaves_the_port_untouched() {
+        let probe = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = probe.local_addr().unwrap().port();
+        drop(probe);
+        let config = parlo_core::settings::Config {
+            share: false,
+            share_pin: "4821".to_string(),
+            share_port: port,
+            ..Default::default()
+        };
+        assert!(share_target(&config).is_none());
+        assert!(TcpStream::connect(("127.0.0.1", port)).is_err());
     }
 
     fn start_server() -> (u16, Arc<AtomicBool>) {

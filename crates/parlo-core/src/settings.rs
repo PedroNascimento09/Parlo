@@ -28,6 +28,9 @@ pub struct Config {
     pub history_days: u32,
     pub port: u16,
     pub update_channel: String,
+    pub share: bool,
+    pub share_pin: String,
+    pub share_port: u16,
     pub device: Option<usize>,
     pub compute: String,
     pub unload: u32,
@@ -135,6 +138,9 @@ impl Default for Config {
             history_days: 0,
             port: 8787,
             update_channel: "stable".to_string(),
+            share: false,
+            share_pin: String::new(),
+            share_port: 8788,
             device: None,
             compute: "auto".to_string(),
             unload: 30,
@@ -144,6 +150,15 @@ impl Default for Config {
             intelligence: Intelligence::default(),
             features: Features::default(),
         }
+    }
+}
+
+pub fn check_pin(value: &str) -> Result<String, String> {
+    let pin = value.trim();
+    if (4..=8).contains(&pin.len()) && pin.chars().all(|digit| digit.is_ascii_digit()) {
+        Ok(pin.to_string())
+    } else {
+        Err("the PIN must be four to eight digits".to_string())
     }
 }
 
@@ -320,6 +335,39 @@ mod tests {
         assert_eq!(config.intelligence.mode, "auto");
         assert_eq!(config.intelligence.clean, "light");
         assert!(!config.intelligence.allow_cloud);
+    }
+
+    #[test]
+    fn sharing_starts_off_and_round_trips() {
+        let mut config = Config::default();
+        assert!(!config.share);
+        assert_eq!(config.share_port, 8788);
+        config.share = true;
+        config.share_pin = "4821".to_string();
+        config.share_port = 9100;
+        let text = serde_json::to_string(&config).unwrap();
+        let loaded: Config = serde_json::from_str(&text).unwrap();
+        assert!(loaded.share);
+        assert_eq!(loaded.share_pin, "4821");
+        assert_eq!(loaded.share_port, 9100);
+    }
+
+    #[test]
+    fn an_older_config_shares_nothing() {
+        let config: Config = serde_json::from_str("{\"port\": 9000}").unwrap();
+        assert!(!config.share);
+        assert!(config.share_pin.is_empty());
+        assert_eq!(config.share_port, 8788);
+    }
+
+    #[test]
+    fn a_pin_is_four_to_eight_digits() {
+        assert_eq!(check_pin(" 1234 ").unwrap(), "1234");
+        assert_eq!(check_pin("12345678").unwrap(), "12345678");
+        assert!(check_pin("123").is_err());
+        assert!(check_pin("123456789").is_err());
+        assert!(check_pin("12a4").is_err());
+        assert!(check_pin("").is_err());
     }
 
     #[test]

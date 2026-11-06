@@ -22,7 +22,7 @@ pub(crate) fn authorised(headers: &[(String, String)], token: &str) -> bool {
     })
 }
 
-fn constant_time_eq(left: &str, right: &str) -> bool {
+pub(crate) fn constant_time_eq(left: &str, right: &str) -> bool {
     let left = left.as_bytes();
     let right = right.as_bytes();
     if left.len() != right.len() {
