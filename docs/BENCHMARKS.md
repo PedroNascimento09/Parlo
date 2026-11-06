@@ -704,6 +704,24 @@ The Rust engine still starts faster and uses less memory with the recogniser loa
 .venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip.wav --models .tmp-models --voice .tmp-models/pt_PT-tugão-medium.onnx --espeak-data .venv/Lib/site-packages/piper/espeak-ng-data --cascade-dir engines/cascade --rust crates/parlo-engine-rs/target/x86_64-pc-windows-msvc/release/parlo-engine.exe --from pt --to en --threads 4 --runs 3 --json .tmp-bench.json
 ```
 
+## Every engine on every device
+
+`parlo bench` runs what this machine can run and says what it cannot, one row per engine and device, with the hardware, the profile and the commit beside every number.
+The table below is its output, and `docs/benchmarks.json` is the same run as data; regenerate both with `parlo bench` and `parlo bench --json`, and never type a row by hand.
+
+<!-- bench:start -->
+| Engine | Device | Result | RTF | Frames | Hardware | Commit |
+|---|---|---|---|---|---|---|
+| cascade | cpu | no number: Universal cascade needs Parakeet 0.6B v3 on disk, and the python stack that reads them | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| cascade | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| echo | cpu | measured on this machine | 0.003 | 125 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| echo | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| hibiki | cpu | not in this build | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| hibiki | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| cloud | cpu | not in this build | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| cloud | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+<!-- bench:end -->
+
 ## What gets measured
 
 | Metric | Method |
