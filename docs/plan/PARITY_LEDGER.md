@@ -79,7 +79,7 @@ Rules:
 | V8 | Voice gallery | Online community | Done · 34c49ac: a pack file imports and stays on this computer, exports back out, refills both voices of a comparison, and a pack with an unknown or revoked voice is refused before anything is written | Local packs, import/export, opt-in LAN | 2 | A pack imports; nothing uploads |
 | V9 | Persona import/export | Yes | Done · 53ff2e7: the exported header and sample import on another machine with the consent record, and a revoked, foreign or sample-less file is refused | Parity | 2 | A voice moves between machines as one file |
 | V10 | Per-agent voices | Yes | Done · a43f158: the MCP handshake remembers the client name, `bind_voice` keeps its voice in `agents.json`, and `agent_voice` resolves it on every later call | Parity | 1 | An MCP client id resolves to its bound voice |
-| V11 | Interface locales | 21 | 1 | 21 | 5 | Zero missing keys per locale |
+| V11 | Interface locales | 21 | Done · d3e6ba1: `parlo config --locale pt` and the language field in the app store the choice, `crates/parlo-cli/web/locales.json` carries 21 locales with the same twelve keys in each, `GET /locale` feeds every labelled control, and tests fail on a missing or empty key, on an unknown locale and on a broken round-trip | 21 | 5 | Zero missing keys per locale |
 
 ## Dubbing
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-52 of 80 rows are Done (65.0%), counted as the rows whose Parlo today cell starts with Done or Yes. Six Partial rows counted at half give 68.8%.
+53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Six Partial rows counted at half give 70.0%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is V11, interface locales: the app speaks English only, so what is missing is a locale setting that persists, a table of the interface strings with an entry per locale, and a test that fails when a locale leaves a string out; it needs no model and no second machine.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is R2, package managers: the release archives already exist, so what is missing is a manifest for each channel (winget, brew, AUR, Snap, DEB, AppImage, Nix) and a test that fails when a manifest names an archive the release does not ship; installing from a real channel cannot be tried from this machine.

@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The app now speaks 21 languages: `parlo config --locale pt` or the language field in Settings stores the choice, every labelled control is replaced from `crates/parlo-cli/web/locales.json` through `GET /locale`, and a test fails when a locale leaves a key out or leaves it empty.
 - A desktop can now serve Parlo to another machine over HTTPS: `parlo serve --tls-cert cert.pem --tls-key key.pem` binds the network and answers plain HTTP with 426, `parlo config --remote-url https://desk:8788 --remote-token …` stores the address, `parlo remote file.wav` posts to it over rustls with the machine's own certificates or `--remote-ca`, and a certificate the client does not trust is refused before anything is sent.
 - Sharing with another device is now a switch you control: `parlo config --share on --pin 4821` or the Sharing field in the app opens a network port only when you ask, every request on it needs the PIN, and the port stays closed while sharing is off.
 - Parlo now updates on the channel you choose: the Updates field in the app and `parlo config --channel preview` keep the choice, a preview build sees prereleases and still moves to a newer stable when one ships, and a stable build never installs a preview.
