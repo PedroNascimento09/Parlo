@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Vocal separation is now proven on a committed stereo fixture: the centred voice leaves the background, the lateral music stays, and the suite fails if either stops being true.
+- `parlo bench` now measures the cascade engine itself, running the sidecar benchmark on a committed sentence with this machine's models folder, and keeps saying what is missing when they are not on disk.
 - Dubbing a link now takes an optional cookies file: paste the path in the window and Parlo hands it to yt-dlp, so a video behind a sign-in can be dubbed, while a missing or foreign file is refused before anything is downloaded.
 - Every dubbing timing mode now carries a rendered fixture of real speech in `engines/cascade/tests/fixtures/timing/`, and the suite fails when a mode's tempo, cut or length drifts from what it promises.
 - `docs/START.md` is the five-minute path from a fresh computer to a dictated sentence, linked from the README beside [benchmarks](docs/BENCHMARKS.md) and [privacy](docs/PRIVACY.md), and a test now fails when a documented command, flag or page link no longer matches the binary.
