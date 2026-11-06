@@ -1,0 +1,80 @@
+{
+  "notice": "Rendered by the Piper voice in engines/cascade/models, then timed the way dub.py times a line.",
+  "modes": {
+    "natural": {
+      "strategy": "natural",
+      "start": 1.0,
+      "slot_end": 4.5,
+      "next_start": 5.0,
+      "source": "source.wav",
+      "duration": 2.809625,
+      "fastest": 4.0,
+      "slowest": 0.5,
+      "video": true,
+      "tempo": 1.0,
+      "start_at": 1.0,
+      "end": 3.809625,
+      "seconds": 2.809625
+    },
+    "concise": {
+      "strategy": "concise",
+      "start": 1.0,
+      "slot_end": 4.5,
+      "next_start": 5.0,
+      "source": "trimmed-source.wav",
+      "duration": 0.592125,
+      "fastest": 4.0,
+      "slowest": 0.5,
+      "video": true,
+      "tempo": 1.0,
+      "start_at": 1.0,
+      "end": 1.592125,
+      "seconds": 0.592125
+    },
+    "smart-fit": {
+      "strategy": "smart-fit",
+      "start": 1.0,
+      "slot_end": 2.5,
+      "next_start": 5.0,
+      "source": "source.wav",
+      "duration": 2.809625,
+      "fastest": 4.0,
+      "slowest": 0.5,
+      "video": true,
+      "tempo": 1.873083,
+      "start_at": 1.0,
+      "end": 2.5,
+      "seconds": 1.495625
+    },
+    "stretch": {
+      "strategy": "stretch",
+      "start": 1.0,
+      "slot_end": 1.6,
+      "next_start": 3.0,
+      "source": "source.wav",
+      "duration": 2.809625,
+      "fastest": 4.0,
+      "slowest": 0.5,
+      "video": true,
+      "tempo": 1.404813,
+      "start_at": 1.0,
+      "end": 3.0,
+      "seconds": 1.99425
+    },
+    "lip-sync": {
+      "strategy": "lip-sync",
+      "start": 1.0,
+      "slot_end": 2.0,
+      "next_start": 5.0,
+      "source": "source.wav",
+      "duration": 2.809625,
+      "fastest": 4.0,
+      "slowest": 0.5,
+      "video": true,
+      "tempo": 2.809625,
+      "start_at": 1.0,
+      "end": 2.0,
+      "seconds": 0.989
+    }
+  }
+}

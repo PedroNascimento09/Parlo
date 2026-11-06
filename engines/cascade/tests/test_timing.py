@@ -1,3 +1,4 @@
+import json
 import shutil
 import subprocess
 import sys
@@ -105,6 +106,77 @@ class SpeedTest(unittest.TestCase):
             source.write_bytes(b"unchanged")
             timing.stretch_wav(FFMPEG, source, target, 1.0)
             self.assertEqual(target.read_bytes(), b"unchanged")
+
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "timing"
+RENDERED_MODES = ("natural", "concise", "smart-fit", "stretch", "lip-sync")
+
+
+def fixture_seconds(path):
+    with wave.open(str(path), "rb") as handle:
+        return handle.getnframes() / handle.getframerate()
+
+
+class RenderedModeTest(unittest.TestCase):
+    def setUp(self):
+        self.manifest = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+        self.modes = self.manifest["modes"]
+
+    def test_every_timing_mode_has_a_rendered_fixture(self):
+        for mode in RENDERED_MODES:
+            self.assertIn(mode, self.modes)
+            self.assertTrue((FIXTURES / f"{mode}.wav").is_file(), mode)
+
+    def test_each_fixture_is_the_length_its_mode_promises(self):
+        for mode, values in self.modes.items():
+            placed = timing.plan(
+                values["strategy"],
+                values["start"],
+                values["slot_end"],
+                values["next_start"],
+                values["duration"],
+                values["fastest"],
+                values["slowest"],
+                values["video"],
+            )
+            self.assertAlmostEqual(placed.tempo, values["tempo"], places=5, msg=mode)
+            self.assertAlmostEqual(placed.end, values["end"], places=5, msg=mode)
+            seconds = fixture_seconds(FIXTURES / f"{mode}.wav")
+            self.assertAlmostEqual(seconds, placed.end - placed.start, delta=0.03, msg=mode)
+            self.assertAlmostEqual(seconds, values["seconds"], delta=0.001, msg=mode)
+
+    def test_each_mode_cuts_where_it_says_it_does(self):
+        natural = self.modes["natural"]
+        concise = self.modes["concise"]
+        smart = self.modes["smart-fit"]
+        stretch = self.modes["stretch"]
+        lip = self.modes["lip-sync"]
+        self.assertEqual(natural["tempo"], 1.0)
+        self.assertEqual(concise["tempo"], 1.0)
+        self.assertLess(concise["seconds"], natural["seconds"])
+        self.assertAlmostEqual(smart["end"], smart["slot_end"], places=5)
+        self.assertAlmostEqual(stretch["end"], stretch["next_start"], places=5)
+        self.assertGreater(stretch["end"], stretch["slot_end"])
+        self.assertAlmostEqual(lip["end"], lip["slot_end"], places=5)
+        self.assertGreater(lip["tempo"], 1.0)
+
+    def test_the_fixtures_are_speech_and_not_silence(self):
+        for mode in RENDERED_MODES:
+            with wave.open(str(FIXTURES / f"{mode}.wav"), "rb") as handle:
+                self.assertEqual(handle.getframerate(), timing.SAMPLE_RATE, mode)
+                self.assertEqual(handle.getnchannels(), 1, mode)
+                frames = handle.readframes(handle.getnframes())
+            samples = memoryview(frames).cast("h")
+            self.assertGreater(max(abs(value) for value in samples), 500, mode)
+
+    @unittest.skipUnless(FFMPEG, "ffmpeg is required to render a line")
+    def test_rerendering_the_committed_source_reproduces_each_fixture(self):
+        for mode, values in self.modes.items():
+            with tempfile.TemporaryDirectory() as directory:
+                target = Path(directory) / f"{mode}.wav"
+                timing.stretch_wav(FFMPEG, FIXTURES / values["source"], target, values["tempo"])
+                seconds = fixture_seconds(target)
+            self.assertAlmostEqual(seconds, values["seconds"], delta=0.03, msg=mode)
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ engines/*/models/
 *.onnx.json
 
 *.wav
+!engines/cascade/tests/fixtures/timing/*.wav
 *.log
 out/
 
