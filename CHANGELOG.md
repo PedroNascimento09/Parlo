@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The licence gate now covers every model, not only the crates: a model offered in the app must name a catalogue row with the same licence and a source, and a catalogue row must name a model the app offers.
 - The published benchmark table can no longer drift from the run that made it: the suite compares `docs/BENCHMARKS.md` with `docs/benchmarks.json`, and every row must name its cores and a commit the repository actually holds.
 - Every route the server serves now has a test: a table names all 90 route rows, a sweep proves each one refuses a wrong token, the behaviour tests answer the pages and the data routes, and the suite fails when a route arrives without a row.
 - Every public endpoint has a runnable example: `examples/openai_client.py` calls models, transcriptions, translations and speech against a running server, `docs/API.md` shows the request and the real response for each, and the suite fails when a `/v1` route arrives without one.
