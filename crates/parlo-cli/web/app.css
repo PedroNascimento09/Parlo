@@ -1909,6 +1909,14 @@ select.field-input {
   gap: 10px;
 }
 
+.dub-history {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
 .dub-original {
   margin: 0;
   padding: 8px 10px;

@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS segments (
     voice_id TEXT,
     source_text TEXT,
     original_text TEXT,
+    revisions_json TEXT,
     pace REAL,
     target_text TEXT,
     state TEXT,
@@ -230,6 +231,8 @@ pub struct DubSegment {
     pub source_text: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub original_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub revisions: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pace: Option<f64>,
     pub target_text: Option<String>,
@@ -313,6 +316,11 @@ impl Store {
         if !columns.contains("pace") {
             self.connection
                 .execute("ALTER TABLE segments ADD COLUMN pace REAL", [])
+                .map_err(sql)?;
+        }
+        if !columns.contains("revisions_json") {
+            self.connection
+                .execute("ALTER TABLE segments ADD COLUMN revisions_json TEXT", [])
                 .map_err(sql)?;
         }
         Ok(())
@@ -555,9 +563,15 @@ impl Store {
             if segment.id.is_empty() {
                 segment.id = format!("{}-{position}", project.id);
             }
+            if segment.revisions.is_empty() {
+                if let Some(original) = segment.original_text.clone() {
+                    segment.revisions.push(original);
+                }
+            }
+            segment.original_text = segment.revisions.first().cloned();
             transaction
                 .execute(
-                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, pace, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, NULL)",
+                    "INSERT INTO segments (id, project_id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, revisions_json, pace, target_text, state, qc_json) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, NULL)",
                     params![
                         segment.id,
                         project.id,
@@ -568,6 +582,8 @@ impl Store {
                         segment.voice_id,
                         segment.source_text,
                         segment.original_text,
+                        serde_json::to_string(&segment.revisions)
+                            .map_err(|error| error.to_string())?,
                         segment.pace,
                         segment.target_text,
                         segment.state
@@ -691,7 +707,7 @@ impl Store {
         };
         let mut statement = self
             .connection
-            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, pace, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
+            .prepare("SELECT id, position, start_ms, end_ms, speaker, voice_id, source_text, original_text, revisions_json, pace, target_text, state FROM segments WHERE project_id = ?1 ORDER BY position")
             .map_err(sql)?;
         let rows = statement
             .query_map(params![id], |row| {
@@ -705,15 +721,27 @@ impl Store {
                     translations: BTreeMap::new(),
                     source_text: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
                     original_text: row.get(7)?,
-                    pace: row.get(8)?,
-                    target_text: row.get(9)?,
+                    revisions: row
+                        .get::<_, Option<String>>(8)?
+                        .and_then(|text| serde_json::from_str(&text).ok())
+                        .unwrap_or_default(),
+                    pace: row.get(9)?,
+                    target_text: row.get(10)?,
                     state: row
-                        .get::<_, Option<String>>(10)?
+                        .get::<_, Option<String>>(11)?
                         .unwrap_or_else(|| "imported".to_string()),
                 })
             })
             .map_err(sql)?;
         project.segments = rows.collect::<Result<Vec<_>, _>>().map_err(sql)?;
+        for segment in &mut project.segments {
+            if segment.revisions.is_empty() {
+                if let Some(original) = segment.original_text.clone() {
+                    segment.revisions.push(original);
+                }
+            }
+            segment.original_text = segment.revisions.first().cloned();
+        }
         if project.targets.is_empty() {
             project.targets.push(project.to.clone());
         }
@@ -961,6 +989,7 @@ mod tests {
             ]),
             source_text: "Bom dia".to_string(),
             original_text: Some("Bom dia antes".to_string()),
+            revisions: Vec::new(),
             pace: Some(0.9),
             target_text: Some("Good morning".to_string()),
             state: "imported".to_string(),
@@ -975,6 +1004,7 @@ mod tests {
             translations: BTreeMap::new(),
             source_text: "Até logo".to_string(),
             original_text: None,
+            revisions: Vec::new(),
             pace: None,
             target_text: None,
             state: "imported".to_string(),
@@ -1007,6 +1037,44 @@ mod tests {
         assert_eq!(loaded.segments[0].start_ms, 1_250);
         assert_eq!(loaded.segments[1].target_text, None);
         assert!(store.load_dub_project("missing").unwrap().is_none());
+    }
+
+    #[test]
+    fn a_segment_saved_before_revisions_existed_still_reads_the_same() {
+        let store = Store::open_memory().unwrap();
+        store
+            .connection
+            .execute(
+                "INSERT INTO projects (id, kind, title, created_at, updated_at, settings_json) VALUES ('p1', 'dub', 'Launch', 1, 1, '{\"from\":\"pt\",\"to\":\"en\"}')",
+                [],
+            )
+            .unwrap();
+        store
+            .connection
+            .execute(
+                "INSERT INTO segments (id, project_id, position, start_ms, end_ms, source_text, original_text, state) VALUES ('p1-0', 'p1', 0, 0, 1000, 'Bom dia a todos', 'Bom dia', 'edited')",
+                [],
+            )
+            .unwrap();
+        let loaded = store.load_dub_project("p1").unwrap().unwrap();
+        let segment = &loaded.segments[0];
+        assert_eq!(segment.source_text, "Bom dia a todos");
+        assert_eq!(segment.original_text.as_deref(), Some("Bom dia"));
+        assert_eq!(segment.revisions, vec!["Bom dia".to_string()]);
+    }
+
+    #[test]
+    fn the_revisions_column_is_added_to_an_older_segments_table() {
+        let store = Store::open_memory().unwrap();
+        let count: i64 = store
+            .connection
+            .query_row(
+                "SELECT COUNT(*) FROM pragma_table_info('segments') WHERE name = 'revisions_json'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1);
     }
 
     #[test]

@@ -2563,11 +2563,19 @@ function showProject(project) {
       field("Pace", pace),
       field("Text", text)
     );
-    if (line.original_text && line.original_text !== line.source_text) {
-      const original = document.createElement("p");
-      original.className = "dub-original";
-      original.textContent = "Original: " + line.original_text;
-      body.append(original);
+    const revisions = Array.isArray(line.revisions) ? line.revisions : [];
+    if (revisions.length) {
+      const history = document.createElement("ol");
+      history.className = "dub-history";
+      revisions.forEach((text, index) => {
+        const stored = document.createElement("li");
+        stored.textContent = "Version " + (index + 1) + ": " + text;
+        history.append(stored);
+      });
+      const current = document.createElement("p");
+      current.className = "dub-original";
+      current.textContent = "Current: " + (line.source_text || "");
+      body.append(history, current);
     }
 
     item.append(body);
