@@ -2,7 +2,7 @@
 
 VERSION := 0.2.5
 URL := https://github.com/PedroNascimento09/Parlo/releases/download/v$(VERSION)/parlo-linux-x86_64.tar.gz
-SHA256 := 8b11f7b2c637d04891f578c10eefee40ad7b645c0d480cdf531367c2f16b6530
+SHA256 := c0b1556ab2ce38be58cdc2ee063c2cf7c9ac7e517a7c78855a5eb9259b356d07
 
 %:
 	dh $@

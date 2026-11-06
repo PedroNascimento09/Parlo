@@ -12,6 +12,6 @@ UpgradeBehavior: install
 Installers:
   - Architecture: x64
     InstallerUrl: https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.5/Parlo-Setup.exe
-    InstallerSha256: 71B7878A3AADE7369AB6BFA7DFE26848740A671F0434DC6DE8CF99968422EFA6
+    InstallerSha256: 1CB474CEE680A7FCC5769F3F830D6E43FCA0D7010D1535C4C038BA0F5210FD1C
 ManifestType: installer
 ManifestVersion: 1.6.0
