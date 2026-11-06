@@ -42,6 +42,7 @@ pub fn listen(handle: AppHandle) {
     use std::ffi::c_void;
     use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
     use std::sync::Mutex;
+    use std::time::Duration;
     use std::time::Instant;
 
     const WH_KEYBOARD_LL: i32 = 13;
@@ -232,17 +233,6 @@ pub fn listen(handle: AppHandle) {
         CallNextHookEx(std::ptr::null_mut(), code, w_param, l_param)
     }
 
-    let stored = settings::load();
-    let text = stored.shortcut;
-    let shortcut = match Shortcut::parse(&text) {
-        Ok(shortcut) => shortcut,
-        Err(error) => {
-            crate::note(&format!(
-                "the dictation shortcut {text} is unusable: {error}"
-            ));
-            return;
-        }
-    };
     let optional = |label: &str, text: &str, fallback: &str| match Shortcut::parse(text) {
         Ok(shortcut) => shortcut,
         Err(error) => {
@@ -253,6 +243,18 @@ pub fn listen(handle: AppHandle) {
                 modifiers: parlo_core::shortcut::CONTROL | parlo_core::shortcut::ALT,
                 key: 0x44,
             })
+        }
+    };
+
+    let stored = settings::load();
+    let shortcut = match Shortcut::parse(&stored.shortcut) {
+        Ok(shortcut) => shortcut,
+        Err(error) => {
+            crate::note(&format!(
+                "the dictation shortcut {} is unusable: {error}",
+                stored.shortcut
+            ));
+            return;
         }
     };
     let free = optional(
@@ -270,6 +272,52 @@ pub fn listen(handle: AppHandle) {
     CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
     UNDO_KEY.store(undo.key, Ordering::Relaxed);
     UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
+    std::thread::spawn(move || {
+        let mut seen = (
+            stored.shortcut.clone(),
+            stored.hands_free.clone(),
+            stored.captions.clone(),
+            stored.undo.clone(),
+        );
+        loop {
+            std::thread::sleep(Duration::from_millis(750));
+            let latest = settings::load();
+            let now = (
+                latest.shortcut.clone(),
+                latest.hands_free.clone(),
+                latest.captions.clone(),
+                latest.undo.clone(),
+            );
+            if now == seen {
+                continue;
+            }
+            seen = now;
+            if let Ok(dictation) = Shortcut::parse(&latest.shortcut) {
+                KEY.store(dictation.key, Ordering::Relaxed);
+                MODS.store(dictation.modifiers, Ordering::Relaxed);
+            }
+            let free = optional(
+                "hands free",
+                &latest.hands_free,
+                parlo_core::shortcut::HANDS_FREE,
+            );
+            let captions = optional("captions", &latest.captions, parlo_core::shortcut::CAPTIONS);
+            let undo = optional("undo", &latest.undo, parlo_core::shortcut::UNDO);
+            FREE_KEY.store(free.key, Ordering::Relaxed);
+            FREE_MODS.store(free.modifiers, Ordering::Relaxed);
+            CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
+            CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
+            UNDO_KEY.store(undo.key, Ordering::Relaxed);
+            UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
+            crate::note(&format!(
+                "the shortcuts changed: {} dictates, {} stays listening, {} toggles captions, {} takes the last dictation back",
+                latest.shortcut,
+                free.text(),
+                captions.text(),
+                undo.text()
+            ));
+        }
+    });
     if let Ok(mut slot) = APP.lock() {
         *slot = Some(handle);
     }
