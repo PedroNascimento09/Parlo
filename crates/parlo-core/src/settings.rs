@@ -212,6 +212,7 @@ pub fn system_language() -> String {
     "en".to_string()
 }
 
+#[cfg(windows)]
 fn language_code(primary: u32) -> Option<&'static str> {
     Some(match primary {
         0x09 => "en",
