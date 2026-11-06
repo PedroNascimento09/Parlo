@@ -101,6 +101,22 @@
   body.listening .pause { display: block; }
   .pause:hover { background: var(--line); color: var(--ink); }
   .pause:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stop {
+    display: none;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    cursor: pointer;
+    transition: filter 140ms ease;
+  }
+  body.listening .stop { display: block; }
+  .stop:hover { filter: brightness(0.94); }
+  .stop:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .readout {
     display: grid;
     gap: 2px;
@@ -297,7 +313,7 @@
     to { opacity: 1; transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .island, .switch, .switch .knob, .wave, .wave i, .write-menu, .write-btn, .write-option { animation: none; transition: none; }
+    .island, .switch, .switch .knob, .wave, .wave i, .write-menu, .write-btn, .write-option, .stop { animation: none; transition: none; }
   }
 </style>
 </head>
@@ -306,6 +322,7 @@
     <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <span class="clock" id="clock" aria-hidden="true">0:00</span>
     <button type="button" class="pause" id="pause" aria-pressed="false">Pause</button>
+    <button type="button" class="stop" id="stop">Stop</button>
     <div class="readout">
       <span class="state" id="state">Ready</span>
       <span class="line pending" id="line">Hold the shortcut to talk.</span>
@@ -991,6 +1008,10 @@ tidyEl.addEventListener("click", () => {
 
 recordEl.addEventListener("click", () => {
   begin();
+});
+
+document.getElementById("stop").addEventListener("click", () => {
+  stop();
 });
 
 paintTidy();
