@@ -90,7 +90,7 @@ Rules:
 | U3 | Multiple target languages | Yes | Yes | Parity | 3 | One project renders two languages |
 | U4 | SRT/VTT import | Yes | Yes | Parity | 3 | Imported cues replace text and timing |
 | U5 | URL ingest | Yes | Yes, direct links | Parity, public only | 3 | A URL is refused when it points at localhost |
-| U6 | Timing modes | Concise, Smart Fit, Stretch, Lip sync | Yes, all four; lip sync aligns to the cue, not to lips | Partial | 3 | Each mode has a rendered fixture |
+| U6 | Timing modes | Concise, Smart Fit, Stretch, Lip sync | Done · 5ddd0fb: `engines/cascade/tests/fixtures/timing/` holds a Piper-rendered line per mode with the numbers that placed it, `manifest.json` records them, and `test_timing.py` fails when the current plan no longer gives a fixture's tempo, cut or length, when a fixture is silent or not 16 kHz mono, or when a re-render from the committed source misses its length; lip sync still aligns to the cue, not to lips | Parity | 3 | Each mode has a rendered fixture |
 | U7 | QC and retry | Yes | Yes, per line; render stays synchronous and unverified means no audio | Parity | 3 | A failed line retries alone |
 | U8 | Export matrix | Video, burned subs, dual, karaoke, stems, WAV/MP3 | Yes, 11 formats; karaoke is line-level and stems are voice/original/mix | Parity | 3 | Every export format opens in a player |
 | U9 | Projects and recovery | Yes | Yes, persistent manifest and clean restart; unfinished synthesis is redone | Parity | 3 | A render survives a window restart |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-55 of 80 rows are Done (68.8%). Six Partial rows counted at half give 72.5%.
+56 of 80 rows are Done (70.0%). Six Partial rows counted at half give 73.8%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are U6, whose four timing modes need a rendered fixture each, then X2, whose rows need a measured cascade number that `parlo bench` does not produce yet.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are T7, which needs yt-dlp to accept a cookies file so a private link is no longer refused, then X2, whose rows need a measured cascade number that `parlo bench` does not produce yet.
