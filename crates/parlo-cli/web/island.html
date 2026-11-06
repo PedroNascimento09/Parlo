@@ -480,7 +480,7 @@ function paintLevel(block) {
 }
 
 async function begin() {
-  if (busy || document.hidden || stream) {
+  if (busy || stream) {
     return;
   }
   const app = await beginTarget();
