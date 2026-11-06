@@ -112,6 +112,44 @@ mod tests {
     }
 
     #[test]
+    fn every_model_the_app_offers_has_a_catalogue_row_with_its_licence() {
+        let artifacts = artifacts();
+        for model in crate::registry::MODELS {
+            let rows: Vec<&serde_json::Value> = artifacts
+                .iter()
+                .filter(|artifact| artifact["unit"].as_str() == Some(model.id))
+                .collect();
+            assert!(!rows.is_empty(), "{} has no catalogue row", model.id);
+            for row in rows {
+                assert_eq!(
+                    row["license"].as_str().unwrap_or(""),
+                    model.licence,
+                    "{} is offered under a different licence than its catalogue row",
+                    model.id
+                );
+                assert!(
+                    !row["source"].as_str().unwrap_or("").trim().is_empty(),
+                    "{} has no source in the catalogue",
+                    model.id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_catalogue_row_names_a_model_the_app_offers() {
+        for artifact in artifacts() {
+            let Some(unit) = artifact["unit"].as_str() else {
+                continue;
+            };
+            assert!(
+                crate::registry::MODELS.iter().any(|model| model.id == unit),
+                "{unit} is in the catalogue but not in the registry"
+            );
+        }
+    }
+
+    #[test]
     fn the_page_receives_id_kind_and_licence_for_every_entry() {
         let entries: Vec<serde_json::Value> =
             serde_json::from_str(&as_json()).expect("the catalogue is valid json");
