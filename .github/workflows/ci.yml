@@ -68,7 +68,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install numeric runtime
-        run: pip install numpy onnxruntime
+        run: pip install numpy onnxruntime sentencepiece
 
       - name: Test
         run: python -m unittest discover -s tests -v
