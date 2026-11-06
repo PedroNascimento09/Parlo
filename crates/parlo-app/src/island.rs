@@ -348,3 +348,22 @@ pub fn listen(_handle: AppHandle) {
         stored.shortcut, stored.hands_free, stored.captions, stored.undo
     ));
 }
+
+#[cfg(test)]
+mod bridge_tests {
+    #[test]
+    fn the_hook_drives_the_overlay_through_its_bridge() {
+        let hook = include_str!("island.rs");
+        let page = include_str!("../../parlo-cli/web/island.html");
+        for call in ["parloArm", "parloBegin", "parloStop", "parloReady"] {
+            assert!(
+                hook.contains(&format!("window.{call} && window.{call}()")),
+                "the hook never fires {call}"
+            );
+            assert!(
+                page.contains(&format!("window.{call} =")),
+                "the overlay never exposes {call}"
+            );
+        }
+    }
+}
