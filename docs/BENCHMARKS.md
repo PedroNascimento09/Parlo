@@ -792,9 +792,9 @@ Measured on 2026-11-06 on the Windows 11 reference laptop with a debug build, th
 
 | Engine | Device | Result |
 |---|---|---|
-| echo | cpu | **0.0026 real time**, 6.4 ms for the 2.5 s sentence, 125 frames |
-| cascade | cpu | no number: needs Parakeet v3 on disk and the python stack that reads it |
+| echo | cpu | **0.0031 real time, 7.9 ms, 125 frames** |
+| cascade | cpu | **0.23 real time**, 0.64 s for the 2.5 s sentence, 1 frame |
 | cascade, echo, hibiki, cloud | gpu | no number: this machine has no gpu |
 | hibiki, cloud | cpu | not in this build |
 
-Conditions: Windows 11 reference laptop, 12 cores, 15 GB of memory, no gpu, build `ed4b572`, debug profile, no models installed. The echo row measures the frame path without a recogniser, so it is not a dictation speed.
+Conditions: Windows 11 reference laptop, 12 cores, 15 GB of memory, no gpu, build `5b2b7ef`, debug profile, Parakeet 0.6B v3 and the European Portuguese Piper voice on disk. The echo row measures the frame path without a recogniser, so it is not a dictation speed; the cascade row is one 2.5 s sentence through the installed recogniser.

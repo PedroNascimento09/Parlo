@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The cascade engine now measures on this machine with Parakeet 0.6B v3 installed: 0.23 real time and 0.64 s for a 2.5 s sentence at the cpu, and the first partial arrives at a median of 122 ms over twenty Portuguese sentences.
 - The parity plan now counts one machine: engine breadth, GPU selection, a second device, signed installers and a tester programme are rejected, so the remaining rows are the ones a Windows PC can finish.
 - Meetings: every action item and every decision is now proven to name its speaker and the minute it was said at, by a test that fails when either one leaves the output.
 - A pronunciation dictionary now lives in the repository: fourteen names with a respelling, an IPA form and a CMU form, applied to the whole sentence in `Pipeline::speak` before any engine hears it, shown by `parlo pronounce [word] [--text TEXT]`, and guarded by tests for word boundaries, digits, case, punctuation and a recorder engine that hears `PAR-loh reads JAY-son`.
