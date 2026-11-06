@@ -5682,6 +5682,23 @@ mod tests {
     use parlo_core::audio::Frame;
     use parlo_core::engine::{Engine, EngineOutput, StreamPiece};
 
+    #[test]
+    fn an_empty_write_choice_follows_the_spoken_language() {
+        let table: serde_json::Value =
+            serde_json::from_str(include_str!("../../web/languages.json"))
+                .expect("a language table");
+        for pair in table["pairs"].as_array().expect("language pairs") {
+            let from = pair[0].as_str().expect("a source language");
+            let to = pair[1].as_str().expect("a target language");
+            assert!(
+                crate::config::check_language(to),
+                "{to} would be refused with a 400"
+            );
+            assert_eq!(dictation_target("", from), from);
+            assert_eq!(dictation_target(to, from), to);
+        }
+    }
+
     struct RecordingEngine {
         heard: Arc<Mutex<Vec<u8>>>,
     }

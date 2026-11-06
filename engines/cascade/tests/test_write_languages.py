@@ -1,0 +1,81 @@
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from parlo_cascade import mt
+from parlo_cascade.engine import CascadeEngine
+
+TABLE = Path(__file__).resolve().parents[3] / "crates" / "parlo-cli" / "web" / "languages.json"
+
+
+def pack_id(source, target):
+    return f"mt-{source}-{target}"
+
+
+class WritePathTest(unittest.TestCase):
+    def setUp(self):
+        self.table = json.loads(TABLE.read_text(encoding="utf-8"))
+        self.pairs = [tuple(pair) for pair in self.table["pairs"]]
+        self.root = Path(tempfile.mkdtemp())
+        for source, target in self.pairs:
+            pack = self.root / f"translate-{source}_{target}"
+            pack.mkdir()
+            (pack / "source.spm").write_bytes(b"")
+            (pack / "target.spm").write_bytes(b"")
+
+    def engine(self, source, target="en"):
+        engine = CascadeEngine.__new__(CascadeEngine)
+        engine.source = source
+        engine.target = target
+        engine.transcribe = lambda pcm16: "Bom dia"
+        engine.clean_mode = "light"
+        engine._touch = lambda name: None
+
+        def load(language):
+            pack = mt.find_pack(source, language, root=self.root)
+            if pack is None:
+                raise LookupError(f"no pack for {source}->{language}")
+            chosen = pack_id(source, language)
+            return lambda text: f"{chosen}: {text}"
+
+        engine._load_writer = load
+        return engine
+
+    def test_every_offered_language_writes_with_its_own_pack(self):
+        for source, target in self.pairs:
+            with self.subTest(source=source, target=target):
+                chosen = pack_id(source, target)
+                text, translation = self.engine(source).write(b"pcm16", target)
+                print(f"{source}->{target} {chosen} {translation!r}")
+                self.assertEqual(text, "Bom dia")
+                self.assertEqual(translation, f"{chosen}: Bom dia")
+
+    def test_each_language_picks_a_different_pack(self):
+        for source in sorted({pair[0] for pair in self.pairs}):
+            targets = sorted({pair[1] for pair in self.pairs if pair[0] == source})
+            packs = {
+                target: mt.find_pack(source, target, root=self.root).name
+                for target in targets
+            }
+            print(f"{source} -> {packs}")
+            self.assertEqual(len(packs), len(set(packs.values())))
+
+    def test_an_unknown_language_keeps_the_words(self):
+        text, translation = self.engine("pt").write(b"pcm16", "xx")
+        self.assertEqual(text, "Bom dia")
+        self.assertEqual(translation, "")
+
+    def test_the_spoken_language_needs_no_pack(self):
+        def refuse(language):
+            raise AssertionError(f"a pack was loaded for {language}")
+
+        engine = self.engine("pt", target="pt")
+        engine._load_writer = refuse
+        text, translation = engine.write(b"pcm16", "pt")
+        self.assertEqual(text, "Bom dia")
+        self.assertEqual(translation, text)
+
+
+if __name__ == "__main__":
+    unittest.main()
