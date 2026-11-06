@@ -1,3 +1,4 @@
+#[cfg(any(windows, test))]
 const APPS: &[(&str, &str)] = &[
     ("discord", "Discord"),
     ("zoom", "Zoom"),
@@ -10,6 +11,7 @@ const APPS: &[(&str, &str)] = &[
     ("slack call", "Slack"),
 ];
 
+#[cfg(any(windows, test))]
 pub fn app_for(title: &str) -> Option<&'static str> {
     let title = title.to_lowercase();
     APPS.iter()
