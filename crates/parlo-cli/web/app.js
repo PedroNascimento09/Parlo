@@ -970,6 +970,16 @@ function reflectFirstRun(ready, dictation, downloading) {
     document.body.classList.add("first-run");
     welcomeBox.hidden = false;
   }
+  const welcomeProgress = document.getElementById("welcome-progress");
+  if (welcomeProgress) {
+    welcomeProgress.hidden = !downloading;
+    const fill = document.getElementById("welcome-fill");
+    const models = modelState.models || [];
+    const onDisk = models.filter((model) => model.installed).length;
+    if (fill) {
+      fill.style.width = (models.length ? Math.round((onDisk / models.length) * 100) : 0) + "%";
+    }
+  }
   if (downloading) {
     welcomeInstall.hidden = true;
     if (!welcomeTimer) {
@@ -1145,6 +1155,23 @@ function describeModels(state) {
     modelsList.append(row);
   }
   modelsBox.hidden = false;
+
+  const modelsProgress = document.getElementById("models-progress");
+  if (modelsProgress) {
+    const models = state.models || [];
+    const onDisk = models.filter((model) => model.installed).length;
+    modelsProgress.hidden = !state.downloading;
+    const fill = document.getElementById("models-fill");
+    const note = document.getElementById("models-progress-note");
+    if (fill) {
+      fill.style.width = (models.length ? Math.round((onDisk / models.length) * 100) : 0) + "%";
+    }
+    if (note) {
+      note.textContent = state.downloading
+        ? onDisk + " of " + models.length + " models on disk. This page updates by itself."
+        : "";
+    }
+  }
 
   if (state.ready) {
     modelsDownloading = false;
@@ -1686,8 +1713,8 @@ function refreshApply() {
 }
 
 function reflectSettings(values) {
-  settingsFrom.value = values.from || "pt";
-  settingsTo.value = values.to || "en";
+  settingsFrom.value = values.from || "en";
+  settingsTo.value = values.to || "pt";
   settingsStt.value = values.stt || "parakeet";
   settingsWrite.value = values.write || "";
   settingsManageMemory.checked = values.manage_memory !== false;
@@ -1764,6 +1791,36 @@ if (settingsUndoSave) {
       "Restart Parlo so the new undo shortcut is registered.",
     ),
   );
+}
+
+function captureShortcut(input, note) {
+  input.addEventListener("focus", () => input.classList.add("capturing"));
+  input.addEventListener("blur", () => input.classList.remove("capturing"));
+  input.addEventListener("keydown", (event) => {
+    event.preventDefault();
+    const modifiers = [];
+    if (event.ctrlKey) modifiers.push("Ctrl");
+    if (event.altKey) modifiers.push("Alt");
+    if (event.shiftKey) modifiers.push("Shift");
+    if (event.metaKey) modifiers.push("Win");
+    if (["Control", "Alt", "Shift", "Meta", "Escape", "Tab"].includes(event.key)) {
+      note.textContent = "Keep the modifiers held and press a letter, a digit or Space.";
+      return;
+    }
+    if (!modifiers.length) {
+      note.textContent = "A key on its own is refused: it would swallow typing everywhere.";
+      return;
+    }
+    const named = { " ": "Space", Spacebar: "Space" };
+    input.value = modifiers.concat([named[event.key] || event.key.toUpperCase()]).join("+");
+    note.textContent = "Press the button beside it to save this combination.";
+  });
+}
+
+for (const input of [settingsShortcut, settingsHandsFree, settingsCaptions, settingsUndo]) {
+  if (input) {
+    captureShortcut(input, settingsNote);
+  }
 }
 
 async function applyLocale() {
@@ -5848,6 +5905,7 @@ function finishOnboarding() {
   localStorage.setItem("parlo.onboarded", "1");
   localStorage.removeItem("parlo.onboarding.stage");
   onboarding.hidden = true;
+  location.hash = "#home";
 }
 
 async function readState() {
@@ -5960,8 +6018,8 @@ async function startOnboarding() {
     const response = await fetch("/settings", { cache: "no-store" });
     if (response.ok) {
       const values = await response.json();
-      onboardingFrom.value = values.from || "pt";
-      onboardingTo.value = values.to || "en";
+      onboardingFrom.value = values.from || "en";
+      onboardingTo.value = values.to || "pt";
       onboardingShortcut.value = values.shortcut || "Ctrl+Alt+D";
       onboardingChosen = values.shortcut || "Ctrl+Alt+D";
     }
@@ -6710,10 +6768,16 @@ function closeGate() {
   nameGate.hidden = true;
   gateName.hidden = false;
   gateStyle.hidden = true;
+  document.body.classList.remove("gating");
   paintHome();
+  if (localStorage.getItem("parlo.onboarded") !== "1") {
+    location.hash = "#settings";
+    showOnboardingStage(1);
+  }
 }
 
 if (!storedName()) {
+  document.body.classList.add("gating");
   nameGate.hidden = false;
   gateName.hidden = false;
   gateStyle.hidden = true;

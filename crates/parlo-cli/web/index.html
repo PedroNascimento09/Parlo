@@ -97,10 +97,26 @@
 <main>
 <section class="gate" id="name-gate" aria-labelledby="gate-title" hidden>
   <div class="gate-card">
+    <div class="gate-art" aria-hidden="true">
+      <svg viewBox="0 0 220 220" role="presentation">
+        <circle cx="110" cy="110" r="104" class="gate-glow" />
+        <circle cx="110" cy="110" r="76" class="gate-ring" />
+        <g class="gate-bars">
+          <rect x="62" y="96" width="7" height="28" rx="3.5" />
+          <rect x="75" y="84" width="7" height="52" rx="3.5" />
+          <rect x="88" y="70" width="7" height="80" rx="3.5" />
+          <rect x="101" y="58" width="7" height="104" rx="3.5" />
+          <rect x="114" y="74" width="7" height="72" rx="3.5" />
+          <rect x="127" y="64" width="7" height="92" rx="3.5" />
+          <rect x="140" y="88" width="7" height="44" rx="3.5" />
+          <rect x="153" y="100" width="7" height="20" rx="3.5" />
+        </g>
+      </svg>
+    </div>
     <div class="gate-step" id="gate-name">
-      <p class="gate-kicker">Parlo</p>
+      <p class="gate-kicker">Welcome</p>
       <h1 id="gate-title">What should Parlo call you?</h1>
-      <p class="gate-note">Stays on this computer.</p>
+      <p class="gate-note">Only this computer keeps it.</p>
       <label class="field" for="name-input">
         <span class="field-label">Your name</span>
         <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Alex">
@@ -111,7 +127,7 @@
     <div class="gate-step" id="gate-style" hidden>
       <p class="gate-kicker">Almost there</p>
       <h1>How do you write?</h1>
-      <p class="gate-note">Parlo shapes punctuation to match. You can change it any time.</p>
+      <p class="gate-note">Parlo shapes the punctuation to match.</p>
       <div class="style-cards" role="group" aria-label="Writing style">
         <button class="style-card" data-style="formal" type="button">
           <span class="style-title">Formal.</span>
@@ -140,11 +156,14 @@
 
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title">Speak once. Be heard.</h1>
-    <p class="welcome-lede">Speak, and Parlo writes the other language. Everything stays on this computer.</p>
+    <p class="welcome-lede">Speak, and Parlo writes it in your other language. Everything stays on this computer.</p>
     <div class="welcome-actions">
       <button id="welcome-install" class="install welcome-install" type="button">Download the dictation model</button>
       <a id="welcome-more" class="welcome-more" href="#library">More models</a>
       <a id="welcome-setup" class="welcome-more" href="#settings">Finish setup</a>
+    </div>
+    <div class="welcome-progress" id="welcome-progress" hidden>
+      <div class="models-bar"><span id="welcome-fill"></span></div>
     </div>
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
     <ol class="welcome-steps">
@@ -169,7 +188,40 @@
         <span id="status-state">Ready to dictate</span>
       </p>
     </div>
-    <p class="stage-call">Hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd> anywhere, or use the bar at the bottom of the screen.</p>
+    <p class="stage-call">Hold <kbd id="status-shortcut">Ctrl+Alt+D</kbd>, speak, and let go. The text lands where the cursor is.</p>
+    <figure class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 640 96" preserveAspectRatio="none">
+        <g class="hero-bars">
+          <rect x="0" y="38" width="6" height="20" rx="3" /><rect x="12" y="28" width="6" height="40" rx="3" />
+          <rect x="24" y="16" width="6" height="64" rx="3" /><rect x="36" y="34" width="6" height="28" rx="3" />
+          <rect x="48" y="22" width="6" height="52" rx="3" /><rect x="60" y="8" width="6" height="80" rx="3" />
+          <rect x="72" y="30" width="6" height="36" rx="3" /><rect x="84" y="18" width="6" height="60" rx="3" />
+          <rect x="96" y="40" width="6" height="16" rx="3" /><rect x="108" y="26" width="6" height="44" rx="3" />
+          <rect x="120" y="12" width="6" height="72" rx="3" /><rect x="132" y="36" width="6" height="24" rx="3" />
+          <rect x="144" y="20" width="6" height="56" rx="3" /><rect x="156" y="32" width="6" height="32" rx="3" />
+          <rect x="168" y="10" width="6" height="76" rx="3" /><rect x="180" y="28" width="6" height="40" rx="3" />
+          <rect x="192" y="42" width="6" height="12" rx="3" /><rect x="204" y="24" width="6" height="48" rx="3" />
+          <rect x="216" y="34" width="6" height="28" rx="3" /><rect x="228" y="14" width="6" height="68" rx="3" />
+          <rect x="240" y="30" width="6" height="36" rx="3" /><rect x="252" y="20" width="6" height="56" rx="3" />
+          <rect x="264" y="38" width="6" height="20" rx="3" /><rect x="276" y="26" width="6" height="44" rx="3" />
+          <rect x="288" y="8" width="6" height="80" rx="3" /><rect x="300" y="32" width="6" height="32" rx="3" />
+          <rect x="312" y="18" width="6" height="60" rx="3" /><rect x="324" y="40" width="6" height="16" rx="3" />
+          <rect x="336" y="24" width="6" height="48" rx="3" /><rect x="348" y="12" width="6" height="72" rx="3" />
+          <rect x="360" y="36" width="6" height="24" rx="3" /><rect x="372" y="20" width="6" height="56" rx="3" />
+          <rect x="384" y="30" width="6" height="36" rx="3" /><rect x="396" y="10" width="6" height="76" rx="3" />
+          <rect x="408" y="34" width="6" height="28" rx="3" /><rect x="420" y="22" width="6" height="52" rx="3" />
+          <rect x="432" y="42" width="6" height="12" rx="3" /><rect x="444" y="28" width="6" height="40" rx="3" />
+          <rect x="456" y="16" width="6" height="64" rx="3" /><rect x="468" y="32" width="6" height="32" rx="3" />
+          <rect x="480" y="24" width="6" height="48" rx="3" /><rect x="492" y="38" width="6" height="20" rx="3" />
+          <rect x="504" y="14" width="6" height="68" rx="3" /><rect x="516" y="30" width="6" height="36" rx="3" />
+          <rect x="528" y="20" width="6" height="56" rx="3" /><rect x="540" y="40" width="6" height="16" rx="3" />
+          <rect x="552" y="26" width="6" height="44" rx="3" /><rect x="564" y="10" width="6" height="76" rx="3" />
+          <rect x="576" y="34" width="6" height="28" rx="3" /><rect x="588" y="22" width="6" height="52" rx="3" />
+          <rect x="600" y="36" width="6" height="24" rx="3" /><rect x="612" y="18" width="6" height="60" rx="3" />
+          <rect x="624" y="32" width="6" height="32" rx="3" /><rect x="636" y="40" width="4" height="16" rx="2" />
+        </g>
+      </svg>
+    </figure>
     <p class="stage-sub" hidden><span id="status-languages">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
     <div class="stage-tools">
       <button class="tone-open" id="tone-open" type="button" aria-haspopup="dialog">
@@ -186,17 +238,6 @@
         <span id="home-last-app"></span>
       </p>
     </figure>
-    <aside class="home-panel" aria-label="Your totals">
-      <dl>
-        <div><dt>Total words</dt><dd id="home-words">0</dd></div>
-        <div><dt>Words per minute</dt><dd id="home-wpm">–</dd></div>
-        <div><dt>Day streak</dt><dd id="home-streak">0</dd></div>
-      </dl>
-      <div class="home-links">
-        <a class="home-link" id="home-insights" href="#insights">See the details</a>
-        <a class="home-link" href="#library">Add a model</a>
-      </div>
-    </aside>
   </section>
 
   
@@ -251,15 +292,15 @@
       <label class="field" for="onboarding-from">
         <span class="field-label">I speak</span>
         <select id="onboarding-from" class="field-input">
-          <option value="pt">Portuguese</option>
           <option value="en">English</option>
+          <option value="pt">Portuguese</option>
         </select>
       </label>
       <button id="onboarding-swap" class="swap" type="button">Swap</button>
       <label class="field" for="onboarding-to">
         <span class="field-label">They hear</span>
         <select id="onboarding-to" class="field-input">
-          <option value="pt">Portuguese</option>
+          <option value="pt" selected>Portuguese</option>
           <option value="en">English</option>
         </select>
       </label>
@@ -467,15 +508,15 @@
       <label class="field" for="settings-from">
         <span class="field-label">I speak</span>
         <select id="settings-from" class="field-input">
-          <option value="pt">Portuguese</option>
           <option value="en">English</option>
+          <option value="pt">Portuguese</option>
         </select>
       </label>
       <button id="settings-swap" class="swap" type="button">Swap</button>
       <label class="field" for="settings-to">
         <span class="field-label">They hear</span>
         <select id="settings-to" class="field-input">
-          <option value="pt">Portuguese</option>
+          <option value="pt" selected>Portuguese</option>
           <option value="en">English</option>
         </select>
       </label>
@@ -498,28 +539,28 @@
     <div class="settings-row">
       <label class="field field-wide" for="settings-shortcut">
         <span class="field-label">Dictation shortcut</span>
-        <input id="settings-shortcut" class="field-input" type="text" autocomplete="off" spellcheck="false" />
+        <input id="settings-shortcut" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
       </label>
       <button id="settings-shortcut-save" class="install" type="button">Save shortcut</button>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="settings-hands-free">
         <span class="field-label">Hands free shortcut</span>
-        <input id="settings-hands-free" class="field-input" type="text" autocomplete="off" spellcheck="false" />
+        <input id="settings-hands-free" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
       </label>
       <button id="settings-hands-free-save" class="install" type="button">Save hands free</button>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="settings-captions">
         <span class="field-label">Captions shortcut</span>
-        <input id="settings-captions" class="field-input" type="text" autocomplete="off" spellcheck="false" />
+        <input id="settings-captions" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
       </label>
       <button id="settings-captions-save" class="install" type="button">Save captions</button>
     </div>
     <div class="settings-row">
       <label class="field field-wide" for="settings-undo">
         <span class="field-label">Undo shortcut</span>
-        <input id="settings-undo" class="field-input" type="text" autocomplete="off" spellcheck="false" />
+        <input id="settings-undo" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
       </label>
       <button id="settings-undo-save" class="install" type="button">Save undo</button>
     </div>
@@ -909,6 +950,10 @@
       <p class="models-note" id="models-note" aria-live="polite"></p>
     </div>
     <ul class="models-list" id="models-list"></ul>
+    <div class="models-progress" id="models-progress" hidden>
+      <div class="models-bar"><span id="models-fill"></span></div>
+      <p class="models-progress-note" id="models-progress-note" aria-live="polite"></p>
+    </div>
     <button id="models-install" class="install models-install" type="button" hidden>Download models</button>
     <button id="models-dictation" class="install models-install quiet" type="button" hidden>Only what dictation needs</button>
     <button id="models-cancel" class="install models-install quiet" type="button" hidden>Stop the download</button>
