@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Revoking a voice deletes its recorded sample from disk and playback no longer fails: the voice falls back to the default, the profile keeps the revocation on record, and the other voices keep their samples.
 - A corrected line keeps every version it went through: each edit stores the text it replaced, the line in use stays apart from the ones behind it, a second correction no longer erases the first, older projects open unchanged, and the project view lists the versions oldest first.
 - The licence gate now covers every model, not only the crates: a model offered in the app must name a catalogue row with the same licence and a source, and a catalogue row must name a model the app offers.
 - The published benchmark table can no longer drift from the run that made it: the suite compares `docs/BENCHMARKS.md` with `docs/benchmarks.json`, and every row must name its cores and a commit the repository actually holds.
