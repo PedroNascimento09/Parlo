@@ -4847,7 +4847,8 @@ fn handle(
         let seconds = wav.samples.len() as f32 / 16_000.0;
         let mut pcm16 = Vec::with_capacity(wav.samples.len() * 2);
         for sample in &wav.samples {
-            pcm16.extend_from_slice(&sample.to_le_bytes());
+            let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+            pcm16.extend_from_slice(&value.to_le_bytes());
         }
         let write = header(&headers, "x-parlo-write")
             .unwrap_or_default()
