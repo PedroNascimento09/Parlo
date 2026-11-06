@@ -94,7 +94,7 @@ Rules:
 | U7 | QC and retry | Yes | Yes, per line; render stays synchronous and unverified means no audio | Parity | 3 | A failed line retries alone |
 | U8 | Export matrix | Video, burned subs, dual, karaoke, stems, WAV/MP3 | Yes, 11 formats; karaoke is line-level and stems are voice/original/mix | Parity | 3 | Every export format opens in a player |
 | U9 | Projects and recovery | Yes | Yes, persistent manifest and clean restart; unfinished synthesis is redone | Parity | 3 | A render survives a window restart |
-| U10 | Vocal separation | Yes | Partial: center-panned speech is removed; mono or centered stereo falls back to ducking with a note | Parity, stereo center only | 3 | Original speech is removed, music kept |
+| U10 | Vocal separation | Yes | Done · 6678d1d: `separation.center_side` takes the difference of the two channels, so centre-panned speech leaves the background and the sides stay, and `engines/cascade/tests/fixtures/separation/centered-speech.wav` holds the same Piper sentence in both channels over two lateral tones; the suite fails when the fixture stops coming back as `center`, when the background still correlates with the voice, or when it loses the music, and a mono or fully centred source still falls back to ducking with a note | Parity, stereo center only | 3 | Original speech is removed, music kept |
 
 ## Longform and batch
 
@@ -125,7 +125,7 @@ Rules:
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
 | X1 | Model catalogue | Yes | Done · dfb8b40: 52 entries, and every card carries a licence, a source and its languages | Keep, generated from the registry | 0 | A card cannot exist without a licence |
-| X2 | Per-engine benchmarks | Yes | Partial: every engine has a row for every device with its hardware and commit, but the cascade row carries no number on this machine because the sidecar benchmark is not wired into `parlo bench` | One row per engine and device | 6 | No card claims a number without a row |
+| X2 | Per-engine benchmarks | Yes | Partial · 57b2ebc: every engine has a row for every device with its hardware and commit, and `parlo bench` now measures the cascade by running `engines/cascade/scripts/benchmark.py` on a committed 2.8 s sentence with this machine's models folder, reporting its real time factor and saying why when the models are absent or the run fails; the number itself still waits for Parakeet 0.6B v3, which is not on this machine | One row per engine and device | 6 | No card claims a number without a row |
 | X3 | GPU auto-detect | Yes | Done · 62bb7ff: the profile follows the detected graphics card, `/engine` names the device and the reason, and Settings can force the processor | Parity | 2 | The chosen device is shown and overridable |
 | X4 | Download resume and repair | Yes | Blocked · the byte-level resume lives in `engines/cascade`, off limits in this campaign; `crates/parlo-cli/src/models.rs` only reports `download_remaining` | Parity | 1 | A killed download resumes at the byte |
 | X5 | Model packs | Yes | Done · ccc21c0: importing a pack downloads the voices it names through `install_blocking` before the manifest is written, so a valid pack is ready in one action, a pack whose voices cannot be installed leaves no file or entry behind, an invalid pack never asks for an install, importing the same pack twice keeps one entry and one file, and a store without packs lists nothing and creates no folder | Parity | 5 | A pack installs a working set in one action |
@@ -187,4 +187,4 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are X2, whose rows need a measured cascade number that `parlo bench` does not produce yet, then U10, whose separation still falls back to ducking when the stereo centre carries the speech.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The next unblocked row is R7, which needs a preview channel beside stable before a preview build can update to stable.
