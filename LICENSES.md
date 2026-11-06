@@ -102,6 +102,7 @@ SBOM attached to each release.
 | typing_extensions | `parlo-engine` | PSF-2.0 | None | See the project | Required | Confirmed | Reproduce the notice | - |
 | urllib3 | `parlo-engine` | MIT | None | See the project | Required | Confirmed | See the licence text | - |
 | adler2 | Rust programs | 0BSD OR MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/oyvindln/adler2 |
+| ahash | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/tkaitchuck/ahash |
 | aho-corasick | Rust programs | Unlicense OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/BurntSushi/aho-corasick |
 | alloc-no-stdlib | Rust programs | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/dropbox/rust-alloc-no-stdlib |
 | alloc-stdlib | Rust programs | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/dropbox/rust-alloc-no-stdlib |
@@ -109,10 +110,13 @@ SBOM attached to each release.
 | alsa-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/diwic/alsa-sys |
 | android_system_properties | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/nical/android_system_properties |
 | anyhow | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/anyhow |
+| arboard | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/1Password/arboard |
 | atk | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
 | atk-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
 | atomic-waker | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/smol-rs/atomic-waker |
 | autocfg | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/cuviper/autocfg |
+| aws-lc-rs | Rust programs | ISC AND (Apache-2.0 OR ISC) | None | See the project | Required | Confirmed | See the licence text | https://github.com/aws/aws-lc-rs |
+| aws-lc-sys | Rust programs | ISC AND Apache-2.0 AND MIT AND BSD-3-Clause AND MIT-0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/aws/aws-lc-rs |
 | base64 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/marshallpierce/rust-base64 |
 | base64 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/marshallpierce/rust-base64 |
 | base64 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/marshallpierce/rust-base64 |
@@ -145,6 +149,8 @@ SBOM attached to each release.
 | cfg-if | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/cfg-if |
 | chrono | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/chronotope/chrono |
 | clang-sys | Rust programs | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/KyleMayes/clang-sys |
+| clipboard-win | Rust programs | BSL-1.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/DoumanAsh/clipboard-win |
+| cmake | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/cmake-rs |
 | combine | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/Marwes/combine |
 | cookie | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/SergioBenitez/cookie-rs |
 | core-foundation | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/core-foundation-rs |
@@ -158,6 +164,7 @@ SBOM attached to each release.
 | crc32fast | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/srijs/rust-crc32fast |
 | crossbeam-channel | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/crossbeam-rs/crossbeam |
 | crossbeam-utils | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/crossbeam-rs/crossbeam |
+| crunchy | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/eira-fransham/crunchy |
 | crypto-common | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/RustCrypto/traits |
 | cssparser | Rust programs | MPL-2.0 | None | See the project | Required | Confirmed | Publish changes to the covered files | https://github.com/servo/rust-cssparser |
 | cssparser-macros | Rust programs | MPL-2.0 | None | See the project | Required | Confirmed | Publish changes to the covered files | https://github.com/servo/rust-cssparser |
@@ -166,6 +173,7 @@ SBOM attached to each release.
 | darling_core | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/TedDriggs/darling |
 | darling_macro | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/TedDriggs/darling |
 | dasp_sample | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustaudio/sample.git |
+| data-encoding | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/ia0/data-encoding |
 | dbus | Rust programs | Apache-2.0/MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/diwic/dbus-rs |
 | defmt | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/knurling-rs/defmt |
 | defmt-macros | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/knurling-rs/defmt |
@@ -191,7 +199,12 @@ SBOM attached to each release.
 | embed_plist | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/nvzqz/embed-plist-rs |
 | equivalent | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/indexmap-rs/equivalent |
 | erased-serde | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/erased-serde |
+| errno | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/lambda-fairy/rust-errno |
+| error-code | Rust programs | BSL-1.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/DoumanAsh/error-code |
+| fallible-iterator | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/sfackler/rust-fallible-iterator |
+| fallible-streaming-iterator | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/sfackler/fallible-streaming-iterator |
 | fastrand | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/smol-rs/fastrand |
+| fax | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/pdf-rs/fax |
 | fdeflate | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/image-rs/fdeflate |
 | field-offset | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Diggsey/rust-field-offset |
 | find-msvc-tools | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/cc-rs |
@@ -202,6 +215,7 @@ SBOM attached to each release.
 | foreign-types-macros | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/sfackler/foreign-types |
 | foreign-types-shared | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/sfackler/foreign-types |
 | form_urlencoded | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/rust-url |
+| fs_extra | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/webdesus/fs_extra |
 | futures-channel | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/futures-rs |
 | futures-core | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/futures-rs |
 | futures-executor | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/futures-rs |
@@ -218,6 +232,8 @@ SBOM attached to each release.
 | gdkx11 | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
 | gdkx11-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
 | generic-array | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/fizyk20/generic-array.git |
+| gethostname | Rust programs | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://codeberg.org/swsnr/gethostname.rs.git |
+| getrandom | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-random/getrandom |
 | getrandom | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-random/getrandom |
 | getrandom | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-random/getrandom |
 | gio | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk-rs-core |
@@ -230,8 +246,11 @@ SBOM attached to each release.
 | gtk | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
 | gtk-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
 | gtk3-macros | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk3-rs |
+| half | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/VoidStarKat/half-rs |
 | hashbrown | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/hashbrown |
 | hashbrown | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/hashbrown |
+| hashbrown | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/hashbrown |
+| hashlink | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/kyren/hashlink |
 | heck | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/withoutboats/heck |
 | heck | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/withoutboats/heck |
 | hex | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/KokaKiwi/rust-hex |
@@ -285,6 +304,8 @@ SBOM attached to each release.
 | libloading | Rust programs | ISC | None | See the project | Required | Confirmed | Reproduce the notice | https://github.com/nagisa/rust_libloading/ |
 | libloading | Rust programs | ISC | None | See the project | Required | Confirmed | Reproduce the notice | https://github.com/nagisa/rust_libloading/ |
 | libredox | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://gitlab.redox-os.org/redox-os/libredox.git |
+| libsqlite3-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rusqlite/rusqlite |
+| linux-raw-sys | Rust programs | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/sunfishcode/linux-raw-sys |
 | litemap | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | lock_api | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Amanieu/parking_lot |
 | log | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/log |
@@ -332,11 +353,13 @@ SBOM attached to each release.
 | oboe | Rust programs | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/katyo/oboe-rs |
 | oboe-sys | Rust programs | Apache-2.0 | None | See the project | Required | Confirmed | Keep this notice and state what changed | https://github.com/katyo/oboe-rs |
 | once_cell | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/matklad/once_cell |
+| openssl-probe | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustls/openssl-probe |
 | option-ext | Rust programs | MPL-2.0 | None | See the project | Required | Confirmed | Publish changes to the covered files | https://github.com/soc/option-ext.git |
 | pango | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk-rs-core |
 | pango-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/gtk-rs/gtk-rs-core |
 | parking_lot | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Amanieu/parking_lot |
 | parking_lot_core | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Amanieu/parking_lot |
+| pem | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/jcreekmore/pem-rs.git |
 | percent-encoding | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/rust-url/ |
 | phf | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-phf/rust-phf |
 | phf_codegen | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-phf/rust-phf |
@@ -351,6 +374,7 @@ SBOM attached to each release.
 | portable-atomic-util | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/taiki-e/portable-atomic-util |
 | potential_utf | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | powerfmt | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/jhpratt/powerfmt |
+| ppv-lite86 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/cryptocorrosion/cryptocorrosion |
 | precomputed-hash | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/emilio/precomputed-hash |
 | proc-macro-crate | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/bkchr/proc-macro-crate |
 | proc-macro-crate | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/bkchr/proc-macro-crate |
@@ -359,11 +383,16 @@ SBOM attached to each release.
 | proc-macro-error-attr | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://gitlab.com/CreepySkeleton/proc-macro-error |
 | proc-macro2 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/proc-macro2 |
 | pxfm | Rust programs | BSD-3-Clause OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/awxkee/pxfm |
+| quick-error | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | http://github.com/tailhook/quick-error |
 | quick-xml | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tafia/quick-xml |
 | quote | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/quote |
 | r-efi | Rust programs | MIT OR Apache-2.0 OR LGPL-2.1-or-later | None | See the project | Required | Confirmed | See the licence text | https://github.com/r-efi/r-efi |
 | r-efi | Rust programs | MIT OR Apache-2.0 OR LGPL-2.1-or-later | None | See the project | Required | Confirmed | See the licence text | https://github.com/r-efi/r-efi |
+| rand | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-random/rand |
+| rand_chacha | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-random/rand |
+| rand_core | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-random/rand |
 | raw-window-handle | Rust programs | MIT OR Apache-2.0 OR Zlib | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-windowing/raw-window-handle |
+| rcgen | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustls/rcgen |
 | redox_syscall | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://gitlab.redox-os.org/redox-os/syscall |
 | redox_users | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://gitlab.redox-os.org/redox-os/users |
 | ref-cast | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/ref-cast |
@@ -372,15 +401,26 @@ SBOM attached to each release.
 | regex-automata | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/regex |
 | regex-syntax | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/regex |
 | reqwest | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/seanmonstar/reqwest |
+| ring | Rust programs | Apache-2.0 AND ISC | None | See the project | Required | Confirmed | See the licence text | https://github.com/briansmith/ring |
+| rusqlite | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rusqlite/rusqlite |
 | rustc-hash | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rust-lang/rustc-hash |
 | rustc_version | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/djc/rustc-version-rs |
+| rustix | Rust programs | Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/bytecodealliance/rustix |
+| rustls | Rust programs | Apache-2.0 OR ISC OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustls/rustls |
+| rustls-native-certs | Rust programs | Apache-2.0 OR ISC OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustls/rustls-native-certs |
+| rustls-pemfile | Rust programs | Apache-2.0 OR ISC OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustls/pemfile |
+| rustls-pki-types | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/rustls/pki-types |
+| rustls-webpki | Rust programs | ISC | None | See the project | Required | Confirmed | Reproduce the notice | https://github.com/rustls/webpki |
 | rustversion | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/rustversion |
 | same-file | Rust programs | Unlicense/MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/BurntSushi/same-file |
+| schannel | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/steffengy/schannel-rs |
 | schemars | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/GREsau/schemars |
 | schemars | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/GREsau/schemars |
 | schemars | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/GREsau/schemars |
 | schemars_derive | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/GREsau/schemars |
 | scopeguard | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/bluss/scopeguard |
+| security-framework | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/kornelski/rust-security-framework |
+| security-framework-sys | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/kornelski/rust-security-framework |
 | selectors | Rust programs | MPL-2.0 | None | See the project | Required | Confirmed | Publish changes to the covered files | https://github.com/servo/stylo |
 | semver | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/semver |
 | serde | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/serde-rs/serde |
@@ -397,6 +437,7 @@ SBOM attached to each release.
 | serialize-to-javascript | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/chippers/serialize-to-javascript |
 | serialize-to-javascript-impl | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/chippers/serialize-to-javascript |
 | servo_arc | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/stylo |
+| sha1 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/RustCrypto/hashes |
 | sha2 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/RustCrypto/hashes |
 | shlex | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/comex/rust-shlex |
 | shlex | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/comex/rust-shlex |
@@ -413,6 +454,7 @@ SBOM attached to each release.
 | string_cache | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/string-cache |
 | string_cache_codegen | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/string-cache |
 | strsim | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/rapidfuzz/strsim-rs |
+| subtle | Rust programs | BSD-3-Clause | None | See the project | Required | Confirmed | Reproduce the notice, no endorsement | https://github.com/dalek-cryptography/subtle |
 | swift-rs | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/Brendonovich/swift-rs |
 | syn | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/syn |
 | syn | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/syn |
@@ -436,6 +478,7 @@ SBOM attached to each release.
 | thiserror | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/thiserror |
 | thiserror-impl | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/thiserror |
 | thiserror-impl | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/thiserror |
+| tiff | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/image-rs/image-tiff |
 | time | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/time-rs/time |
 | time-core | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/time-rs/time |
 | time-macros | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/time-rs/time |
@@ -460,15 +503,19 @@ SBOM attached to each release.
 | tracing-core | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tokio-rs/tracing |
 | tray-icon | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/tauri-apps/tray-icon |
 | try-lock | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/seanmonstar/try-lock |
+| tungstenite | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/snapview/tungstenite-rs |
 | typeid | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/typeid |
 | typenum | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/paholg/typenum |
 | unicode-ident | Rust programs | (MIT OR Apache-2.0) AND Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/unicode-ident |
 | unicode-segmentation | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-rs/unicode-segmentation |
+| untrusted | Rust programs | ISC | None | See the project | Required | Confirmed | Reproduce the notice | https://github.com/briansmith/untrusted |
 | url | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/servo/rust-url |
 | urlpattern | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/denoland/rust-urlpattern |
+| utf-8 | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/SimonSapin/rust-utf8 |
 | utf8_iter | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/hsivonen/utf8_iter |
 | utf_types | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/hsivonen/utf_types |
 | uuid | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/uuid-rs/uuid |
+| vcpkg | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/mcgoo/vcpkg-rs |
 | version-compare | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://gitlab.com/timvisee/version-compare |
 | version_check | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/SergioBenitez/version_check |
 | vswhom | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/nabijaczleweli/vswhom.rs |
@@ -492,6 +539,7 @@ SBOM attached to each release.
 | webview2-com | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/wravery/webview2-rs |
 | webview2-com-macros | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/wravery/webview2-rs |
 | webview2-com-sys | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/wravery/webview2-rs |
+| weezl | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/image-rs/weezl |
 | winapi | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/retep998/winapi-rs |
 | winapi-i686-pc-windows-gnu | Rust programs | MIT/Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/retep998/winapi-rs |
 | winapi-util | Rust programs | Unlicense OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/BurntSushi/winapi-util |
@@ -510,6 +558,7 @@ SBOM attached to each release.
 | windows-result | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
 | windows-result | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
 | windows-strings | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
+| windows-sys | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
 | windows-sys | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
 | windows-sys | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
 | windows-targets | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/microsoft/windows-rs |
@@ -539,15 +588,23 @@ SBOM attached to each release.
 | wry | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/tauri-apps/wry |
 | x11 | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/AltF02/x11-rs.git |
 | x11-dl | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/AltF02/x11-rs.git |
+| x11rb | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/psychon/x11rb |
+| x11rb-protocol | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/psychon/x11rb |
+| yasna | Rust programs | MIT OR Apache-2.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/qnighy/yasna.rs |
 | yoke | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | yoke-derive | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
+| zerocopy | Rust programs | BSD-2-Clause OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/google/zerocopy |
+| zerocopy-derive | Rust programs | BSD-2-Clause OR Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/google/zerocopy |
 | zerofrom | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | zerofrom-derive | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
+| zeroize | Rust programs | Apache-2.0 OR MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/RustCrypto/utils |
 | zerotrie | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | zerovec | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | zerovec-derive | Rust programs | Unicode-3.0 | None | See the project | Required | Confirmed | See the licence text | https://github.com/unicode-org/icu4x |
 | zlib-rs | Rust programs | Zlib | None | See the project | Required | Confirmed | See the licence text | https://github.com/trifectatechfoundation/zlib-rs |
 | zmij | Rust programs | MIT | None | See the project | Required | Confirmed | See the licence text | https://github.com/dtolnay/zmij |
+| zune-core | Rust programs | MIT OR Apache-2.0 OR Zlib | None | See the project | Required | Confirmed | See the licence text | https://github.com/etemesi254/zune-image |
+| zune-jpeg | Rust programs | MIT OR Apache-2.0 OR Zlib | None | See the project | Required | Confirmed | See the licence text | https://github.com/etemesi254/zune-image/tree/dev/crates/zune-jpeg |
 
 ### 3.2 Optional, installed by the user
 
@@ -617,6 +674,10 @@ of the synthesizer that reads it. No dataset is redistributed by Parlo.
 | piper-voice-pl-pl-gosia | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Polish, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
 | piper-voice-ru-ru-irina | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Russian, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
 | piper-voice-sv-se-nst | Downloaded, never shipped | See the runtime dependencies | MIT | Piper voice, Swedish, MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices |
+| piper-voice-es-es-davefx | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium |
+| piper-voice-it-it-paola | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium |
+| piper-voice-nl-nl-mls | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/nl/nl_NL/mls/medium |
+| piper-voice-ru-ru-irina | Downloaded, never shipped | See the runtime dependencies | MIT | Voice from rhasspy/piper-voices, repository declared MIT | External | Confirmed | See the licence text | https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium |
 
 ## 6. Optional components under copyleft
 

@@ -57,7 +57,8 @@
     "jinja2": "BSD-3-Clause",
     "mpmath": "BSD-3-Clause",
     "sympy": "BSD-3-Clause",
-    "torch": "BSD-3-Clause"
+    "torch": "BSD-3-Clause",
+    "aws-lc-sys": "ISC AND Apache-2.0 AND MIT AND BSD-3-Clause AND MIT-0"
   },
   "known_issues": {},
   "not_shipped": {
