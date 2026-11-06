@@ -38,7 +38,7 @@ Rules:
 | D7 | Undo the last dictation | Yes (session-bound) | Done · 587e105: erase refuses a window that is no longer in front, and an undo older than five minutes is refused | Keep | 0 | Refuses when another window is in front |
 | D8 | Style, language and voice per program | Per program style | Partial: a program owns a style and a written language, but the voice is still global because dictation takes one engine voice | Add voice | 2 | Slack reads in the cloned voice, Mail in the neutral one |
 | D9 | Snippets and vocabulary | Yes | Done · f9a304c: snippets fill `{{date}}`, `{{time}}` and `{{name}}`, and a personal term is applied after the cleanup pass | Keep | 0 | `{{date}}` fills; a term survives cleanup |
-| D10 | Pronunciation dictionary | Respelling, IPA, CMU | No | Parity | 2 | A respelled name is spoken as written |
+| D10 | Pronunciation dictionary | Respelling, IPA, CMU | Partial · 5b7e517: fourteen names live in `crates/parlo-core/assets/pronounce.json` with a respelling, an IPA form and a CMU form each, `Pipeline::speak` respells the whole sentence before any engine hears it, `parlo pronounce [word] [--text TEXT]` shows the table and the substitution, and tests prove a word inside a longer word, a word with a digit after it, a change of case, punctuation and an empty string all behave, with a recorder engine hearing `PAR-loh reads JAY-son`; what is missing is that nobody heard it, because no text to speech model is installed on this machine, so the listening check was not run | Parity | 2 | A respelled name is spoken as written |
 
 ## Transcription
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Ten Partial rows counted at half give 72.5%.
+53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Eleven Partial rows counted at half give 73.1%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is D10, the pronunciation dictionary: a table of respellings applied to the text before it is spoken needs no model, so what is missing is that table, the IPA and CMU forms, and a sentence heard back to prove a respelled name is spoken as written; the rest of the open rows need a model, a graphics card, a signing certificate, Docker, a phone or two hours of running.
+D5, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is D8, where a program already owns a style and a written language and only the voice is still global; after it comes T1, one more recogniser with a WER row, and the rest of the open rows need a model, a graphics card, a signing certificate, Docker, a phone or two hours of running.
