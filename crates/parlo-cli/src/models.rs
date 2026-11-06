@@ -1056,6 +1056,29 @@ mod pair_tests {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn every_offered_language_has_a_shipped_pack() {
+        let table: serde_json::Value =
+            serde_json::from_str(include_str!("../web/languages.json")).expect("a language table");
+        for pair in table["pairs"].as_array().expect("language pairs") {
+            let from = pair[0].as_str().expect("a source language");
+            let to = pair[1].as_str().expect("a target language");
+            let id = format!("mt-{from}-{to}");
+            let spec = crate::registry::model(&id).unwrap_or_else(|| panic!("{id} is not shipped"));
+            match spec.source {
+                crate::registry::Source::Translation(source, target) => {
+                    assert_eq!((source, target), (from, to), "{id} points at another pair")
+                }
+                _ => panic!("{id} is not a translation pack"),
+            }
+            let paths = paths_for(&id).expect("translation paths");
+            assert_eq!(
+                paths[0],
+                models_root().join("mt").join(format!("{from}-{to}")),
+                "{id} resolves to another folder"
+            );
+        }
+    }
     use super::*;
 
     fn held(units: &[&str]) -> Vec<UnitState> {
