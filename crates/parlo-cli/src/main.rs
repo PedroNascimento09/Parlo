@@ -12,6 +12,7 @@ mod agents;
 mod ask;
 mod audiobook;
 mod batch;
+mod bench;
 mod calls;
 mod captions;
 mod catalog;
@@ -69,6 +70,7 @@ fn main() -> ExitCode {
     let outcome = match args.first().map(String::as_str) {
         Some("doctor") => doctor(),
         Some("demo") => demo(args.get(1).map(String::as_str)),
+        Some("bench") => bench_command(&args[1..]),
         Some("translate") => translate(&args[1..]),
         Some("stream") => stream_command(&args[1..]),
         Some("dub") => dub_command(&args[1..]),
@@ -119,6 +121,7 @@ fn print_help() {
     println!("  doctor                             check the local audio setup");
     println!("  undo                               take back what the last dictation wrote");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
+    println!("  bench [--json]                     measure every engine on this machine");
     println!("  app [--from X --to Y] [--stt NAME] open the Parlo window");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");
@@ -448,6 +451,15 @@ fn print_profile() -> Result<(), String> {
     println!(
         "  note            targets are design goals, the published table is what was measured"
     );
+    Ok(())
+}
+
+fn bench_command(args: &[String]) -> Result<(), String> {
+    if args.iter().any(|argument| argument == "--json") {
+        println!("{}", bench::as_json());
+    } else {
+        print!("{}", bench::as_markdown());
+    }
     Ok(())
 }
 
@@ -1664,7 +1676,7 @@ fn mic_remove() -> Result<(), String> {
     Ok(())
 }
 
-fn synthetic_speech(sample_rate: u32, duration_ms: u32) -> Vec<f32> {
+pub(crate) fn synthetic_speech(sample_rate: u32, duration_ms: u32) -> Vec<f32> {
     let total = (sample_rate as u64 * duration_ms as u64 / 1000) as usize;
     let bursts = [(0.0, 600.0), (800.0, 700.0), (1_700.0, 600.0)];
     let mut samples = vec![0.0; total];
