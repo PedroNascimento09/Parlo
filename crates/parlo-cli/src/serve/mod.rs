@@ -59,6 +59,7 @@ const INDEX: &str = include_str!("../../web/index.html");
 const STYLESHEET: &str = include_str!("../../web/app.css");
 const SCRIPT: &str = include_str!("../../web/app.js");
 const LANGUAGES: &str = include_str!("../../web/languages.js");
+const LANGUAGES_TABLE: &str = include_str!("../../web/languages.json");
 const ISLAND: &str = include_str!("../../web/island.html");
 const CAPTIONS: &str = include_str!("../../web/captions.html");
 const LIVE: &str = include_str!("../../web/live.html");
@@ -4505,6 +4506,16 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/languages.json" {
+        return respond(
+            stream,
+            "200 OK",
+            "application/json; charset=utf-8",
+            LANGUAGES_TABLE.as_bytes(),
+        )
+        .map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path == "/ticket" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", &error_json("wrong token"))
@@ -7128,6 +7139,7 @@ mod tests {
         ("GET", "/live.html", false),
         ("GET", "/app.js", false),
         ("GET", "/languages.js", false),
+        ("GET", "/languages.json", false),
         ("POST", "/ticket", true),
         ("GET", "/v1/audio/transcriptions/stream", false),
         ("GET", "/target", true),
