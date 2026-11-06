@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Sharing with another device is now a switch you control: `parlo config --share on --pin 4821` or the Sharing field in the app opens a network port only when you ask, every request on it needs the PIN, and the port stays closed while sharing is off.
 - Parlo now updates on the channel you choose: the Updates field in the app and `parlo config --channel preview` keep the choice, a preview build sees prereleases and still moves to a newer stable when one ships, and a stable build never installs a preview.
 - Vocal separation is now proven on a committed stereo fixture: the centred voice leaves the background, the lateral music stays, and the suite fails if either stops being true.
 - `parlo bench` now measures the cascade engine itself, running the sidecar benchmark on a committed sentence with this machine's models folder, and keeps saying what is missing when they are not on disk.
