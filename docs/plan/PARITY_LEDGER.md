@@ -137,7 +137,7 @@ Rules:
 |---|---|---|---|---|---|---|
 | R1 | Signed installer | Yes | No | Authenticode and notarised macOS | 5 | SmartScreen does not warn |
 | R2 | Package managers | 9 channels | Partial · fe2bd56: seven manifests under `packaging/` repack the published v0.2.4 downloads — winget, Homebrew, AUR (`parlo-bin`), Snap, the DEB rules, an AppImage recipe and a Nix derivation — carrying the published checksums, `packaging/README.md` gives each install command and marks all seven Partial, and `cargo test -p parlo-cli --test packaging` fails when a manifest drifts from `Cargo.toml`, drops its checksum or names an archive `release.yml` does not attach; no channel has been installed end to end from this machine, and the nine this row counts have no second list beyond the seven the acceptance column names | winget, brew, AUR, Snap, DEB, AppImage, Nix | 5 | One command installs on each |
-| R3 | Docker | CPU, CUDA, ROCm | No | Parity | 5 | `docker run` serves the OpenAI endpoint |
+| R3 | Docker | CPU, CUDA, ROCm | Partial · f94a456: `packaging/docker/Dockerfile` builds from the published `parlo-linux-x86_64.tar.gz`, checks the hash from `SHA256SUMS.txt` before unpacking it, runs as uid 10001 and starts `parlo serve` on 8787 through `packaging/docker/entrypoint.sh`, which writes `PARLO_CONFIG` with the sharing switch and `PARLO_PIN`; `cargo test -p parlo-cli --test packaging` fails when the archive, the version, the checksum, the user or the port drift; no image has been built or run here, and the PyInstaller engine ships without models | Parity | 5 | `docker run` serves the OpenAI endpoint |
 | R4 | Android app | Preview, offline | No | Native, offline after download | 5 | A phone transcribes a file in airplane mode |
 | R5 | iOS app | Preview, sideload | No | Native, offline | 5 | The same file transcribes on an iPhone |
 | R6 | Stores | MS Store, Mac App Store, F-Droid | No | Parity | 5 | A store build installs and updates |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Seven Partial rows counted at half give 70.6%.
+53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Eight Partial rows counted at half give 71.3%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is R3, Docker: the Linux archive already exists, so what is missing is a Dockerfile that unpacks it, checks its published hash, runs as a non-root user and starts the OpenAI endpoint, plus a test that fails when the recipe drifts from the archive; there is no Docker on this machine, so an image has never been built or run here.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is Q5, crash-free sessions: the server and the app already run for hours at a time, so what is missing is a local record of every start and every panic that `parlo doctor` can read back, and a two-hour run written down beside it; that run has not happened here.
