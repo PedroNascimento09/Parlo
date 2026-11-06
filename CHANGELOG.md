@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- `docs/START.md` is the five-minute path from a fresh computer to a dictated sentence, linked from the README beside [benchmarks](docs/BENCHMARKS.md) and [privacy](docs/PRIVACY.md), and a test now fails when a documented command, flag or page link no longer matches the binary.
 - Importing a voice pack now downloads the voices it names before it is saved, so a pack is ready in one action; a pack that cannot install, or a manifest that does not validate, writes nothing and leaves the store as it was.
 - Revoking a voice deletes its recorded sample from disk and playback no longer fails: the voice falls back to the default, the profile keeps the revocation on record, and the other voices keep their samples.
 - A corrected line keeps every version it went through: each edit stores the text it replaced, the line in use stays apart from the ones behind it, a second correction no longer erases the first, older projects open unchanged, and the project view lists the versions oldest first.
