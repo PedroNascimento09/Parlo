@@ -58,6 +58,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const INDEX: &str = include_str!("../../web/index.html");
 const STYLESHEET: &str = include_str!("../../web/app.css");
 const SCRIPT: &str = include_str!("../../web/app.js");
+const LANGUAGES: &str = include_str!("../../web/languages.js");
 const ISLAND: &str = include_str!("../../web/island.html");
 const CAPTIONS: &str = include_str!("../../web/captions.html");
 const LIVE: &str = include_str!("../../web/live.html");
@@ -4494,6 +4495,16 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/languages.js" {
+        return respond(
+            stream,
+            "200 OK",
+            "text/javascript; charset=utf-8",
+            LANGUAGES.as_bytes(),
+        )
+        .map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path == "/ticket" {
         if !authorised(&headers, token) {
             return respond_json(stream, "401 Unauthorized", &error_json("wrong token"))
@@ -7115,6 +7126,7 @@ mod tests {
         ("GET", "/live", false),
         ("GET", "/live.html", false),
         ("GET", "/app.js", false),
+        ("GET", "/languages.js", false),
         ("POST", "/ticket", true),
         ("GET", "/v1/audio/transcriptions/stream", false),
         ("GET", "/target", true),
