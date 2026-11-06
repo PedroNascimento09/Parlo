@@ -63,7 +63,7 @@ Rules:
 | M3 | Decisions and action items | LLM summary | Rule-based, cited | Keep as an edge | 0 | Each item links to speaker and minute |
 | M4 | Ask with citations | Not documented | Yes | Keep as an edge | 0 | An answer with no match says so |
 | M5 | Local summary model | Yes | Done · c0e8ce5: the meeting summary asks the local model, falls back to the local rules when it cannot answer, and the screen names which one wrote it with the reason for the fallback | Local model, rule fallback | 4 | The screen says which produced the summary |
-| M6 | Two-hour reliability | Claimed | Unproven | 2 hours, no crash, flat memory | 6 | A two-hour run with a memory chart |
+| M6 | Two-hour reliability | Claimed | Partial · c5deb53: `parlo soak --seconds N --interval S` starts the server as a child process, samples its working set every 15 s with a named cap of 480 samples, stops it and reads `sessions.jsonl` back, and a real run on this machine measured 184 s with 11.8 MB first, 11.7 MB last and 11.8 MB peak over 12 samples, one session and no crash; the two-hour window with the app beside the server has not been run here, and a test exercises a four second run on every `cargo test` | 2 hours, no crash, flat memory | 6 | A two-hour run with a memory chart |
 
 ## Voice
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Nine Partial rows counted at half give 71.9%.
+53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Ten Partial rows counted at half give 72.5%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is M6, two-hour reliability: the session log now writes a start, an end and any panic on its own, so what is missing is a two-hour run of the app and the server beside it with a memory reading, which has not been measured here; the models, the engine files and a second machine block the rest.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is X2, per-engine benchmarks: the cascade row already runs `engines/cascade/scripts/benchmark.py`, so what is missing is the Parakeet 0.6B v3 files on this machine; every other open row needs a model, a graphics card, a signing certificate, Docker or a second platform.
