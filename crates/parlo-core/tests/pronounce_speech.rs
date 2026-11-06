@@ -34,7 +34,7 @@ impl Engine for Recorder {
     }
 }
 
-fn speaking(text: &str) -> String {
+fn speaking_in(text: &str, language: Option<&str>) -> String {
     let spoken = Arc::new(Mutex::new(Vec::new()));
     let format = AudioFormat::mono(16_000).expect("16 kHz mono");
     let config = PipelineConfig::new(format, format);
@@ -45,10 +45,28 @@ fn speaking(text: &str) -> String {
         }),
     )
     .expect("the pipeline starts");
-    pipeline.speak(text).expect("the recorder speaks");
+    pipeline
+        .speak_in(text, language)
+        .expect("the recorder speaks");
     let heard = spoken.lock().expect("the recorder lock");
     assert_eq!(heard.len(), 1, "the engine heard {heard:?}");
     heard[0].clone()
+}
+
+fn speaking(text: &str) -> String {
+    speaking_in(text, None)
+}
+
+#[test]
+fn the_pipeline_speaks_the_language_it_is_given() {
+    assert_eq!(
+        speaking_in("Parlo lê o JSON", Some("pt")),
+        "Párlô lê o Jêison"
+    );
+    assert_eq!(
+        speaking_in("Parlo speaks JSON", Some("en")),
+        "PAR-loh speaks JAY-son"
+    );
 }
 
 #[test]

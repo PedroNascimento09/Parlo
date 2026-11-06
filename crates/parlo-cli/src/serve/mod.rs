@@ -348,9 +348,44 @@ impl Session {
     }
 
     fn speak(&self, text: &str) -> Result<(Vec<u8>, u32), String> {
+        let language = self.chosen().to.clone();
+        self.speak_in(text, &language)
+    }
+
+    fn speak_in(&self, text: &str, language: &str) -> Result<(Vec<u8>, u32), String> {
         let _working = self.working();
-        let mut pipeline = self.pipeline();
-        pipeline.speak(text).map_err(|error| error.to_string())
+        let chosen = self.chosen();
+        if chosen.to == language {
+            drop(chosen);
+            return self
+                .pipeline()
+                .speak_in(text, Some(language))
+                .map_err(|error| error.to_string());
+        }
+        let engine = chosen.engine.clone();
+        let stt = chosen.stt.clone();
+        let source_language = if chosen.from == language {
+            chosen.to.clone()
+        } else {
+            chosen.from.clone()
+        };
+        let source = std::env::var("PARLO_CASCADE_SOURCE").ok();
+        let target = std::env::var("PARLO_CASCADE_TARGET").ok();
+        drop(chosen);
+        let spoken = build(&source_language, language, &engine, &stt).and_then(|mut pipeline| {
+            pipeline
+                .speak_in(text, Some(language))
+                .map_err(|error| error.to_string())
+        });
+        match source {
+            Some(value) => std::env::set_var("PARLO_CASCADE_SOURCE", value),
+            None => std::env::remove_var("PARLO_CASCADE_SOURCE"),
+        }
+        match target {
+            Some(value) => std::env::set_var("PARLO_CASCADE_TARGET", value),
+            None => std::env::remove_var("PARLO_CASCADE_TARGET"),
+        }
+        spoken
     }
 
     fn speak_with_voice(

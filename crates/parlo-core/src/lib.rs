@@ -20,7 +20,7 @@ pub use audio::{AudioFormat, FormatError, Frame};
 pub use engine::{EchoEngine, Engine, EngineError, EngineOutput, UnitState};
 pub use latency::LatencyBudget;
 pub use pipeline::{Pipeline, PipelineConfig, PipelineError, PipelineOutput};
-pub use pronounce::{respell, Entry};
+pub use pronounce::{respell, respell_in, Entry};
 pub use resample::Resampler;
 pub use ring::RingBuffer;
 pub use settings::Config;

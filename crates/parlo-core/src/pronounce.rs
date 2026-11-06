@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 #[derive(Debug, Deserialize)]
@@ -7,6 +8,8 @@ pub struct Entry {
     pub respell: String,
     pub ipa: String,
     pub cmu: String,
+    #[serde(default)]
+    pub by_language: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -40,7 +43,20 @@ pub fn lookup(word: &str) -> Option<&'static Entry> {
         .find(|entry| entry.word.eq_ignore_ascii_case(word))
 }
 
+impl Entry {
+    pub fn spoken_in(&self, language: Option<&str>) -> &str {
+        language
+            .and_then(|language| self.by_language.get(language))
+            .map(String::as_str)
+            .unwrap_or(&self.respell)
+    }
+}
+
 pub fn respell(text: &str) -> String {
+    respell_in(text, None)
+}
+
+pub fn respell_in(text: &str, language: Option<&str>) -> String {
     let mut spoken = String::with_capacity(text.len());
     let mut word = String::new();
     for character in text.chars() {
@@ -48,20 +64,20 @@ pub fn respell(text: &str) -> String {
             word.push(character);
             continue;
         }
-        speak_word(&mut spoken, &word);
+        speak_word(&mut spoken, &word, language);
         word.clear();
         spoken.push(character);
     }
-    speak_word(&mut spoken, &word);
+    speak_word(&mut spoken, &word, language);
     spoken
 }
 
-fn speak_word(spoken: &mut String, word: &str) {
+fn speak_word(spoken: &mut String, word: &str, language: Option<&str>) {
     if word.is_empty() {
         return;
     }
     match lookup(word) {
-        Some(entry) => spoken.push_str(&entry.respell),
+        Some(entry) => spoken.push_str(entry.spoken_in(language)),
         None => spoken.push_str(word),
     }
 }

@@ -16,9 +16,24 @@ const OPENAI_AUDIO_MODELS: [&str; 3] = ["whisper-1", "whisper", "parakeet"];
 struct SpeechRequest {
     input: String,
     #[serde(default)]
+    model: Option<String>,
+    #[serde(default)]
+    voice: Option<String>,
+    #[serde(default)]
     response_format: Option<String>,
     #[serde(default)]
     speed: Option<f32>,
+}
+
+fn spoken_language(request: &SpeechRequest) -> Option<&'static str> {
+    [request.voice.as_deref(), request.model.as_deref()]
+        .into_iter()
+        .flatten()
+        .find_map(|id| {
+            crate::registry::model(id)
+                .filter(|spec| spec.kind == "voice")
+                .and_then(|spec| spec.languages.first().copied())
+        })
 }
 
 pub(crate) fn transcriptions(
@@ -185,7 +200,11 @@ pub(crate) fn speech(
         )
         .map(|()| Flow::Serve);
     }
-    let (pcm16, rate) = match session.speak(input) {
+    let speech = match spoken_language(&request) {
+        Some(language) => session.speak_in(input, language),
+        None => session.speak(input),
+    };
+    let (pcm16, rate) = match speech {
         Ok(speech) => speech,
         Err(error) => {
             return fail(

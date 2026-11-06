@@ -1,4 +1,18 @@
-use parlo_core::pronounce::{entries, lookup, respell};
+use parlo_core::pronounce::{entries, lookup, respell, respell_in};
+
+#[test]
+fn a_language_picks_its_own_respelling() {
+    assert_eq!(
+        respell_in("Parlo lê o JSON", Some("pt")),
+        "Párlô lê o Jêison"
+    );
+    assert_eq!(
+        respell_in("Parlo reads JSON", Some("en")),
+        "PAR-loh reads JAY-son"
+    );
+    assert_eq!(respell_in("Parlo", None), "PAR-loh");
+    assert_eq!(respell_in("pardal", Some("pt")), "pardal");
+}
 
 #[test]
 fn every_entry_carries_a_respelling_ipa_and_cmu() {

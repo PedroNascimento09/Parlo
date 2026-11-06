@@ -62,7 +62,7 @@ fn the_stored_sentence_is_audible_audio_at_the_engine_rate() {
         / frames as f64)
         .sqrt();
     assert!(rms > 300.0, "the audio is near silence: rms {rms:.0}");
-    let tail_from = frames - (frames / 10).max(1);
+    let tail_from = frames.saturating_sub(rate as usize / 10);
     let tail_rms = (samples[tail_from..]
         .iter()
         .map(|value| f64::from(*value) * f64::from(*value))
@@ -79,8 +79,9 @@ fn the_stored_sentence_is_audible_audio_at_the_engine_rate() {
 fn the_report_keeps_the_spoken_text_and_what_came_back() {
     let report = std::fs::read_to_string(root().join(REPORT)).expect("the report");
     assert!(report.contains("\"text\": \"O Parlo lê o JSON em português.\""));
-    assert!(report.contains("\"respelled\": \"O PAR-loh lê o JAY-son em português.\""));
+    assert!(report.contains("\"respelled\": \"O Párlô lê o Jêison em português.\""));
+    assert!(report.contains("\"voice\": \"voice-pt\""));
     assert!(report.contains("\"sample_rate\": 16000"));
-    assert!(report.contains("\"transcript\": \"OPR LOLA"), "{report}");
+    assert!(report.contains("\"transcript\": \"O Pilorinov"), "{report}");
     assert!(report.contains("Parakeet 0.6B v3"));
 }

@@ -146,7 +146,16 @@ impl Pipeline {
     }
 
     pub fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {
-        self.engine.speak(&crate::pronounce::respell(text))
+        self.speak_in(text, None)
+    }
+
+    pub fn speak_in(
+        &mut self,
+        text: &str,
+        language: Option<&str>,
+    ) -> Result<(Vec<u8>, u32), EngineError> {
+        self.engine
+            .speak(&crate::pronounce::respell_in(text, language))
     }
 
     pub fn embed(&mut self, pcm16: &[u8]) -> Result<Vec<f32>, EngineError> {
