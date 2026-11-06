@@ -115,7 +115,7 @@ Rules:
 | P3 | WebSocket streaming | Yes, versioned | Done · 1236c51: one socket emits partial, stable and final with a session id | Parity | 1 | Partial, stable and final over one socket |
 | P4 | Capabilities document | Yes | Done · 1236c51: engines and request limits published at `/.well-known/parlo` | Parity | 1 | `/.well-known/parlo` lists engines and limits |
 | P5 | MCP HTTP and stdio | 8 tools | Done · 2f10f47: 12 tools over `/mcp` and stdio | 12 tools, both transports | 1 | One agent uses each transport |
-| P6 | LAN sharing with a PIN | Yes | No | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
+| P6 | LAN sharing with a PIN | Yes | Partial · 4bf91c0: `parlo config --share on --pin 4821` and the Sharing field store the switch, PIN and port, the server binds `0.0.0.0` only when sharing is on with a four-to-eight digit PIN, and tests over a real socket prove a request without the PIN and a wrong PIN get 401 on `/state` and `/v1/models` while the right PIN gets 200 and a closed share leaves the port refusing connections; a phone on a real LAN could not be tried from this machine | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
 | P7 | Remote backend | Yes | No | Parity, HTTPS only | 5 | A laptop drives a desktop GPU |
 | P8 | Keys and tickets | API key, WS ticket | Done · daa2b0b: `POST /ticket` issues a single-use ticket that opens one WebSocket and is refused on replay, and the token still works alone | Parity | 5 | A short-lived ticket cannot be replayed |
 | P9 | SDK and examples | Python client | Done · 273b302: `examples/openai_client.py` calls models, transcriptions, translations and speech on a running server and prints one line per endpoint, `docs/API.md` carries the request and the real response for each, and a test fails when a `/v1` route has no example | Parity | 5 | One example per endpoint runs |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-52 of 80 rows are Done (65.0%), counted as the rows whose Parlo today cell starts with Done or Yes. Four Partial rows counted at half give 67.5%.
+52 of 80 rows are Done (65.0%), counted as the rows whose Parlo today cell starts with Done or Yes. Five Partial rows counted at half give 68.1%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is P6, LAN sharing with a PIN: the server already answers one machine, so what is missing is an opt-in listener another device can reach, a PIN checked before any audio route, and a test that a request without it is refused; only a phone on the real LAN would stay unverified.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is P7, the remote backend: the API and the PIN door exist, so what is missing is a listener that terminates TLS with a certificate the caller can check, a refusal of plain HTTP on that port, and a client setting that names a remote base URL; no machine on another network is reachable from here to prove the last hop.
