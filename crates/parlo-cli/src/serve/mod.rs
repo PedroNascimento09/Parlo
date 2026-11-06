@@ -1,6 +1,6 @@
 use std::fs;
-use std::io::{BufReader, Read, Write};
-use std::net::{TcpListener, TcpStream};
+use std::io::{BufReader, Read};
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, OnceLock, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -36,7 +36,7 @@ use auth::authorised;
 pub use auth::new_token;
 use http::{
     content_type, error_json, header, host_is_local, origin_allowed, percent_decode, respond,
-    respond_json,
+    respond_json, Stream,
 };
 
 #[derive(PartialEq, Eq)]
@@ -490,6 +490,11 @@ pub struct Server {
     pub share: Option<String>,
 }
 
+pub struct TlsFiles {
+    pub certificate: PathBuf,
+    pub key: PathBuf,
+}
+
 impl Server {
     pub fn app_url(&self) -> String {
         format!("{}/?t={}", self.address, self.token)
@@ -562,6 +567,141 @@ pub fn start(
     })
 }
 
+pub fn start_tls(
+    port: u16,
+    token: String,
+    files: TlsFiles,
+    engine: String,
+    stt: String,
+    from: String,
+    to: String,
+) -> Result<Server, String> {
+    if std::env::var("PARLO_APP_GUARD").is_ok() {
+        exit_with_parent();
+    }
+    let session = Arc::new(Session::open(engine, stt, from, to)?);
+    let listener = TcpListener::bind(("0.0.0.0", port))
+        .map_err(|error| format!("cannot bind 0.0.0.0:{port}: {error}"))?;
+    let config = Arc::new(tls_server_config(&files.certificate, &files.key)?);
+    println!("listening on https://0.0.0.0:{port}, plain HTTP is refused");
+    println!("  token      {token}");
+    crate::watch::start();
+    let accepting = Arc::new(AtomicBool::new(true));
+    let shared = token.clone();
+    std::thread::spawn(move || listen_tls(listener, shared, port, session, accepting, config));
+    Ok(Server {
+        address: format!("https://0.0.0.0:{port}"),
+        token,
+        share: None,
+    })
+}
+
+pub fn run_tls(
+    port: u16,
+    token: String,
+    files: TlsFiles,
+    engine: String,
+    stt: String,
+    from: String,
+    to: String,
+) -> Result<(), String> {
+    let server = start_tls(port, token, files, engine, stt, from, to)?;
+    println!("  api        {}", server.address);
+    loop {
+        std::thread::park();
+    }
+}
+
+fn tls_server_config(certificate: &Path, key: &Path) -> Result<rustls::ServerConfig, String> {
+    let certs: Vec<_> = rustls_pemfile::certs(&mut BufReader::new(
+        fs::File::open(certificate)
+            .map_err(|error| format!("{}: {error}", certificate.display()))?,
+    ))
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|error| format!("{}: {error}", certificate.display()))?;
+    let private = rustls_pemfile::private_key(&mut BufReader::new(
+        fs::File::open(key).map_err(|error| format!("{}: {error}", key.display()))?,
+    ))
+    .map_err(|error| format!("{}: {error}", key.display()))?
+    .ok_or_else(|| format!("{} has no private key", key.display()))?;
+    rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, private)
+        .map_err(|error| error.to_string())
+}
+
+fn listen_tls(
+    listener: TcpListener,
+    token: String,
+    port: u16,
+    session: Arc<Session>,
+    accepting: Arc<AtomicBool>,
+    config: Arc<rustls::ServerConfig>,
+) {
+    let started = Instant::now();
+    for stream in listener.incoming() {
+        if !accepting.load(Ordering::Relaxed) {
+            break;
+        }
+        let mut stream = match stream {
+            Ok(stream) => stream,
+            Err(error) => {
+                eprintln!("accept failed: {error}");
+                continue;
+            }
+        };
+        let _ = stream.set_read_timeout(Some(Duration::from_secs(10)));
+        let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        let mut first = [0u8; 1];
+        let plain = match stream.peek(&mut first) {
+            Ok(1) => first[0] != 0x16,
+            _ => true,
+        };
+        if plain {
+            let _ = stream.set_read_timeout(Some(Duration::from_millis(200)));
+            let mut sink = [0u8; 4096];
+            while matches!(stream.read(&mut sink), Ok(read) if read > 0) {}
+            let _ = respond(
+                &mut stream,
+                "426 Upgrade Required",
+                "application/json",
+                b"{\"error\":\"this port speaks HTTPS only\"}",
+            );
+            continue;
+        }
+        if OPEN.fetch_add(1, Ordering::Relaxed) >= MAX_OPEN {
+            OPEN.fetch_sub(1, Ordering::Relaxed);
+            let _ = respond_json(
+                &mut stream,
+                "503 Service Unavailable",
+                "{\"error\":\"too many open connections\"}",
+            );
+            continue;
+        }
+        let open = Open;
+        let token = token.clone();
+        let session = Arc::clone(&session);
+        let accepting = Arc::clone(&accepting);
+        let config = Arc::clone(&config);
+        std::thread::spawn(move || {
+            let _open = open;
+            let connection = match rustls::ServerConnection::new(config) {
+                Ok(connection) => connection,
+                Err(error) => {
+                    eprintln!("TLS failed: {error}");
+                    return;
+                }
+            };
+            let mut tls = rustls::StreamOwned::new(connection, stream);
+            match handle(&mut tls, &token, port, &session, started, None, true) {
+                Ok(Flow::Serve) => {}
+                Ok(Flow::Stop) => accepting.store(false, Ordering::Relaxed),
+                Err(error) => eprintln!("request failed: {error}"),
+            }
+        });
+    }
+}
+
 fn exit_with_parent() {
     std::thread::spawn(|| {
         let mut sink = [0u8; 64];
@@ -627,6 +767,7 @@ fn listen(
                 &session,
                 started,
                 share.as_deref(),
+                false,
             ) {
                 Ok(Flow::Serve) => {}
                 Ok(Flow::Stop) => accepting.store(false, Ordering::Relaxed),
@@ -914,8 +1055,8 @@ fn pin_offered(headers: &[(String, String)], query: &str, pin: &str) -> bool {
     offered.is_some_and(|value| auth::constant_time_eq(value.trim(), pin))
 }
 
-fn origin_allowed_for(headers: &[(String, String)], port: u16, shared: bool) -> bool {
-    if !shared {
+fn origin_allowed_for(headers: &[(String, String)], port: u16, open: bool) -> bool {
+    if !open {
         return origin_allowed(headers, port);
     }
     let Some(origin) = header(headers, "origin") else {
@@ -929,12 +1070,13 @@ fn origin_allowed_for(headers: &[(String, String)], port: u16, shared: bool) -> 
 }
 
 fn handle(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     token: &str,
     port: u16,
     session: &Session,
     started: Instant,
     share: Option<&Share>,
+    remote: bool,
 ) -> Result<Flow, String> {
     let (head, body) = read_http(stream)?;
     let mut lines = head.lines();
@@ -963,6 +1105,11 @@ fn handle(
         }
         headers.retain(|(name, _)| name != "authorization" && name != "x-parlo-token");
         headers.push(("authorization".to_string(), format!("Bearer {token}")));
+    } else if remote {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
     } else if !host_is_local(&headers) {
         return respond_json(
             stream,
@@ -972,7 +1119,7 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
-    if method == "POST" && !origin_allowed_for(&headers, port, share.is_some()) {
+    if method == "POST" && !origin_allowed_for(&headers, port, share.is_some() || remote) {
         return respond_json(
             stream,
             "403 Forbidden",
@@ -4771,7 +4918,7 @@ struct KeyRequest {
 }
 
 fn answer_with(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     outcome: Result<serde_json::Value, String>,
     success: &str,
 ) -> Result<Flow, String> {
@@ -5229,7 +5376,7 @@ fn apply_dub(project: &mut crate::store::DubProject, lines: &[dub::Line], langua
     }
 }
 
-pub(crate) fn respond_file(stream: &mut TcpStream, path: &Path, name: &str) -> Result<(), String> {
+pub(crate) fn respond_file(stream: &mut dyn Stream, path: &Path, name: &str) -> Result<(), String> {
     let file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
     let length = file.metadata().map_err(|error| error.to_string())?.len();
     let head = format!(
@@ -5249,7 +5396,11 @@ fn wav_seconds(bytes: &[u8]) -> f64 {
     data / 2.0 / f64::from(rate)
 }
 
-pub(crate) fn respond_named(stream: &mut TcpStream, name: &str, body: &[u8]) -> Result<(), String> {
+pub(crate) fn respond_named(
+    stream: &mut dyn Stream,
+    name: &str,
+    body: &[u8],
+) -> Result<(), String> {
     let head = format!(
         "HTTP/1.1 200 OK\nContent-Type: {}\nContent-Length: {}\nContent-Disposition: attachment; filename=\"{name}\"\nConnection: close\n\n",
         content_type(name),
@@ -5273,7 +5424,7 @@ fn transcript_header(transcript: &str) -> String {
     }
 }
 
-fn respond_audio(stream: &mut TcpStream, body: &[u8], transcript: &str) -> Result<(), String> {
+fn respond_audio(stream: &mut dyn Stream, body: &[u8], transcript: &str) -> Result<(), String> {
     let header = transcript_header(transcript);
     let head = format!(
         "HTTP/1.1 200 OK\r\nContent-Type: audio/wav\r\nContent-Length: {}\r\n{header}Connection: close\r\n\r\n",
@@ -5363,7 +5514,7 @@ fn json_string(value: &str) -> String {
         .replace(['\n', '\r'], " ")
 }
 
-fn read_http(stream: &mut TcpStream) -> Result<(String, Vec<u8>), String> {
+fn read_http(stream: &mut dyn Stream) -> Result<(String, Vec<u8>), String> {
     let mut buffer = Vec::new();
     let mut chunk = [0u8; 4096];
     let head_end = loop {
@@ -5425,6 +5576,8 @@ fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+    use std::net::TcpStream;
 
     use parlo_core::audio::Frame;
     use parlo_core::engine::{Engine, EngineOutput, StreamPiece};
@@ -6349,6 +6502,77 @@ mod tests {
         )
     }
 
+    #[test]
+    fn a_remote_client_verifies_the_certificate_and_refuses_plain_http() {
+        let authority_key = rcgen::KeyPair::generate().unwrap();
+        let mut authority_params = rcgen::CertificateParams::new(Vec::new()).unwrap();
+        authority_params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+        let authority = authority_params.self_signed(&authority_key).unwrap();
+        let server_key = rcgen::KeyPair::generate().unwrap();
+        let server_params = rcgen::CertificateParams::new(vec!["localhost".to_string()]).unwrap();
+        let server = server_params
+            .signed_by(&server_key, &authority, &authority_key)
+            .unwrap();
+
+        let directory = std::env::temp_dir().join(format!("parlo-tls-{}", std::process::id()));
+        fs::create_dir_all(&directory).unwrap();
+        let authority_path = directory.join("authority.pem");
+        let certificate_path = directory.join("server.pem");
+        let key_path = directory.join("server.key");
+        fs::write(&authority_path, authority.pem()).unwrap();
+        fs::write(&certificate_path, server.pem()).unwrap();
+        fs::write(&key_path, server_key.serialize_pem()).unwrap();
+
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let session = Arc::new(
+            Session::open("echo".into(), "parakeet".into(), "pt".into(), "en".into()).unwrap(),
+        );
+        let accepting = Arc::new(AtomicBool::new(true));
+        let config = Arc::new(tls_server_config(&certificate_path, &key_path).unwrap());
+        std::thread::spawn(move || {
+            listen_tls(listener, "t0ken".into(), port, session, accepting, config)
+        });
+
+        let mut settings = parlo_core::settings::Config {
+            remote_url: format!("https://localhost:{port}"),
+            remote_token: "t0ken".to_string(),
+            ..Default::default()
+        };
+        let refused = crate::remote::post(&settings, "/translate", "audio/wav", b"")
+            .expect_err("a certificate the client does not trust must be refused");
+        assert!(refused.contains("certificate"), "{refused}");
+
+        settings.remote_ca = authority_path.display().to_string();
+        let trusted = crate::remote::post(&settings, "/translate", "audio/wav", b"").unwrap();
+        assert_eq!(trusted.status, 400);
+        assert!(String::from_utf8_lossy(&trusted.body).contains("bad wav"));
+
+        settings.remote_token = "stolen".to_string();
+        let unauthenticated =
+            crate::remote::post(&settings, "/translate", "audio/wav", b"").unwrap();
+        assert_eq!(unauthenticated.status, 401);
+
+        let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
+        let _ = stream.write_all(
+            format!("GET /health HTTP/1.1\r\nHost: localhost:{port}\r\n\r\n").as_bytes(),
+        );
+        let mut raw = Vec::new();
+        let mut chunk = [0u8; 1024];
+        loop {
+            match stream.read(&mut chunk) {
+                Ok(0) => break,
+                Ok(read) => raw.extend_from_slice(&chunk[..read]),
+                Err(_) => break,
+            }
+        }
+        let text = String::from_utf8_lossy(&raw);
+        assert!(text.starts_with("HTTP/1.1 426"), "{text}");
+    }
+
     fn send(port: u16, method: &str, path: &str, body: &str) -> String {
         let request = format!(
             "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\nContent-Length: {}\r\n\r\n{body}",
@@ -6476,7 +6700,7 @@ mod tests {
         stream
     }
 
-    fn send_websocket_frame(stream: &mut TcpStream, opcode: u8, payload: &[u8]) {
+    fn send_websocket_frame(stream: &mut dyn Stream, opcode: u8, payload: &[u8]) {
         let mut frame = vec![0x80 | opcode];
         let length = payload.len();
         if length < 126 {
@@ -6499,13 +6723,13 @@ mod tests {
         stream.write_all(&frame).unwrap();
     }
 
-    fn read_exact_bytes(stream: &mut TcpStream, length: usize) -> Vec<u8> {
+    fn read_exact_bytes(stream: &mut dyn Stream, length: usize) -> Vec<u8> {
         let mut bytes = vec![0u8; length];
         stream.read_exact(&mut bytes).unwrap();
         bytes
     }
 
-    fn read_websocket_frame(stream: &mut TcpStream) -> (u8, Vec<u8>) {
+    fn read_websocket_frame(stream: &mut dyn Stream) -> (u8, Vec<u8>) {
         let head = read_exact_bytes(stream, 2);
         let opcode = head[0] & 0x0f;
         let masked = head[1] & 0x80 != 0;
@@ -6529,7 +6753,7 @@ mod tests {
         (opcode, payload)
     }
 
-    fn read_websocket_json(stream: &mut TcpStream) -> serde_json::Value {
+    fn read_websocket_json(stream: &mut dyn Stream) -> serde_json::Value {
         let (opcode, payload) = read_websocket_frame(stream);
         assert_eq!(opcode, 1);
         serde_json::from_slice(&payload).unwrap()

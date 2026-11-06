@@ -1,8 +1,7 @@
-use std::net::TcpStream;
-
 use super::super::auth::authorised;
 use super::super::http::{error_json, respond_json};
 use super::super::Flow;
+use crate::serve::http::Stream;
 
 #[derive(serde::Deserialize)]
 struct CopyRequest {
@@ -12,7 +11,7 @@ struct CopyRequest {
 pub(crate) fn route(
     method: &str,
     path: &str,
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],

@@ -1,14 +1,13 @@
-use std::net::TcpStream;
-
 use crate::registry::PIPELINES;
 
 use super::super::http::respond_json;
 use super::super::{Flow, MAX_AUDIO_BODY, MAX_BODY, MAX_DUB_BODY, VERSION};
+use crate::serve::http::Stream;
 
 pub(crate) fn route(
     method: &str,
     path: &str,
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
 ) -> Option<Result<Flow, String>> {
     if method != "GET" || path != "/.well-known/parlo" {
         return None;

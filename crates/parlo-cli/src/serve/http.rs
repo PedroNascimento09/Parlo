@@ -1,6 +1,16 @@
-use std::io::Write;
-use std::net::TcpStream;
+use std::io::{Read, Write};
 use std::path::Path;
+
+pub(crate) trait Stream: Read + Write {
+    fn set_read_timeout(&self, _timeout: Option<std::time::Duration>) -> std::io::Result<()> {
+        Ok(())
+    }
+
+    fn set_write_timeout(&self, _timeout: Option<std::time::Duration>) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+impl<T: Read + Write> Stream for T {}
 
 pub(crate) fn error_json(message: &str) -> String {
     serde_json::json!({ "error": message }).to_string()
@@ -91,12 +101,16 @@ pub(crate) fn origin_allowed(headers: &[(String, String)], port: u16) -> bool {
     }
 }
 
-pub(crate) fn respond_json(stream: &mut TcpStream, status: &str, body: &str) -> Result<(), String> {
+pub(crate) fn respond_json(
+    stream: &mut dyn Stream,
+    status: &str,
+    body: &str,
+) -> Result<(), String> {
     respond(stream, status, "application/json", body.as_bytes())
 }
 
 pub(crate) fn respond(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     status: &str,
     content_type: &str,
     body: &[u8],

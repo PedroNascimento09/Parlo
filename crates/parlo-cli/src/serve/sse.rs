@@ -1,10 +1,9 @@
-use std::io::Write;
-use std::net::TcpStream;
+use crate::serve::http::Stream;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::time::Duration;
 
 pub fn stream<T>(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     events: Receiver<T>,
     render: impl Fn(&T) -> (String, bool),
 ) -> Result<(), String> {

@@ -1,13 +1,12 @@
-use std::net::TcpStream;
-
 use super::super::auth::authorised;
 use super::super::http::{error_json, header, respond_json};
 use super::super::{audio, Flow, Session};
+use crate::serve::http::Stream;
 
 pub(crate) fn route(
     method: &str,
     path: &str,
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],

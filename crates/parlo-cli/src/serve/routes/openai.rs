@@ -1,4 +1,3 @@
-use std::net::TcpStream;
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -9,6 +8,7 @@ use super::super::auth::authorised;
 use super::super::http::{header, respond, respond_json};
 use super::super::multipart::{self, Part};
 use super::super::{Flow, Session};
+use crate::serve::http::Stream;
 
 const OPENAI_AUDIO_MODELS: [&str; 3] = ["whisper-1", "whisper", "parakeet"];
 
@@ -22,7 +22,7 @@ struct SpeechRequest {
 }
 
 pub(crate) fn transcriptions(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
@@ -60,7 +60,7 @@ pub(crate) fn transcriptions(
 }
 
 pub(crate) fn translations(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
@@ -98,7 +98,7 @@ pub(crate) fn translations(
 }
 
 pub(crate) fn speech(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
@@ -299,7 +299,7 @@ fn encode_mp3(wav: &[u8]) -> Result<Vec<u8>, String> {
 }
 
 fn prepare(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     body: &[u8],
 ) -> Result<(Vec<u8>, f32, String), ()> {
@@ -392,7 +392,7 @@ fn prepare(
 }
 
 fn answer(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     text: &str,
     seconds: f32,
     language: &str,
@@ -479,7 +479,7 @@ fn timestamp(seconds: f32, separator: char) -> String {
 }
 
 fn fail(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     status: &str,
     message: &str,
     kind: &str,

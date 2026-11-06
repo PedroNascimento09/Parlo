@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{self, Sender};
 use std::sync::{Arc, Mutex, OnceLock};
@@ -237,7 +236,11 @@ impl Manager {
         Some(receiver)
     }
 
-    pub fn stream(&self, stream: &mut TcpStream, id: &str) -> Result<(), String> {
+    pub fn stream(
+        &self,
+        stream: &mut dyn crate::serve::http::Stream,
+        id: &str,
+    ) -> Result<(), String> {
         let events = self.subscribe(id).ok_or_else(|| format!("no job {id}"))?;
         crate::serve::sse::stream(stream, events, |event| {
             (event.job.value().to_string(), event.job.state.terminal())
@@ -790,7 +793,7 @@ mod tests {
             let (mut stream, _) = listener.accept().unwrap();
             manager.stream(&mut stream, &id).unwrap();
         });
-        let mut client = TcpStream::connect(("127.0.0.1", port)).unwrap();
+        let mut client = std::net::TcpStream::connect(("127.0.0.1", port)).unwrap();
         client
             .set_read_timeout(Some(Duration::from_secs(5)))
             .unwrap();

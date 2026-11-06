@@ -1,14 +1,13 @@
-use std::net::TcpStream;
-
 use super::super::auth::authorised;
 use super::super::http::{error_json, respond_json};
 use super::super::Flow;
+use crate::serve::http::Stream;
 use crate::watch;
 
 pub(crate) fn route(
     method: &str,
     path: &str,
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
@@ -22,7 +21,7 @@ pub(crate) fn route(
 fn handle(
     method: &str,
     path: &str,
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
@@ -96,6 +95,6 @@ fn handle(
     .map(|()| Flow::Serve)
 }
 
-fn failure(stream: &mut TcpStream, status: &str, error: &str) -> Result<Flow, String> {
+fn failure(stream: &mut dyn Stream, status: &str, error: &str) -> Result<Flow, String> {
     respond_json(stream, status, &error_json(error)).map(|()| Flow::Serve)
 }

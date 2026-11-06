@@ -1,5 +1,3 @@
-use std::io::Write;
-use std::net::TcpStream;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -9,6 +7,7 @@ use tungstenite::protocol::{Message, Role, WebSocket, WebSocketConfig};
 use super::auth::authorised;
 use super::http::{error_json, header, origin_allowed, respond_json};
 use super::{Flow, Session};
+use crate::serve::http::Stream;
 
 pub(crate) const PROTOCOL: &str = "parlo.speech.v1";
 pub(crate) const MAX_MESSAGE: usize = 4 * 1024 * 1024;
@@ -17,7 +16,7 @@ const SOCKET_TIMEOUT: Duration = Duration::from_secs(3_600);
 static SESSIONS: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn stream(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     query_token: &str,
@@ -181,7 +180,7 @@ fn control(text: &str) -> Control {
 }
 
 fn emit(
-    socket: &mut WebSocket<&mut TcpStream>,
+    socket: &mut WebSocket<&mut dyn Stream>,
     id: &str,
     pieces: &[parlo_core::engine::StreamPiece],
 ) -> Result<(), String> {
@@ -201,7 +200,7 @@ fn emit(
 }
 
 fn send_error(
-    socket: &mut WebSocket<&mut TcpStream>,
+    socket: &mut WebSocket<&mut dyn Stream>,
     id: &str,
     message: &str,
 ) -> Result<(), String> {
@@ -215,7 +214,7 @@ fn send_error(
     )
 }
 
-fn send(socket: &mut WebSocket<&mut TcpStream>, value: serde_json::Value) -> Result<(), String> {
+fn send(socket: &mut WebSocket<&mut dyn Stream>, value: serde_json::Value) -> Result<(), String> {
     socket
         .send(Message::Text(value.to_string()))
         .map_err(|error| error.to_string())

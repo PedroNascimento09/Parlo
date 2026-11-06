@@ -1,13 +1,12 @@
-use std::net::TcpStream;
-
 use super::super::http::respond_json;
 use super::super::{Flow, Session};
 use crate::models;
+use crate::serve::http::Stream;
 
 pub(crate) fn route(
     method: &str,
     path: &str,
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     session: &Session,
 ) -> Option<Result<Flow, String>> {
     if method == "GET" && path == "/v1/models" {

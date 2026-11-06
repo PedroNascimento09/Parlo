@@ -1,10 +1,10 @@
-use std::net::TcpStream;
 #[cfg(test)]
 use std::time::Duration;
 
 use super::super::auth::authorised;
 use super::super::http::{error_json, respond_json};
 use super::super::Flow;
+use crate::serve::http::Stream;
 use crate::{jobs, models};
 
 #[derive(serde::Deserialize)]
@@ -13,7 +13,7 @@ struct JobRequest {
 }
 
 pub(crate) fn create(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
@@ -94,7 +94,7 @@ pub(crate) fn create(
 }
 
 pub(crate) fn list(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
 ) -> Result<Flow, String> {
@@ -112,7 +112,7 @@ pub(crate) fn list(
 }
 
 pub(crate) fn read(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     path: &str,
@@ -138,7 +138,7 @@ pub(crate) fn read(
 }
 
 pub(crate) fn cancel(
-    stream: &mut TcpStream,
+    stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     path: &str,
