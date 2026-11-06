@@ -152,7 +152,7 @@ Rules:
 | Q2 | Published benchmarks | Yes | Done · 36e3e56: `parlo bench` publishes one row per engine and device with the cores, the memory, the gpu, the profile and the commit, `the_published_table_is_the_one_the_run_generates` fails when `docs/BENCHMARKS.md` drifts from `docs/benchmarks.json`, and `every_published_number_names_real_hardware_and_a_real_commit` fails on a hardware line without cores or a commit this repository does not hold | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Done · 17800a0: every model the app offers names a catalogue row under the same licence and a source, every catalogue row names a model the registry offers, and the Python gate still refuses a copyleft crate before the build ships | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
-| Q5 | Crash-free sessions | Claimed | Unproven | Two hours, no crash | 6 | A recorded two-hour run |
+| Q5 | Crash-free sessions | Claimed | Partial · a6906a6: `crates/parlo-core/src/sessions.rs` keeps `sessions.jsonl` in the data folder with one line per start, clean end and panic (message and file:line), appended in one write, the newest 400 lines kept and unreadable lines skipped; `parlo doctor` prints the sessions recorded, the clean and crashed counts, the last session and the crash-free rate, with one line when nothing is recorded; tests cover a panic counted as crashed, a clean end, a truncated file, a directory that did not exist, the rate and the cap; no two-hour run has been recorded on this machine | Two hours, no crash | 6 | A recorded two-hour run |
 | Q6 | External testers | Community | None | Ten testers before 1.0 | 6 | Their hardware rows are in BENCHMARKS |
 
 ## The edges Parlo keeps
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Eight Partial rows counted at half give 71.3%.
+53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Nine Partial rows counted at half give 71.9%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is Q5, crash-free sessions: the server and the app already run for hours at a time, so what is missing is a local record of every start and every panic that `parlo doctor` can read back, and a two-hour run written down beside it; that run has not happened here.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is M6, two-hour reliability: the session log now writes a start, an end and any panic on its own, so what is missing is a two-hour run of the app and the server beside it with a memory reading, which has not been measured here; the models, the engine files and a second machine block the rest.
