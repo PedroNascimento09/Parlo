@@ -860,6 +860,22 @@ fn config_command(args: &[String]) -> Result<(), String> {
                     .map_err(|_| "port must be a number".to_string())?
             }
             "--channel" => config.update_channel = update::check_channel(&value)?,
+            "--share" => {
+                config.share = match value.as_str() {
+                    "on" | "true" | "yes" => true,
+                    "off" | "false" | "no" => false,
+                    _ => return Err("share is either on or off".to_string()),
+                }
+            }
+            "--pin" => config.share_pin = parlo_core::settings::check_pin(&value)?,
+            "--share-port" => {
+                config.share_port = value
+                    .parse()
+                    .map_err(|_| "the share port must be a number".to_string())?;
+                if config.share_port < 1024 {
+                    return Err("the share port must be 1024 or higher".to_string());
+                }
+            }
             "--device" => {
                 config.device = Some(
                     value
@@ -874,6 +890,9 @@ fn config_command(args: &[String]) -> Result<(), String> {
     }
 
     if written {
+        if config.share && config.share_pin.is_empty() {
+            return Err("set a PIN with --pin before sharing this computer".to_string());
+        }
         set_direction(&config.from, &config.to)?;
         let path = config::save(&config)?;
         println!("written {}", path.display());
@@ -887,6 +906,11 @@ fn config_command(args: &[String]) -> Result<(), String> {
     println!("  shortcut {}", config.shortcut);
     println!("  port     {}", config.port);
     println!("  channel  {}", config.update_channel);
+    if config.share {
+        println!("  share    on, port {}", config.share_port);
+    } else {
+        println!("  share    off");
+    }
     match config.device {
         Some(device) => println!("  device   {device}"),
         None => println!("  device   the system default"),
