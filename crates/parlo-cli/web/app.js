@@ -6463,7 +6463,7 @@ if (packImport) {
     try {
       const saved = await sendPack(await file.text());
       packNote.textContent =
-        "Imported " + saved.name + " with " + saved.voices.length + " voices.";
+        "Imported " + saved.name + " with " + saved.voices.length + " voices, and they are installed.";
       await loadPacks();
     } catch (failure) {
       packNote.textContent = failure.message;

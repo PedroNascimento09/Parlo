@@ -296,6 +296,35 @@ pub fn install(units: &[&str]) -> Result<(), String> {
     Ok(())
 }
 
+pub fn install_blocking(units: &[&str]) -> Result<(), String> {
+    if units.is_empty() {
+        return Ok(());
+    }
+    let deadline = Instant::now() + Duration::from_secs(3_600);
+    install(units)?;
+    loop {
+        let current = status();
+        let done = crate::registry::MODELS
+            .iter()
+            .filter(|spec| spec.unit.map(|unit| units.contains(&unit)).unwrap_or(false))
+            .all(|spec| {
+                current
+                    .iter()
+                    .any(|model| model.id == spec.id && model.installed)
+            });
+        if done {
+            return Ok(());
+        }
+        if Instant::now() > deadline {
+            return Err("the models did not finish downloading within an hour".to_string());
+        }
+        if !downloading(&current) {
+            return Err("the download stopped before it finished".to_string());
+        }
+        std::thread::sleep(Duration::from_millis(500));
+    }
+}
+
 pub fn download_remaining(
     mut progress: impl FnMut(&str, f32),
     cancelled: impl Fn() -> bool,
