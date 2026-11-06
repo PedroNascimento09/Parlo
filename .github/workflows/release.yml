@@ -221,7 +221,7 @@ jobs:
           subject-path: build/installer/Parlo-Setup.exe
 
       - name: Attach to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
@@ -251,7 +251,7 @@ jobs:
           cat SHA256SUMS.txt
 
       - name: Attach the checksums
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: assets/SHA256SUMS.txt
