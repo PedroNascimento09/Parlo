@@ -129,8 +129,8 @@ impl Default for Config {
         Self {
             engine: "cascade".to_string(),
             stt: "parakeet".to_string(),
-            from: system_language(),
-            to: partner_language(&system_language()),
+            from: "en".to_string(),
+            to: "pt".to_string(),
             write: String::new(),
             style: String::new(),
             profiles: BTreeMap::new(),
@@ -325,12 +325,11 @@ mod tests {
     }
 
     #[test]
-    fn a_fresh_install_speaks_the_language_of_this_machine() {
+    fn a_fresh_install_starts_on_the_two_main_languages() {
         let config = Config::default();
-        assert_eq!(config.from, system_language());
-        assert_eq!(config.to, partner_language(&system_language()));
+        assert_eq!(config.from, "en");
+        assert_eq!(config.to, "pt");
         assert_ne!(config.from, config.to);
-        assert_eq!(config.from.len(), 2);
     }
 
     #[test]
