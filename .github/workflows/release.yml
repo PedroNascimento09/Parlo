@@ -229,6 +229,7 @@ jobs:
             sbom.cdx.json
             build/installer/Parlo-Setup.exe
           generate_release_notes: false
+          overwrite_files: true
 
   checksums:
     name: Checksums
@@ -255,3 +256,4 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: assets/SHA256SUMS.txt
+          overwrite_files: true
