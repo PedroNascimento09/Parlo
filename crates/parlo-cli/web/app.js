@@ -5937,235 +5937,7 @@ async function clearHistory() {
   }
 }
 
-const onboarding = document.getElementById("onboarding");
-const onboardingTitle = document.getElementById("onboarding-title");
-const onboardingNote = document.getElementById("onboarding-note");
-const onboardingResult = document.getElementById("onboarding-result");
-const onboardingNext = document.getElementById("onboarding-next");
-const onboardingSkip = document.getElementById("onboarding-skip");
-const onboardingMic = document.getElementById("onboarding-mic");
-const onboardingMicAllow = document.getElementById("onboarding-mic-allow");
-const onboardingMicNote = document.getElementById("onboarding-mic-note");
-const onboardingKeys = document.getElementById("onboarding-keys");
-const onboardingShortcut = document.getElementById("onboarding-shortcut");
-const onboardingKeySave = document.getElementById("onboarding-key-save");
-const onboardingKeyNote = document.getElementById("onboarding-key-note");
 
-const ONBOARDING_TITLES = [
-  "Two languages",
-  "The microphone",
-  "The shortcut",
-  "Say one sentence",
-  "Ready",
-];
-
-let onboardingTimer = null;
-let onboardingNudge = null;
-let onboardingStage = 0;
-let onboardingKnown = -1;
-let onboardingChosen = "Ctrl+Alt+D";
-
-function showOnboardingStage(step) {
-  onboardingStage = step;
-  localStorage.setItem("parlo.onboarding.stage", String(step));
-  onboarding.hidden = false;
-  showSettingsTab("setup");
-  onboardingTitle.textContent = ONBOARDING_TITLES[step - 1];
-  onboardingMic.hidden = step !== 2;
-  onboardingKeys.hidden = step !== 3;
-  onboardingNext.hidden = step !== 5;
-  if (step !== 4) {
-    clearInterval(onboardingTimer);
-    onboardingTimer = null;
-  }
-  if (step === 2) {
-    onboardingNote.textContent =
-      "The microphone opens only while you hold the shortcut, and the sound never leaves this machine.";
-  }
-  if (step === 3) {
-    onboardingNote.textContent = "Press the keys you want to use for dictation.";
-  }
-  if (step === 4) {
-    onboardingNote.textContent =
-      "Hold " + onboardingChosen + ", say a sentence, then let go. Escape throws the sentence away.";
-    onboardingKnown = -1;
-    readHistory().then((entries) => {
-      onboardingKnown = entries.length;
-    });
-    clearInterval(onboardingTimer);
-    clearTimeout(onboardingNudge);
-    onboardingTimer = setInterval(tickOnboarding, 400);
-    onboardingNudge = setTimeout(() => {
-      if (onboardingStage !== 4) {
-        return;
-      }
-      onboardingNote.textContent =
-        "Nothing arrived. Allow the microphone in Windows settings, Privacy and security, Microphone, then hold " +
-        onboardingChosen +
-        " and speak again.";
-    }, 25000);
-  }
-  if (step === 5) {
-    onboardingNote.textContent =
-      "Home says Ready. Press " + onboardingChosen + " anywhere and speak; Escape throws the sentence away.";
-  }
-}
-
-function finishOnboarding() {
-  clearInterval(onboardingTimer);
-  clearTimeout(onboardingNudge);
-  onboardingTimer = null;
-  localStorage.setItem("parlo.onboarded", "1");
-  localStorage.removeItem("parlo.onboarding.stage");
-  onboarding.hidden = true;
-  location.hash = "#home";
-}
-
-async function readState() {
-  try {
-    const response = await fetch("/state", { cache: "no-store" });
-    if (!response.ok) {
-      return "";
-    }
-    const current = await response.json();
-    return current.state || "";
-  } catch (failure) {
-    return "";
-  }
-}
-
-async function readHistory() {
-  try {
-    const response = await fetch("/history", {
-      cache: "no-store",
-      headers: { Authorization: "Bearer " + token },
-    });
-    if (!response.ok) {
-      return [];
-    }
-    return await response.json();
-  } catch (failure) {
-    return [];
-  }
-}
-
-async function tickOnboarding() {
-  if (onboardingStage !== 4 || onboardingKnown < 0) {
-    return;
-  }
-  const state = await readState();
-  if (state === "listening") {
-    onboardingNote.textContent = "Keep talking, then let go of the key.";
-    return;
-  }
-  if (!["success", "error", "cancelled"].includes(state)) {
-    return;
-  }
-  const entries = await readHistory();
-  if (entries.length <= onboardingKnown) {
-    onboardingNote.textContent =
-      "Nothing was written. Hold the key, speak a full sentence, then let go.";
-    return;
-  }
-  const latest = entries[0];
-  const text = latest.translation || latest.text || "";
-  onboardingResult.textContent =
-    "“" + text + "”" + (latest.app ? " landed in " + latest.app : "");
-  showOnboardingStage(5);
-}
-
-async function saveOnboardingShortcut() {
-  const wanted = onboardingShortcut.value.trim();
-  if (!wanted) {
-    onboardingKeyNote.textContent = "Press a combination first.";
-    return;
-  }
-  onboardingKeySave.disabled = true;
-  try {
-    const response = await fetch("/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ shortcut: wanted }),
-    });
-    const detail = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(detail.error || "That combination cannot be used.");
-    }
-    onboardingChosen = detail.shortcut || wanted;
-    onboardingResult.textContent = "";
-    showOnboardingStage(4);
-  } catch (failure) {
-    onboardingKeyNote.textContent = failure.message || "That combination cannot be used.";
-  } finally {
-    onboardingKeySave.disabled = false;
-  }
-}
-
-async function startOnboarding() {
-  if (localStorage.getItem("parlo.onboarded") === "1") {
-    return;
-  }
-  try {
-    const response = await fetch("/settings", { cache: "no-store" });
-    if (response.ok) {
-      const values = await response.json();
-      onboardingShortcut.value = values.shortcut || "Ctrl+Alt+D";
-      onboardingChosen = values.shortcut || "Ctrl+Alt+D";
-    }
-  } catch (failure) {
-    onboardingShortcut.value = "Ctrl+Alt+D";
-  }
-  onboardingResult.textContent = "";
-  const saved = Number(localStorage.getItem("parlo.onboarding.stage") || "1");
-  showOnboardingStage(saved >= 5 ? 4 : Math.max(2, Math.min(4, saved)));
-}
-
-onboardingKeySave.addEventListener("click", () => saveOnboardingShortcut());
-
-onboardingShortcut.addEventListener("keydown", (event) => {
-  event.preventDefault();
-  const refused = ["Control", "Alt", "Shift", "Meta", "Escape", "Tab"];
-  const named = { " ": "Space", Spacebar: "Space", Space: "Space" };
-  const parts = [];
-  if (event.ctrlKey) {
-    parts.push("Ctrl");
-  }
-  if (event.altKey) {
-    parts.push("Alt");
-  }
-  if (event.shiftKey) {
-    parts.push("Shift");
-  }
-  if (event.metaKey) {
-    parts.push("Win");
-  }
-  if (refused.includes(event.key)) {
-    onboardingKeyNote.textContent = "Add a letter, a digit or Space after the modifiers.";
-    return;
-  }
-  if (parts.length === 0) {
-    onboardingKeyNote.textContent =
-      "A key on its own is refused: it would swallow typing everywhere.";
-    return;
-  }
-  const key = named[event.key] || event.key.toUpperCase();
-  onboardingShortcut.value = parts.concat([key]).join("+");
-  onboardingKeyNote.textContent = "Press Save when this is the combination you want.";
-});
-
-onboardingMicAllow.addEventListener("click", async () => {
-  onboardingMicNote.textContent = "Asking Windows for the microphone.";
-  try {
-    await openMicrophone();
-    onboardingMicNote.textContent = "The microphone is ready.";
-    showOnboardingStage(3);
-  } catch (failure) {
-    onboardingMicNote.textContent = describeMicrophoneError(failure);
-  }
-});
-
-onboardingSkip.addEventListener("click", () => finishOnboarding());
-onboardingNext.addEventListener("click", () => finishOnboarding());
 
 historyClear.addEventListener("click", () => clearHistory());
 historySearch.addEventListener("input", () => renderHistory());
@@ -6178,7 +5950,6 @@ window.addEventListener("load", () => {
   loadMeetings();
   loadCatalog();
   loadHistory();
-  startOnboarding();
   if (location.hash) {
     openSection();
   }
@@ -6225,8 +5996,10 @@ const ROUTES = {
   insights: ["insights"],
   settings: [
     "settings-tabs",
-    "onboarding",
+    "settings-layout",
     "settings-foot",
+    "you",
+    "programs",
     "settings",
     "languages",
     "shortcuts",
@@ -6326,7 +6099,6 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 }
 
 const SETTINGS_TABS = {
-  setup: ["onboarding"],
   you: ["you"],
   dictation: ["settings", "programs"],
   languages: ["languages"],
@@ -6785,7 +6557,7 @@ for (const input of [featureTranslation, featureVoice, featureCaptions]) {
 loadFeatures();
 
 document.getElementById("welcome-setup").addEventListener("click", () => {
-  showSettingsTab("setup");
+  showSettingsTab("dictation");
 });
 
 const nameGate = document.getElementById("name-gate");
@@ -6851,10 +6623,6 @@ function closeGate() {
   gateStyle.hidden = true;
   document.body.classList.remove("gating");
   paintHome();
-  if (localStorage.getItem("parlo.onboarded") !== "1") {
-    location.hash = "#settings";
-    showOnboardingStage(2);
-  }
 }
 
 if (!storedName()) {

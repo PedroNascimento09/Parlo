@@ -867,10 +867,6 @@ select.field-input {
 .voice-note,
 .models-note,
 .dub-note,
-.onboarding-note {
-  color: var(--muted);
-  font-size: 13px;
-}
 
 .insights-numbers {
   display: grid;
@@ -1151,9 +1147,6 @@ select.field-input {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
 }
 
-#onboarding-pair {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
-}
 
 .settings-panes {
   display: grid;
@@ -1164,28 +1157,8 @@ select.field-input {
   padding: clamp(18px, 2.6vw, 28px);
 }
 
-.onboarding {
-  display: grid;
-  gap: 18px;
-  max-width: 640px;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
 
-.onboarding-result {
-  color: var(--ink-soft);
-  font-size: 13px;
-  min-height: 1px;
-}
 
-.onboarding-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
 
 .call-banner {
   display: flex;
@@ -2828,11 +2801,11 @@ body.gating main {
 .gate-card {
   position: relative;
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 44px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
   align-items: center;
-  max-width: 880px;
-  padding: 44px 48px;
+  max-width: 560px;
+  padding: 40px 44px;
   border: 1px solid var(--line);
   border-radius: 28px;
   background: linear-gradient(160deg, var(--surface) 0%, var(--surface-sunken) 100%);
@@ -2849,10 +2822,6 @@ body.gating main {
   pointer-events: none;
 }
 
-.gate-art {
-  position: relative;
-  z-index: 1;
-}
 
 .gate-art svg {
   display: block;
@@ -2860,24 +2829,9 @@ body.gating main {
   height: auto;
 }
 
-.gate-glow {
-  fill: var(--accent-wash);
-}
 
-.gate-ring {
-  fill: none;
-  stroke: var(--line-strong);
-  stroke-width: 1;
-  stroke-dasharray: 3 7;
-}
 
-.gate-bars rect {
-  fill: var(--accent);
-}
 
-.gate-bars rect:nth-child(even) {
-  opacity: 0.5;
-}
 
 .gate-step {
   position: relative;
@@ -2898,14 +2852,6 @@ body.gating main {
   max-width: 42ch;
 }
 
-.hero-art {
-  margin: 2px 0 0;
-  height: 88px;
-  padding: 0 18px;
-  border-radius: 18px;
-  background: linear-gradient(90deg, var(--accent-wash), transparent 72%);
-  overflow: hidden;
-}
 
 .hero-art svg {
   display: block;
@@ -2913,18 +2859,8 @@ body.gating main {
   height: 100%;
 }
 
-.hero-bars rect {
-  fill: var(--accent);
-  opacity: 0.26;
-}
 
-.hero-bars rect:nth-child(3n) {
-  opacity: 0.48;
-}
 
-.hero-bars rect:nth-child(4n) {
-  opacity: 0.16;
-}
 
 .models-progress,
 .welcome-progress {
