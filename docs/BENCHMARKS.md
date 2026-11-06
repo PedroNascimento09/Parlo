@@ -772,3 +772,16 @@ On the reference machine used for development this processes 125 frames of 20 ms
 ## Submitting a result
 
 Open a hardware report issue with your `parlo doctor` output, the command you ran, and the raw timings. Results are added here with the contributor's hardware named, because a benchmark without its hardware is a rumour.
+
+## Server soak
+
+`parlo soak --seconds N --interval S` starts `parlo serve`, samples the working set of that process every interval, stops it and reads `sessions.jsonl` back, so a long run leaves a number instead of a claim. The sample interval is 15 seconds by default and a run stops at 480 samples.
+
+| What | Result |
+|---|---|
+| Run | 180 s asked, **184 s measured** |
+| Memory | **11.8 MB** first, **11.7 MB** last, **11.8 MB** peak |
+| Samples | 12, one every 15 s |
+| Sessions | 1 recorded, **0 crashed**, 100.0% crash free |
+
+Measured on 2026-11-06 on the Windows 11 reference laptop with a debug build, the echo engine and no models loaded, so the number describes the server loop rather than the recogniser. The two-hour window with the app beside the server has not been run.
