@@ -19,7 +19,6 @@ const progressBox = document.getElementById("update-progress");
 const progressFill = document.getElementById("update-fill");
 const progressNote = document.getElementById("update-note");
 const engineEl = document.getElementById("status-engine");
-const stateEl = document.getElementById("status-state");
 const shortcutEl = document.getElementById("status-shortcut");
 const insightsKey = document.getElementById("insights-key");
 const languagesEl = document.getElementById("status-languages");
@@ -704,17 +703,6 @@ function takeWindow(minimum) {
 }
 
 
-const STATE_WORDS = {
-  idle: "Ready to dictate",
-  armed: "Opening the microphone",
-  listening: "Listening",
-  paused: "Paused",
-  processing: "Writing it down",
-  inserting: "Typing into your app",
-  success: "Done",
-  error: "Needs attention",
-  cancelled: "Thrown away",
-};
 
 async function refreshHealth() {
   try {
@@ -727,20 +715,6 @@ async function refreshHealth() {
     languagesEl.textContent = describePair(health.from, health.to);
   } catch (failure) {
     engineEl.textContent = "not answering";
-  }
-  try {
-    const response = await fetch("/state", { cache: "no-store" });
-    if (!response.ok) {
-      return;
-    }
-    const current = await response.json();
-    stateEl.textContent = STATE_WORDS[current.state] || "ready";
-    const stage = stateEl.closest(".stage");
-    if (stage) {
-      stage.dataset.state = current.state || "idle";
-    }
-  } catch (failure) {
-    stateEl.textContent = "checking";
   }
   try {
     const response = await fetch("/settings", { cache: "no-store" });
