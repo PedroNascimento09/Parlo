@@ -376,6 +376,18 @@
       </label>
       <p class="settings-note field-wide" id="channel-note" aria-live="polite">Only tested releases arrive. A preview build installed earlier still updates to the next stable.</p>
     </div>
+    <div class="settings-row">
+      <label class="check" for="settings-share">
+        <input id="settings-share" type="checkbox">
+        <span>Share with a phone on this network</span>
+      </label>
+      <label class="field" for="settings-share-pin">
+        <span class="field-label">PIN, four to eight digits</span>
+        <input id="settings-share-pin" class="field-input" type="text" inputmode="numeric" maxlength="8" autocomplete="off" spellcheck="false" placeholder="1234">
+      </label>
+      <button id="settings-share-save" class="install" type="button">Save sharing</button>
+      <p class="settings-note field-wide" id="share-note" aria-live="polite">Off by default. Every request on the network port needs the PIN. Restart Parlo after changing it.</p>
+    </div>
     <dl class="stage-facts" id="settings-facts">
       <div>
         <dt>Microphone</dt>

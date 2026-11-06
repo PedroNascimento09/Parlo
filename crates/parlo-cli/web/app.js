@@ -100,6 +100,10 @@ const settingsManageMemory = document.getElementById("settings-manage-memory");
 const settingsCompute = document.getElementById("settings-compute");
 const settingsChannel = document.getElementById("settings-channel");
 const channelNote = document.getElementById("channel-note");
+const settingsShare = document.getElementById("settings-share");
+const settingsSharePin = document.getElementById("settings-share-pin");
+const settingsShareSave = document.getElementById("settings-share-save");
+const shareNote = document.getElementById("share-note");
 const computeNote = document.getElementById("compute-note");
 const memoryNote = document.getElementById("memory-note");
 const settingsNote = document.getElementById("settings-note");
@@ -1772,6 +1776,13 @@ async function loadSettings() {
     if (settingsChannel) {
       settingsChannel.value = values.channel === "preview" ? "preview" : "stable";
     }
+    if (settingsShare) {
+      settingsShare.checked = values.share === true;
+      settingsSharePin.value = values.share_pin || "";
+      shareNote.textContent = values.share
+        ? "Sharing on port " + (values.share_port || 8788) + ". Every request needs the PIN. Restart Parlo after changing it."
+        : "Off by default. Every request on the network port needs the PIN. Restart Parlo after changing it.";
+    }
     reflectSettings(values);
   } catch (failure) {
     settingsNote.textContent = describePair(savedSettings.from, savedSettings.to);
@@ -1928,6 +1939,31 @@ if (settingsChannel) {
         : "Only tested releases arrive. A preview build installed earlier still updates to the next stable.";
       updateBox.hidden = true;
       await checkLocalUpdate();
+    } catch (failure) {
+      showError(failure.message);
+    }
+  });
+}
+
+if (settingsShareSave) {
+  settingsShareSave.addEventListener("click", async () => {
+    const body = { share: settingsShare.checked };
+    const pin = settingsSharePin.value.trim();
+    if (pin) {
+      body.share_pin = pin;
+    }
+    try {
+      const response = await fetch("/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify(body),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "That sharing setting cannot be used.");
+      }
+      shareNote.textContent =
+        "Saved. Restart Parlo so the network port opens or closes.";
     } catch (failure) {
       showError(failure.message);
     }
