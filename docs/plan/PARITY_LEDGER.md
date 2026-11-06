@@ -183,7 +183,7 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-50 of 80 rows are Done (62.5%), counted as the rows whose Parlo today cell starts with Done or Yes. Five Partial rows counted at half give 65.6%.
+51 of 80 rows are Done (63.7%), counted as the rows whose Parlo today cell starts with Done or Yes. Four Partial rows counted at half give 66.2%.
 
 ## Next
 
