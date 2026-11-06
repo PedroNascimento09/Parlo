@@ -98,6 +98,8 @@ const settingsApply = document.getElementById("settings-apply");
 const settingsUnload = document.getElementById("settings-unload");
 const settingsManageMemory = document.getElementById("settings-manage-memory");
 const settingsCompute = document.getElementById("settings-compute");
+const settingsChannel = document.getElementById("settings-channel");
+const channelNote = document.getElementById("channel-note");
 const computeNote = document.getElementById("compute-note");
 const memoryNote = document.getElementById("memory-note");
 const settingsNote = document.getElementById("settings-note");
@@ -750,25 +752,6 @@ async function refreshHealth() {
   }
 }
 
-function isNewer(candidate, current) {
-  const parse = (value) =>
-    String(value)
-      .replace(/^v/i, "")
-      .split(/[.+-]/)
-      .map((part) => parseInt(part, 10))
-      .filter((part) => !Number.isNaN(part));
-  const left = parse(candidate);
-  const right = parse(current);
-  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
-    const a = left[index] || 0;
-    const b = right[index] || 0;
-    if (a !== b) {
-      return a > b;
-    }
-  }
-  return false;
-}
-
 function showUpdate(candidate, notes) {
   updateVersion.textContent = candidate;
   if (notes) {
@@ -779,24 +762,6 @@ function showUpdate(candidate, notes) {
 
 function allowInstall(allowed) {
   installButton.hidden = !allowed;
-}
-
-async function checkForUpdate() {
-  const response = await fetch("https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest", {
-    headers: { Accept: "application/vnd.github+json" },
-    cache: "no-store",
-  });
-  if (!response.ok) {
-    return;
-  }
-  const release = await response.json();
-  if (!release || !release.tag_name || !isNewer(release.tag_name, version)) {
-    return;
-  }
-  if (!updateBox.hidden) {
-    return;
-  }
-  showUpdate(release.tag_name.replace(/^v/i, ""), release.html_url);
 }
 
 async function checkLocalUpdate() {
@@ -834,7 +799,6 @@ aboutCheck.addEventListener("click", async () => {
   aboutCheck.disabled = true;
   aboutNote.textContent = "Asking GitHub for the latest release.";
   await checkLocalUpdate();
-  await checkForUpdate().catch(() => {});
   aboutNote.textContent = localUpdate.available
     ? "Release " + localUpdate.latest + " is available. The box at the top of Home installs it."
     : "This is the latest release.";
@@ -1805,6 +1769,9 @@ async function loadSettings() {
     if (settingsCompute) {
       settingsCompute.value = values.compute === "cpu" ? "cpu" : "auto";
     }
+    if (settingsChannel) {
+      settingsChannel.value = values.channel === "preview" ? "preview" : "stable";
+    }
     reflectSettings(values);
   } catch (failure) {
     settingsNote.textContent = describePair(savedSettings.from, savedSettings.to);
@@ -1938,6 +1905,29 @@ if (settingsCompute) {
       computeNote.textContent = settingsCompute.value === "cpu"
         ? "Parlo uses the processor only. The graphics card is left to other programs."
         : "Parlo uses the graphics card when this machine has one.";
+    } catch (failure) {
+      showError(failure.message);
+    }
+  });
+}
+
+if (settingsChannel) {
+  settingsChannel.addEventListener("change", async () => {
+    try {
+      const response = await fetch("/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ channel: settingsChannel.value }),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "That update channel cannot be used.");
+      }
+      channelNote.textContent = settingsChannel.value === "preview"
+        ? "Preview builds arrive sooner and can break. Stable releases still replace them when they are newer."
+        : "Only tested releases arrive. A preview build installed earlier still updates to the next stable.";
+      updateBox.hidden = true;
+      await checkLocalUpdate();
     } catch (failure) {
       showError(failure.message);
     }
@@ -6160,7 +6150,7 @@ if (!location.hash) {
   }
 }
 routeNow();
-checkLocalUpdate().then(() => checkForUpdate().catch(() => {}));
+checkLocalUpdate();
 loadModels();
 loadSettings();
 loadIntelligence();

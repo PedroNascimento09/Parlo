@@ -1,5 +1,3 @@
-use crate::update::LATEST;
-
 const CALLS: [&str; 5] = [
     "fetch(",
     "new WebSocket(",
@@ -124,19 +122,12 @@ mod tests {
     ];
 
     #[test]
-    fn the_app_asks_this_machine_for_everything_but_the_release() {
-        assert_eq!(
-            targets(include_str!("../web/app.js")),
-            vec![LATEST.to_string()]
-        );
+    fn the_app_asks_this_machine_for_everything() {
+        let app = include_str!("../web/app.js");
+        assert!(targets(app).is_empty());
+        assert!(app.contains("fetch(\"/update\""));
         for (name, source) in ASSETS {
-            let outside = leaving(source);
-            let expected = if name == "app.js" {
-                vec!["api.github.com".to_string()]
-            } else {
-                Vec::new()
-            };
-            assert_eq!(outside, expected, "{name}");
+            assert!(leaving(source).is_empty(), "{name}");
         }
     }
 

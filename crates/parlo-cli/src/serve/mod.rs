@@ -92,6 +92,8 @@ struct Settings {
     manage_memory: Option<bool>,
     #[serde(default)]
     compute: Option<String>,
+    #[serde(default)]
+    channel: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -453,7 +455,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\"}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\"}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -467,7 +469,8 @@ impl Session {
             stored.unload,
             json_string(&stored.name),
             stored.history_days,
-            json_string(&stored.compute)
+            json_string(&stored.compute),
+            json_string(&stored.update_channel)
         )
     }
 }
@@ -1762,7 +1765,8 @@ fn handle(
                 && requested.from.is_none()
                 && requested.to.is_none()
                 && requested.write.is_none()
-                && requested.unload.is_none();
+                && requested.unload.is_none()
+                && requested.channel.is_none();
             if only_shortcut {
                 return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
             }
@@ -1857,6 +1861,30 @@ fn handle(
             }
         }
 
+        if let Some(channel) = requested.channel.as_deref() {
+            let wanted = match crate::update::check_channel(channel) {
+                Ok(value) => value,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+            };
+            let mut config = crate::config::load();
+            config.update_channel = wanted;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
         if let Some(manage) = requested.manage_memory {
             let mut config = crate::config::load();
             config.manage_memory = manage;
@@ -1877,7 +1905,8 @@ fn handle(
             && requested.write.is_none()
             && requested.unload.is_none()
             && requested.manage_memory.is_none()
-            && requested.compute.is_none();
+            && requested.compute.is_none()
+            && requested.channel.is_none();
         if only_settings {
             return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
         }
