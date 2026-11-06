@@ -70,12 +70,12 @@
       </svg>
   </div>
   <nav class="rail" aria-label="Sections">
-    <a href="#home" data-route="home" aria-keyshortcuts="Alt+1">Home</a>
-    <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2">Meetings</a>
-    <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3">Voice</a>
-    <a href="#library" data-route="library" aria-keyshortcuts="Alt+4">Library</a>
-    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+5">Insights</a>
-    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6">Settings</a>
+    <a href="#home" data-route="home" aria-keyshortcuts="Alt+1" data-i18n="nav.home">Home</a>
+    <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2" data-i18n="nav.meetings">Meetings</a>
+    <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3" data-i18n="nav.voice">Voice</a>
+    <a href="#library" data-route="library" aria-keyshortcuts="Alt+4" data-i18n="nav.library">Library</a>
+    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+5" data-i18n="nav.insights">Insights</a>
+    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6" data-i18n="nav.settings">Settings</a>
   </nav>
   <span class="version" id="status-version"></span>
 </header>
@@ -286,6 +286,14 @@
       <button id="onboarding-skip" class="swap" type="button">Skip this</button>
     </div>
   </section>  <section class="settings" id="you" aria-labelledby="you-title">
+    <div class="settings-row">
+      <label class="field" for="settings-locale">
+        <span class="field-label" data-i18n="settings.language">Interface language</span>
+        <select id="settings-locale" class="field-input"></select>
+      </label>
+      <button id="settings-locale-save" class="install" type="button">Save language</button>
+      <p class="settings-note field-wide" id="locale-note" aria-live="polite">The interface switches as soon as you save.</p>
+    </div>
     <div class="settings-head">
       <h2 id="you-title">What Parlo calls you</h2>
       <p class="settings-note">It appears in the greeting and in the sign off snippet. Nothing about it leaves this computer.</p>
@@ -302,7 +310,7 @@
 
   <section class="settings" id="settings" aria-labelledby="settings-title">
     <div class="settings-head">
-      <h2 id="settings-title">How dictation runs</h2>
+      <h2 id="settings-title" data-i18n="settings.title">How dictation runs</h2>
       <p class="settings-note">Switching a feature off keeps its model on disk and only stops Parlo using it.</p>
     </div>
     <div class="settings-row">
@@ -379,7 +387,7 @@
     <div class="settings-row">
       <label class="check" for="settings-share">
         <input id="settings-share" type="checkbox">
-        <span>Share with a phone on this network</span>
+        <span data-i18n="settings.sharing">Share with a phone on this network</span>
       </label>
       <label class="field" for="settings-share-pin">
         <span class="field-label">PIN, four to eight digits</span>
@@ -602,7 +610,7 @@
 
   <section class="settings" id="about" aria-labelledby="about-title">
     <div class="settings-head">
-      <h2 id="about-title">This copy</h2>
+      <h2 id="about-title" data-i18n="about.title">This copy</h2>
       <p class="settings-note" id="about-note" aria-live="polite">Checking which release is the latest.</p>
     </div>
     <div class="settings-row">
@@ -616,7 +624,7 @@
 
   <div class="settings-row" id="settings-foot">
     <p class="settings-note field-wide" id="settings-note" aria-live="polite"></p>
-    <button id="settings-apply" class="install settings-apply" type="button" disabled>Apply</button>
+    <button id="settings-apply" class="install settings-apply" type="button" disabled data-i18n="settings.apply">Apply</button>
   </div>
 
   <nav class="tabs" id="library-tabs" aria-label="Library">
@@ -630,7 +638,7 @@
 
   <section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
     <div class="settings-head">
-      <h2 id="vocabulary-title">Words and snippets Parlo should know</h2>
+      <h2 id="vocabulary-title" data-i18n="library.title">Words and snippets Parlo should know</h2>
       <p class="settings-note" id="vocabulary-note" aria-live="polite">Names and short forms stay on this computer and are applied before any model reads the sentence.</p>
     </div>
     <div class="settings-row">

@@ -104,6 +104,9 @@ const settingsShare = document.getElementById("settings-share");
 const settingsSharePin = document.getElementById("settings-share-pin");
 const settingsShareSave = document.getElementById("settings-share-save");
 const shareNote = document.getElementById("share-note");
+const settingsLocale = document.getElementById("settings-locale");
+const settingsLocaleSave = document.getElementById("settings-locale-save");
+const localeNote = document.getElementById("locale-note");
 const computeNote = document.getElementById("compute-note");
 const memoryNote = document.getElementById("memory-note");
 const settingsNote = document.getElementById("settings-note");
@@ -1763,6 +1766,36 @@ if (settingsUndoSave) {
   );
 }
 
+async function applyLocale() {
+  try {
+    const response = await fetch("/locale", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const table = await response.json();
+    document.documentElement.lang = table.locale || "en";
+    if (settingsLocale) {
+      settingsLocale.replaceChildren(
+        ...(table.available || []).map((entry) => {
+          const option = document.createElement("option");
+          option.value = entry.code;
+          option.textContent = entry.name;
+          return option;
+        }),
+      );
+      settingsLocale.value = table.locale || "en";
+    }
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+      const value = table.strings && table.strings[node.dataset.i18n];
+      if (value) {
+        node.textContent = value;
+      }
+    });
+  } catch (failure) {
+    return;
+  }
+}
+
 async function loadSettings() {
   try {
     const response = await fetch("/settings", { cache: "no-store" });
@@ -1964,6 +1997,26 @@ if (settingsShareSave) {
       }
       shareNote.textContent =
         "Saved. Restart Parlo so the network port opens or closes.";
+    } catch (failure) {
+      showError(failure.message);
+    }
+  });
+}
+
+if (settingsLocaleSave) {
+  settingsLocaleSave.addEventListener("click", async () => {
+    try {
+      const response = await fetch("/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ locale: settingsLocale.value }),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "That language cannot be used.");
+      }
+      await applyLocale();
+      localeNote.textContent = "Saved. The interface now speaks this language.";
     } catch (failure) {
       showError(failure.message);
     }
@@ -6189,6 +6242,7 @@ routeNow();
 checkLocalUpdate();
 loadModels();
 loadSettings();
+applyLocale();
 loadIntelligence();
 loadVocabulary();
 
