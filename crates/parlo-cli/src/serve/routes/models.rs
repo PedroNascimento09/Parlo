@@ -41,6 +41,9 @@ pub(crate) fn route(
             format!("{}-{}", chosen.from, chosen.to)
         };
         let body = models::as_json(&models::status(), &lifecycle, &pair, session.is_working());
+        let mut document: serde_json::Value = serde_json::from_str(&body).unwrap_or_default();
+        document["recommendations"] = crate::recommend::as_json();
+        let body = document.to_string();
         return Some(respond_json(stream, "200 OK", &body).map(|()| Flow::Serve));
     }
 

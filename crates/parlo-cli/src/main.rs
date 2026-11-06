@@ -47,6 +47,7 @@ mod notes;
 mod packs;
 mod playback;
 mod pronounce;
+mod recommend;
 mod record;
 mod registry;
 mod remote;

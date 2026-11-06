@@ -7065,3 +7065,46 @@ if (vocabularyImport && vocabularyFile) {
     }
   });
 }
+const localeRecommendation = document.getElementById("locale-recommendation");
+let recommendationTable = null;
+
+async function showRecommendation(language) {
+  if (!localeRecommendation) {
+    return;
+  }
+  if (!recommendationTable) {
+    try {
+      const response = await fetch("/models", { cache: "no-store" });
+      const payload = await response.json();
+      recommendationTable = payload.recommendations || [];
+    } catch {
+      recommendationTable = [];
+    }
+  }
+  const row = recommendationTable.find((item) => item.language === language);
+  const picks = row ? row.picks || [] : [];
+  if (!picks.length) {
+    localeRecommendation.textContent =
+      "Parlo has no local model for this language yet.";
+    return;
+  }
+  const words = picks.map((pick) => {
+    if (pick.feature === "voice") {
+      return pick.name + " for read aloud";
+    }
+    if (pick.feature === "dictation") {
+      return pick.name + " for dictation";
+    }
+    return pick.name + " for translation";
+  });
+  localeRecommendation.textContent = "Parlo recommends " + words.join(", ") + ".";
+}
+
+if (settingsLocale) {
+  settingsLocale.addEventListener("change", () => {
+    showRecommendation(settingsLocale.value);
+  });
+  if (settingsLocale.value) {
+    showRecommendation(settingsLocale.value);
+  }
+}

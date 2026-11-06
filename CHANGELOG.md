@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Parlo now recommends a model per language instead of leaving people with Portuguese and English: choosing a language in Settings shows the voice that reads it, the recogniser that hears it and the translation pack that starts from it, for the twenty-one languages the app presents, and any of those picks can still be replaced by another model the person installs.
+
 - Read aloud now covers every language Parlo translates to: Spanish (davefx), Italian (paola), Dutch (MLS) and Russian (irina) voices join the four already on offer, the engine speaks with the voice the request names instead of borrowing Portuguese, and a language without a voice is refused with a sentence that says so.
 
 - Speech now uses the voice the request names: `/v1/audio/speech` reads `model` and `voice`, builds the engine for that language and respells every name in it, so a Portuguese sentence is read by the Portuguese voice instead of an English one; the repository keeps a 3.67 s recording of `Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.` with the transcript beside it, and a test fails when the file stops being readable audio or loses its transcript.
