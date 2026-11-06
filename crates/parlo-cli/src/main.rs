@@ -131,7 +131,7 @@ fn print_help() {
     println!("commands:");
     println!("  doctor                             check the local audio setup");
     println!(
-        "  soak [--seconds N] [--interval S]  run the server and record its memory for N seconds"
+        "  soak [--seconds N] [--interval S] [--report PATH] [--chart PATH]  run the server and record its memory"
     );
     println!(
         "  pronounce [word] [--text TEXT]   show how a name is spoken before the engine says it"

@@ -15,6 +15,8 @@ pub const STOP_TIMEOUT_SECONDS: u64 = 10;
 pub fn command(args: &[String]) -> Result<(), String> {
     let mut seconds = DEFAULT_SECONDS;
     let mut interval = DEFAULT_INTERVAL_SECONDS;
+    let mut report_path: Option<std::path::PathBuf> = None;
+    let mut chart_path: Option<std::path::PathBuf> = None;
     let mut index = 0;
     while index < args.len() {
         match args[index].as_str() {
@@ -33,6 +35,18 @@ pub fn command(args: &[String]) -> Result<(), String> {
                     .ok_or("--interval needs a value")?
                     .parse()
                     .map_err(|_| "seconds must be a number".to_string())?;
+            }
+            "--report" => {
+                index += 1;
+                report_path = Some(std::path::PathBuf::from(
+                    args.get(index).ok_or("--report needs a path")?,
+                ));
+            }
+            "--chart" => {
+                index += 1;
+                chart_path = Some(std::path::PathBuf::from(
+                    args.get(index).ok_or("--chart needs a path")?,
+                ));
             }
             other => return Err(format!("unknown option: {other}")),
         }
@@ -79,6 +93,7 @@ pub fn command(args: &[String]) -> Result<(), String> {
     let mut last = 0u64;
     let mut peak = 0u64;
     let mut samples = 0usize;
+    let mut memory: Vec<u64> = Vec::new();
     while started.elapsed().as_secs() < seconds && samples < MAX_SAMPLES {
         std::thread::sleep(Duration::from_secs(interval));
         let rss = match rss_bytes(child.id()) {
@@ -99,6 +114,7 @@ pub fn command(args: &[String]) -> Result<(), String> {
         }
         last = rss;
         peak = peak.max(rss);
+        memory.push(rss);
         samples += 1;
     }
     let measured = started.elapsed();
@@ -124,6 +140,19 @@ pub fn command(args: &[String]) -> Result<(), String> {
     if samples == 0 {
         return Err("the run finished before the first sample".to_string());
     }
+    if let Some(path) = report_path {
+        let body = report_json(
+            measured.as_secs(),
+            interval,
+            &memory,
+            report.sessions,
+            report.crashed,
+        );
+        write(&path, &body)?;
+    }
+    if let Some(path) = chart_path {
+        write(&path, &chart_svg(&memory, interval))?;
+    }
     if report.crashed > 0 {
         return Err(format!(
             "{} of {} sessions crashed during the run",
@@ -135,6 +164,91 @@ pub fn command(args: &[String]) -> Result<(), String> {
 
 fn megabytes(bytes: u64) -> String {
     format!("{:.1}", bytes as f64 / 1_048_576.0)
+}
+
+fn write(path: &std::path::Path, body: &str) -> Result<(), String> {
+    std::fs::write(path, body).map_err(|error| format!("{}: {error}", path.display()))
+}
+
+fn report_json(
+    seconds: u64,
+    interval: u64,
+    memory: &[u64],
+    sessions: usize,
+    crashed: usize,
+) -> String {
+    serde_json::json!({
+        "seconds": seconds,
+        "interval": interval,
+        "memory_bytes": memory,
+        "sessions": sessions,
+        "crashed": crashed,
+    })
+    .to_string()
+}
+
+fn chart_svg(memory: &[u64], interval: u64) -> String {
+    const WIDTH: f64 = 640.0;
+    const HEIGHT: f64 = 200.0;
+    const PAD: f64 = 28.0;
+    const BACKGROUND: &str = "#0b1220";
+    const LINE: &str = "#38bdf8";
+    const INK: &str = "#e2e8f0";
+    let floor = memory.iter().copied().min().unwrap_or(0);
+    let peak = memory.iter().copied().max().unwrap_or(floor);
+    let span = (peak - floor).max(1) as f64;
+    let step = if memory.len() > 1 {
+        (WIDTH - 2.0 * PAD) / (memory.len() - 1) as f64
+    } else {
+        0.0
+    };
+    let points: Vec<String> = memory
+        .iter()
+        .enumerate()
+        .map(|(index, &value)| {
+            let x = PAD + step * index as f64;
+            let y = HEIGHT - PAD - (value - floor) as f64 / span * (HEIGHT - 2.0 * PAD);
+            format!("{x:.1},{y:.1}")
+        })
+        .collect();
+    let minutes = memory.len() as u64 * interval / 60;
+    format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{WIDTH}\" height=\"{HEIGHT}\" viewBox=\"0 0 {WIDTH} {HEIGHT}\" role=\"img\" aria-label=\"Working set of parlo serve over {minutes} minutes\">\n         <rect width=\"{WIDTH}\" height=\"{HEIGHT}\" fill=\"{BACKGROUND}\"/>\n         <polyline points=\"{}\" fill=\"none\" stroke=\"{LINE}\" stroke-width=\"2\"/>\n         <text x=\"{PAD}\" y=\"18\" fill=\"{INK}\" font-family=\"sans-serif\" font-size=\"12\">{minutes} minutes, {} MB first, {} MB peak, {} samples every {interval} s</text>\n         </svg>\n",
+        points.join(" "),
+        megabytes(memory.first().copied().unwrap_or(0)),
+        megabytes(peak),
+        memory.len()
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_report_keeps_every_sample_and_the_interval() {
+        let body = report_json(30, 1, &[10, 11, 12], 1, 0);
+        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(value["interval"], 1);
+        assert_eq!(value["seconds"], 30);
+        assert_eq!(value["memory_bytes"].as_array().unwrap().len(), 3);
+        assert_eq!(value["memory_bytes"][2], 12);
+        assert_eq!(value["sessions"], 1);
+    }
+
+    #[test]
+    fn the_chart_draws_one_point_per_sample() {
+        let svg = chart_svg(&[10, 12, 11], 15);
+        let points = svg
+            .split("points=\"")
+            .nth(1)
+            .and_then(|rest| rest.split('"').next())
+            .unwrap();
+        assert_eq!(points.split(' ').count(), 3, "{svg}");
+        assert!(svg.contains("0 minutes"), "{svg}");
+        let flat = chart_svg(&[10, 10], 15);
+        assert_eq!(flat.matches("points=").count(), 1, "{flat}");
+    }
 }
 
 fn tail(path: &std::path::Path) -> String {
