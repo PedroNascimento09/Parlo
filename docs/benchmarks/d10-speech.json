@@ -1,0 +1,20 @@
+{
+  "text": "O Parlo lê o JSON em português.",
+  "respelled": "O PAR-loh lê o JAY-son em português.",
+  "audio": {
+    "file": "docs/benchmarks/d10-speech.wav",
+    "format": "RIFF/WAVE pcm",
+    "channels": 1,
+    "bits_per_sample": 16,
+    "sample_rate": 16000,
+    "frames": 68360,
+    "seconds": 4.27,
+    "rms": 5401,
+    "peak": 32736,
+    "tail_rms": 7
+  },
+  "transcript": "OPR LOLA tilde a ojawai san and Portugué tilde AS",
+  "transcript_without_respelling": "O Pau tem Ovin Alf menino um dia só mesmo português a ter o ovinal feminino S.",
+  "engine": "cascade, European Portuguese Piper voice pt_PT-tugão-medium, recogniser Parakeet 0.6B v3",
+  "commit": "5b2b7ef"
+}

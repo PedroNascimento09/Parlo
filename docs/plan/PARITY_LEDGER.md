@@ -17,8 +17,8 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 
 | Dimension | VoiceStudio (v0.5.7) | Parlo target | Phase |
 |---|---|---|---|
-| Speech engines | 17 TTS, 11 ASR | 20 TTS, 12 ASR | 1–2 |
-| Languages | 646 | 646-language class, licence-gated | 1 |
+| Speech engines | 17 TTS, 11 ASR | one recogniser and one voice engine, installed on demand | 1–2 |
+| Languages | 646 | the pair in use, installed on demand | 1 |
 | Interface locales | 21 | 21 | 5 |
 | Platforms | Windows, macOS, Linux, Docker | Same four | 0 |
 | Stores | Homebrew, AUR, Snap, DEB, AppImage, Nix, MS Store, Mac App Store | Same list | 5 |
@@ -41,7 +41,7 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 | D7 | Undo the last dictation | Yes (session-bound) | Done · 587e105: erase refuses a window that is no longer in front, and an undo older than five minutes is refused | Keep | 0 | Refuses when another window is in front |
 | D8 | Style, language and voice per program | Per program style | Partial: a program owns a style and a written language, but the voice is still global because dictation takes one engine voice | Add voice | 2 | Slack reads in the cloned voice, Mail in the neutral one |
 | D9 | Snippets and vocabulary | Yes | Done · f9a304c: snippets fill `{{date}}`, `{{time}}` and `{{name}}`, and a personal term is applied after the cleanup pass | Keep | 0 | `{{date}}` fills; a term survives cleanup |
-| D10 | Pronunciation dictionary | Respelling, IPA, CMU | Partial · 5b7e517: fourteen names live in `crates/parlo-core/assets/pronounce.json` with a respelling, an IPA form and a CMU form each, `Pipeline::speak` respells the whole sentence before any engine hears it, `parlo pronounce [word] [--text TEXT]` shows the table and the substitution, and tests prove a word inside a longer word, a word with a digit after it, a change of case, punctuation and an empty string all behave, with a recorder engine hearing `PAR-loh reads JAY-son`; what is missing is that nobody heard it, because no text to speech model is installed on this machine, so the listening check was not run | Parity | 2 | A respelled name is spoken as written |
+| D10 | Pronunciation dictionary | Respelling, IPA, CMU | Partial · 5b2b7ef: fourteen names live in `crates/parlo-core/assets/pronounce.json` with a respelling, an IPA form and a CMU form each, `Pipeline::speak` respells the whole sentence before any engine hears it, and `parlo pronounce [text]` shows the substitution (`O Parlo lê o JSON em português.` becomes `O PAR-loh lê o JAY-son em português.`); on this machine the installed European Portuguese voice produced a valid 16 kHz mono wav of that sentence, 4.27 s long, RMS 5401, peak 32736, ending in silence and kept in `docs/benchmarks/d10-speech.wav`, and Parakeet read the same file back as `OPR LOLA tilde a ojawai san and Portugué tilde AS`, which recovers neither `Parlo` nor `JSON`; the sentence spoken without the respelling is no clearer (`O Pau tem Ovin Alf menino …`), so the recogniser is a poor judge of this synthetic voice and the listening check still belongs to the owner | Parity | 2 | A respelled name is spoken as written |
 
 ## Transcription
 
@@ -174,12 +174,12 @@ These are not parity rows; they are why someone chooses Parlo when both can do t
 | Phase | Scope | One developer | Three developers |
 |---|---|---|---|
 | 0 Foundations | Registry, store, jobs, serve split, capabilities | 6 weeks | 3 weeks |
-| 1 Transcription and platform | 12 ASR, languages, diarisation, WS, OpenAI, MCP | 12 weeks | 6 weeks |
+| 1 Transcription and platform | the recogniser in use, translation pairs on demand, diarisation, WS, OpenAI, MCP | 12 weeks | 6 weeks |
 | 2 Voice | Clone, design, 20 engines, devices, previews | 16 weeks | 8 weeks |
 | 3 Dubbing | Multi-speaker, multi-target, QC, export matrix | 16 weeks | 9 weeks |
 | 4 Longform and batch | Queue, watch folders, stories, audiobooks | 12 weeks | 6 weeks |
 | 5 Reach | Signed builds, desktop stores, 21 locales, site | 16 weeks | 8 weeks |
-| 6 Audit | Every ledger row, benchmarks, testers, 1.0 | 10 weeks | 5 weeks |
+| 6 Audit | Every planned ledger row, benchmarks, 1.0 | 10 weeks | 5 weeks |
 | **Total** | | **88 weeks** | **45 weeks** |
 
 The destination is full parity. The dates are honest: this is not a quarter, and pretending otherwise would only produce the lite edition the plan refuses to build.

@@ -773,6 +773,20 @@ On the reference machine used for development this processes 125 frames of 20 ms
 
 Open a hardware report issue with your `parlo doctor` output, the command you ran, and the raw timings. Results are added here with the contributor's hardware named, because a benchmark without its hardware is a rumour.
 
+## Installed voice check
+
+The European Portuguese Piper voice on this machine, with the recogniser reading the same file back, on 2026-11-06:
+
+| What | Result |
+|---|---|
+| Audio | 16 kHz mono 16-bit wav, **4.27 s**, **68360** frames, kept in [d10-speech.wav](benchmarks/d10-speech.wav) |
+| Level | RMS **5401**, peak **32736**, last 100 ms RMS **7** |
+| Spoken | `O PAR-loh lê o JAY-son em português.` after the pronunciation dictionary |
+| Read back | `OPR LOLA tilde a ojawai san and Portugué tilde AS` |
+| Without the dictionary | `O Pau tem Ovin Alf menino um dia só mesmo português a ter o ovinal feminino S.` |
+
+The audio is real, loud and not truncated: it starts with a RIFF/WAVE header, carries 4.27 s of speech at 16 kHz and ends in silence. The recogniser does not read this synthetic voice clearly with or without the respelling, so these transcripts say nothing about how a person hears the name; the facts are stored in [d10-speech.json](benchmarks/d10-speech.json) and checked by `cargo test -p parlo-cli --test d10`.
+
 ## Server soak
 
 `parlo soak --seconds N --interval S` starts `parlo serve`, samples the working set of that process every interval, stops it and reads `sessions.jsonl` back, so a long run leaves a number instead of a claim. The sample interval is 15 seconds by default and a run stops at 480 samples.
