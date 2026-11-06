@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
@@ -6,6 +7,9 @@ use std::sync::{Mutex, OnceLock};
 
 pub(crate) const LATEST: &str =
     "https://api.github.com/repos/PedroNascimento09/Parlo/releases/latest";
+pub(crate) const RELEASES: &str =
+    "https://api.github.com/repos/PedroNascimento09/Parlo/releases?per_page=30";
+pub const CHANNELS: [&str; 2] = ["stable", "preview"];
 
 pub struct Latest {
     pub version: String,
@@ -123,35 +127,151 @@ fn download(url: &str, archive: &Path, version: &str) -> Result<(), String> {
 }
 
 pub fn is_newer(current: &str, candidate: &str) -> bool {
-    let left = parse(current);
-    let right = parse(candidate);
-    for index in 0..left.len().max(right.len()) {
-        let a = *left.get(index).unwrap_or(&0);
-        let b = *right.get(index).unwrap_or(&0);
-        if a != b {
-            return b > a;
-        }
-    }
-    false
+    compare(current, candidate) == Ordering::Less
 }
 
-fn parse(version: &str) -> Vec<u32> {
-    let mut parts: Vec<u32> = version
-        .trim()
-        .trim_start_matches('v')
-        .split(['.', '-', '+'])
-        .filter_map(|part| part.parse::<u32>().ok())
-        .collect();
-    while parts.len() < 3 {
-        parts.push(0);
+struct Version<'a> {
+    numbers: Vec<u32>,
+    prerelease: Option<&'a str>,
+}
+
+impl<'a> Version<'a> {
+    fn parse(text: &'a str) -> Self {
+        let text = text.trim().trim_start_matches('v');
+        let (numbers, prerelease) = match text.split_once('-') {
+            Some((numbers, prerelease)) => (numbers, Some(prerelease)),
+            None => (text, None),
+        };
+        let mut numbers: Vec<u32> = numbers
+            .split(['.', '+'])
+            .filter_map(|part| part.parse::<u32>().ok())
+            .collect();
+        while numbers.len() < 3 {
+            numbers.push(0);
+        }
+        Self {
+            numbers,
+            prerelease,
+        }
     }
-    parts
+}
+
+fn compare(left: &str, right: &str) -> Ordering {
+    let left = Version::parse(left);
+    let right = Version::parse(right);
+    for index in 0..left.numbers.len().max(right.numbers.len()) {
+        let a = *left.numbers.get(index).unwrap_or(&0);
+        let b = *right.numbers.get(index).unwrap_or(&0);
+        if a != b {
+            return a.cmp(&b);
+        }
+    }
+    match (left.prerelease, right.prerelease) {
+        (None, None) => Ordering::Equal,
+        (None, Some(_)) => Ordering::Greater,
+        (Some(_), None) => Ordering::Less,
+        (Some(a), Some(b)) => compare_prerelease(a, b),
+    }
+}
+
+fn compare_prerelease(left: &str, right: &str) -> Ordering {
+    let mut left = left.split('.');
+    let mut right = right.split('.');
+    loop {
+        match (left.next(), right.next()) {
+            (None, None) => return Ordering::Equal,
+            (None, Some(_)) => return Ordering::Less,
+            (Some(_), None) => return Ordering::Greater,
+            (Some(a), Some(b)) => {
+                let order = match (a.parse::<u32>(), b.parse::<u32>()) {
+                    (Ok(a), Ok(b)) => a.cmp(&b),
+                    (Ok(_), Err(_)) => Ordering::Less,
+                    (Err(_), Ok(_)) => Ordering::Greater,
+                    (Err(_), Err(_)) => a.cmp(b),
+                };
+                if order != Ordering::Equal {
+                    return order;
+                }
+            }
+        }
+    }
+}
+
+pub fn check_channel(value: &str) -> Result<String, String> {
+    let wanted = value.trim().to_ascii_lowercase();
+    if CHANNELS.contains(&wanted.as_str()) {
+        Ok(wanted)
+    } else {
+        Err(format!(
+            "unknown update channel {value}, expected one of {}",
+            CHANNELS.join(", ")
+        ))
+    }
+}
+
+pub fn feed_url(channel: &str) -> &'static str {
+    if channel == "preview" {
+        RELEASES
+    } else {
+        LATEST
+    }
 }
 
 pub fn latest() -> Result<Latest, String> {
-    let body = fetch(LATEST)?;
+    latest_in(&crate::config::load().update_channel)
+}
+
+pub fn latest_in(channel: &str) -> Result<Latest, String> {
+    let channel = check_channel(channel)?;
+    let body = fetch(feed_url(&channel))?;
     let document: serde_json::Value = serde_json::from_str(&body)
         .map_err(|error| format!("cannot read the release feed: {error}"))?;
+    select(&channel, &document)
+}
+
+fn select(channel: &str, document: &serde_json::Value) -> Result<Latest, String> {
+    let items: Vec<&serde_json::Value> = match document {
+        serde_json::Value::Array(items) => items.iter().collect(),
+        single => vec![single],
+    };
+    let chosen = items
+        .into_iter()
+        .filter(|item| {
+            !item
+                .get("draft")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(false)
+        })
+        .filter(|item| {
+            channel == "preview"
+                || !item
+                    .get("prerelease")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false)
+        })
+        .filter(|item| {
+            item.get("tag_name")
+                .and_then(serde_json::Value::as_str)
+                .is_some()
+        })
+        .max_by(|left, right| compare(tag(left), tag(right)))
+        .ok_or_else(|| {
+            if channel == "preview" {
+                "the release feed has no release".to_string()
+            } else {
+                "the release feed has no stable release".to_string()
+            }
+        })?;
+    release(chosen)
+}
+
+fn tag(item: &serde_json::Value) -> &str {
+    item.get("tag_name")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("0")
+}
+
+fn release(document: &serde_json::Value) -> Result<Latest, String> {
     let version = document
         .get("tag_name")
         .and_then(serde_json::Value::as_str)
@@ -358,6 +478,87 @@ mod tests {
         } else {
             assert!(name.ends_with(".tar.gz"));
         }
+    }
+
+    fn release(tag: &str, prerelease: bool) -> serde_json::Value {
+        serde_json::json!({
+            "tag_name": format!("v{tag}"),
+            "html_url": format!("https://api.github.com/releases/{tag}"),
+            "prerelease": prerelease,
+            "draft": false,
+            "assets": [{
+                "name": archive_name(),
+                "browser_download_url": format!("https://api.github.com/{tag}")
+            }]
+        })
+    }
+
+    #[test]
+    fn a_preview_build_updates_to_the_newer_preview() {
+        let feed = serde_json::json!([
+            release("0.5.0-preview.1", true),
+            release("0.5.0-preview.0", true),
+            release("0.4.9", false)
+        ]);
+        let chosen = select("preview", &feed).unwrap();
+        assert_eq!(chosen.version, "0.5.0-preview.1");
+        assert!(is_newer("0.5.0-preview.0", &chosen.version));
+        assert_eq!(
+            chosen.archive_url.as_deref(),
+            Some("https://api.github.com/0.5.0-preview.1")
+        );
+    }
+
+    #[test]
+    fn a_preview_build_updates_to_a_newer_stable() {
+        let feed = serde_json::json!([
+            release("0.4.0", false),
+            release("0.3.9", false),
+            release("0.3.9-preview.2", true)
+        ]);
+        let chosen = select("preview", &feed).unwrap();
+        assert_eq!(chosen.version, "0.4.0");
+        assert!(is_newer("0.4.0-preview.9", &chosen.version));
+    }
+
+    #[test]
+    fn a_stable_build_never_jumps_to_a_preview() {
+        let feed = serde_json::json!([release("0.9.0-preview.1", true), release("0.4.0", false)]);
+        let chosen = select("stable", &feed).unwrap();
+        assert_eq!(chosen.version, "0.4.0");
+        assert!(!is_newer("0.4.0", &chosen.version));
+    }
+
+    #[test]
+    fn a_draft_is_never_offered() {
+        let mut draft = release("0.6.0", false);
+        draft["draft"] = serde_json::Value::Bool(true);
+        let feed = serde_json::json!([draft, release("0.4.0", false)]);
+        assert_eq!(select("stable", &feed).unwrap().version, "0.4.0");
+    }
+
+    #[test]
+    fn stable_and_preview_read_different_feeds() {
+        assert_eq!(feed_url("stable"), LATEST);
+        assert_eq!(feed_url("preview"), RELEASES);
+        assert!(RELEASES.starts_with(LATEST.trim_end_matches("/latest")));
+        assert!(RELEASES.contains("releases?"));
+    }
+
+    #[test]
+    fn an_unknown_channel_is_refused() {
+        assert!(check_channel("nightly").is_err());
+        assert_eq!(check_channel(" Preview ").unwrap(), "preview");
+        assert_eq!(check_channel("stable").unwrap(), "stable");
+    }
+
+    #[test]
+    fn a_prerelease_sorts_below_its_stable_release() {
+        assert!(is_newer("0.3.0-preview.1", "0.3.0"));
+        assert!(!is_newer("0.3.0", "0.3.0-preview.1"));
+        assert!(is_newer("0.3.0-preview.1", "0.3.0-preview.2"));
+        assert!(is_newer("0.3.0-preview.2", "0.3.0-preview.10"));
+        assert!(!is_newer("0.3.0-preview.2", "0.3.0-preview.2"));
     }
 
     #[test]

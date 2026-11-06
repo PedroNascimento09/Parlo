@@ -81,6 +81,7 @@ mod tests {
             name: "Ana".to_string(),
             history_days: 30,
             port: 9100,
+            update_channel: "stable".to_string(),
             device: Some(2),
             compute: "auto".to_string(),
             unload: 15,

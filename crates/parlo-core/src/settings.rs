@@ -27,6 +27,7 @@ pub struct Config {
     pub name: String,
     pub history_days: u32,
     pub port: u16,
+    pub update_channel: String,
     pub device: Option<usize>,
     pub compute: String,
     pub unload: u32,
@@ -133,6 +134,7 @@ impl Default for Config {
             name: String::new(),
             history_days: 0,
             port: 8787,
+            update_channel: "stable".to_string(),
             device: None,
             compute: "auto".to_string(),
             unload: 30,
@@ -318,6 +320,22 @@ mod tests {
         assert_eq!(config.intelligence.mode, "auto");
         assert_eq!(config.intelligence.clean, "light");
         assert!(!config.intelligence.allow_cloud);
+    }
+
+    #[test]
+    fn the_update_channel_starts_stable_and_round_trips() {
+        let mut config = Config::default();
+        assert_eq!(config.update_channel, "stable");
+        config.update_channel = "preview".to_string();
+        let text = serde_json::to_string(&config).unwrap();
+        let loaded: Config = serde_json::from_str(&text).unwrap();
+        assert_eq!(loaded.update_channel, "preview");
+    }
+
+    #[test]
+    fn an_older_config_updates_on_the_stable_channel() {
+        let config: Config = serde_json::from_str("{\"port\": 9000}").unwrap();
+        assert_eq!(config.update_channel, "stable");
     }
 
     #[test]

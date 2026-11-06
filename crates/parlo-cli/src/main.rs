@@ -859,6 +859,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
                     .parse()
                     .map_err(|_| "port must be a number".to_string())?
             }
+            "--channel" => config.update_channel = update::check_channel(&value)?,
             "--device" => {
                 config.device = Some(
                     value
@@ -885,6 +886,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
     println!("  to       {}", config.to);
     println!("  shortcut {}", config.shortcut);
     println!("  port     {}", config.port);
+    println!("  channel  {}", config.update_channel);
     match config.device {
         Some(device) => println!("  device   {device}"),
         None => println!("  device   the system default"),
