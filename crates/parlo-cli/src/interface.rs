@@ -91,18 +91,21 @@ mod tests {
             );
         }
         let island = include_str!("../web/island.html");
-        assert!(
-            island.contains("languages.json"),
-            "the overlay carries its own list"
-        );
-        assert!(
-            !island.contains("<option value=\"es\">"),
-            "the overlay went back to a hardcoded list"
-        );
-        assert!(
-            APP.contains("languages.json"),
-            "the app carries its own list"
-        );
+        let page = include_str!("../web/index.html");
+        for (name, markup, script) in [("overlay", island, island), ("app", page, APP)] {
+            assert!(
+                markup.contains("src=\"languages.js\"") || markup.contains("src=\"/languages.js\""),
+                "the {name} markup does not load the shared list"
+            );
+            assert!(
+                script.contains("writeTargets("),
+                "the {name} builds its own write list"
+            );
+            assert!(
+                !script.contains("<option value=\"es\">"),
+                "the {name} went back to a hardcoded list"
+            );
+        }
     }
 
     #[test]

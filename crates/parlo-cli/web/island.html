@@ -265,6 +265,7 @@
       <button type="button" class="record" id="record">Record</button>
     </div>
   </div>
+<script src="languages.js"></script>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";
 const TARGET_RATE = 16000;
@@ -810,13 +811,7 @@ function paintTidy() {
 const writeEl = document.getElementById("write");
 
 function writableTargets() {
-  const codes = new Set();
-  for (const [source, target] of writePairs) {
-    if (!writeSource || source === writeSource) {
-      codes.add(target);
-    }
-  }
-  return [...codes].sort((a, b) => (writeNames[a] || a).localeCompare(writeNames[b] || b));
+  return writeTargets(writePairs, writeNames, writeSource);
 }
 
 function paintWrite() {

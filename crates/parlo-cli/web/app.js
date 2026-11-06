@@ -1481,14 +1481,8 @@ let writePairs = [];
 function fillSettingsWrite() {
   const wanted = settingsWrite.value;
   const from = settingsFrom.value;
-  const codes = new Set();
-  for (const [source, target] of writePairs) {
-    if (source === from) {
-      codes.add(target);
-    }
-  }
   settingsWrite.replaceChildren(new Option("The language spoken", ""));
-  for (const code of [...codes].sort((a, b) => (writeNames[a] || a).localeCompare(writeNames[b] || b))) {
+  for (const code of writeTargets(writePairs, writeNames, from)) {
     settingsWrite.append(new Option(writeNames[code] || code.toUpperCase(), code));
   }
   settingsWrite.value = [...settingsWrite.options].some((option) => option.value === wanted) ? wanted : "";
