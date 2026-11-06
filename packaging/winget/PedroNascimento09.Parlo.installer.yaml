@@ -1,5 +1,5 @@
 PackageIdentifier: PedroNascimento09.Parlo
-PackageVersion: 0.2.4
+PackageVersion: 0.2.5
 InstallerType: exe
 Scope: user
 InstallModes:
@@ -11,7 +11,7 @@ InstallerSwitches:
 UpgradeBehavior: install
 Installers:
   - Architecture: x64
-    InstallerUrl: https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.4/Parlo-Setup.exe
+    InstallerUrl: https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.5/Parlo-Setup.exe
     InstallerSha256: 71B7878A3AADE7369AB6BFA7DFE26848740A671F0434DC6DE8CF99968422EFA6
 ManifestType: installer
 ManifestVersion: 1.6.0

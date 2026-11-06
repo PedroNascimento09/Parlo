@@ -1,6 +1,6 @@
 # Package channels
 
-Every channel below repacks the same release downloads: `Parlo-Setup.exe`, `parlo-macos-aarch64.tar.gz` and `parlo-linux-x86_64.tar.gz`, all published with `SHA256SUMS.txt` and a build provenance record. The checksums written into the manifests are the ones published with `v0.2.4`.
+Every channel below repacks the same release downloads: `Parlo-Setup.exe`, `parlo-macos-aarch64.tar.gz` and `parlo-linux-x86_64.tar.gz`, all published with `SHA256SUMS.txt` and a build provenance record. The checksums written into the manifests are the ones published with `v0.2.4`, and they move to `v0.2.5` once those archives exist.
 
 Each channel is **Partial**: the manifest is complete and checked against the release workflow, but no install has been run end to end from this machine, so treat it as a recipe that may need a fix before it works.
 
@@ -19,8 +19,8 @@ Each channel is **Partial**: the manifest is complete and checked against the re
 `packaging/docker/Dockerfile` downloads the published Linux archive, checks it against the hash from `SHA256SUMS.txt` before unpacking it, and starts `parlo serve` as the unprivileged user `10001` on port `8787`:
 
 ```bash
-docker build -t parlo:0.2.4 packaging/docker
-docker run --rm -e PARLO_PIN=4821 -p 8787:8787 parlo:0.2.4
+docker build -t parlo:0.2.5 packaging/docker
+docker run --rm -e PARLO_PIN=4821 -p 8787:8787 parlo:0.2.5
 curl -H "x-parlo-pin: 4821" http://127.0.0.1:8787/v1/models
 ```
 

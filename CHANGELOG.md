@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.5] - 6 November 2026
+
 - Parlo now recommends a model per language instead of leaving people with Portuguese and English: choosing a language in Settings shows the voice that reads it, the recogniser that hears it and the translation pack that starts from it, for the twenty-one languages the app presents, and any of those picks can still be replaced by another model the person installs.
 
 - Read aloud now covers every language Parlo translates to: Spanish (davefx), Italian (paola), Dutch (MLS) and Russian (irina) voices join the four already on offer, the engine speaks with the voice the request names instead of borrowing Portuguese, and a language without a voice is refused with a sentence that says so.
@@ -527,6 +529,7 @@ First tagged release of the command line prototype. Everything under `[Unrelease
 - Documentation for architecture, engines, languages, privacy, virtual microphones, benchmarks, and troubleshooting.
 - CI for Linux, macOS, and Windows, release builds on tags, CodeQL, and dependency updates.
 
-[Unreleased]: https://github.com/PedroNascimento09/parlo/compare/v0.2.4...HEAD
+[Unreleased]: https://github.com/PedroNascimento09/parlo/compare/v0.2.5...HEAD
+[0.2.5]: https://github.com/PedroNascimento09/parlo/releases/tag/v0.2.5
 [0.2.4]: https://github.com/PedroNascimento09/parlo/releases/tag/v0.2.4
 [0.1.0]: https://github.com/PedroNascimento09/parlo/releases/tag/v0.1.0
