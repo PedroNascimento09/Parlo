@@ -122,6 +122,37 @@ class IngestTest(unittest.TestCase):
         self.assertEqual(seen["paths"]["home"], seen["paths"]["temp"])
         self.assertGreater(seen["max_filesize"], 0)
 
+    def test_a_cookies_file_reaches_ytdlp(self):
+        seen = {}
+        cookies = Path(self.directory.name) / "cookies.txt"
+        cookies.write_text(
+            "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tabc\n",
+            encoding="utf-8",
+        )
+        with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp(seen=seen)}):
+            ingest.download(self.url("/page"), self.out, allow_local=True, cookies=cookies)
+        self.assertEqual(seen["cookiefile"], str(cookies))
+        self.assertEqual(self.out.read_bytes(), CLIP)
+
+    def test_a_missing_cookies_file_is_refused_before_ytdlp(self):
+        class Never:
+            def __init__(self, options):
+                raise AssertionError("yt-dlp must not start without the cookies file")
+
+        missing = Path(self.directory.name) / "none.txt"
+        with mock.patch.dict(sys.modules, {"yt_dlp": types.SimpleNamespace(YoutubeDL=Never)}):
+            with self.assertRaises(ingest.Refused) as refused:
+                ingest.download(self.url("/page"), self.out, allow_local=True, cookies=missing)
+        self.assertIn("no cookies file", str(refused.exception))
+        self.assertFalse(self.out.exists())
+
+    def test_a_private_video_points_at_the_cookies_file(self):
+        failure = "ERROR: [youtube] abc: Private video. Sign in if you've been granted access"
+        with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp(failure=failure)}):
+            with self.assertRaises(ingest.Refused) as refused:
+                ingest.download(self.url("/page"), self.out, allow_local=True)
+        self.assertIn("cookies file", str(refused.exception))
+
     def test_refuses_a_private_video(self):
         failure = "ERROR: [youtube] abc: Private video. Sign in if you've been granted access"
         with mock.patch.dict(sys.modules, {"yt_dlp": self.ytdlp(failure=failure)}):

@@ -11,6 +11,7 @@ import urllib.request
 from pathlib import Path
 
 MAX_BYTES = 2 * 1024 * 1024 * 1024
+MAX_COOKIES = 1024 * 1024
 PAGE_TYPES = {"application/json", "application/xml", "application/xhtml+xml"}
 PRIVATE_MARKERS = (
     "private video",
@@ -87,12 +88,12 @@ def check_url(url, allow_local=False):
     return parts
 
 
-def download(url, out, allow_local=False, max_bytes=MAX_BYTES, timeout=30):
+def download(url, out, allow_local=False, max_bytes=MAX_BYTES, timeout=30, cookies=None):
     check_url(url, allow_local)
     try:
         fetch(url, out, max_bytes, timeout)
     except NotMedia:
-        download_page(url, out, allow_local=allow_local, max_bytes=max_bytes)
+        download_page(url, out, allow_local=allow_local, max_bytes=max_bytes, cookies=cookies)
 
 
 def fetch(url, out, max_bytes, timeout):
@@ -139,8 +140,19 @@ def fetch(url, out, max_bytes, timeout):
         raise FetchFailed(f"the file could not be written: {error}") from None
 
 
-def download_page(url, out, allow_local=False, max_bytes=MAX_BYTES):
+def check_cookies(path):
+    path = Path(path)
+    if not path.is_file():
+        raise Refused(f"there is no cookies file at {path}")
+    if path.stat().st_size > MAX_COOKIES:
+        raise Refused("the cookies file is larger than 1 MB")
+    return path
+
+
+def download_page(url, out, allow_local=False, max_bytes=MAX_BYTES, cookies=None):
     check_url(url, allow_local)
+    if cookies is not None:
+        cookies = check_cookies(cookies)
     try:
         import yt_dlp
     except ImportError:
@@ -170,11 +182,15 @@ def download_page(url, out, allow_local=False, max_bytes=MAX_BYTES):
             "overwrites": True,
             "ignoreconfig": True,
         }
+        if cookies is not None:
+            options["cookiefile"] = str(cookies)
+        if cookies is not None:
+            options["cookiefile"] = str(cookies)
         try:
             with yt_dlp.YoutubeDL(options) as downloader:
                 info = downloader.extract_info(url, download=True)
         except Exception as error:
-            raise video_error(str(error)) from None
+            raise video_error(str(error), signed_in=cookies is not None) from None
         path = downloaded_path(info, work)
         if path is None:
             raise FetchFailed("the video was not downloaded")
@@ -221,12 +237,17 @@ def downloaded_path(info, work):
     return max(files, key=lambda path: path.stat().st_size) if files else None
 
 
-def video_error(message):
+def video_error(message, signed_in=False):
     lower = message.lower()
     if any(marker in lower for marker in PRIVATE_MARKERS):
+        if signed_in:
+            return Refused(
+                "the video needs a sign-in and the cookies file did not get through; "
+                "export the cookies again while signed in"
+            )
         return Refused(
             "the video is private or needs a sign-in; "
-            "Parlo only downloads public videos"
+            "paste a cookies file exported from the browser"
         )
     if any(marker in lower for marker in PAGE_MARKERS):
         return Refused(
@@ -246,9 +267,12 @@ def main(argv=None):
     parser.add_argument("--url", required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--allow-local", action="store_true")
+    parser.add_argument("--cookies", type=Path)
     args = parser.parse_args(argv)
     try:
-        download(args.url, args.out, allow_local=args.allow_local)
+        download(
+            args.url, args.out, allow_local=args.allow_local, cookies=args.cookies
+        )
     except Refused as error:
         print(json.dumps({"error": str(error)}), file=sys.stderr)
         return 2

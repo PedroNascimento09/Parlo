@@ -1,10 +1,12 @@
 use std::env;
+use std::fs;
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 const DEFAULT_ENGINE_DIR: &str = "engines/cascade";
 const MAX_URL: usize = 2_048;
+const MAX_COOKIES: u64 = 1_048_576;
 
 #[derive(Debug)]
 pub struct Failure {
@@ -12,10 +14,24 @@ pub struct Failure {
     pub message: String,
 }
 
-pub fn download(url: &str, destination: &Path) -> Result<(), Failure> {
+pub fn download(url: &str, destination: &Path, cookies: Option<&Path>) -> Result<(), Failure> {
     let allow_local = allow_local();
     check_url(url, allow_local)?;
     let engine_dir = engine_dir()?;
+    download_in(&engine_dir, url, destination, cookies, allow_local)
+}
+
+fn download_in(
+    engine_dir: &Path,
+    url: &str,
+    destination: &Path,
+    cookies: Option<&Path>,
+    allow_local: bool,
+) -> Result<(), Failure> {
+    let cookies = match cookies {
+        Some(path) => Some(check_cookies(path)?),
+        None => None,
+    };
     let script = engine_dir.join("scripts").join("ingest.py");
     if !script.is_file() {
         return Err(internal(format!(
@@ -23,19 +39,22 @@ pub fn download(url: &str, destination: &Path) -> Result<(), Failure> {
             script.display()
         )));
     }
-    let python = crate::sidecar::python_for(&engine_dir);
+    let python = crate::sidecar::python_for(engine_dir);
     let mut command = Command::new(&python);
     command
         .arg(&script)
         .args(["--url", url])
         .arg("--out")
         .arg(destination)
-        .current_dir(&engine_dir)
-        .env("PYTHONPATH", &engine_dir)
+        .current_dir(engine_dir)
+        .env("PYTHONPATH", engine_dir)
         .stdout(Stdio::null())
         .stderr(Stdio::piped());
     if allow_local {
         command.arg("--allow-local");
+    }
+    if let Some(path) = &cookies {
+        command.arg("--cookies").arg(path);
     }
     let output = command.output().map_err(|error| {
         internal(format!(
@@ -177,6 +196,43 @@ pub fn check_url(url: &str, allow_local: bool) -> Result<(), Failure> {
     Ok(())
 }
 
+pub fn check_cookies(path: &Path) -> Result<PathBuf, Failure> {
+    if path.as_os_str().is_empty() {
+        return Err(refused("the cookies file path is empty"));
+    }
+    if !path.is_file() {
+        return Err(refused(format!(
+            "there is no cookies file at {}",
+            path.display()
+        )));
+    }
+    let size = fs::metadata(path)
+        .map(|meta| meta.len())
+        .unwrap_or_default();
+    if size > MAX_COOKIES {
+        return Err(refused("the cookies file is larger than 1 MB"));
+    }
+    let text = fs::read_to_string(path).map_err(|_| {
+        refused(format!(
+            "the cookies file at {} cannot be read",
+            path.display()
+        ))
+    })?;
+    let looks_like_cookies = text.lines().any(|line| {
+        let line = line.trim_start();
+        line.starts_with("# Netscape HTTP Cookie File")
+            || line.starts_with("# HTTP Cookie File")
+            || (!line.starts_with('#') && !line.trim().is_empty() && line.split('\t').count() >= 7)
+    });
+    if !looks_like_cookies {
+        return Err(refused(format!(
+            "{} is not a cookies file; export it from the browser in Netscape format",
+            path.display()
+        )));
+    }
+    Ok(path.to_path_buf())
+}
+
 fn allow_local() -> bool {
     cfg!(debug_assertions) && env::var("PARLO_INGEST_ALLOW_LOCAL").is_ok_and(|value| value == "1")
 }
@@ -236,10 +292,10 @@ fn reported_error(stderr: &[u8]) -> String {
     })
 }
 
-fn refused(message: &str) -> Failure {
+fn refused(message: impl Into<String>) -> Failure {
     Failure {
         status: "400 Bad Request",
-        message: message.to_string(),
+        message: message.into(),
     }
 }
 
@@ -313,5 +369,151 @@ mod tests {
             name_from_url("https://example.com/a/my%20clip.mp4"),
             "my clip.mp4"
         );
+    }
+}
+
+#[cfg(test)]
+mod cookies_tests {
+    use super::*;
+
+    fn scratch(name: &str) -> PathBuf {
+        let folder =
+            std::env::temp_dir().join(format!("parlo-ingest-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&folder);
+        fs::create_dir_all(&folder).unwrap();
+        folder
+    }
+
+    fn export(folder: &Path) -> PathBuf {
+        let path = folder.join("cookies.txt");
+        fs::write(
+            &path,
+            "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tabc\n",
+        )
+        .unwrap();
+        path
+    }
+
+    fn downloader(folder: &Path, record: &Path) -> PathBuf {
+        let engine = folder.join("engine");
+        fs::create_dir_all(engine.join("scripts")).unwrap();
+        fs::write(
+            engine.join("scripts").join("ingest.py"),
+            format!(
+                "import json, sys\nargs = sys.argv[1:]\nopen({record:?}, 'w').write(json.dumps(args))\nopen(args[args.index('--out') + 1], 'wb').write(b'media')\n",
+                record = record.to_string_lossy()
+            ),
+        )
+        .unwrap();
+        engine
+    }
+
+    #[test]
+    fn refuses_a_cookies_path_that_is_not_there() {
+        let folder = scratch("missing");
+        let error = check_cookies(&folder.join("none.txt")).unwrap_err();
+        assert_eq!(error.status, "400 Bad Request");
+        assert!(
+            error.message.contains("no cookies file"),
+            "{}",
+            error.message
+        );
+        assert!(check_cookies(&folder).is_err());
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn refuses_a_file_that_is_not_a_cookies_export() {
+        let folder = scratch("foreign");
+        let path = folder.join("notes.txt");
+        fs::write(&path, "buy milk").unwrap();
+        let error = check_cookies(&path).unwrap_err();
+        assert!(
+            error.message.contains("not a cookies file"),
+            "{}",
+            error.message
+        );
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn accepts_a_netscape_cookies_export() {
+        let folder = scratch("valid");
+        let path = export(&folder);
+        assert_eq!(check_cookies(&path).unwrap(), path);
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn the_cookies_file_reaches_the_downloader_and_a_public_link_needs_none() {
+        let folder = scratch("argv");
+        let record = folder.join("argv.json");
+        let engine = downloader(&folder, &record);
+        let cookies = export(&folder);
+        let with = download_in(
+            &engine,
+            "https://example.com/video.mp4",
+            &folder.join("one.mp4"),
+            Some(&cookies),
+            false,
+        );
+        let recorded: Vec<String> =
+            serde_json::from_str(&fs::read_to_string(&record).unwrap()).unwrap();
+        let without = download_in(
+            &engine,
+            "https://example.com/video.mp4",
+            &folder.join("two.mp4"),
+            None,
+            false,
+        );
+        let plain: Vec<String> =
+            serde_json::from_str(&fs::read_to_string(&record).unwrap()).unwrap();
+        assert!(
+            with.is_ok(),
+            "{:?}",
+            with.err().map(|failure| failure.message)
+        );
+        assert!(
+            without.is_ok(),
+            "{:?}",
+            without.err().map(|failure| failure.message)
+        );
+        assert!(
+            recorded.iter().any(|arg| arg == "--cookies"),
+            "{recorded:?}"
+        );
+        assert!(
+            recorded
+                .iter()
+                .any(|arg| *arg == cookies.display().to_string()),
+            "{recorded:?}"
+        );
+        assert!(!plain.iter().any(|arg| arg == "--cookies"), "{plain:?}");
+        assert!(folder.join("one.mp4").is_file());
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn a_missing_cookies_file_stops_before_the_downloader_runs() {
+        let folder = scratch("no-run");
+        let record = folder.join("argv.json");
+        let engine = downloader(&folder, &record);
+        let error = download_in(
+            &engine,
+            "https://example.com/video.mp4",
+            &folder.join("x.mp4"),
+            Some(&folder.join("none.txt")),
+            false,
+        )
+        .unwrap_err();
+        assert_eq!(error.status, "400 Bad Request");
+        assert!(
+            error.message.contains("no cookies file"),
+            "{}",
+            error.message
+        );
+        assert!(!record.exists());
+        assert!(!folder.join("x.mp4").exists());
+        fs::remove_dir_all(&folder).unwrap();
     }
 }

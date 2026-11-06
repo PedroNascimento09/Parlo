@@ -73,6 +73,7 @@ const dubSlowest = document.getElementById("dub-slowest");
 const dubUrlForm = document.getElementById("dub-url-form");
 const dubUrl = document.getElementById("dub-url");
 const dubUrlStart = document.getElementById("dub-url-start");
+const dubCookies = document.getElementById("dub-cookies");
 const dubClear = document.getElementById("dub-clear");
 const batchFrom = document.getElementById("batch-from");
 const batchTargets = document.getElementById("batch-targets");
@@ -3900,6 +3901,10 @@ async function startDubUrl(value) {
       "X-Parlo-Url": url,
       Authorization: "Bearer " + token,
     };
+    const cookies = dubCookies ? dubCookies.value.trim() : "";
+    if (cookies) {
+      headers["X-Parlo-Cookies"] = encodeURIComponent(cookies);
+    }
     if (dubProject) {
       headers["X-Parlo-Project"] = dubProject.id;
       if (dubTarget.value) {

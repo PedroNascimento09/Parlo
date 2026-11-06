@@ -3157,6 +3157,9 @@ fn handle(
         let requested_url = header(&headers, "x-parlo-url")
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty());
+        let cookies = header(&headers, "x-parlo-cookies")
+            .map(|value| PathBuf::from(percent_decode(&value)))
+            .filter(|path| !path.as_os_str().is_empty());
         if requested_url.is_some() && !body.is_empty() {
             return respond_json(
                 stream,
@@ -3285,7 +3288,7 @@ fn handle(
 
         let upload = directory.join(&source_name);
         if let Some(url) = &requested_url {
-            if let Err(failure) = crate::ingest::download(url, &upload) {
+            if let Err(failure) = crate::ingest::download(url, &upload, cookies.as_deref()) {
                 if let Some(path) = &cues {
                     fs::remove_file(path).ok();
                 }
