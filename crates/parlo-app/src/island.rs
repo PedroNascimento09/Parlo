@@ -292,23 +292,21 @@ pub fn listen(handle: AppHandle) {
                 continue;
             }
             seen = now;
-            if let Ok(dictation) = Shortcut::parse(&latest.shortcut) {
+            if let Some((dictation, free, captions, undo)) = parlo_core::shortcut::resolve(
+                &latest.shortcut,
+                &latest.hands_free,
+                &latest.captions,
+                &latest.undo,
+            ) {
                 KEY.store(dictation.key, Ordering::Relaxed);
                 MODS.store(dictation.modifiers, Ordering::Relaxed);
+                FREE_KEY.store(free.key, Ordering::Relaxed);
+                FREE_MODS.store(free.modifiers, Ordering::Relaxed);
+                CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
+                CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
+                UNDO_KEY.store(undo.key, Ordering::Relaxed);
+                UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
             }
-            let free = optional(
-                "hands free",
-                &latest.hands_free,
-                parlo_core::shortcut::HANDS_FREE,
-            );
-            let captions = optional("captions", &latest.captions, parlo_core::shortcut::CAPTIONS);
-            let undo = optional("undo", &latest.undo, parlo_core::shortcut::UNDO);
-            FREE_KEY.store(free.key, Ordering::Relaxed);
-            FREE_MODS.store(free.modifiers, Ordering::Relaxed);
-            CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
-            CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
-            UNDO_KEY.store(undo.key, Ordering::Relaxed);
-            UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
             crate::note(&format!(
                 "the shortcuts changed: {} dictates, {} stays listening, {} toggles captions, {} takes the last dictation back",
                 latest.shortcut,

@@ -1147,7 +1147,6 @@ select.field-input {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);
 }
 
-
 .settings-panes {
   display: grid;
   gap: 18px;
@@ -1156,9 +1155,6 @@ select.field-input {
 .settings-panes > .settings {
   padding: clamp(18px, 2.6vw, 28px);
 }
-
-
-
 
 .call-banner {
   display: flex;
@@ -2322,7 +2318,6 @@ select.field-input {
   .models,
   .dub,
   .welcome,
-  .onboarding,
   .gate-card,
   .sheet {
     padding: 24px;
@@ -2352,7 +2347,6 @@ select.field-input {
   .models,
   .dub,
   .welcome,
-  .onboarding,
   .gate-card,
   .sheet {
     padding: 18px;
@@ -2371,7 +2365,6 @@ select.field-input {
   .settings-row,
   #languages > .settings-row,
   #provider > .settings-row,
-  #onboarding-pair,
   .voice-form {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -2822,17 +2815,6 @@ body.gating main {
   pointer-events: none;
 }
 
-
-.gate-art svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-
-
-
-
 .gate-step {
   position: relative;
   z-index: 1;
@@ -2851,16 +2833,6 @@ body.gating main {
 .gate-note {
   max-width: 42ch;
 }
-
-
-.hero-art svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-
-
 
 .models-progress,
 .welcome-progress {
@@ -2949,17 +2921,6 @@ select.field-input {
   .style-card,
   .models-bar span {
     transition: none;
-  }
-}
-
-@media (max-width: 820px) {
-  .gate-art {
-    margin: 0 auto;
-    max-width: 132px;
-  }
-
-  .gate-step h1 {
-    font-size: 32px;
   }
 }
 
@@ -3134,4 +3095,15 @@ input[type="checkbox"]:focus-visible,
 .parlo-pick-item[aria-selected="true"] {
   background: var(--accent-wash);
   font-weight: 600;
+}
+
+.settings-note {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  max-width: 62ch;
+  margin-top: 2px;
+}
+
+.settings-note {
+  display: block;
 }

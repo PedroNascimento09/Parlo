@@ -108,6 +108,25 @@ impl fmt::Display for Shortcut {
     }
 }
 
+pub fn resolve(
+    dictation: &str,
+    hands_free: &str,
+    captions: &str,
+    undo: &str,
+) -> Option<(Shortcut, Shortcut, Shortcut, Shortcut)> {
+    let fallback = |text: &str, default: &str| {
+        Shortcut::parse(text)
+            .or_else(|_| Shortcut::parse(default))
+            .expect("the documented shortcut parses")
+    };
+    Some((
+        Shortcut::parse(dictation).ok()?,
+        fallback(hands_free, HANDS_FREE),
+        fallback(captions, CAPTIONS),
+        fallback(undo, UNDO),
+    ))
+}
+
 fn virtual_key(name: &str) -> Result<u32, String> {
     let upper = name.to_ascii_uppercase();
     if upper.len() == 1 {
@@ -211,5 +230,19 @@ mod tests {
             let shortcut = Shortcut::parse(text).unwrap();
             assert_eq!(Shortcut::parse(&shortcut.text()).unwrap(), shortcut);
         }
+    }
+
+    #[test]
+    fn a_saved_change_reaches_the_keys_without_a_restart() {
+        let before = resolve(DEFAULT, HANDS_FREE, CAPTIONS, UNDO).unwrap();
+        let after = resolve("Ctrl+Shift+K", HANDS_FREE, CAPTIONS, UNDO).unwrap();
+        assert_ne!(before.0, after.0);
+        assert_eq!(after.0.key, 0x4B);
+        assert_eq!(after.1, before.1);
+    }
+
+    #[test]
+    fn an_unusable_dictation_keeps_the_keys_already_listening() {
+        assert!(resolve("nonsense", HANDS_FREE, CAPTIONS, UNDO).is_none());
     }
 }
