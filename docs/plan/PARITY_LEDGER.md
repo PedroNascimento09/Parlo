@@ -50,7 +50,7 @@ Rules:
 | T4 | Word timestamps | Yes | Blocked: word bounds need the recogniser's word times, and the engine in `engines/cascade/parlo_cascade/engine.py` joins `segment.text` and drops them | Parity | 1 | An SRT from a dictation has word bounds |
 | T5 | History, search, export | Yes | Yes | Keep | 0 | Find a line by app and by text |
 | T6 | System audio capture | Yes, into captions and dubbing | Done · 55f5a4d: the meeting screen and the captions page both take the computer's sound, and the captions page shows which sound it uses | Wire into captions and meetings | 1 | A call recording transcribes with no microphone |
-| T7 | URL and media ingest | yt-dlp, cookies | Partial: public video pages via yt-dlp, no cookies; private videos refused | Parity, public URLs only | 3 | A public video transcribes; a private address is refused |
+| T7 | URL and media ingest | yt-dlp, cookies | Done · b67f87f: `/dub` takes `X-Parlo-Cookies` with the path to a Netscape export, `ingest::check_cookies` refuses a missing, unreadable, oversized or foreign file with 400 before any downloader starts, the path is passed as `ingest.py --cookies` and reaches yt-dlp as `cookiefile`, the window has a field for it, and the tests fail when the cookies stop reaching the process, when a missing path still launches the downloader, or when a public link starts needing cookies; a private video the cookies do not open says so | Parity, public URLs only | 3 | A public video transcribes; a private address is refused |
 | T8 | Speaker count hints | 1–20 | Done · bbff8cc: the count is saved with the meeting, caps the live room at that many voices, and arrives from the app's Voices field | Parity | 1 | A hint reaches the engine and is recorded |
 | T9 | Transcript correction and QC | Yes | Done · b42abdc: every correction appends the text it replaced to the line, a second correction keeps the first, the current text stays apart from the versions behind it, `revisions_json` arrives as an additive column so a line saved with only `original_text` reads the same and reports one revision, and the project view lists the versions oldest first with the line in use marked | Parity | 3 | A corrected line keeps the original beside it |
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-56 of 80 rows are Done (70.0%). Six Partial rows counted at half give 73.8%.
+38 of 80 rows are Done (47.5%). 6 Partial rows counted at half give 51.2%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are T7, which needs yt-dlp to accept a cookies file so a private link is no longer refused, then X2, whose rows need a measured cascade number that `parlo bench` does not produce yet.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are X2, whose rows need a measured cascade number that `parlo bench` does not produce yet, then U10, whose separation still falls back to ducking when the stereo centre carries the speech.
