@@ -857,6 +857,10 @@ pub fn reason_for(model: &Model, machine: &str) -> String {
         "voice-en" => "the English voice for read aloud",
         "voice-de" => "the German voice for read aloud",
         "voice-fr" => "the French voice for read aloud",
+        "voice-es" => "the Spanish voice for read aloud",
+        "voice-it" => "the Italian voice for read aloud",
+        "voice-nl" => "the Dutch voice for read aloud",
+        "voice-ru" => "the Russian voice for read aloud",
         "speakers" => {
             "tells people apart in a meeting, and a meeting records as one voice without it"
         }

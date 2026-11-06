@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "artifacts": [
-{
+    {
       "id": "speaker-separation",
       "kind": "speaker",
       "category": "speakers",
@@ -2228,6 +2228,82 @@
       "unit": "mt-es-en",
       "note": "Spanish to English.",
       "pair": "es→en"
+    },
+    {
+      "id": "piper-voice-es-es-davefx",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Spanish voice (Davefx)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "es-ES"
+      ],
+      "size_mb": 63,
+      "unit": "voice-es",
+      "memory_mb": 2,
+      "speed": "0.16 realtime here",
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-it-it-paola",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Italian voice (Paola)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "it-IT"
+      ],
+      "size_mb": 63,
+      "unit": "voice-it",
+      "memory_mb": 2,
+      "speed": "0.16 realtime here",
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-nl-nl-mls",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/nl/nl_NL/mls/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Dutch voice (MLS)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "nl-NL"
+      ],
+      "size_mb": 63,
+      "unit": "voice-nl",
+      "memory_mb": 2,
+      "speed": "0.16 realtime here",
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-ru-ru-irina",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Russian voice (Irina)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "ru-RU"
+      ],
+      "size_mb": 63,
+      "unit": "voice-ru",
+      "memory_mb": 2,
+      "speed": "0.16 realtime here",
+      "category": "voice"
     }
   ]
 }

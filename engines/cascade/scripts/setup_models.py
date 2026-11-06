@@ -36,6 +36,22 @@ VOICES = {
         "https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx",
         "fr/fr_FR/siwis/medium/fr_FR-siwis-medium.onnx",
     ),
+    "es_ES-davefx-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
+        "es/es_ES/davefx/medium/es_ES-davefx-medium.onnx",
+    ),
+    "it_IT-paola-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx",
+        "it/it_IT/paola/medium/it_IT-paola-medium.onnx",
+    ),
+    "nl_NL-mls-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx",
+        "nl/nl_NL/mls/medium/nl_NL-mls-medium.onnx",
+    ),
+    "ru_RU-irina-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
+        "ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
+    ),
 }
 DEFAULT_VOICES = ("pt_PT-tugão-medium", "en_US-lessac-medium")
 OPTIONAL_VOICES = {"pt_br": ("pt_BR-faber-medium",)}
@@ -238,6 +254,10 @@ UNITS = (
     "voice-en",
     "voice-de",
     "voice-fr",
+    "voice-es",
+    "voice-it",
+    "voice-nl",
+    "voice-ru",
     "mt-pt-en",
     "mt-en-pt",
     "mt-pt-es",
@@ -287,6 +307,14 @@ def main(argv=None) -> int:
             voices.append("de_DE-thorsten-medium")
         if "voice-fr" in only:
             voices.append("fr_FR-siwis-medium")
+        if "voice-es" in only:
+            voices.append("es_ES-davefx-medium")
+        if "voice-it" in only:
+            voices.append("it_IT-paola-medium")
+        if "voice-nl" in only:
+            voices.append("nl_NL-mls-medium")
+        if "voice-ru" in only:
+            voices.append("ru_RU-irina-medium")
     install_voices(voices)
 
     if only is None:

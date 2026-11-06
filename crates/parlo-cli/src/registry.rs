@@ -169,6 +169,62 @@ pub const MODELS: &[ModelSpec] = &[
         default: false,
     },
     ModelSpec {
+        id: "voice-es",
+        name: "Spanish voice",
+        kind: "voice",
+        feature: "Read aloud",
+        unit: Some("voice"),
+        licence: "MIT",
+        languages: &["es"],
+        devices: CPU,
+        bytes: 63_000_000,
+        capabilities: &["speak"],
+        source: Source::Voice("es_ES-davefx-medium.onnx"),
+        default: false,
+    },
+    ModelSpec {
+        id: "voice-it",
+        name: "Italian voice",
+        kind: "voice",
+        feature: "Read aloud",
+        unit: Some("voice"),
+        licence: "MIT",
+        languages: &["it"],
+        devices: CPU,
+        bytes: 63_000_000,
+        capabilities: &["speak"],
+        source: Source::Voice("it_IT-paola-medium.onnx"),
+        default: false,
+    },
+    ModelSpec {
+        id: "voice-nl",
+        name: "Dutch voice",
+        kind: "voice",
+        feature: "Read aloud",
+        unit: Some("voice"),
+        licence: "MIT",
+        languages: &["nl"],
+        devices: CPU,
+        bytes: 63_000_000,
+        capabilities: &["speak"],
+        source: Source::Voice("nl_NL-mls-medium.onnx"),
+        default: false,
+    },
+    ModelSpec {
+        id: "voice-ru",
+        name: "Russian voice",
+        kind: "voice",
+        feature: "Read aloud",
+        unit: Some("voice"),
+        licence: "MIT",
+        languages: &["ru"],
+        devices: CPU,
+        bytes: 63_000_000,
+        capabilities: &["speak"],
+        source: Source::Voice("ru_RU-irina-medium.onnx"),
+        default: false,
+    },
+    ModelSpec {
         id: "speakers",
         name: "Speaker separation",
         kind: "speaker",
@@ -394,8 +450,20 @@ pub const MODELS: &[ModelSpec] = &[
     },
 ];
 
+pub const ENGINE_VOICES: [&str; 4] = ["pt", "en", "de", "fr"];
+
 pub fn model(id: &str) -> Option<&'static ModelSpec> {
     MODELS.iter().find(|spec| spec.id == id)
+}
+
+pub fn voice_file(language: &str) -> Option<(&'static str, &'static str)> {
+    MODELS
+        .iter()
+        .find(|spec| spec.kind == "voice" && spec.languages == [language])
+        .and_then(|spec| match spec.source {
+            Source::Voice(file) => Some((spec.name, file)),
+            _ => None,
+        })
 }
 
 pub fn remaining_units() -> Vec<&'static str> {
@@ -423,6 +491,57 @@ mod tests {
         assert_eq!(ids.len(), MODELS.len());
         assert!(MODELS.iter().all(|spec| !spec.licence.trim().is_empty()));
         assert!(MODELS.iter().all(|spec| !spec.languages.is_empty()));
+    }
+
+    #[test]
+    fn every_language_parlo_translates_to_has_a_voice() {
+        for spec in MODELS.iter().filter(|spec| spec.kind == "translation") {
+            if let Source::Translation(_, target) = spec.source {
+                assert!(
+                    voice_file(target).is_some(),
+                    "{target} has no voice to read it aloud"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_voice_can_be_downloaded() {
+        let catalogue = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../engines/cascade/scripts/setup_models.py"),
+        )
+        .expect("the model setup script");
+        for spec in MODELS.iter().filter(|spec| spec.kind == "voice") {
+            if let Source::Voice(file) = spec.source {
+                let name = file.trim_end_matches(".onnx");
+                assert!(catalogue.contains(name), "{name} is not in the catalogue");
+            }
+        }
+    }
+
+    #[test]
+    fn the_shared_voices_are_the_ones_the_engine_picks_itself() {
+        let engine = std::fs::read_to_string(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("../../engines/cascade/parlo_cascade/engine.py"),
+        )
+        .expect("the cascade engine");
+        let table = engine
+            .split("VOICES = {")
+            .nth(1)
+            .expect("the voice table")
+            .split('}')
+            .next()
+            .expect("a closed voice table");
+        let mut languages: Vec<&str> = table
+            .lines()
+            .filter_map(|line| line.split('"').nth(1))
+            .collect();
+        let mut expected = ENGINE_VOICES.to_vec();
+        languages.sort_unstable();
+        expected.sort_unstable();
+        assert_eq!(languages, expected, "{table}");
     }
 
     #[test]

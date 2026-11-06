@@ -355,7 +355,21 @@ impl Session {
     fn speak_in(&self, text: &str, language: &str) -> Result<(Vec<u8>, u32), String> {
         let _working = self.working();
         let chosen = self.chosen();
-        if chosen.to == language {
+        let cascade = chosen.engine == "cascade";
+        let voice = crate::registry::voice_file(language);
+        if cascade {
+            let (name, file) =
+                voice.ok_or_else(|| format!("Parlo has no voice for {language} yet"))?;
+            if !crate::models::models_root().join(file).is_file() {
+                return Err(format!(
+                    "the {name} is not installed; download it in Models before reading aloud"
+                ));
+            }
+        }
+        let installed = voice.map(|(_, file)| crate::models::models_root().join(file));
+        let shared = chosen.to == language
+            && (!cascade || crate::registry::ENGINE_VOICES.contains(&language));
+        if shared {
             drop(chosen);
             return self
                 .pipeline()
@@ -369,23 +383,28 @@ impl Session {
         } else {
             chosen.from.clone()
         };
+        drop(chosen);
         let source = std::env::var("PARLO_CASCADE_SOURCE").ok();
         let target = std::env::var("PARLO_CASCADE_TARGET").ok();
-        drop(chosen);
-        let spoken = build(&source_language, language, &engine, &stt).and_then(|mut pipeline| {
-            pipeline
-                .speak_in(text, Some(language))
-                .map_err(|error| error.to_string())
-        });
-        match source {
-            Some(value) => std::env::set_var("PARLO_CASCADE_SOURCE", value),
-            None => std::env::remove_var("PARLO_CASCADE_SOURCE"),
+        let previous = std::env::var("PARLO_CASCADE_VOICE").ok();
+        if let (true, Some(path)) = (cascade, installed.as_ref()) {
+            std::env::set_var("PARLO_CASCADE_VOICE", path);
         }
-        match target {
-            Some(value) => std::env::set_var("PARLO_CASCADE_TARGET", value),
-            None => std::env::remove_var("PARLO_CASCADE_TARGET"),
+        let started = build(&source_language, language, &engine, &stt);
+        for (key, value) in [
+            ("PARLO_CASCADE_SOURCE", source),
+            ("PARLO_CASCADE_TARGET", target),
+            ("PARLO_CASCADE_VOICE", previous),
+        ] {
+            match value {
+                Some(value) => std::env::set_var(key, value),
+                None => std::env::remove_var(key),
+            }
         }
-        spoken
+        let mut pipeline = started?;
+        pipeline
+            .speak_in(text, Some(language))
+            .map_err(|error| error.to_string())
     }
 
     fn speak_with_voice(

@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Read aloud now covers every language Parlo translates to: Spanish (davefx), Italian (paola), Dutch (MLS) and Russian (irina) voices join the four already on offer, the engine speaks with the voice the request names instead of borrowing Portuguese, and a language without a voice is refused with a sentence that says so.
+
 - Speech now uses the voice the request names: `/v1/audio/speech` reads `model` and `voice`, builds the engine for that language and respells every name in it, so a Portuguese sentence is read by the Portuguese voice instead of an English one; the repository keeps a 3.67 s recording of `Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.` with the transcript beside it, and a test fails when the file stops being readable audio or loses its transcript.
 - The cascade engine now measures on this machine with Parakeet 0.6B v3 installed: 0.23 real time and 0.64 s for a 2.5 s sentence at the cpu, and the first partial arrives at a median of 122 ms over twenty Portuguese sentences.
 - The parity plan now counts one machine: engine breadth, GPU selection, a second device, signed installers and a tester programme are rejected, so the remaining rows are the ones a Windows PC can finish.
