@@ -114,6 +114,7 @@ pub enum VoiceError {
     Duplicate(String),
     Crypto(String),
     NotFound(String),
+    Revoked(String),
     Corrupt(PathBuf),
     Io(io::Error),
 }
@@ -129,6 +130,10 @@ impl fmt::Display for VoiceError {
             VoiceError::Duplicate(id) => write!(formatter, "voice profile {id} already exists"),
             VoiceError::Crypto(reason) => write!(formatter, "{reason}"),
             VoiceError::NotFound(id) => write!(formatter, "voice profile {id} does not exist"),
+            VoiceError::Revoked(id) => write!(
+                formatter,
+                "voice profile {id} was revoked, so it cannot take a new sample"
+            ),
             VoiceError::Corrupt(path) => {
                 write!(
                     formatter,
@@ -243,6 +248,9 @@ impl Store {
             return Err(VoiceError::NotFound(id.to_string()));
         }
         let profile = read(&folder)?;
+        if !profile.usable() {
+            return Err(VoiceError::Revoked(id.to_string()));
+        }
         let stored = if profile.encrypted {
             crypto::seal(bytes).map_err(|error| VoiceError::Crypto(error.to_string()))?
         } else {
@@ -295,6 +303,11 @@ impl Store {
         }
         let mut profile = read(&folder)?;
         profile.consent.revoked_at = Some(at);
+        let sample = folder.join(SAMPLE);
+        if sample.is_file() {
+            fs::remove_file(&sample)?;
+        }
+        profile.artefacts.retain(|artefact| artefact != SAMPLE);
         write(&folder, &profile)?;
         Ok(profile)
     }
@@ -597,7 +610,6 @@ mod tests {
             )
             .unwrap();
         store.save_sample(&profile.id, b"RIFFwav").unwrap();
-        store.revoke(&profile.id, 7).unwrap();
         store.set_encryption(&profile.id, true).unwrap();
         store.set_encryption(&profile.id, false).unwrap();
         let roots: Vec<String> = fs::read_dir(store.root())
@@ -633,6 +645,112 @@ mod tests {
         assert_eq!(revoked.consent.revoked_at, Some(99));
         assert!(!revoked.usable());
         assert_eq!(store.list().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn revoking_deletes_the_sample_and_keeps_the_profile() {
+        let sandbox = Sandbox::new("revoke-sample");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        let revoked = store.revoke(&profile.id, 99).unwrap();
+        assert_eq!(revoked.consent.revoked_at, Some(99));
+        assert!(!revoked.usable());
+        assert!(!revoked.artefacts.iter().any(|item| item == SAMPLE));
+        assert!(!store.root().join(&profile.id).join(SAMPLE).exists());
+        assert!(matches!(
+            store.sample(&profile.id),
+            Err(VoiceError::NotFound(_))
+        ));
+        assert_eq!(store.list().unwrap().len(), 1);
+    }
+
+    #[test]
+    fn revoking_leaves_the_other_profiles_and_their_samples_alone() {
+        let sandbox = Sandbox::new("revoke-others");
+        let store = sandbox.store();
+        let kept = store
+            .create(
+                "Ana",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        let removed = store
+            .create(
+                "Rui",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 2),
+            )
+            .unwrap();
+        store.save_sample(&kept.id, b"RIFFkept").unwrap();
+        store.save_sample(&removed.id, b"RIFFremoved").unwrap();
+        store.revoke(&removed.id, 3).unwrap();
+        assert_eq!(store.sample(&kept.id).unwrap(), b"RIFFkept");
+        assert!(store.get(&kept.id).unwrap().usable());
+        assert_eq!(store.list().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn a_revoked_profile_cannot_take_a_new_sample() {
+        let sandbox = Sandbox::new("revoke-sample-again");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        store.revoke(&profile.id, 5).unwrap();
+        assert!(matches!(
+            store.save_sample(&profile.id, b"RIFFwav"),
+            Err(VoiceError::Revoked(_))
+        ));
+        assert!(!store.root().join(&profile.id).join(SAMPLE).exists());
+    }
+
+    #[test]
+    fn revoking_twice_changes_nothing() {
+        let sandbox = Sandbox::new("revoke-twice");
+        let store = sandbox.store();
+        let profile = store
+            .create(
+                "Pedro",
+                "pt-PT",
+                Consent::own_voice("translation", "local", 1),
+            )
+            .unwrap();
+        store.save_sample(&profile.id, b"RIFFwav").unwrap();
+        store.revoke(&profile.id, 7).unwrap();
+        let again = store.revoke(&profile.id, 8).unwrap();
+        assert_eq!(again.consent.revoked_at, Some(8));
+        assert_eq!(store.list().unwrap().len(), 1);
+        assert!(!store.root().join(&profile.id).join(SAMPLE).exists());
+    }
+
+    #[test]
+    fn a_profile_file_written_before_revocation_existed_still_reads_the_same() {
+        let sandbox = Sandbox::new("old-profile");
+        let store = sandbox.store();
+        let folder = store.root().join("old-00000000");
+        fs::create_dir_all(&folder).unwrap();
+        fs::write(folder.join(SAMPLE), b"RIFFwav").unwrap();
+        fs::write(
+            folder.join("profile.json"),
+            r#"{"id":"old-00000000","label":"Old","language":"pt-PT","created_at":1,"consent":{"origin":"own-voice","purpose":"translation","scope":"local","notice_version":"1","declared_authorisation":false,"accepted_at":1},"artefacts":["sample.wav"]}"#,
+        )
+        .unwrap();
+        let profile = store.get("old-00000000").unwrap();
+        assert!(profile.usable());
+        assert_eq!(profile.consent.revoked_at, None);
+        assert_eq!(store.sample("old-00000000").unwrap(), b"RIFFwav");
     }
 
     #[test]

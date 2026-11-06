@@ -2933,10 +2933,31 @@ fn handle(
                     .map(|()| Flow::Serve)
             }
         };
-        return match voice_store().sample(&target.id) {
-            Ok(bytes) => respond_audio(stream, &bytes, "").map(|()| Flow::Serve),
-            Err(error) => respond_json(stream, "404 Not Found", &error_json(&error.to_string()))
-                .map(|()| Flow::Serve),
+        let store = voice_store();
+        match store.sample(&target.id) {
+            Ok(bytes) => return respond_audio(stream, &bytes, "").map(|()| Flow::Serve),
+            Err(error) => {
+                let revoked = store
+                    .get(&target.id)
+                    .map(|profile| !profile.usable())
+                    .unwrap_or(false);
+                if !revoked {
+                    return respond_json(stream, "404 Not Found", &error_json(&error.to_string()))
+                        .map(|()| Flow::Serve);
+                }
+            }
+        }
+        return match session
+            .speak(DEFAULT_VOICE_TEXT)
+            .and_then(|(pcm, rate)| synthesized_wav(&pcm, rate))
+        {
+            Ok(audio) => respond_audio(stream, &audio, "").map(|()| Flow::Serve),
+            Err(error) => respond_json(
+                stream,
+                "500 Internal Server Error",
+                &error_json(&format!("the default voice did not answer: {error}")),
+            )
+            .map(|()| Flow::Serve),
         };
     }
 
@@ -4590,6 +4611,16 @@ fn voice_store() -> Store {
     Store::new(crate::config::data_root().join("voices"))
 }
 
+const DEFAULT_VOICE_TEXT: &str = "This is the default voice.";
+
+fn synthesized_wav(pcm16: &[u8], rate: u32) -> Result<Vec<u8>, String> {
+    let samples: Vec<i16> = pcm16
+        .chunks_exact(2)
+        .map(|pair| i16::from_le_bytes([pair[0], pair[1]]))
+        .collect();
+    crate::compare::to_wav(&samples, rate)
+}
+
 fn now_seconds() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -5224,6 +5255,40 @@ mod tests {
         }
 
         fn speak(&mut self, _text: &str) -> Result<(Vec<u8>, u32), EngineError> {
+            let pcm: Vec<u8> = (0..1600i16)
+                .flat_map(|sample| (sample / 2).to_le_bytes())
+                .collect();
+            Ok((pcm, 16_000))
+        }
+    }
+
+    #[derive(Default)]
+    struct SpeakingEngine {
+        spoken: Arc<Mutex<Vec<String>>>,
+    }
+
+    impl Engine for SpeakingEngine {
+        fn id(&self) -> &str {
+            "speaking"
+        }
+
+        fn target_languages(&self) -> Vec<String> {
+            Vec::new()
+        }
+
+        fn latency_ms(&self) -> u32 {
+            1
+        }
+
+        fn process(&mut self, _input: &Frame) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::empty())
+        }
+
+        fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {
+            self.spoken
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .push(text.to_string());
             let pcm: Vec<u8> = (0..1600i16)
                 .flat_map(|sample| (sample / 2).to_le_bytes())
                 .collect();
@@ -6627,6 +6692,86 @@ mod tests {
         assert!(no_id.starts_with("HTTP/1.1 400"), "{no_id}");
         let foreign = send(port, "POST", "/voice/import", "not a voice file");
         assert!(foreign.starts_with("HTTP/1.1 400"), "{foreign}");
+        stop.store(false, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[test]
+    fn a_revoked_voice_plays_the_default_voice_instead_of_failing() {
+        let spoken = Arc::new(Mutex::new(Vec::new()));
+        let session = Session::with_engine(
+            Box::new(SpeakingEngine {
+                spoken: Arc::clone(&spoken),
+            }),
+            "pt",
+            "en",
+        );
+        let (port, stop) = start_server_with(session);
+        let store = voice_store();
+        let label = format!(
+            "Route test {} {}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|elapsed| elapsed.as_nanos())
+                .unwrap_or_default()
+        );
+        let profile = store
+            .create(
+                &label,
+                "pt-PT",
+                parlo_core::voice::Consent::own_voice("test", "this machine", 1),
+            )
+            .expect("the test profile is created");
+        store
+            .save_sample(&profile.id, b"RIFFtest-sample")
+            .expect("the sample is saved");
+        store
+            .revoke(&profile.id, 2)
+            .expect("the profile is revoked");
+        assert!(
+            store.sample(&profile.id).is_err(),
+            "the sample survived the revocation"
+        );
+        let body = format!("{{\"id\":\"{}\"}}", profile.id);
+        let request = format!(
+            "POST /voice/sample/play HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\nContent-Length: {}\r\n\r\n{}",
+            body.len(),
+            body
+        );
+        let raw = ask_raw(port, request.as_bytes());
+        let answer = String::from_utf8_lossy(&raw).into_owned();
+        let kept = store
+            .create(
+                &format!("{label} kept"),
+                "pt-PT",
+                parlo_core::voice::Consent::own_voice("test", "this machine", 1),
+            )
+            .expect("the second test profile is created");
+        let missing = send(
+            port,
+            "POST",
+            "/voice/sample/play",
+            &format!("{{\"id\":\"{}\"}}", kept.id),
+        );
+        store
+            .delete(&profile.id)
+            .expect("the test profile is deleted");
+        store
+            .delete(&kept.id)
+            .expect("the second profile is deleted");
+        assert!(
+            missing.starts_with("HTTP/1.1 404"),
+            "a profile without a sample answered {missing}"
+        );
+        assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+        assert!(answer.contains("audio/wav"), "{answer}");
+        assert_eq!(
+            spoken
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .as_slice(),
+            [DEFAULT_VOICE_TEXT.to_string()]
+        );
         stop.store(false, std::sync::atomic::Ordering::SeqCst);
     }
 

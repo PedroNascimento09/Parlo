@@ -6211,8 +6211,15 @@ function renderVoices(profiles) {
     meta.textContent = describeVoice(profile) + " · since " + new Date(profile.created_at * 1000).toLocaleDateString();
     const actions = document.createElement("div");
     actions.className = "voice-item-actions";
+    const revoked = Boolean(profile.consent.revoked_at);
     const hasSample = (profile.artefacts || []).includes("sample.wav");
-    if (hasSample) {
+    if (revoked) {
+      actions.append(voiceButton("Play default voice", () => playVoiceSample(profile)));
+      const note = document.createElement("p");
+      note.className = "voice-item-note";
+      note.textContent = "Revoked. The sample is gone and playback falls back to the default voice.";
+      item.append(note);
+    } else if (hasSample) {
       actions.append(voiceButton("Play sample", () => playVoiceSample(profile)));
     } else {
       actions.append(
