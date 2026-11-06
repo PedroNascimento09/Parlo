@@ -611,6 +611,46 @@ mod tests {
     }
 
     #[test]
+    fn every_action_and_decision_names_its_speaker_and_minute() {
+        use crate::meeting::{Meeting, Segment};
+
+        let meeting = Meeting {
+            id: "m1".to_string(),
+            title: "Weekly".to_string(),
+            started_at: 0,
+            segments: vec![
+                Segment {
+                    at_ms: 65_000,
+                    speaker: "speaker-1".to_string(),
+                    text: "Vou enviar o relatorio amanha.".to_string(),
+                    name: None,
+                },
+                Segment {
+                    at_ms: 185_000,
+                    speaker: "speaker-2".to_string(),
+                    text: "Fica combinado que a reuniao passa para as dez.".to_string(),
+                    name: None,
+                },
+            ],
+            speaker_hint: None,
+        };
+
+        let actions: Value = serde_json::from_str(&actions_json(&meeting)).unwrap();
+        let actions = actions.as_array().unwrap();
+        assert_eq!(actions.len(), 1, "{actions:?}");
+        assert_eq!(actions[0]["speaker"], "speaker-1");
+        assert_eq!(actions[0]["at_ms"], 65_000);
+        assert_eq!(actions[0]["at_ms"].as_u64().unwrap() / 60_000, 1);
+
+        let decisions: Value = serde_json::from_str(&decisions_json(&meeting)).unwrap();
+        let decisions = decisions.as_array().unwrap();
+        assert_eq!(decisions.len(), 1, "{decisions:?}");
+        assert_eq!(decisions[0]["speaker"], "speaker-2");
+        assert_eq!(decisions[0]["at_ms"], 185_000);
+        assert_eq!(decisions[0]["at_ms"].as_u64().unwrap() / 60_000, 3);
+    }
+
+    #[test]
     fn an_unknown_tool_says_so() {
         let reply = call_tool("delete_everything", json!({}));
         assert_eq!(reply["result"]["isError"], true);
