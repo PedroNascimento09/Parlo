@@ -500,32 +500,6 @@ function stopPlayback() {
   }
 }
 
-function playAndWait(blob) {
-  return new Promise((resolve) => {
-    stopPlayback();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    player = audio;
-    const done = () => {
-      URL.revokeObjectURL(url);
-      if (player === audio) {
-        player = null;
-      }
-      if (playbackDone === done) {
-        playbackDone = null;
-      }
-      resolve();
-    };
-    playbackDone = done;
-    audio.addEventListener("ended", done, { once: true });
-    audio.addEventListener("error", done, { once: true });
-    audio.play().catch(() => {
-      showError("The translation is ready but the browser blocked playback. Click the page once, then try again.");
-      done();
-    });
-  });
-}
-
 function play(blob, blockedMessage = "The translation is ready but the browser blocked playback. Click the page, then try again.") {
   stopPlayback();
   const url = URL.createObjectURL(blob);
@@ -5346,23 +5320,6 @@ async function downloadCatalogModel(entry, button) {
     button.disabled = false;
     button.textContent = "Download";
   }
-}
-
-function catalogBar(label, score, value) {
-  const row = document.createElement("div");
-  row.className = "metric";
-  const term = document.createElement("span");
-  term.textContent = label;
-  const track = document.createElement("span");
-  track.className = "track";
-  const fill = document.createElement("i");
-  fill.className = "fill";
-  fill.style.width = Math.max(4, Math.min(100, Math.round(score))) + "%";
-  track.append(fill);
-  const readout = document.createElement("span");
-  readout.textContent = value;
-  row.append(term, track, readout);
-  return row;
 }
 
 function catalogLanguages(entry) {

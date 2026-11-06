@@ -881,8 +881,7 @@ select.field-input {
 }
 
 .insights-hits,
-.insights-fill,
-.metric {
+.insights-fill {
   display: block;
 }
 
@@ -894,12 +893,15 @@ select.field-input {
 }
 
 .insights-fill,
-.track .fill,
 .insights-day .fill {
   display: block;
   height: 100%;
   border-radius: 999px;
   background: var(--accent);
+}
+
+.insights-day .fill {
+  width: 100%;
 }
 
 .insights-days {
@@ -919,16 +921,7 @@ select.field-input {
   background: var(--surface-sunken);
 }
 
-.insights-day .fill {
-  width: 100%;
-}
 
-.track {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--surface-sunken);
-  overflow: hidden;
-}
 
 .talk {
   display: grid;
