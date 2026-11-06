@@ -88,6 +88,7 @@ mod tests {
             remote_url: String::new(),
             remote_token: String::new(),
             remote_ca: String::new(),
+            locale: "en".to_string(),
             device: Some(2),
             compute: "auto".to_string(),
             unload: 15,

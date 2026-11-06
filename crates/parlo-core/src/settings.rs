@@ -34,6 +34,7 @@ pub struct Config {
     pub remote_url: String,
     pub remote_token: String,
     pub remote_ca: String,
+    pub locale: String,
     pub device: Option<usize>,
     pub compute: String,
     pub unload: u32,
@@ -147,6 +148,7 @@ impl Default for Config {
             remote_url: String::new(),
             remote_token: String::new(),
             remote_ca: String::new(),
+            locale: "en".to_string(),
             device: None,
             compute: "auto".to_string(),
             unload: 30,
@@ -341,6 +343,21 @@ mod tests {
         assert_eq!(config.intelligence.mode, "auto");
         assert_eq!(config.intelligence.clean, "light");
         assert!(!config.intelligence.allow_cloud);
+    }
+
+    #[test]
+    fn the_interface_language_round_trips() {
+        let mut config = Config::default();
+        assert_eq!(config.locale, "en");
+        config.locale = "pt".to_string();
+        let text = serde_json::to_string(&config).unwrap();
+        assert_eq!(serde_json::from_str::<Config>(&text).unwrap().locale, "pt");
+    }
+
+    #[test]
+    fn an_older_config_speaks_english() {
+        let config: Config = serde_json::from_str("{\"port\": 9000}").unwrap();
+        assert_eq!(config.locale, "en");
     }
 
     #[test]

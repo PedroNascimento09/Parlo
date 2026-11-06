@@ -95,6 +95,8 @@ struct Settings {
     #[serde(default)]
     channel: Option<String>,
     #[serde(default)]
+    locale: Option<String>,
+    #[serde(default)]
     share: Option<bool>,
     #[serde(default)]
     share_pin: Option<String>,
@@ -461,7 +463,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{}}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\"}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -479,7 +481,8 @@ impl Session {
             json_string(&stored.update_channel),
             stored.share,
             json_string(&stored.share_pin),
-            stored.share_port
+            stored.share_port,
+            json_string(&stored.locale)
         )
     }
 }
@@ -1934,6 +1937,23 @@ fn handle(
         };
     }
 
+    if method == "GET" && path == "/locale" {
+        let stored = crate::config::load();
+        let locale = crate::locales::check(&stored.locale)
+            .unwrap_or_else(|_| crate::locales::DEFAULT.to_string());
+        let available: Vec<serde_json::Value> = crate::locales::available()
+            .into_iter()
+            .map(|(code, name)| serde_json::json!({ "code": code, "name": name }))
+            .collect();
+        let body = serde_json::json!({
+            "locale": locale,
+            "available": available,
+            "strings": crate::locales::strings(&locale),
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/settings" {
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
     }
@@ -2041,7 +2061,8 @@ fn handle(
                 && requested.channel.is_none()
                 && requested.share.is_none()
                 && requested.share_pin.is_none()
-                && requested.share_port.is_none();
+                && requested.share_port.is_none()
+                && requested.locale.is_none();
             if only_shortcut {
                 return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
             }
@@ -2160,6 +2181,30 @@ fn handle(
             }
         }
 
+        if let Some(locale) = requested.locale.as_deref() {
+            let wanted = match crate::locales::check(locale) {
+                Ok(value) => value,
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve)
+                }
+            };
+            let mut config = crate::config::load();
+            config.locale = wanted;
+            if let Err(error) = crate::config::save(&config) {
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
+            }
+        }
+
         if requested.share.is_some()
             || requested.share_pin.is_some()
             || requested.share_port.is_some()
@@ -2238,7 +2283,8 @@ fn handle(
             && requested.channel.is_none()
             && requested.share.is_none()
             && requested.share_pin.is_none()
-            && requested.share_port.is_none();
+            && requested.share_port.is_none()
+            && requested.locale.is_none();
         if only_settings {
             return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
         }
@@ -6573,6 +6619,26 @@ mod tests {
         assert!(text.starts_with("HTTP/1.1 426"), "{text}");
     }
 
+    #[test]
+    fn the_locale_route_answers_with_the_table() {
+        let (port, _stop) = start_server();
+        let answer = ask(port, "GET /locale HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n");
+        assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+        let body = body_json(&answer);
+        let strings = body
+            .get("strings")
+            .and_then(|value| value.as_object())
+            .unwrap();
+        assert!(strings.contains_key("nav.home"));
+        assert_eq!(
+            body.get("available")
+                .and_then(|value| value.as_array())
+                .unwrap()
+                .len(),
+            21
+        );
+    }
+
     fn send(port: u16, method: &str, path: &str, body: &str) -> String {
         let request = format!(
             "{method} {path} HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\nContent-Length: {}\r\n\r\n{body}",
@@ -6935,6 +7001,7 @@ mod tests {
         ("POST", "/history/clear", true),
         ("ANY", "/history/favourite", false),
         ("ANY", "/history/edit", false),
+        ("GET", "/locale", false),
         ("GET", "/settings", false),
         ("POST", "/settings", true),
         ("GET", "/intelligence", false),

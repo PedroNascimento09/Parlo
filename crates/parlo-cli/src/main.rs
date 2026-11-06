@@ -35,6 +35,7 @@ mod intelligence;
 #[cfg(test)]
 mod interface;
 mod jobs;
+mod locales;
 mod loopback;
 mod mcp;
 mod meeting;
@@ -873,6 +874,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
             "--remote-url" => config.remote_url = remote::check_url(&value)?,
             "--remote-token" => config.remote_token = value,
             "--remote-ca" => config.remote_ca = value,
+            "--locale" => config.locale = locales::check(&value)?,
             "--share-port" => {
                 config.share_port = value
                     .parse()
@@ -921,6 +923,7 @@ fn config_command(args: &[String]) -> Result<(), String> {
     } else {
         println!("  remote   {}", config.remote_url);
     }
+    println!("  locale   {}", config.locale);
     match config.device {
         Some(device) => println!("  device   {device}"),
         None => println!("  device   the system default"),
