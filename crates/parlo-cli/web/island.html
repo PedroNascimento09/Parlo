@@ -868,6 +868,9 @@ function handsFree() {
 }
 
 function arm() {
+  if (stream || busy) {
+    return;
+  }
   document.body.classList.remove("ready", "listening");
   setState("Ready", "Hold the shortcut to talk.", true);
   report("armed");
