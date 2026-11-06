@@ -709,6 +709,8 @@ The Rust engine still starts faster and uses less memory with the recogniser loa
 `parlo bench` runs what this machine can run and says what it cannot, one row per engine and device, with the hardware, the profile and the commit beside every number.
 The table below is its output, and `docs/benchmarks.json` is the same run as data; regenerate both with `parlo bench` and `parlo bench --json`, and never type a row by hand.
 
+The cascade row is measured by `engines/cascade/scripts/benchmark.py` on a committed 2.8 s recording of a spoken Portuguese sentence, with the models folder this machine uses, so a machine without Parakeet reports that instead of a number.
+
 <!-- bench:start -->
 | Engine | Device | Result | RTF | Frames | Hardware | Commit |
 |---|---|---|---|---|---|---|

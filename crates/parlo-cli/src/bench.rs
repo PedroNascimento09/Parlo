@@ -1,8 +1,12 @@
+use std::path::Path;
+use std::process::Command;
 use std::time::Instant;
 
 use parlo_core::{AudioFormat, EchoEngine, Pipeline, PipelineConfig};
 
 pub const DEVICES: &[&str] = &["cpu", "gpu"];
+const CASCADE_AUDIO: &str = "tests/fixtures/timing/source.wav";
+type Runner<'a> = dyn Fn(&[String], &Path) -> Result<String, String> + 'a;
 
 pub struct Reading {
     pub engine: &'static str,
@@ -45,10 +49,13 @@ pub fn readings() -> Vec<Reading> {
         .map(|elapsed| elapsed.as_secs())
         .unwrap_or_default();
     let models = crate::models::status();
+    let engine_dir = crate::models::cascade_dir();
+    let run = |args: &[String], root: &Path| run_benchmark(&engine_dir, args, root);
     let mut readings = Vec::new();
     for spec in crate::registry::PIPELINES {
         for device in DEVICES {
-            let (state, rtf, seconds, frames) = outcome(spec, device, gpu, &models);
+            let (state, rtf, seconds, frames) =
+                outcome(spec, device, gpu, &models, &run, &engine_dir);
             readings.push(Reading {
                 engine: spec.id,
                 device,
@@ -71,6 +78,8 @@ fn outcome(
     device: &str,
     gpu: Option<u32>,
     models: &[crate::models::Model],
+    run: &Runner<'_>,
+    engine_dir: &Path,
 ) -> (String, Option<f64>, Option<f64>, u64) {
     if spec.id == "echo" && device == "cpu" {
         let (frames, seconds, rtf) = throughput();
@@ -87,20 +96,106 @@ fn outcome(
     if !spec.available {
         return ("not in this build".to_string(), None, None, 0);
     }
+    if spec.id == "cascade" && device == "cpu" {
+        if !absent_models(models).is_empty() {
+            return (missing(spec, models), None, None, 0);
+        }
+        return match cascade(engine_dir, run) {
+            Ok((rtf, seconds, frames)) => (
+                "measured on this machine".to_string(),
+                Some(rtf),
+                Some(seconds),
+                frames,
+            ),
+            Err(reason) => (
+                format!("no number: the cascade benchmark did not run: {reason}"),
+                None,
+                None,
+                0,
+            ),
+        };
+    }
     (missing(spec, models), None, None, 0)
 }
 
-fn missing(spec: &crate::registry::PipelineSpec, models: &[crate::models::Model]) -> String {
-    let absent: Vec<&str> = models
+fn absent_models(models: &[crate::models::Model]) -> Vec<&str> {
+    models
         .iter()
         .filter(|model| (model.id == "parakeet" || model.id == "whisper") && !model.installed)
         .map(|model| model.name.as_str())
-        .collect();
+        .collect()
+}
+
+fn cascade(engine_dir: &Path, run: &Runner<'_>) -> Result<(f64, f64, u64), String> {
+    let engine = engine_dir
+        .canonicalize()
+        .map_err(|error| format!("{}: {error}", engine_dir.display()))?;
+    let args = benchmark_arguments(&engine)?;
+    let stdout = run(&args, &crate::models::models_root())?;
+    let report: serde_json::Value = serde_json::from_str(stdout.trim())
+        .map_err(|_| "the benchmark printed a report this app cannot read".to_string())?;
+    let rtf = report["rtf"]
+        .as_f64()
+        .ok_or_else(|| "the benchmark reported no real time factor".to_string())?;
+    let seconds = report["wall_seconds"]
+        .as_f64()
+        .ok_or_else(|| "the benchmark reported no wall time".to_string())?;
+    if rtf <= 0.0 || seconds <= 0.0 {
+        return Err("the benchmark reported an empty run".to_string());
+    }
+    Ok((
+        rtf,
+        seconds,
+        report["segments"].as_u64().unwrap_or_default(),
+    ))
+}
+
+fn benchmark_arguments(engine_dir: &Path) -> Result<Vec<String>, String> {
+    let script = engine_dir.join("scripts").join("benchmark.py");
+    if !script.is_file() {
+        return Err(format!("cannot find {}", script.display()));
+    }
+    let audio = engine_dir.join(CASCADE_AUDIO);
+    if !audio.is_file() {
+        return Err(format!("cannot find {}", audio.display()));
+    }
+    Ok(vec![
+        script.to_string_lossy().into_owned(),
+        audio.to_string_lossy().into_owned(),
+        "--model".to_string(),
+        "small".to_string(),
+        "--source".to_string(),
+        "pt".to_string(),
+        "--target".to_string(),
+        "en".to_string(),
+    ])
+}
+
+fn run_benchmark(engine_dir: &Path, args: &[String], models_root: &Path) -> Result<String, String> {
+    let python = crate::sidecar::python_for(engine_dir);
+    let output = Command::new(&python)
+        .args(args)
+        .current_dir(engine_dir)
+        .env("PYTHONPATH", engine_dir)
+        .env("PARLO_MODELS_DIR", models_root)
+        .output()
+        .map_err(|error| format!("cannot start {python}: {error}"))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let reason = stderr
+            .lines()
+            .rev()
+            .find(|line| !line.trim().is_empty())
+            .unwrap_or("the benchmark printed no reason");
+        return Err(reason.trim().to_string());
+    }
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+fn missing(spec: &crate::registry::PipelineSpec, models: &[crate::models::Model]) -> String {
+    let absent = absent_models(models);
     if absent.is_empty() {
-        return format!(
-            "no number: {} runs on this machine, but the sidecar benchmark is not wired into this command",
-            spec.name
-        );
+        return format!("no number: {} has no benchmark in this command", spec.name);
     }
     format!(
         "no number: {} needs {} on disk, and the python stack that reads them",
@@ -375,5 +470,113 @@ mod tests {
                 );
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod cascade_tests {
+    use super::*;
+    use std::cell::RefCell;
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn scratch(name: &str) -> PathBuf {
+        let folder =
+            std::env::temp_dir().join(format!("parlo-bench-{name}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&folder);
+        fs::create_dir_all(&folder).unwrap();
+        folder
+    }
+
+    fn engine(folder: &Path, script: bool) -> PathBuf {
+        let engine = folder.join("engine");
+        fs::create_dir_all(engine.join("scripts")).unwrap();
+        if script {
+            fs::write(engine.join("scripts").join("benchmark.py"), "").unwrap();
+        } else {
+            let _ = fs::remove_file(engine.join("scripts").join("benchmark.py"));
+        }
+        let audio = engine.join("tests").join("fixtures").join("timing");
+        fs::create_dir_all(&audio).unwrap();
+        fs::write(audio.join("source.wav"), b"speech").unwrap();
+        engine
+    }
+
+    fn parakeet(installed: bool) -> Vec<crate::models::Model> {
+        vec![crate::models::Model {
+            id: "parakeet",
+            name: "Parakeet 0.6B v3".to_string(),
+            kind: "stt",
+            feature: "Dictation",
+            installed,
+            bytes: 671_088_640,
+        }]
+    }
+
+    fn spec() -> &'static crate::registry::PipelineSpec {
+        crate::registry::PIPELINES
+            .iter()
+            .find(|spec| spec.id == "cascade")
+            .unwrap()
+    }
+
+    #[test]
+    fn the_cascade_row_is_measured_by_the_sidecar_benchmark() {
+        let folder = scratch("measured");
+        let directory = engine(&folder, true);
+        let seen = RefCell::new(Vec::<String>::new());
+        let root = RefCell::new(PathBuf::new());
+        let run = |args: &[String], models: &Path| {
+            *seen.borrow_mut() = args.to_vec();
+            *root.borrow_mut() = models.to_path_buf();
+            Ok(
+                r#"{"audio_seconds":2.81,"wall_seconds":1.18,"rtf":0.42,"segments":125}"#
+                    .to_string(),
+            )
+        };
+        let (state, rtf, seconds, frames) =
+            outcome(spec(), "cpu", None, &parakeet(true), &run, &directory);
+        assert_eq!(state, "measured on this machine");
+        assert_eq!(rtf, Some(0.42));
+        assert_eq!(seconds, Some(1.18));
+        assert_eq!(frames, 125);
+        let args = seen.borrow();
+        assert!(args[0].ends_with("benchmark.py"), "{args:?}");
+        assert!(args[1].ends_with("source.wav"), "{args:?}");
+        assert!(args.contains(&"--model".to_string()), "{args:?}");
+        assert_eq!(*root.borrow(), crate::models::models_root());
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn a_cascade_row_without_models_does_not_run_the_benchmark() {
+        let folder = scratch("absent");
+        let directory = engine(&folder, true);
+        let run = |_: &[String], _: &Path| -> Result<String, String> {
+            panic!("the benchmark must not run without its models")
+        };
+        let (state, rtf, _, frames) =
+            outcome(spec(), "cpu", None, &parakeet(false), &run, &directory);
+        assert!(state.contains("needs Parakeet 0.6B v3"), "{state}");
+        assert_eq!(rtf, None);
+        assert_eq!(frames, 0);
+        fs::remove_dir_all(&folder).unwrap();
+    }
+
+    #[test]
+    fn a_cascade_row_says_why_when_the_benchmark_fails_or_is_missing() {
+        let folder = scratch("fails");
+        let directory = engine(&folder, true);
+        let failing = |_: &[String], _: &Path| Err("sherpa-onnx is not installed".to_string());
+        let (state, rtf, _, _) =
+            outcome(spec(), "cpu", None, &parakeet(true), &failing, &directory);
+        assert!(state.contains("no number"), "{state}");
+        assert!(state.contains("sherpa-onnx"), "{state}");
+        assert_eq!(rtf, None);
+        let without = engine(&folder, false);
+        let unused = |_: &[String], _: &Path| Ok(String::new());
+        let (state, _, _, _) = outcome(spec(), "cpu", None, &parakeet(true), &unused, &without);
+        assert!(state.contains("benchmark.py"), "{state}");
+        fs::remove_dir_all(&folder).unwrap();
     }
 }
