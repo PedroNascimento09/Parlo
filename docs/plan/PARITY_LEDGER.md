@@ -71,7 +71,7 @@ Rules:
 |---|---|---|---|---|---|---|
 | V1 | Clone from 5–75 s | Yes | No | Parity | 2 | A 15-second sample previews in under 4 s |
 | V2 | Design a voice from words | Yes | No | Parity | 2 | Same seed and description give the same voice |
-| V3 | Consent, revoke, identity lock | Yes | Profile only | Parity | 2 | Revoking deletes the sample and the next render uses the default |
+| V3 | Consent, revoke, identity lock | Yes | Done · 1b85e5a: revoking deletes `sample.wav` from disk and drops it from the profile's artefacts, the profile and its revocation stay on record, a revoked profile refuses a new sample, playback of a revoked voice answers with the default voice instead of failing, the app offers that fallback and says why, and a profile written before revocation existed reads exactly as before | Parity | 2 | Revoking deletes the sample and the next render uses the default |
 | V4 | TTS engine breadth | 17 | 1 (Piper) | 20 | 2 | Every engine has a licence row and a measured speed |
 | V5 | Device selection | CUDA, ROCm, MPS, Vulkan | CPU only | Parity, per engine | 2 | A GPU row exists only where measured |
 | V6 | Expressive controls | Emotion, direction, cues | Partial: per-cue pace reaches Piper and is saved; no emotion or pitch | Parity | 3 | A cue changes the render and is saved |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-52 of 80 rows are Done (65.0%). Six Partial rows counted at half give 68.8%.
+53 of 80 rows are Done (66.3%). Six Partial rows counted at half give 70.0%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are X5, a pack that installs a working set in one action, then V3, where revoking a voice deletes its sample and the next render uses the default.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are X5, a pack that installs a working set in one action, then X2, whose rows need a measured cascade number that `parlo bench` does not produce yet.
