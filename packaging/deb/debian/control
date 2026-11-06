@@ -1,0 +1,15 @@
+Source: parlo
+Section: sound
+Priority: optional
+Maintainer: Pedro Nascimento <PedroNascimento09@users.noreply.github.com>
+Build-Depends: debhelper-compat (= 13), curl, ca-certificates
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: parlo
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends}, libasound2t64, libgtk-3-0t64, libwebkit2gtk-4.1-0
+Description: Offline dictation, translation and meetings
+ Parlo turns speech into writing on this computer and never sends audio
+ anywhere. The same engine serves live text, captions, meetings and dubbing,
+ and the recogniser runs locally once its model is installed.

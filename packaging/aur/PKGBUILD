@@ -1,0 +1,20 @@
+pkgname=parlo-bin
+pkgver=0.2.4
+pkgrel=1
+pkgdesc="Offline dictation, translation and meetings"
+arch=('x86_64')
+url="https://github.com/PedroNascimento09/Parlo"
+license=('Apache-2.0')
+depends=('gtk3' 'webkit2gtk-4.1' 'alsa-lib')
+options=('!strip' '!debug')
+source=("parlo-linux-x86_64.tar.gz::https://github.com/PedroNascimento09/Parlo/releases/download/v${pkgver}/parlo-linux-x86_64.tar.gz")
+sha256sums=('8b11f7b2c637d04891f578c10eefee40ad7b645c0d480cdf531367c2f16b6530')
+
+package() {
+  install -Dm755 "${srcdir}/parlo" "${pkgdir}/usr/bin/parlo"
+  install -d "${pkgdir}/usr/lib/parlo"
+  cp -r "${srcdir}/parlo-app" "${srcdir}/parlo-engine" "${pkgdir}/usr/lib/parlo/"
+  ln -s "/usr/lib/parlo/parlo-app" "${pkgdir}/usr/bin/parlo-app"
+  install -Dm644 "${srcdir}/parlo.png" "${pkgdir}/usr/share/icons/hicolor/512x512/apps/parlo.png"
+  install -Dm644 "${srcdir}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}

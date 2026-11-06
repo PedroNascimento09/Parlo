@@ -1,0 +1,11 @@
+PackageIdentifier: PedroNascimento09.Parlo
+PackageVersion: 0.2.4
+PackageLocale: en-US
+Publisher: Pedro Nascimento
+PackageName: Parlo
+ShortDescription: Offline dictation, translation and meetings on this computer.
+PackageUrl: https://github.com/PedroNascimento09/Parlo
+License: Apache-2.0
+LicenseUrl: https://github.com/PedroNascimento09/Parlo/blob/main/LICENSE
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

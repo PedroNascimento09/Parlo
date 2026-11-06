@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+VERSION := 0.2.4
+URL := https://github.com/PedroNascimento09/Parlo/releases/download/v$(VERSION)/parlo-linux-x86_64.tar.gz
+SHA256 := 8b11f7b2c637d04891f578c10eefee40ad7b645c0d480cdf531367c2f16b6530
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	rm -f parlo-linux-x86_64.tar.gz
+	dh_auto_clean
+
+override_dh_auto_build:
+	curl -fsSL -o parlo-linux-x86_64.tar.gz $(URL)
+	echo "$(SHA256)  parlo-linux-x86_64.tar.gz" | sha256sum -c -
+	tar -xzf parlo-linux-x86_64.tar.gz
+	install -d debian/parlo/usr/bin debian/parlo/usr/lib/parlo
+	install -m755 parlo debian/parlo/usr/bin/parlo
+	cp -r parlo-app parlo-engine debian/parlo/usr/lib/parlo/
+	ln -s /usr/lib/parlo/parlo-app debian/parlo/usr/bin/parlo-app
+	install -Dm644 parlo.png debian/parlo/usr/share/icons/hicolor/512x512/apps/parlo.png
+	install -Dm644 LICENSE debian/parlo/usr/share/doc/parlo/copyright
+
+override_dh_auto_configure:
+override_dh_auto_install:
+override_dh_auto_test:
