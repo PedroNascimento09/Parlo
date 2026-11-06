@@ -3117,3 +3117,85 @@ input[type="checkbox"]:focus-visible,
 .check:hover {
   background: var(--surface-sunken);
 }
+
+.parlo-pick {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.parlo-pick-native {
+  display: none;
+}
+
+.parlo-pick-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.parlo-pick-button::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.parlo-pick-button:hover,
+.parlo-pick-button[aria-expanded="true"] {
+  border-color: var(--accent);
+}
+
+.parlo-pick-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parlo-pick-list {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  max-height: 264px;
+  overflow: auto;
+  margin: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 24px 50px -34px rgba(0, 0, 0, 0.55);
+  list-style: none;
+}
+
+.parlo-pick-item {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.parlo-pick-item:hover {
+  background: var(--surface-sunken);
+}
+
+.parlo-pick-item[aria-selected="true"] {
+  background: var(--accent-wash);
+  font-weight: 600;
+}

@@ -1793,6 +1793,129 @@ if (settingsUndoSave) {
   );
 }
 
+function paintPicks() {
+  for (const pick of document.querySelectorAll(".parlo-pick")) {
+    const select = pick.selectSource;
+    const label = pick.querySelector(".parlo-pick-label");
+    if (!select || !label) {
+      continue;
+    }
+    const option = select.options[select.selectedIndex];
+    label.textContent = option ? option.textContent : "";
+  }
+}
+
+function enhanceSelect(select) {
+  if (select.dataset.pick) {
+    return;
+  }
+  select.dataset.pick = "1";
+  select.classList.add("parlo-pick-native");
+  select.style.display = "none";
+  const box = document.createElement("div");
+  box.className = "parlo-pick";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "parlo-pick-button";
+  button.setAttribute("aria-haspopup", "listbox");
+  button.setAttribute("aria-expanded", "false");
+  const label = document.createElement("span");
+  label.className = "parlo-pick-label";
+  button.append(label);
+  const list = document.createElement("ul");
+  list.className = "parlo-pick-list";
+  list.setAttribute("role", "listbox");
+  list.hidden = true;
+  box.append(button, list);
+  box.selectSource = select;
+  const host = select.closest("label.field") || select;
+  host.after(box);
+
+  const close = () => {
+    list.hidden = true;
+    button.setAttribute("aria-expanded", "false");
+  };
+
+  const open = () => {
+    list.replaceChildren(
+      ...[...select.options].map((option) => {
+        const item = document.createElement("li");
+        item.className = "parlo-pick-item";
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", String(option.selected));
+        item.textContent = option.textContent;
+        item.addEventListener("click", () => {
+          select.value = option.value;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          paintPicks();
+          close();
+          button.focus();
+        });
+        return item;
+      }),
+    );
+    list.hidden = false;
+    button.setAttribute("aria-expanded", "true");
+  };
+
+  button.addEventListener("click", () => {
+    if (list.hidden) {
+      open();
+    } else {
+      close();
+    }
+  });
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      const next = Math.min(select.options.length - 1, Math.max(0, select.selectedIndex + step));
+      select.value = select.options[next].value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      paintPicks();
+      return;
+    }
+    if (event.key === "Escape") {
+      close();
+    }
+  });
+  select.addEventListener("change", paintPicks);
+  document.addEventListener("click", (event) => {
+    if (!box.contains(event.target)) {
+      close();
+    }
+  });
+}
+
+function enhanceAllSelects() {
+  for (const select of document.querySelectorAll("select")) {
+    enhanceSelect(select);
+  }
+  paintPicks();
+}
+
+enhanceAllSelects();
+
+new MutationObserver((records) => {
+  for (const record of records) {
+    for (const node of record.addedNodes) {
+      if (node.nodeType !== 1) {
+        continue;
+      }
+      if (node.tagName === "SELECT") {
+        enhanceSelect(node);
+      } else if (node.querySelectorAll) {
+        for (const select of node.querySelectorAll("select")) {
+          enhanceSelect(select);
+        }
+      }
+    }
+  }
+  paintPicks();
+}).observe(document.body, { childList: true, subtree: true });
+
+setInterval(paintPicks, 400);
+
 function captureShortcut(input, note) {
   input.addEventListener("focus", () => input.classList.add("capturing"));
   input.addEventListener("blur", () => input.classList.remove("capturing"));
@@ -5820,11 +5943,6 @@ const onboardingNote = document.getElementById("onboarding-note");
 const onboardingResult = document.getElementById("onboarding-result");
 const onboardingNext = document.getElementById("onboarding-next");
 const onboardingSkip = document.getElementById("onboarding-skip");
-const onboardingPair = document.getElementById("onboarding-pair");
-const onboardingFrom = document.getElementById("onboarding-from");
-const onboardingTo = document.getElementById("onboarding-to");
-const onboardingSwap = document.getElementById("onboarding-swap");
-const onboardingPairSave = document.getElementById("onboarding-pair-save");
 const onboardingMic = document.getElementById("onboarding-mic");
 const onboardingMicAllow = document.getElementById("onboarding-mic-allow");
 const onboardingMicNote = document.getElementById("onboarding-mic-note");
@@ -5853,17 +5971,12 @@ function showOnboardingStage(step) {
   onboarding.hidden = false;
   showSettingsTab("setup");
   onboardingTitle.textContent = ONBOARDING_TITLES[step - 1];
-  onboardingPair.hidden = step !== 1;
   onboardingMic.hidden = step !== 2;
   onboardingKeys.hidden = step !== 3;
   onboardingNext.hidden = step !== 5;
   if (step !== 4) {
     clearInterval(onboardingTimer);
     onboardingTimer = null;
-  }
-  if (step === 1) {
-    onboardingNote.textContent =
-      "Parlo hears one language and speaks the other. Changing the pair later loads the models again.";
   }
   if (step === 2) {
     onboardingNote.textContent =
@@ -5961,28 +6074,6 @@ async function tickOnboarding() {
   showOnboardingStage(5);
 }
 
-async function saveOnboardingPair() {
-  onboardingPairSave.disabled = true;
-  onboardingNote.textContent = "Loading the models. This takes about twenty seconds.";
-  try {
-    const response = await fetch("/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ from: onboardingFrom.value, to: onboardingTo.value }),
-    });
-    const detail = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(detail.error || "That pair cannot be used.");
-    }
-    onboardingChosen = detail.shortcut || onboardingChosen;
-    showOnboardingStage(2);
-  } catch (failure) {
-    onboardingNote.textContent = failure.message || "That pair cannot be used.";
-  } finally {
-    onboardingPairSave.disabled = false;
-  }
-}
-
 async function saveOnboardingShortcut() {
   const wanted = onboardingShortcut.value.trim();
   if (!wanted) {
@@ -6018,8 +6109,6 @@ async function startOnboarding() {
     const response = await fetch("/settings", { cache: "no-store" });
     if (response.ok) {
       const values = await response.json();
-      onboardingFrom.value = values.from || "en";
-      onboardingTo.value = values.to || "pt";
       onboardingShortcut.value = values.shortcut || "Ctrl+Alt+D";
       onboardingChosen = values.shortcut || "Ctrl+Alt+D";
     }
@@ -6028,16 +6117,8 @@ async function startOnboarding() {
   }
   onboardingResult.textContent = "";
   const saved = Number(localStorage.getItem("parlo.onboarding.stage") || "1");
-  showOnboardingStage(saved === 5 ? 4 : Math.min(4, Math.max(1, saved)));
+  showOnboardingStage(saved >= 5 ? 4 : Math.max(2, Math.min(4, saved)));
 }
-
-onboardingSwap.addEventListener("click", () => {
-  const from = onboardingFrom.value;
-  onboardingFrom.value = onboardingTo.value;
-  onboardingTo.value = from;
-});
-
-onboardingPairSave.addEventListener("click", () => saveOnboardingPair());
 
 onboardingKeySave.addEventListener("click", () => saveOnboardingShortcut());
 
@@ -6772,7 +6853,7 @@ function closeGate() {
   paintHome();
   if (localStorage.getItem("parlo.onboarded") !== "1") {
     location.hash = "#settings";
-    showOnboardingStage(1);
+    showOnboardingStage(2);
   }
 }
 
