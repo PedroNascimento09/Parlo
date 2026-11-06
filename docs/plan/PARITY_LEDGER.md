@@ -142,7 +142,7 @@ Rules:
 | R5 | iOS app | Preview, sideload | No | Native, offline | 5 | The same file transcribes on an iPhone |
 | R6 | Stores | MS Store, Mac App Store, F-Droid | No | Parity | 5 | A store build installs and updates |
 | R7 | Update channels | Stable and preview | Stable only | Parity | 5 | A preview build updates to stable |
-| R8 | Website and docs | Yes, 20 languages | Partial | Site, quick start, benchmarks, privacy | 5 | A stranger installs in under five minutes |
+| R8 | Website and docs | Yes, 20 languages | Done · 694d054: `docs/START.md` is the landing page a stranger follows from install to a dictated sentence, benchmarks, privacy and every other page are linked from it and from the README, and `crates/parlo-cli/tests/quickstart.rs` extracts the documented commands and flags from both pages, fails when one is not a command or flag the binary has, runs `parlo doctor` on the real binary, and fails when a linked page does not exist | Site, quick start, benchmarks, privacy | 5 | A stranger installs in under five minutes |
 
 ## Quality
 
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-54 of 80 rows are Done (67.5%). Six Partial rows counted at half give 71.3%.
+55 of 80 rows are Done (68.8%). Six Partial rows counted at half give 72.5%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are R8, the docs and quick start a stranger follows in five minutes, then X2, whose rows need a measured cascade number that `parlo bench` does not produce yet.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are U6, whose four timing modes need a rendered fixture each, then X2, whose rows need a measured cascade number that `parlo bench` does not produce yet.
