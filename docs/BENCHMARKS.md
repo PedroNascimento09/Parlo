@@ -785,3 +785,16 @@ Open a hardware report issue with your `parlo doctor` output, the command you ra
 | Sessions | 1 recorded, **0 crashed**, 100.0% crash free |
 
 Measured on 2026-11-06 on the Windows 11 reference laptop with a debug build, the echo engine and no models loaded, so the number describes the server loop rather than the recogniser. The two-hour window with the app beside the server has not been run.
+
+## Per-engine run on this machine
+
+`parlo bench --json` writes one row per engine and device. The run on this machine was made on 2026-11-06 and is stored verbatim in [docs/benchmarks/machine-2026-11-06.json](benchmarks/machine-2026-11-06.json), so a row can be checked against the command that produced it.
+
+| Engine | Device | Result |
+|---|---|---|
+| echo | cpu | **0.0026 real time**, 6.4 ms for the 2.5 s sentence, 125 frames |
+| cascade | cpu | no number: needs Parakeet v3 on disk and the python stack that reads it |
+| cascade, echo, hibiki, cloud | gpu | no number: this machine has no gpu |
+| hibiki, cloud | cpu | not in this build |
+
+Conditions: Windows 11 reference laptop, 12 cores, 15 GB of memory, no gpu, build `ed4b572`, debug profile, no models installed. The echo row measures the frame path without a recogniser, so it is not a dictation speed.

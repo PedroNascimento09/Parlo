@@ -1,0 +1,102 @@
+{
+  "audio_seconds": 2.5,
+  "rows": [
+    {
+      "commit": "ed4b572",
+      "device": "cpu",
+      "engine": "cascade",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "no number: Universal cascade needs Parakeet 0.6B v3 on disk, and the python stack that reads them"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "gpu",
+      "engine": "cascade",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "no gpu on this machine"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "cpu",
+      "engine": "echo",
+      "frames": 125,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": 0.00255648,
+      "seconds": 0.0063912,
+      "state": "measured on this machine"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "gpu",
+      "engine": "echo",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "no gpu on this machine"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "cpu",
+      "engine": "hibiki",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "not in this build"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "gpu",
+      "engine": "hibiki",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "no gpu on this machine"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "cpu",
+      "engine": "cloud",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "not in this build"
+    },
+    {
+      "commit": "ed4b572",
+      "device": "gpu",
+      "engine": "cloud",
+      "frames": 0,
+      "hardware": "12 cores, 15 GB of memory, no gpu",
+      "measured_at": 1793970869,
+      "profile": "medium",
+      "rtf": null,
+      "seconds": null,
+      "state": "no gpu on this machine"
+    }
+  ],
+  "schema": 1
+}
