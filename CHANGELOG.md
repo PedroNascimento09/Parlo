@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Parlo now carries a manifest for every package channel it promises: winget, Homebrew, AUR, Snap, DEB, AppImage and Nix live under `packaging/` and repack the published downloads with their real checksums, `packaging/README.md` gives each install command with its honest Partial state, and `cargo test -p parlo-cli --test packaging` fails when a manifest drifts from `Cargo.toml` or names an archive the release does not attach.
 - The app now speaks 21 languages: `parlo config --locale pt` or the language field in Settings stores the choice, every labelled control is replaced from `crates/parlo-cli/web/locales.json` through `GET /locale`, and a test fails when a locale leaves a key out or leaves it empty.
 - A desktop can now serve Parlo to another machine over HTTPS: `parlo serve --tls-cert cert.pem --tls-key key.pem` binds the network and answers plain HTTP with 426, `parlo config --remote-url https://desk:8788 --remote-token …` stores the address, `parlo remote file.wav` posts to it over rustls with the machine's own certificates or `--remote-ca`, and a certificate the client does not trust is refused before anything is sent.
 - Sharing with another device is now a switch you control: `parlo config --share on --pin 4821` or the Sharing field in the app opens a network port only when you ask, every request on it needs the PIN, and the port stays closed while sharing is off.
