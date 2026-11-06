@@ -1475,6 +1475,38 @@ const TIMING_NAMES = {
   "lip-sync": "Lip sync",
 };
 const settingsWrite = document.getElementById("settings-write");
+const writeNames = {};
+let writePairs = [];
+
+function fillSettingsWrite() {
+  const wanted = settingsWrite.value;
+  const from = settingsFrom.value;
+  const codes = new Set();
+  for (const [source, target] of writePairs) {
+    if (source === from) {
+      codes.add(target);
+    }
+  }
+  settingsWrite.replaceChildren(new Option("The language spoken", ""));
+  for (const code of [...codes].sort((a, b) => (writeNames[a] || a).localeCompare(writeNames[b] || b))) {
+    settingsWrite.append(new Option(writeNames[code] || code.toUpperCase(), code));
+  }
+  settingsWrite.value = [...settingsWrite.options].some((option) => option.value === wanted) ? wanted : "";
+}
+
+fetch("/languages.json", { cache: "no-store" })
+  .then((response) => (response.ok ? response.json() : null))
+  .then((table) => {
+    if (!table) {
+      return;
+    }
+    writePairs = Array.isArray(table.pairs) ? table.pairs : [];
+    Object.assign(writeNames, table.names || {});
+    fillSettingsWrite();
+  })
+  .catch(() => {});
+
+settingsFrom.addEventListener("change", fillSettingsWrite);
 const settingsShortcut = document.getElementById("settings-shortcut");
 const settingsShortcutSave = document.getElementById("settings-shortcut-save");
 const settingsHandsFree = document.getElementById("settings-hands-free");

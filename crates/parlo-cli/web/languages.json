@@ -1,0 +1,74 @@
+{
+  "names": {
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "it": "Italian",
+    "nl": "Dutch",
+    "pt": "Portuguese",
+    "ru": "Russian"
+  },
+  "pairs": [
+    [
+      "de",
+      "en"
+    ],
+    [
+      "en",
+      "es"
+    ],
+    [
+      "en",
+      "fr"
+    ],
+    [
+      "en",
+      "it"
+    ],
+    [
+      "en",
+      "pt"
+    ],
+    [
+      "es",
+      "en"
+    ],
+    [
+      "es",
+      "pt"
+    ],
+    [
+      "fr",
+      "de"
+    ],
+    [
+      "fr",
+      "pt"
+    ],
+    [
+      "pt",
+      "en"
+    ],
+    [
+      "pt",
+      "es"
+    ],
+    [
+      "pt",
+      "fr"
+    ],
+    [
+      "pt",
+      "it"
+    ],
+    [
+      "pt",
+      "nl"
+    ],
+    [
+      "pt",
+      "ru"
+    ]
+  ]
+}

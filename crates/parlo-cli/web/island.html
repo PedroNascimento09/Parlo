@@ -256,14 +256,6 @@
         <span class="write-label">Write</span>
         <select class="write-select" id="write" aria-label="Dictation writes">
           <option value="">Spoken language</option>
-          <option value="en">English</option>
-          <option value="pt">Portuguese</option>
-          <option value="es">Spanish</option>
-          <option value="fr">French</option>
-          <option value="de">German</option>
-          <option value="it">Italian</option>
-          <option value="nl">Dutch</option>
-          <option value="ru">Russian</option>
         </select>
       </div>
       <span class="rule" aria-hidden="true"></span>
@@ -304,6 +296,9 @@ let busy = false;
 let lastText = "";
 let target = false;
 let writeTarget = "";
+let writeSource = "";
+let writePairs = [];
+let writeNames = {};
 let writeChoice = localStorage.getItem("parlo-write");
 if (writeChoice === "same") {
   writeChoice = "";
@@ -641,6 +636,7 @@ async function loadSettings() {
     }
     const values = await response.json();
     writeTarget = (values.write || "").toLowerCase();
+    writeSource = (values.from || "").toLowerCase();
   } catch (failure) {
     writeTarget = "";
   }
@@ -813,16 +809,48 @@ function paintTidy() {
 
 const writeEl = document.getElementById("write");
 
-function effectiveWrite() {
-  if (writeChoice === "" || writeChoice) {
-    return writeChoice;
+function writableTargets() {
+  const codes = new Set();
+  for (const [source, target] of writePairs) {
+    if (!writeSource || source === writeSource) {
+      codes.add(target);
+    }
   }
-  return writeTarget;
+  return [...codes].sort((a, b) => (writeNames[a] || a).localeCompare(writeNames[b] || b));
 }
 
 function paintWrite() {
   const active = effectiveWrite();
   writeEl.value = [...writeEl.options].some((option) => option.value === active) ? active : "";
+}
+
+function effectiveWrite() {
+  const chosen = writeChoice === null ? writeTarget : writeChoice;
+  return [...writeEl.options].some((option) => option.value === chosen) ? chosen : "";
+}
+
+function fillWrite() {
+  const wanted = writeChoice === null ? writeTarget : writeChoice;
+  writeEl.replaceChildren(new Option("Spoken language", ""));
+  for (const code of writableTargets()) {
+    writeEl.append(new Option(writeNames[code] || code.toUpperCase(), code));
+  }
+  writeEl.value = [...writeEl.options].some((option) => option.value === wanted) ? wanted : "";
+}
+
+async function loadLanguages() {
+  try {
+    const response = await fetch("/languages.json", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const table = await response.json();
+    writePairs = Array.isArray(table.pairs) ? table.pairs : [];
+    writeNames = table.names || {};
+  } catch (failure) {
+    writePairs = [];
+  }
+  fillWrite();
 }
 
 writeEl.addEventListener("change", () => {
@@ -876,6 +904,7 @@ window.addEventListener("keydown", (event) => {
 
 loadVersion();
 loadSettings();
+loadLanguages();
 if (!document.hidden) {
   ready();
 }

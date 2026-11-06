@@ -56,15 +56,53 @@ mod tests {
     }
 
     #[test]
-    fn the_overlay_writes_in_every_language_the_models_carry() {
-        let page = include_str!("../web/island.html");
-        assert!(page.contains("<option value=\"\">Spoken language</option>"));
-        for code in ["en", "pt", "es", "fr", "de", "it", "nl", "ru"] {
+    fn the_write_languages_follow_the_packs_both_places_offer() {
+        let table: serde_json::Value =
+            serde_json::from_str(include_str!("../web/languages.json")).expect("a language table");
+        let names = table["names"].as_object().expect("named languages");
+        let pairs = table["pairs"].as_array().expect("language pairs");
+        let registry = include_str!("registry.rs");
+        for pair in pairs {
+            let from = pair[0].as_str().expect("a source language");
+            let to = pair[1].as_str().expect("a target language");
             assert!(
-                page.contains(&format!("<option value=\"{code}\">")),
-                "the overlay cannot write in {code}"
+                names.contains_key(from) && names.contains_key(to),
+                "{from}->{to} has no name"
+            );
+            assert!(
+                crate::config::check_language(from) && crate::config::check_language(to),
+                "{from}->{to} is not a pair of two letter codes"
+            );
+            assert!(
+                registry.contains(&format!("id: \"mt-{from}-{to}\"")),
+                "{from}->{to} has no translation pack"
             );
         }
+        for line in registry
+            .lines()
+            .map(str::trim)
+            .filter(|line| line.starts_with("id: \"mt-"))
+        {
+            let id = line.split('"').nth(1).expect("a pack id");
+            assert!(
+                pairs.iter().any(|pair| pair[0].as_str() == Some(&id[3..5])
+                    && pair[1].as_str() == Some(&id[6..8])),
+                "{id} is missing from the language table"
+            );
+        }
+        let island = include_str!("../web/island.html");
+        assert!(
+            island.contains("languages.json"),
+            "the overlay carries its own list"
+        );
+        assert!(
+            !island.contains("<option value=\"es\">"),
+            "the overlay went back to a hardcoded list"
+        );
+        assert!(
+            APP.contains("languages.json"),
+            "the app carries its own list"
+        );
     }
 
     #[test]
