@@ -141,7 +141,7 @@ Rules:
 | R4 | Android app | Preview, offline | No | Native, offline after download | 5 | A phone transcribes a file in airplane mode |
 | R5 | iOS app | Preview, sideload | No | Native, offline | 5 | The same file transcribes on an iPhone |
 | R6 | Stores | MS Store, Mac App Store, F-Droid | No | Parity | 5 | A store build installs and updates |
-| R7 | Update channels | Stable and preview | Stable only | Parity | 5 | A preview build updates to stable |
+| R7 | Update channels | Stable and preview | Done · 2d17fd3: the Updates field in the app and `parlo config --channel preview` store the choice, the release request asks for the full list and keeps prereleases only on preview, a preview build moves to a newer preview or a newer stable while a stable build never takes a preview, and offline tests over a fake feed fail when any of the three breaks | Parity | 5 | A preview build updates to stable |
 | R8 | Website and docs | Yes, 20 languages | Done · 694d054: `docs/START.md` is the landing page a stranger follows from install to a dictated sentence, benchmarks, privacy and every other page are linked from it and from the README, and `crates/parlo-cli/tests/quickstart.rs` extracts the documented commands and flags from both pages, fails when one is not a command or flag the binary has, runs `parlo doctor` on the real binary, and fails when a linked page does not exist | Site, quick start, benchmarks, privacy | 5 | A stranger installs in under five minutes |
 
 ## Quality
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-51 of 80 rows are Done (63.7%), counted as the rows whose Parlo today cell starts with Done or Yes. Four Partial rows counted at half give 66.2%.
+52 of 80 rows are Done (65.0%), counted as the rows whose Parlo today cell starts with Done or Yes. Four Partial rows counted at half give 67.5%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The next unblocked row is R7, which needs a preview channel beside stable before a preview build can update to stable.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. The cheapest unblocked row left is P6, LAN sharing with a PIN: the server already answers one machine, so what is missing is an opt-in listener another device can reach, a PIN checked before any audio route, and a test that a request without it is refused; only a phone on the real LAN would stay unverified.
