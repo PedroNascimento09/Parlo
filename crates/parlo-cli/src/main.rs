@@ -46,6 +46,7 @@ mod network;
 mod notes;
 mod packs;
 mod playback;
+mod pronounce;
 mod record;
 mod registry;
 mod remote;
@@ -91,6 +92,7 @@ fn main() -> ExitCode {
         Some("remote") => remote_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("soak") => soak::command(&args[1..]),
+        Some("pronounce") => pronounce::command(&args[1..]),
         Some("undo") => undo_command(),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
@@ -130,6 +132,9 @@ fn print_help() {
     println!("  doctor                             check the local audio setup");
     println!(
         "  soak [--seconds N] [--interval S]  run the server and record its memory for N seconds"
+    );
+    println!(
+        "  pronounce [word] [--text TEXT]   show how a name is spoken before the engine says it"
     );
     println!("  undo                               take back what the last dictation wrote");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");

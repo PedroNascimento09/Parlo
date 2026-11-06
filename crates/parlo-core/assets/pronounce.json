@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "entries": [
+    { "word": "Parlo", "respell": "PAR-loh", "ipa": "ˈpɑːrloʊ", "cmu": "P AA1 R L OW0" },
+    { "word": "Piper", "respell": "PY-per", "ipa": "ˈpaɪpər", "cmu": "P AY1 P ER0" },
+    { "word": "Parakeet", "respell": "PAIR-a-keet", "ipa": "ˈpærəkiːt", "cmu": "P EH1 R AH0 K IY2 T" },
+    { "word": "Whisper", "respell": "WISS-per", "ipa": "ˈwɪspər", "cmu": "W IH1 S P ER0" },
+    { "word": "Kokoro", "respell": "ko-KO-roh", "ipa": "koʊˈkoʊroʊ", "cmu": "K OW0 K OW1 R OW0" },
+    { "word": "Ollama", "respell": "oh-LAH-mah", "ipa": "oʊˈlɑːmə", "cmu": "OW0 L AA1 M AH0" },
+    { "word": "espeak", "respell": "EE-speek", "ipa": "ˈiːspiːk", "cmu": "IY1 S P IY1 K" },
+    { "word": "JSON", "respell": "JAY-son", "ipa": "ˈdʒeɪsən", "cmu": "JH EY1 S AH0 N" },
+    { "word": "YAML", "respell": "YAM-mel", "ipa": "ˈjæməl", "cmu": "Y AE1 M AH0 L" },
+    { "word": "SQLite", "respell": "ess-cue-LYTE", "ipa": "ˌɛskjuːˈlaɪt", "cmu": "EH2 S K Y UW1 L AY1 T" },
+    { "word": "GUI", "respell": "GOO-ee", "ipa": "ˈɡuːi", "cmu": "G UW1 IY0" },
+    { "word": "API", "respell": "ay-pee-EYE", "ipa": "ˌeɪpiːˈaɪ", "cmu": "EY2 P IY1 AY1" },
+    { "word": "WAV", "respell": "wave", "ipa": "weɪv", "cmu": "W EY1 V" },
+    { "word": "ASCII", "respell": "ASS-kee", "ipa": "ˈæski", "cmu": "AE1 S K IY0" },
+    { "word": "NLLB", "respell": "en-el-el-BEE", "ipa": "ˌɛnɛlɛlˈbiː", "cmu": "EH2 N EH2 L EH2 L B IY1" }
+  ]
+}
