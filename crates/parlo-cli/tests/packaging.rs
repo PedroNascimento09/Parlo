@@ -218,8 +218,7 @@ fn the_container_never_runs_as_root() {
     let user = file
         .lines()
         .map(str::trim)
-        .filter(|line| line.starts_with("USER "))
-        .next_back()
+        .rfind(|line| line.starts_with("USER "))
         .unwrap_or_else(|| panic!("{DOCKERFILE}: no USER line, so the server would run as root"));
     let value = user.trim_start_matches("USER ").trim();
     assert!(
