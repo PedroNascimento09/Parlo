@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Meetings: every action item and every decision is now proven to name its speaker and the minute it was said at, by a test that fails when either one leaves the output.
 - A pronunciation dictionary now lives in the repository: fourteen names with a respelling, an IPA form and a CMU form, applied to the whole sentence in `Pipeline::speak` before any engine hears it, shown by `parlo pronounce [word] [--text TEXT]`, and guarded by tests for word boundaries, digits, case, punctuation and a recorder engine that hears `PAR-loh reads JAY-son`.
 - Every engine now has a row on disk for every device, measured or refused in words: `parlo bench --json` writes the hardware, the commit and the reason, the run of this machine lives in `docs/benchmarks/machine-2026-11-06.json`, the echo row measured 0.0026 real time with 6.4 ms for the 2.5 s sentence while the cascade row says it needs Parakeet v3, and a test fails when a row claims a number it did not measure.
 - Parlo can now measure its own stability: `parlo soak --seconds N --interval S` starts the server, samples its memory every interval, stops it and reads the session log back, and the first run on this machine measured 184 s with 11.8 MB first, 11.7 MB last and 11.8 MB peak over 12 samples, one session and no crash; the two-hour window beside the app is still missing.

@@ -60,7 +60,7 @@ Rules:
 |---|---|---|---|---|---|---|
 | M1 | Record and import | Yes | Yes | Keep | 0 | A transcript imports and lists |
 | M2 | Live transcription | Yes | Done · 454d8a0: the transcript redraws after every five-second window, so lines appear while the meeting runs | Parity | 1 | Lines appear while the meeting runs |
-| M3 | Decisions and action items | LLM summary | Rule-based, cited | Keep as an edge | 0 | Each item links to speaker and minute |
+| M3 | Decisions and action items | LLM summary | Done · b552688: every action item and every decision carries the speaker who said it and the millisecond it was said at, `meeting_actions` and `meeting_decisions` publish both, and a test fails when the time or the speaker leaves the actions or the decisions output | Keep as an edge | 0 | Each item links to speaker and minute |
 | M4 | Ask with citations | Not documented | Yes | Keep as an edge | 0 | An answer with no match says so |
 | M5 | Local summary model | Yes | Done · c0e8ce5: the meeting summary asks the local model, falls back to the local rules when it cannot answer, and the screen names which one wrote it with the reason for the fallback | Local model, rule fallback | 4 | The screen says which produced the summary |
 | M6 | Two-hour reliability | Claimed | Partial · c5deb53: `parlo soak --seconds N --interval S` starts the server as a child process, samples its working set every 15 s with a named cap of 480 samples, stops it and reads `sessions.jsonl` back, and a real run on this machine measured 184 s with 11.8 MB first, 11.7 MB last and 11.8 MB peak over 12 samples, one session and no crash; the two-hour window with the app beside the server has not been run here, and a test exercises a four second run on every `cargo test` | 2 hours, no crash, flat memory | 6 | A two-hour run with a memory chart |
@@ -74,7 +74,7 @@ Rules:
 | V3 | Consent, revoke, identity lock | Yes | Done · 1b85e5a: revoking deletes `sample.wav` from disk and drops it from the profile's artefacts, the profile and its revocation stay on record, a revoked profile refuses a new sample, playback of a revoked voice answers with the default voice instead of failing, the app offers that fallback and says why, and a profile written before revocation existed reads exactly as before | Parity | 2 | Revoking deletes the sample and the next render uses the default |
 | V4 | TTS engine breadth | 17 | 1 (Piper) | 20 | 2 | Every engine has a licence row and a measured speed |
 | V5 | Device selection | CUDA, ROCm, MPS, Vulkan | CPU only | Parity, per engine | 2 | A GPU row exists only where measured |
-| V6 | Expressive controls | Emotion, direction, cues | Partial: per-cue pace reaches Piper and is saved; no emotion or pitch | Parity | 3 | A cue changes the render and is saved |
+| V6 | Expressive controls | Emotion, direction, cues | Partial: per-cue pace reaches Piper and is saved, but a cue cannot declare a pitch, because `engines/cascade/scripts/dub.py` speaks each cue with only `pace` and `voice` and that folder is off limits in this campaign, while the Rust side never synthesises dub audio, so no amount of Rust work would change the render; no emotion either | Parity | 3 | A cue changes the render and is saved |
 | V7 | Previews and A/B | Yes | Done · 20c8632: one request reads the same sentence with the two chosen voices in order, the payload carries each label, language and time, and an unknown or revoked voice is refused before any audio | Parity | 2 | Two voices play the same sentence back to back |
 | V8 | Voice gallery | Online community | Done · 34c49ac: a pack file imports and stays on this computer, exports back out, refills both voices of a comparison, and a pack with an unknown or revoked voice is refused before anything is written | Local packs, import/export, opt-in LAN | 2 | A pack imports; nothing uploads |
 | V9 | Persona import/export | Yes | Done · 53ff2e7: the exported header and sample import on another machine with the consent record, and a revoked, foreign or sample-less file is refused | Parity | 2 | A voice moves between machines as one file |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-53 of 80 rows are Done (66.3%), counted as the rows whose Parlo today cell starts with Done or Yes. Eleven Partial rows counted at half give 73.1%.
+54 of 80 rows are Done (67.5%), counted as the rows whose Parlo today cell starts with Done or Yes. Eleven Partial rows counted at half give 74.4%.
 
 ## Next
 
-D5, T4 and X4 stay parked, and the voice half of D8 with them: the engine takes one voice and the word times when its process starts, and the byte-level resume lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. No open row is finished by Rust alone any more: D5, D8, T4 and X4 all end in the engine files, where the voice and the word times are chosen once per process, T1 and T2 need a recogniser and a translation pair on disk, and the rest need a graphics card, a signing certificate, Docker, a phone, ten testers or two hours of running.
+D5, T4 and X4 stay parked, and the voice half of D8 with them: the engine takes one voice and the word times when its process starts, and the byte-level resume lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. No open row is finished by Rust alone any more: D5, D8, T4, V6 and X4 all end in the engine files, where the voice, the word times and the cue render are set, T1 and T2 need a recogniser and a translation pair on disk, and the rest need a graphics card, a signing certificate, Docker, a phone, ten testers or two hours of running.
