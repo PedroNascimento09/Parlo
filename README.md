@@ -90,7 +90,7 @@ gh attestation verify Parlo-Setup.exe --repo PedroNascimento09/Parlo
 
 Neither replaces a code signature: Windows still treats the installer as unsigned, and SmartScreen still asks once.
 
-**Package managers.** winget, Homebrew, AUR, Snap, a Debian package, an AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the command that installs it. They are recipes, not a tested install: no channel has been run end to end from the machine that wrote them, so each is marked Partial there with what it still misses.
+**Package managers.** winget, Homebrew, AUR, Snap, a Debian package, an AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the command that installs it. They are recipes, not a tested install: no channel has been run end to end from the machine that wrote them, so each is marked Partial there with what it still misses. A Dockerfile in the same folder starts the server from a container, also Partial because no image has been built here.
 
 **macOS and Linux**, in any terminal:
 
