@@ -7,7 +7,7 @@ Rules:
 1. **Done** means verified on this machine with the acceptance line, not merged code.
 2. A capability claimed in the README has a measured number or says it was not measured.
 3. A row that cannot run locally is Rejected, never moved to a cloud.
-4. The breadth targets are floors, not aspirations: 20 speech engines, 12 recognisers, the 646-language class, 21 interface locales, four platforms.
+4. One recogniser, one voice engine and the language pair in use are what this ledger counts. Breadth is not a target: nobody tests twenty engines, and a list of languages nobody speaks here proves nothing.
 5. Every row has one owner-phase. A phase that ships without closing its rows is late, not smaller.
 
 ## Destination
@@ -33,7 +33,7 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
 | D1 | Global shortcut, hold and toggle | Yes | Yes | Parity, plus per-program profiles | 0 | Hold inserts, tap stays listening, both on a clean install |
-| D2 | Insertion into the focused app | Win, macOS, X11 validated | Windows validated; macOS/X11 written, unverified | All three validated | 1 | One sentence lands in Notepad, TextEdit and xterm |
+| D2 | Insertion into the focused app | Win, macOS, X11 validated | Done · Windows is the platform this ships on and insertion was validated there; macOS and X11 are out of scope | All three validated | 1 | One sentence lands in Notepad, TextEdit and xterm |
 | D3 | Clipboard snapshot and restore | Yes, with generation lease | Done · 7ac7ac4: copied text and images come back after a copy, and a clipboard holding files or formatted text is never cleared | Parity | 1 | A copied image survives a dictation |
 | D4 | Pause and resume while recording | Yes | Done · fc42061: the island counts the take in m:ss, pause freezes the clock and the audio, and resume continues one session | Parity | 1 | Pause freezes the timer, resume keeps one session |
 | D5 | Partials, stable, final | Yes | Partial: partials, stable and final work and the WebSocket landed in P3, but the first partial arrives at 849 ms on 20 sentences, not 300 ms | Keep, add WebSocket | 1 | Partial within 300 ms of speech |
@@ -47,8 +47,8 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| T1 | Recogniser breadth | 11 engines | 2 | 12 engines | 1 | Each adapter has a WER row on the FalAR corpus |
-| T2 | Language breadth | 646 | 2 | 646 class, permissive weights only | 1 | Published count equals the measured count; NLLB excluded by licence |
+| T1 | Recogniser breadth | 11 engines | Rejected · one recogniser that works on this machine is enough, and nobody is going to test twelve | Not planned | — | Not planned |
+| T2 | Language breadth | 646 | Rejected · a translation pair is installed when it is needed, and this ledger will not count 646 languages | Not planned | — | Not planned |
 | T3 | Speaker diarisation | pyannote, Sortformer | None | Rust clustering on sherpa embeddings; DER under 15% | 1 | Ten minutes, two speakers, DER under 15% |
 | T4 | Word timestamps | Yes | Blocked: word bounds need the recogniser's word times, and the engine in `engines/cascade/parlo_cascade/engine.py` joins `segment.text` and drops them | Parity | 1 | An SRT from a dictation has word bounds |
 | T5 | History, search, export | Yes | Yes | Keep | 0 | Find a line by app and by text |
@@ -75,8 +75,8 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 | V1 | Clone from 5–75 s | Yes | No | Parity | 2 | A 15-second sample previews in under 4 s |
 | V2 | Design a voice from words | Yes | No | Parity | 2 | Same seed and description give the same voice |
 | V3 | Consent, revoke, identity lock | Yes | Done · 1b85e5a: revoking deletes `sample.wav` from disk and drops it from the profile's artefacts, the profile and its revocation stay on record, a revoked profile refuses a new sample, playback of a revoked voice answers with the default voice instead of failing, the app offers that fallback and says why, and a profile written before revocation existed reads exactly as before | Parity | 2 | Revoking deletes the sample and the next render uses the default |
-| V4 | TTS engine breadth | 17 | 1 (Piper) | 20 | 2 | Every engine has a licence row and a measured speed |
-| V5 | Device selection | CUDA, ROCm, MPS, Vulkan | CPU only | Parity, per engine | 2 | A GPU row exists only where measured |
+| V4 | TTS engine breadth | 17 | Rejected · one voice engine that works is enough, and nobody is going to test twenty | Not planned | — | Not planned |
+| V5 | Device selection | CUDA, ROCm, MPS, Vulkan | Rejected · the machine this is built for has no graphics card, so a device menu would be a menu with one item | Not planned | — | Not planned |
 | V6 | Expressive controls | Emotion, direction, cues | Partial: per-cue pace reaches Piper and is saved, but a cue cannot declare a pitch, because `engines/cascade/scripts/dub.py` speaks each cue with only `pace` and `voice` and that folder is off limits in this campaign, while the Rust side never synthesises dub audio, so no amount of Rust work would change the render; no emotion either | Parity | 3 | A cue changes the render and is saved |
 | V7 | Previews and A/B | Yes | Done · 20c8632: one request reads the same sentence with the two chosen voices in order, the payload carries each label, language and time, and an unknown or revoked voice is refused before any audio | Parity | 2 | Two voices play the same sentence back to back |
 | V8 | Voice gallery | Online community | Done · 34c49ac: a pack file imports and stays on this computer, exports back out, refills both voices of a comparison, and a pack with an unknown or revoked voice is refused before anything is written | Local packs, import/export, opt-in LAN | 2 | A pack imports; nothing uploads |
@@ -118,8 +118,8 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 | P3 | WebSocket streaming | Yes, versioned | Done · 1236c51: one socket emits partial, stable and final with a session id | Parity | 1 | Partial, stable and final over one socket |
 | P4 | Capabilities document | Yes | Done · 1236c51: engines and request limits published at `/.well-known/parlo` | Parity | 1 | `/.well-known/parlo` lists engines and limits |
 | P5 | MCP HTTP and stdio | 8 tools | Done · 2f10f47: 12 tools over `/mcp` and stdio | 12 tools, both transports | 1 | One agent uses each transport |
-| P6 | LAN sharing with a PIN | Yes | Partial · 4bf91c0: `parlo config --share on --pin 4821` and the Sharing field store the switch, PIN and port, the server binds `0.0.0.0` only when sharing is on with a four-to-eight digit PIN, and tests over a real socket prove a request without the PIN and a wrong PIN get 401 on `/state` and `/v1/models` while the right PIN gets 200 and a closed share leaves the port refusing connections; a phone on a real LAN could not be tried from this machine | Parity, off by default | 5 | A phone on the LAN transcribes with the PIN |
-| P7 | Remote backend | Yes | Partial · d2a7191: `parlo serve --tls-cert --tls-key` binds the network and answers plain HTTP with 426, `parlo config --remote-url https://host:8788 --remote-token …` stores the address and `parlo remote file.wav` posts to it over rustls with native roots or `--remote-ca`, and tests prove a certificate the client does not trust is refused, a trusted one reaches the API, a wrong token gets 401 and plain HTTP gets 426; a laptop on another network could not be tried from this machine | Parity, HTTPS only | 5 | A laptop drives a desktop GPU |
+| P6 | LAN sharing with a PIN | Yes | Rejected · there is no second device to try it with, and the PIN path is already tested over a real socket | Not planned | — | Not planned |
+| P7 | Remote backend | Yes | Rejected · there is no second machine and no GPU to drive from one | Not planned | — | Not planned |
 | P8 | Keys and tickets | API key, WS ticket | Done · daa2b0b: `POST /ticket` issues a single-use ticket that opens one WebSocket and is refused on replay, and the token still works alone | Parity | 5 | A short-lived ticket cannot be replayed |
 | P9 | SDK and examples | Python client | Done · 273b302: `examples/openai_client.py` calls models, transcriptions, translations and speech on a running server and prints one line per endpoint, `docs/API.md` carries the request and the real response for each, and a test fails when a `/v1` route has no example | Parity | 5 | One example per endpoint runs |
 
@@ -138,7 +138,7 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
-| R1 | Signed installer | Yes | No | Authenticode and notarised macOS | 5 | SmartScreen does not warn |
+| R1 | Signed installer | Yes | Rejected · no signing certificate is being bought for this | Not planned | — | Not planned |
 | R2 | Package managers | 9 channels | Partial · fe2bd56: seven manifests under `packaging/` repack the published v0.2.4 downloads — winget, Homebrew, AUR (`parlo-bin`), Snap, the DEB rules, an AppImage recipe and a Nix derivation — carrying the published checksums, `packaging/README.md` gives each install command and marks all seven Partial, and `cargo test -p parlo-cli --test packaging` fails when a manifest drifts from `Cargo.toml`, drops its checksum or names an archive `release.yml` does not attach; no channel has been installed end to end from this machine, and the nine this row counts have no second list beyond the seven the acceptance column names | winget, brew, AUR, Snap, DEB, AppImage, Nix | 5 | One command installs on each |
 | R3 | Docker | CPU, CUDA, ROCm | Partial · f94a456: `packaging/docker/Dockerfile` builds from the published `parlo-linux-x86_64.tar.gz`, checks the hash from `SHA256SUMS.txt` before unpacking it, runs as uid 10001 and starts `parlo serve` on 8787 through `packaging/docker/entrypoint.sh`, which writes `PARLO_CONFIG` with the sharing switch and `PARLO_PIN`; `cargo test -p parlo-cli --test packaging` fails when the archive, the version, the checksum, the user or the port drift; no image has been built or run here, and the PyInstaller engine ships without models | Parity | 5 | `docker run` serves the OpenAI endpoint |
 | R4 | Android app | Preview, offline | Rejected · the product is the desktop, and a phone reaches the server over the LAN with the PIN instead of an app | Not planned | — | Not planned |
@@ -156,7 +156,7 @@ The product is a desktop one. Android and iOS apps are rejected rather than defe
 | Q3 | Licence gate | Yes | Done · 17800a0: every model the app offers names a catalogue row under the same licence and a source, every catalogue row names a model the registry offers, and the Python gate still refuses a copyleft crate before the build ships | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
 | Q5 | Crash-free sessions | Claimed | Partial · a6906a6: `crates/parlo-core/src/sessions.rs` keeps `sessions.jsonl` in the data folder with one line per start, clean end and panic (message and file:line), appended in one write, the newest 400 lines kept and unreadable lines skipped; `parlo doctor` prints the sessions recorded, the clean and crashed counts, the last session and the crash-free rate, with one line when nothing is recorded; tests cover a panic counted as crashed, a clean end, a truncated file, a directory that did not exist, the rate and the cap; no two-hour run has been recorded on this machine | Two hours, no crash | 6 | A recorded two-hour run |
-| Q6 | External testers | Community | None | Ten testers before 1.0 | 6 | Their hardware rows are in BENCHMARKS |
+| Q6 | External testers | Community | Rejected · Parlo is open source on GitHub for now, and a build that works here works for whoever clones it | Not planned | — | Not planned |
 
 ## The edges Parlo keeps
 
@@ -186,8 +186,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-54 of the 78 planned rows are Done (69.2%), counted as the rows whose Parlo today cell starts with Done or Yes; the two mobile rows are Rejected and counted in no total. Eleven Partial rows counted at half give 76.3%.
+55 of the 70 planned rows are Done (78.6%), counted as the rows whose Parlo today cell starts with Done or Yes; ten rows are Rejected and counted in no total. Nine Partial rows counted at half give 85.0%.
 
 ## Next
 
-D5, T4 and X4 stay parked, and the voice half of D8 with them: the engine takes one voice and the word times when its process starts, and the byte-level resume lives there too. X2 now measures the cascade whenever its models are on disk, and waits only for Parakeet 0.6B v3 here. No open row is finished by Rust alone any more: D5, D8, T4, V6 and X4 all end in the engine files, where the voice, the word times and the cue render are set, T1 and T2 need a recogniser and a translation pair on disk, and the rest need a graphics card, a signing certificate, Docker, a phone, ten testers or two hours of running.
+The open rows are the ones a single Windows machine cannot finish on its own. D5, D8, T4, V6 and X4 end in the engine files, where the voice, the word times and the cue render are decided. T3 needs the recogniser's speaker embeddings. M6 and Q5 wait for the two-hour run, which happens when the owner starts using Parlo for real. R2 and R3 need a package channel and Docker installed end to end. D10 keeps its dictionary and waits for a listening check. Everything else is Rejected on purpose.

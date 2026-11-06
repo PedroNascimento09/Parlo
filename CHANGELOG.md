@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- The parity plan now counts one machine: engine breadth, GPU selection, a second device, signed installers and a tester programme are rejected, so the remaining rows are the ones a Windows PC can finish.
 - Meetings: every action item and every decision is now proven to name its speaker and the minute it was said at, by a test that fails when either one leaves the output.
 - A pronunciation dictionary now lives in the repository: fourteen names with a respelling, an IPA form and a CMU form, applied to the whole sentence in `Pipeline::speak` before any engine hears it, shown by `parlo pronounce [word] [--text TEXT]`, and guarded by tests for word boundaries, digits, case, punctuation and a recorder engine that hears `PAR-loh reads JAY-son`.
 - Every engine now has a row on disk for every device, measured or refused in words: `parlo bench --json` writes the hardware, the commit and the reason, the run of this machine lives in `docs/benchmarks/machine-2026-11-06.json`, the echo row measured 0.0026 real time with 6.4 ms for the 2.5 s sentence while the cascade row says it needs Parakeet v3, and a test fails when a row claims a number it did not measure.
