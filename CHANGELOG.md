@@ -4,6 +4,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+- Every dubbing timing mode now carries a rendered fixture of real speech in `engines/cascade/tests/fixtures/timing/`, and the suite fails when a mode's tempo, cut or length drifts from what it promises.
 - `docs/START.md` is the five-minute path from a fresh computer to a dictated sentence, linked from the README beside [benchmarks](docs/BENCHMARKS.md) and [privacy](docs/PRIVACY.md), and a test now fails when a documented command, flag or page link no longer matches the binary.
 - Importing a voice pack now downloads the voices it names before it is saved, so a pack is ready in one action; a pack that cannot install, or a manifest that does not validate, writes nothing and leaves the store as it was.
 - Revoking a voice deletes its recorded sample from disk and playback no longer fails: the voice falls back to the default, the profile keeps the revocation on record, and the other voices keep their samples.
