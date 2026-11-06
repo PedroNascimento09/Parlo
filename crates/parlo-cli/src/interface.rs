@@ -60,4 +60,36 @@ mod tests {
         assert!(CAPTIONS.contains("getDisplayMedia"));
         assert!(CAPTIONS.contains("id=\"source\""));
     }
+
+    #[test]
+    fn every_settings_tab_shows_panes_that_exist() {
+        let page = include_str!("../web/index.html");
+        let start = APP
+            .find("const SETTINGS_TABS = {")
+            .expect("the settings tabs are declared");
+        let block = &APP[start
+            ..start
+                + APP[start..]
+                    .find(
+                        "};
+",
+                    )
+                    .unwrap()];
+        let mut tabs = 0;
+        for line in block.lines().filter(|line| line.contains('[')) {
+            let name = line.split(':').next().unwrap().trim();
+            tabs += 1;
+            assert!(
+                page.contains(&format!("data-tab=\"{name}\"")),
+                "the {name} tab has no button"
+            );
+            for id in line.split('"').skip(1).step_by(2) {
+                assert!(
+                    page.contains(&format!("id=\"{id}\"")),
+                    "the {name} tab shows {id}, which is not on the page"
+                );
+            }
+        }
+        assert_eq!(tabs, 5, "the app keeps five settings tabs");
+    }
 }
