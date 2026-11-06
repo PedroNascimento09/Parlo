@@ -61,7 +61,7 @@ fn speaking(text: &str) -> String {
 fn the_pipeline_speaks_the_language_it_is_given() {
     assert_eq!(
         speaking_in("Parlo lê o JSON", Some("pt")),
-        "Párlô lê o Jêison"
+        "Parlo lê o Jêison"
     );
     assert_eq!(
         speaking_in("Parlo speaks JSON", Some("en")),

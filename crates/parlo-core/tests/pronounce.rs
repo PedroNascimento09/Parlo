@@ -4,7 +4,7 @@ use parlo_core::pronounce::{entries, lookup, respell, respell_in};
 fn a_language_picks_its_own_respelling() {
     assert_eq!(
         respell_in("Parlo lê o JSON", Some("pt")),
-        "Párlô lê o Jêison"
+        "Parlo lê o Jêison"
     );
     assert_eq!(
         respell_in("Parlo reads JSON", Some("en")),

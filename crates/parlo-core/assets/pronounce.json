@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "entries": [
-    { "word": "Parlo", "respell": "PAR-loh", "ipa": "ˈpɑːrloʊ", "cmu": "P AA1 R L OW0", "by_language": {"pt": "Párlô"} },
+    { "word": "Parlo", "respell": "PAR-loh", "ipa": "ˈpɑːrloʊ", "cmu": "P AA1 R L OW0", "by_language": {"pt": "Parlo"} },
     { "word": "Piper", "respell": "PY-per", "ipa": "ˈpaɪpər", "cmu": "P AY1 P ER0", "by_language": {"pt": "Páiper"} },
     { "word": "Parakeet", "respell": "PAIR-a-keet", "ipa": "ˈpærəkiːt", "cmu": "P EH1 R AH0 K IY2 T", "by_language": {"pt": "Páraquit"} },
     { "word": "Whisper", "respell": "WISS-per", "ipa": "ˈwɪspər", "cmu": "W IH1 S P ER0", "by_language": {"pt": "Uísper"} },

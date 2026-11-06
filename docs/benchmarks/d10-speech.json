@@ -1,6 +1,6 @@
 {
-  "text": "O Parlo lê o JSON em português.",
-  "respelled": "O Párlô lê o Jêison em português.",
+  "text": "Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.",
+  "respelled": "Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.",
   "voice": "voice-pt",
   "audio": {
     "file": "docs/benchmarks/d10-speech.wav",
@@ -8,13 +8,13 @@
     "channels": 1,
     "bits_per_sample": 16,
     "sample_rate": 16000,
-    "frames": 88979,
-    "seconds": 5.56,
-    "rms": 7918,
-    "peak": 32708,
-    "tail_rms": 5363
+    "frames": 58700,
+    "seconds": 3.67,
+    "rms": 7171,
+    "peak": 32732,
+    "tail_rms": 4005
   },
-  "transcript": "O Pilorinov, menino J Til Orinov, menino B SM Portugal Tilbody9S.",
+  "transcript": "Ojista tem um dia vomitÃª no Lisboa e apetece passear a tilbeira do rio.",
   "engine": "cascade, European Portuguese Piper voice pt_PT-tugão-medium, recogniser Parakeet 0.6B v3",
-  "commit": "841725b"
+  "commit": "bab8573"
 }

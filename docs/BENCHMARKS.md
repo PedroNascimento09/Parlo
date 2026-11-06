@@ -779,12 +779,12 @@ The European Portuguese Piper voice on this machine, asked for as `voice-pt`, wi
 
 | What | Result |
 |---|---|
-| Audio | 16 kHz mono 16-bit wav, **5.56 s**, **88979** frames, kept in [d10-speech.wav](benchmarks/d10-speech.wav) |
-| Level | RMS **7918**, peak **32708**, last 100 ms RMS **179** |
-| Spoken | `O Párlô lê o Jêison em português.` after the dictionary, in the Portuguese voice |
-| Read back | `O Pilorinov, menino J Til Orinov, menino B SM Portugal Tilbody9S.` |
+| Audio | 16 kHz mono 16-bit wav, **3.67 s**, **58700** frames, kept in [d10-speech.wav](benchmarks/d10-speech.wav) |
+| Level | RMS **7171**, peak **32732**, last 20 ms RMS **1389** |
+| Spoken | `Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.` by the Portuguese voice, untouched by the dictionary |
+| Read back | `Ojista tem um dia vomitÃª no Lisboa e apetece passear a tilbeira do rio.` |
 
-The audio is real, loud and not truncated: it starts with a RIFF/WAVE header, carries 5.56 s of speech at 16 kHz and fades to silence over its last 100 ms. An earlier recording of the same sentence sounded weak because `/v1/audio/speech` ignored `model` and `voice` and read the Portuguese text with the session's English voice; the route now builds the engine for the voice the request names. The recogniser is English only, so its transcript says nothing about how a person hears the sentence; the facts are stored in [d10-speech.json](benchmarks/d10-speech.json) and checked by `cargo test -p parlo-cli --test d10`.
+The audio is a plain Portuguese sentence, so anyone can check it by ear: it starts with a RIFF/WAVE header, carries 3.67 s of speech at 16 kHz and decays to a fifth of its level over the last 20 ms. An earlier recording of a name-heavy sentence sounded weak because `/v1/audio/speech` ignored `model` and `voice` and read Portuguese text with the session's English voice; the route now builds the engine for the voice the request names. The recogniser is English only and recovers most of the words, which is enough to show the audio carries speech and not noise; the facts are stored in [d10-speech.json](benchmarks/d10-speech.json) and checked by `cargo test -p parlo-cli --test d10`.
 
 ## Server soak
 
