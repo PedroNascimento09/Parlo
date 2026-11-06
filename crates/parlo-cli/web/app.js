@@ -1766,21 +1766,21 @@ settingsShortcutSave.addEventListener("click", () =>
   saveShortcut(
     "shortcut",
     settingsShortcut,
-    "Restart Parlo so the new dictation shortcut is registered.",
+    "The old combination stops working.",
   ),
 );
 settingsHandsFreeSave.addEventListener("click", () =>
   saveShortcut(
     "hands_free",
     settingsHandsFree,
-    "Restart Parlo so the new hands free shortcut is registered.",
+    "The old combination stops working.",
   ),
 );
 settingsCaptionsSave.addEventListener("click", () =>
   saveShortcut(
     "captions",
     settingsCaptions,
-    "Restart Parlo so the new captions shortcut is registered.",
+    "The old combination stops working.",
   ),
 );
 if (settingsUndoSave) {
@@ -1788,7 +1788,7 @@ if (settingsUndoSave) {
     saveShortcut(
       "undo",
       settingsUndo,
-      "Restart Parlo so the new undo shortcut is registered.",
+      "The old combination stops working.",
     ),
   );
 }
