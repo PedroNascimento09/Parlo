@@ -7,6 +7,7 @@ pub mod latency;
 pub mod pipeline;
 pub mod resample;
 pub mod ring;
+pub mod sessions;
 pub mod settings;
 pub mod shortcut;
 pub mod state;

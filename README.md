@@ -121,6 +121,8 @@ parlo profile                 # what this machine can do, and what to load
 parlo doctor                  # whether capture and the engine are healthy
 ```
 
+Every start of the program leaves a record in `sessions.jsonl` in the data folder: the moment it began, the moment a clean exit ended it, or the message and the file and line of a panic, newest 400 lines kept. `parlo doctor` reads that file back and prints the sessions recorded, how many were clean, how many crashed, when the last one ended and the crash-free rate, and says in one line when there is nothing recorded yet.
+
 ## Measured
 
 Windows 11 laptop, no GPU, 4 threads. Conditions and every raw row are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).

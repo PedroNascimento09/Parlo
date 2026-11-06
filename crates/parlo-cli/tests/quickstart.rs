@@ -105,6 +105,37 @@ fn the_documented_doctor_command_runs_on_the_real_binary() {
 }
 
 #[test]
+fn the_doctor_reports_the_sessions_it_finds_on_disk() {
+    let data = std::env::temp_dir().join(format!("parlo-sessions-doctor-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&data);
+    std::fs::create_dir_all(&data).unwrap();
+    std::fs::write(
+        data.join("sessions.jsonl"),
+        concat!(
+            "{\"event\":\"start\",\"id\":1,\"at\":1000}\n",
+            "{\"event\":\"end\",\"id\":1,\"at\":1010}\n",
+            "{\"event\":\"start\",\"id\":2,\"at\":2000}\n",
+            "{\"event\":\"crash\",\"id\":2,\"at\":2005,\"message\":\"boom\",\"location\":\"src/x.rs:1:1\"}\n",
+            "{\"event\":\"start\",\"id\":3,\"at\":3000}\n",
+            "{\"event\":\"end\",\"id\":3,\"at\":3030}\n",
+        ),
+    )
+    .unwrap();
+    let output = binary()
+        .arg("doctor")
+        .env("PARLO_DATA_DIR", &data)
+        .output()
+        .expect("parlo doctor runs");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("3 recorded, 2 clean, 1 crashed (66.7% crash free)"),
+        "{stdout}"
+    );
+    assert!(stdout.contains("last ran 30 s and ended clean"), "{stdout}");
+    let _ = std::fs::remove_dir_all(&data);
+}
+
+#[test]
 fn every_page_the_start_page_and_the_readme_link_to_exists() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for page in ["docs/START.md", "docs/BENCHMARKS.md", "docs/PRIVACY.md"] {

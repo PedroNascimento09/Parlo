@@ -68,6 +68,9 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const ENGINE_LATENCY_MS: u32 = 1_500;
 
 fn main() -> ExitCode {
+    let sessions = parlo_core::sessions::Log::default_log();
+    parlo_core::sessions::install_hook(sessions.clone());
+    let session = sessions.begin();
     let args: Vec<String> = env::args().skip(1).collect();
     let outcome = match args.first().map(String::as_str) {
         Some("doctor") => doctor(),
@@ -106,6 +109,7 @@ fn main() -> ExitCode {
         Some(other) => Err(format!("unknown command: {other}")),
     };
 
+    session.finish();
     match outcome {
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {
@@ -203,6 +207,14 @@ fn doctor() -> Result<(), String> {
     println!("config            {}", config_summary());
     println!("data              {}", config::data_root().display());
     println!("ffmpeg            {}", ffmpeg_version());
+    println!();
+    println!("sessions");
+    for line in parlo_core::sessions::Log::default_log()
+        .report(Some(parlo_core::sessions::current()))
+        .lines()
+    {
+        println!("  {line}");
+    }
 
     let cores = engines::detect_cores();
     let profile = engines::profile_for_cores(cores);
@@ -232,6 +244,7 @@ fn doctor() -> Result<(), String> {
         if let Some(advice) = next_step(failed, missing) {
             println!("next              {advice}");
         }
+        parlo_core::sessions::finish_current();
         std::process::exit(1);
     }
     println!("status            ready for a first session");
