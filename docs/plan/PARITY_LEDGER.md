@@ -7,18 +7,21 @@ Rules:
 1. **Done** means verified on this machine with the acceptance line, not merged code.
 2. A capability claimed in the README has a measured number or says it was not measured.
 3. A row that cannot run locally is Rejected, never moved to a cloud.
-4. The breadth targets are floors, not aspirations: 20 speech engines, 12 recognisers, the 646-language class, 21 interface locales, six platforms.
+4. The breadth targets are floors, not aspirations: 20 speech engines, 12 recognisers, the 646-language class, 21 interface locales, four platforms.
 5. Every row has one owner-phase. A phase that ships without closing its rows is late, not smaller.
 
 ## Destination
+
+The product is a desktop one. Android and iOS apps are rejected rather than deferred (see R4 and R5), because the work that makes Parlo worth installing happens on a computer: the models, the microphone, the call, the editor. A phone reaches a running server over the LAN with the PIN.
+
 
 | Dimension | VoiceStudio (v0.5.7) | Parlo target | Phase |
 |---|---|---|---|
 | Speech engines | 17 TTS, 11 ASR | 20 TTS, 12 ASR | 1–2 |
 | Languages | 646 | 646-language class, licence-gated | 1 |
 | Interface locales | 21 | 21 | 5 |
-| Platforms | Windows, macOS, Linux, Docker, Android, iOS | Same six | 0–5 |
-| Stores | Homebrew, AUR, Snap, DEB, AppImage, Nix, MS Store, Mac App Store, F-Droid | Same list | 5 |
+| Platforms | Windows, macOS, Linux, Docker | Same four | 0 |
+| Stores | Homebrew, AUR, Snap, DEB, AppImage, Nix, MS Store, Mac App Store | Same list | 5 |
 | API | OpenAI-compatible, WS, MCP HTTP+stdio, LAN PIN | Same, plus token by default | 1 |
 | Dubbing | Multi-speaker, multi-target, timing modes, QC | Same | 3 |
 | Longform | Batch, stories, audiobooks | Same | 4 |
@@ -138,9 +141,9 @@ Rules:
 | R1 | Signed installer | Yes | No | Authenticode and notarised macOS | 5 | SmartScreen does not warn |
 | R2 | Package managers | 9 channels | Partial · fe2bd56: seven manifests under `packaging/` repack the published v0.2.4 downloads — winget, Homebrew, AUR (`parlo-bin`), Snap, the DEB rules, an AppImage recipe and a Nix derivation — carrying the published checksums, `packaging/README.md` gives each install command and marks all seven Partial, and `cargo test -p parlo-cli --test packaging` fails when a manifest drifts from `Cargo.toml`, drops its checksum or names an archive `release.yml` does not attach; no channel has been installed end to end from this machine, and the nine this row counts have no second list beyond the seven the acceptance column names | winget, brew, AUR, Snap, DEB, AppImage, Nix | 5 | One command installs on each |
 | R3 | Docker | CPU, CUDA, ROCm | Partial · f94a456: `packaging/docker/Dockerfile` builds from the published `parlo-linux-x86_64.tar.gz`, checks the hash from `SHA256SUMS.txt` before unpacking it, runs as uid 10001 and starts `parlo serve` on 8787 through `packaging/docker/entrypoint.sh`, which writes `PARLO_CONFIG` with the sharing switch and `PARLO_PIN`; `cargo test -p parlo-cli --test packaging` fails when the archive, the version, the checksum, the user or the port drift; no image has been built or run here, and the PyInstaller engine ships without models | Parity | 5 | `docker run` serves the OpenAI endpoint |
-| R4 | Android app | Preview, offline | No | Native, offline after download | 5 | A phone transcribes a file in airplane mode |
-| R5 | iOS app | Preview, sideload | No | Native, offline | 5 | The same file transcribes on an iPhone |
-| R6 | Stores | MS Store, Mac App Store, F-Droid | No | Parity | 5 | A store build installs and updates |
+| R4 | Android app | Preview, offline | Rejected · the product is the desktop, and a phone reaches the server over the LAN with the PIN instead of an app | Not planned | — | Not planned |
+| R5 | iOS app | Preview, sideload | Rejected · the product is the desktop, and a phone reaches the server over the LAN with the PIN instead of an app | Not planned | — | Not planned |
+| R6 | Stores | MS Store, Mac App Store | No | Desktop stores, parity | 5 | A store build installs and updates |
 | R7 | Update channels | Stable and preview | Done · 2d17fd3: the Updates field in the app and `parlo config --channel preview` store the choice, the release request asks for the full list and keeps prereleases only on preview, a preview build moves to a newer preview or a newer stable while a stable build never takes a preview, and offline tests over a fake feed fail when any of the three breaks | Parity | 5 | A preview build updates to stable |
 | R8 | Website and docs | Yes, 20 languages | Done · 694d054: `docs/START.md` is the landing page a stranger follows from install to a dictated sentence, benchmarks, privacy and every other page are linked from it and from the README, and `crates/parlo-cli/tests/quickstart.rs` extracts the documented commands and flags from both pages, fails when one is not a command or flag the binary has, runs `parlo doctor` on the real binary, and fails when a linked page does not exist | Site, quick start, benchmarks, privacy | 5 | A stranger installs in under five minutes |
 
@@ -175,7 +178,7 @@ These are not parity rows; they are why someone chooses Parlo when both can do t
 | 2 Voice | Clone, design, 20 engines, devices, previews | 16 weeks | 8 weeks |
 | 3 Dubbing | Multi-speaker, multi-target, QC, export matrix | 16 weeks | 9 weeks |
 | 4 Longform and batch | Queue, watch folders, stories, audiobooks | 12 weeks | 6 weeks |
-| 5 Reach | Signed builds, stores, mobile, 21 locales, site | 16 weeks | 8 weeks |
+| 5 Reach | Signed builds, desktop stores, 21 locales, site | 16 weeks | 8 weeks |
 | 6 Audit | Every ledger row, benchmarks, testers, 1.0 | 10 weeks | 5 weeks |
 | **Total** | | **88 weeks** | **45 weeks** |
 
@@ -183,7 +186,7 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-54 of 80 rows are Done (67.5%), counted as the rows whose Parlo today cell starts with Done or Yes. Eleven Partial rows counted at half give 74.4%.
+54 of the 78 planned rows are Done (69.2%), counted as the rows whose Parlo today cell starts with Done or Yes; the two mobile rows are Rejected and counted in no total. Eleven Partial rows counted at half give 76.3%.
 
 ## Next
 
