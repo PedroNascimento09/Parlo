@@ -31,6 +31,9 @@ pub struct Config {
     pub share: bool,
     pub share_pin: String,
     pub share_port: u16,
+    pub remote_url: String,
+    pub remote_token: String,
+    pub remote_ca: String,
     pub device: Option<usize>,
     pub compute: String,
     pub unload: u32,
@@ -141,6 +144,9 @@ impl Default for Config {
             share: false,
             share_pin: String::new(),
             share_port: 8788,
+            remote_url: String::new(),
+            remote_token: String::new(),
+            remote_ca: String::new(),
             device: None,
             compute: "auto".to_string(),
             unload: 30,
@@ -335,6 +341,28 @@ mod tests {
         assert_eq!(config.intelligence.mode, "auto");
         assert_eq!(config.intelligence.clean, "light");
         assert!(!config.intelligence.allow_cloud);
+    }
+
+    #[test]
+    fn a_remote_backend_round_trips() {
+        let mut config = Config::default();
+        assert!(config.remote_url.is_empty());
+        config.remote_url = "https://desk.example:8788".to_string();
+        config.remote_token = "secret".to_string();
+        config.remote_ca = "desk.pem".to_string();
+        let text = serde_json::to_string(&config).unwrap();
+        let loaded: Config = serde_json::from_str(&text).unwrap();
+        assert_eq!(loaded.remote_url, "https://desk.example:8788");
+        assert_eq!(loaded.remote_token, "secret");
+        assert_eq!(loaded.remote_ca, "desk.pem");
+    }
+
+    #[test]
+    fn an_older_config_has_no_remote_backend() {
+        let config: Config = serde_json::from_str("{\"port\": 9000}").unwrap();
+        assert!(config.remote_url.is_empty());
+        assert!(config.remote_token.is_empty());
+        assert!(config.remote_ca.is_empty());
     }
 
     #[test]

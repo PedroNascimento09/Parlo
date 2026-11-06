@@ -47,6 +47,7 @@ mod packs;
 mod playback;
 mod record;
 mod registry;
+mod remote;
 mod retention;
 mod sample;
 mod serve;
@@ -82,6 +83,7 @@ fn main() -> ExitCode {
         Some("app") => app_command(&args[1..]),
         Some("mcp") => mcp::serve(),
         Some("retention") => retention_command(&args[1..]),
+        Some("remote") => remote_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
         Some("undo") => undo_command(),
         Some("update") => update_command(&args[1..]),
@@ -868,6 +870,9 @@ fn config_command(args: &[String]) -> Result<(), String> {
                 }
             }
             "--pin" => config.share_pin = parlo_core::settings::check_pin(&value)?,
+            "--remote-url" => config.remote_url = remote::check_url(&value)?,
+            "--remote-token" => config.remote_token = value,
+            "--remote-ca" => config.remote_ca = value,
             "--share-port" => {
                 config.share_port = value
                     .parse()
@@ -910,6 +915,11 @@ fn config_command(args: &[String]) -> Result<(), String> {
         println!("  share    on, port {}", config.share_port);
     } else {
         println!("  share    off");
+    }
+    if config.remote_url.is_empty() {
+        println!("  remote   off");
+    } else {
+        println!("  remote   {}", config.remote_url);
     }
     match config.device {
         Some(device) => println!("  device   {device}"),
@@ -1078,6 +1088,8 @@ fn serve_command(args: &[String]) -> Result<(), String> {
     let stored = config::load();
     let mut port = stored.port;
     let mut token = None;
+    let mut certificate = None;
+    let mut key = None;
     let mut engine = stored.engine.clone();
     let mut stt = stored.stt.clone();
     let mut from = stored.from.clone();
@@ -1106,6 +1118,18 @@ fn serve_command(args: &[String]) -> Result<(), String> {
                 index += 1;
                 token = Some(args.get(index).ok_or("--token needs a value")?.clone());
             }
+            "--tls-cert" => {
+                index += 1;
+                certificate = Some(std::path::PathBuf::from(
+                    args.get(index).ok_or("--tls-cert needs a value")?,
+                ));
+            }
+            "--tls-key" => {
+                index += 1;
+                key = Some(std::path::PathBuf::from(
+                    args.get(index).ok_or("--tls-key needs a value")?,
+                ));
+            }
             "--engine" => {
                 index += 1;
                 engine = args.get(index).cloned().ok_or("--engine needs a value")?;
@@ -1121,14 +1145,50 @@ fn serve_command(args: &[String]) -> Result<(), String> {
 
     set_direction(&from, &to)?;
     config::check_stt(&stt)?;
-    serve::run(
-        port,
-        token.unwrap_or_else(serve::new_token),
-        engine,
-        stt,
-        from,
-        to,
-    )
+    let token = token.unwrap_or_else(serve::new_token);
+    match (certificate, key) {
+        (Some(certificate), Some(key)) => serve::run_tls(
+            port,
+            token,
+            serve::TlsFiles { certificate, key },
+            engine,
+            stt,
+            from,
+            to,
+        ),
+        (None, None) => serve::run(port, token, engine, stt, from, to),
+        _ => Err("--tls-cert and --tls-key go together".to_string()),
+    }
+}
+
+fn remote_command(args: &[String]) -> Result<(), String> {
+    let file = args.first().ok_or("remote needs a 16 kHz mono wav file")?;
+    let bytes = std::fs::read(file).map_err(|error| format!("{file}: {error}"))?;
+    let config = config::load();
+    let answer = remote::post(&config, "/translate", "audio/wav", &bytes)?;
+    if answer.status != 200 {
+        return Err(format!(
+            "the remote backend answered {}: {}",
+            answer.status,
+            String::from_utf8_lossy(&answer.body).trim()
+        ));
+    }
+    let transcript = answer
+        .headers
+        .iter()
+        .find(|(name, _)| name == "x-parlo-transcript")
+        .and_then(|(_, value)| {
+            use base64::Engine as _;
+            base64::engine::general_purpose::STANDARD.decode(value).ok()
+        })
+        .map(|bytes| String::from_utf8_lossy(&bytes).into_owned())
+        .unwrap_or_default();
+    if transcript.is_empty() {
+        println!("{} bytes of audio returned", answer.body.len());
+    } else {
+        println!("{transcript}");
+    }
+    Ok(())
 }
 
 fn update_command(args: &[String]) -> Result<(), String> {
