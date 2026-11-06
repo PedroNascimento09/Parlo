@@ -56,6 +56,18 @@ mod tests {
     }
 
     #[test]
+    fn the_overlay_writes_in_every_language_the_models_carry() {
+        let page = include_str!("../web/island.html");
+        assert!(page.contains("<option value=\"\">Spoken language</option>"));
+        for code in ["en", "pt", "es", "fr", "de", "it", "nl", "ru"] {
+            assert!(
+                page.contains(&format!("<option value=\"{code}\">")),
+                "the overlay cannot write in {code}"
+            );
+        }
+    }
+
+    #[test]
     fn the_captions_page_offers_the_computer_s_sound() {
         assert!(CAPTIONS.contains("getDisplayMedia"));
         assert!(CAPTIONS.contains("id=\"source\""));
