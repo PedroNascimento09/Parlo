@@ -53,6 +53,7 @@ mod retention;
 mod sample;
 mod serve;
 mod sidecar;
+mod soak;
 mod speakers;
 mod store;
 mod story;
@@ -89,6 +90,7 @@ fn main() -> ExitCode {
         Some("retention") => retention_command(&args[1..]),
         Some("remote") => remote_command(&args[1..]),
         Some("serve") => serve_command(&args[1..]),
+        Some("soak") => soak::command(&args[1..]),
         Some("undo") => undo_command(),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
@@ -126,6 +128,9 @@ fn print_help() {
     println!();
     println!("commands:");
     println!("  doctor                             check the local audio setup");
+    println!(
+        "  soak [--seconds N] [--interval S]  run the server and record its memory for N seconds"
+    );
     println!("  undo                               take back what the last dictation wrote");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  bench [--json]                     measure every engine on this machine");

@@ -149,6 +149,21 @@ impl Log {
         report
     }
 
+    pub fn open_session(&self, skip: Option<u64>) -> Option<u64> {
+        let records = self.records();
+        records
+            .iter()
+            .rev()
+            .find(|start| {
+                start.event == "start"
+                    && Some(start.id) != skip
+                    && !records.iter().any(|record| {
+                        (record.event == "end" || record.event == "crash") && record.id == start.id
+                    })
+            })
+            .map(|start| start.id)
+    }
+
     fn records(&self) -> Vec<Record> {
         let text = match fs::read_to_string(&self.path) {
             Ok(text) => text,
