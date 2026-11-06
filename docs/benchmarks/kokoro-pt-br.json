@@ -1,0 +1,16 @@
+{
+  "recogniser": "Parakeet TDT 0.6B v3 int8, four threads",
+  "machine": "AMD Ryzen 5 3600, 16 GB, Windows 11, CPU only",
+  "measured": "2026-11-06",
+  "text": "Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.",
+  "audio": "kokoro-pt-br.wav",
+  "voice": "pf_dora",
+  "engine": "kokoro-onnx 0.6.1, onnxruntime 1.31.1, kokoro-v1.0.onnx 311 MB and voices-v1.0.bin 27 MB",
+  "sample_rate": 24000,
+  "seconds": 3.84,
+  "cold_synthesis_seconds": 1.82,
+  "warm_synthesis_seconds": 1.5,
+  "real_time_factor": 0.39,
+  "words_recovered": 0.929,
+  "transcript": "Hoje está um dia bonito em Lisboa e apetece passear a beira do rio."
+}

@@ -1,0 +1,15 @@
+{
+  "recogniser": "Parakeet TDT 0.6B v3 int8, four threads",
+  "machine": "AMD Ryzen 5 3600, 16 GB, Windows 11, CPU only",
+  "measured": "2026-11-06",
+  "text": "Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.",
+  "audio": "piper-pt-pt.wav",
+  "voice": "pt_PT-tugão-medium",
+  "engine": "piper-tts 1.8.0, PiperVoice.synthesize",
+  "sample_rate": 22050,
+  "seconds": 3.18,
+  "warm_synthesis_seconds": 0.22,
+  "real_time_factor": 0.07,
+  "words_recovered": 0.71,
+  "transcript": "Hoje este a tio um dia do Mita em Lisboa e apetece passear à tilbeira do rio."
+}

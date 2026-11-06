@@ -704,6 +704,21 @@ The Rust engine still starts faster and uses less memory with the recogniser loa
 .venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip.wav --models .tmp-models --voice .tmp-models/pt_PT-tugão-medium.onnx --espeak-data .venv/Lib/site-packages/piper/espeak-ng-data --cascade-dir engines/cascade --rust crates/parlo-engine-rs/target/x86_64-pc-windows-msvc/release/parlo-engine.exe --from pt --to en --threads 4 --runs 3 --json .tmp-bench.json
 ```
 
+## Kokoro against the Portuguese voice
+
+Kokoro 82M is the permissive synthesiser the project keeps considering, and it now has a measurement instead of an expectation. Both files read one sentence, `Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.`, on the reference machine above: CPU only, Windows 11, Python 3.12, piper-tts 1.8.0 and kokoro-onnx 0.6.1 on onnxruntime 1.31.1. The recogniser is Parakeet TDT 0.6B v3 int8 on four threads, the same build the cascade uses.
+
+| Voice | Sample rate | Audio | Warm synthesis | Real time factor | Words recovered |
+|---|---|---|---|---|---|
+| Piper `pt_PT-tugão-medium` | 22 050 Hz | 3.18 s | 0.22 s | 0.070 | 0.710 |
+| Kokoro `pf_dora` | 24 000 Hz | 3.84 s | 1.50 s | 0.390 | 0.929 |
+
+"Words recovered" is the difflib ratio between the lowercase word tokens of the sentence and of the recogniser's transcript of the same audio a listener would hear. It says how much of the sentence survives synthesis and recognition, it is not a naturalness score, and nobody listened to the files to rate them. The transcripts are in `benchmarks/piper-pt-pt.json` and `benchmarks/kokoro-pt-br.json`, next to the audio, so both the number and the sound can be checked again.
+
+Kokoro is the more intelligible of the two here and it is still not the voice this product can adopt. Its Portuguese is Brazilian: the model ships `pf_dora`, `pm_alex` and `pm_santa`, and its card lists `pt-BR`. It is also 5.6 times slower on the same CPU, needs a 311 MB model and 27 MB of voices against 63 MB, and `kokoro-onnx` requires `phonemizer`, which is GPL-3.0, and `espeakng-loader`, which carries espeak-ng: the licence the optional Piper adapter exists to keep out of the package. Apache-2.0 weights do not make the deployment permissive.
+
+The gap named in the roadmap is therefore unchanged. The European Portuguese voice the app offers is the only one Piper publishes, and the recogniser recovers 0.710 of the words from it against 0.929 from the Brazilian one. Closing that gap needs a European Portuguese voice under a permissive licence, measured with this harness before it is offered to anyone.
+
 ## Every engine on every device
 
 `parlo bench` runs what this machine can run and says what it cannot, one row per engine and device, with the hardware, the profile and the commit beside every number.
