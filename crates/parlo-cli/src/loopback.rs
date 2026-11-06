@@ -1,7 +1,9 @@
+#[cfg(windows)]
 use parlo_core::AudioFormat;
 
 use crate::record::Recording;
 
+#[cfg(windows)]
 const RATE: u32 = 16_000;
 
 #[cfg(windows)]
