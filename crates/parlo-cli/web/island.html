@@ -138,6 +138,7 @@
   }
   body.ready .actions { display: flex; }
   .write {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 2px;
@@ -155,33 +156,91 @@
     text-transform: uppercase;
     color: var(--muted);
   }
-  .write-select {
+  .write-btn {
     font: inherit;
     font-size: 11.5px;
     font-weight: 600;
-    padding: 4px 22px 4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 9px 5px 10px;
     border: 0;
     border-radius: 999px;
+    background: transparent;
     color: var(--ink);
     cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    background-color: transparent;
-    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-    background-position: calc(100% - 11px) 52%, calc(100% - 7px) 52%;
-    background-size: 4px 4px, 4px 4px;
-    background-repeat: no-repeat;
+    transition: background 140ms ease;
   }
-  .write-select:hover {
-    background-color: var(--line);
+  .write-btn:hover,
+  .write-btn[aria-expanded="true"] {
+    background: var(--line);
   }
-  .write-select option {
-    background: #101213;
-    color: var(--ink);
+  .write-btn::after {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg) translate(-1px, -1px);
+    transition: transform 140ms ease;
   }
-  .write-select:focus-visible {
+  .write-btn[aria-expanded="true"]::after {
+    transform: rotate(225deg) translate(-1px, -1px);
+  }
+  .write-btn:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+  .write-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    min-width: 190px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #0e1011;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.45);
+    display: grid;
+    gap: 2px;
+    z-index: 5;
+    animation: menuIn 130ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  .write-menu[hidden] {
+    display: none;
+  }
+  .write-option {
+    font: inherit;
+    font-size: 12.5px;
+    text-align: left;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .write-option:hover,
+  .write-option:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--ink);
+    outline: none;
+  }
+  .write-option[aria-selected="true"] {
+    color: var(--accent);
+  }
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .switch-label {
+    font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
   .rule {
     width: 1px;
@@ -238,7 +297,7 @@
     to { opacity: 1; transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .island, .switch, .switch .knob, .wave, .wave i { animation: none; transition: none; }
+    .island, .switch, .switch .knob, .wave, .wave i, .write-menu, .write-btn, .write-option { animation: none; transition: none; }
   }
 </style>
 </head>
@@ -254,12 +313,14 @@
     <div class="actions">
       <div class="write" role="group" aria-label="Write in">
         <span class="write-label">Write</span>
-        <select class="write-select" id="write" aria-label="Dictation writes">
-          <option value="">Spoken language</option>
-        </select>
+        <button type="button" class="write-btn" id="write" aria-haspopup="listbox" aria-expanded="false" aria-label="Dictation writes">
+          <span id="write-name">Spoken language</span>
+        </button>
+        <div class="write-menu" id="write-menu" role="listbox" aria-label="Dictation writes" hidden></div>
       </div>
       <span class="rule" aria-hidden="true"></span>
-      <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-label="Clean text, removes the words you took back" title="Clean text, removes the words you took back">
+      <span class="switch-label" id="tidy-label">Clean</span>
+      <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" title="Removes filler words and repeats before writing">
         <span class="knob"></span>
       </button>
       <button type="button" class="record" id="record">Record</button>
@@ -809,28 +870,71 @@ function paintTidy() {
 }
 
 const writeEl = document.getElementById("write");
+const writeMenu = document.getElementById("write-menu");
+const writeName = document.getElementById("write-name");
 
 function writableTargets() {
   return writeTargets(writePairs, writeNames, writeSource);
 }
 
-function paintWrite() {
-  const active = effectiveWrite();
-  writeEl.value = [...writeEl.options].some((option) => option.value === active) ? active : "";
+function writeOptions() {
+  return [{ code: "", name: "Spoken language" }].concat(
+    writableTargets().map((code) => ({ code, name: writeNames[code] || code.toUpperCase() })),
+  );
 }
 
 function effectiveWrite() {
   const chosen = writeChoice === null ? writeTarget : writeChoice;
-  return [...writeEl.options].some((option) => option.value === chosen) ? chosen : "";
+  return writeOptions().some((option) => option.code === chosen) ? chosen : "";
 }
 
-function fillWrite() {
-  const wanted = writeChoice === null ? writeTarget : writeChoice;
-  writeEl.replaceChildren(new Option("Spoken language", ""));
-  for (const code of writableTargets()) {
-    writeEl.append(new Option(writeNames[code] || code.toUpperCase(), code));
+function paintWrite() {
+  const active = effectiveWrite();
+  const shown = writeOptions().find((option) => option.code === active);
+  writeName.textContent = shown ? shown.name : "Spoken language";
+  for (const item of writeMenu.children) {
+    item.setAttribute("aria-selected", String(item.dataset.code === active));
   }
-  writeEl.value = [...writeEl.options].some((option) => option.value === wanted) ? wanted : "";
+}
+
+function openWriteMenu(open) {
+  writeMenu.hidden = !open;
+  writeEl.setAttribute("aria-expanded", String(open));
+  if (!open) {
+    return;
+  }
+  const active = writeMenu.querySelector('[aria-selected="true"]') || writeMenu.firstElementChild;
+  if (active) {
+    active.focus();
+  }
+}
+
+function chooseWrite(code) {
+  writeChoice = code;
+  localStorage.setItem("parlo-write", writeChoice);
+  openWriteMenu(false);
+  paintWrite();
+  writeEl.focus();
+  setState(
+    "Ready",
+    code ? "Writes " + (writeNames[code] || code.toUpperCase()) + " until you change it." : "Writes the language you speak.",
+    true,
+  );
+}
+
+function buildWriteMenu() {
+  writeMenu.replaceChildren();
+  for (const option of writeOptions()) {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "write-option";
+    item.dataset.code = option.code;
+    item.setAttribute("role", "option");
+    item.textContent = option.name;
+    item.addEventListener("click", () => chooseWrite(option.code));
+    writeMenu.append(item);
+  }
+  paintWrite();
 }
 
 async function loadLanguages() {
@@ -845,16 +949,37 @@ async function loadLanguages() {
   } catch (failure) {
     writePairs = [];
   }
-  fillWrite();
+  buildWriteMenu();
 }
 
-writeEl.addEventListener("change", () => {
-  writeChoice = writeEl.value;
-  localStorage.setItem("parlo-write", writeChoice);
-  if (writeChoice) {
-    setState("Ready", "Writes " + writeEl.selectedOptions[0].textContent + " until you change it.", true);
-  } else {
-    setState("Ready", "Writes the language you speak.", true);
+writeEl.addEventListener("click", () => openWriteMenu(writeMenu.hidden));
+writeEl.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    openWriteMenu(true);
+  }
+});
+writeMenu.addEventListener("keydown", (event) => {
+  const items = [...writeMenu.children];
+  const at = items.indexOf(document.activeElement);
+  if (event.key === "Escape") {
+    event.preventDefault();
+    openWriteMenu(false);
+    writeEl.focus();
+    return;
+  }
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    items[Math.min(at + 1, items.length - 1)].focus();
+  }
+  if (event.key === "ArrowUp") {
+    event.preventDefault();
+    items[Math.max(at - 1, 0)].focus();
+  }
+});
+writeMenu.addEventListener("focusout", (event) => {
+  if (!writeMenu.contains(event.relatedTarget) && event.relatedTarget !== writeEl) {
+    openWriteMenu(false);
   }
 });
 

@@ -1448,33 +1448,6 @@ const TIMING_NAMES = {
   stretch: "Stretch",
   "lip-sync": "Lip sync",
 };
-const settingsWrite = document.getElementById("settings-write");
-const writeNames = {};
-let writePairs = [];
-
-function fillSettingsWrite() {
-  const wanted = settingsWrite.value;
-  const from = settingsFrom.value;
-  settingsWrite.replaceChildren(new Option("The language spoken", ""));
-  for (const code of writeTargets(writePairs, writeNames, from)) {
-    settingsWrite.append(new Option(writeNames[code] || code.toUpperCase(), code));
-  }
-  settingsWrite.value = [...settingsWrite.options].some((option) => option.value === wanted) ? wanted : "";
-}
-
-fetch("/languages.json", { cache: "no-store" })
-  .then((response) => (response.ok ? response.json() : null))
-  .then((table) => {
-    if (!table) {
-      return;
-    }
-    writePairs = Array.isArray(table.pairs) ? table.pairs : [];
-    Object.assign(writeNames, table.names || {});
-    fillSettingsWrite();
-  })
-  .catch(() => {});
-
-settingsFrom.addEventListener("change", fillSettingsWrite);
 const settingsShortcut = document.getElementById("settings-shortcut");
 const settingsShortcutSave = document.getElementById("settings-shortcut-save");
 const settingsHandsFree = document.getElementById("settings-hands-free");
@@ -1677,8 +1650,7 @@ function settingsChanged() {
   return (
     settingsFrom.value !== savedSettings.from ||
     settingsTo.value !== savedSettings.to ||
-    settingsStt.value !== savedSettings.stt ||
-    settingsWrite.value !== savedSettings.write
+    settingsStt.value !== savedSettings.stt
   );
 }
 
@@ -1690,7 +1662,6 @@ function reflectSettings(values) {
   settingsFrom.value = values.from || "en";
   settingsTo.value = values.to || "pt";
   settingsStt.value = values.stt || "parakeet";
-  settingsWrite.value = values.write || "";
   settingsManageMemory.checked = values.manage_memory !== false;
   settingsUnload.value = String(typeof values.unload === "number" ? values.unload : 30);
   settingsUnload.disabled = !settingsManageMemory.checked;
@@ -1705,7 +1676,7 @@ function reflectSettings(values) {
     from: settingsFrom.value,
     to: settingsTo.value,
     stt: settingsStt.value,
-    write: settingsWrite.value,
+    write: values.write || "",
   };
   const pair = describePair(savedSettings.from, savedSettings.to);
   settingsNote.textContent = savedSettings.write
@@ -1993,7 +1964,6 @@ function lockSettings(locked) {
   settingsFrom.disabled = locked;
   settingsTo.disabled = locked;
   settingsStt.disabled = locked;
-  settingsWrite.disabled = locked;
   settingsSwap.disabled = locked;
   settingsApply.disabled = locked;
 }
@@ -2040,7 +2010,7 @@ async function saveSettings() {
         from: settingsFrom.value,
         to: settingsTo.value,
         stt: settingsStt.value,
-        write: settingsWrite.value,
+        write: savedSettings.write,
       }),
     });
     const detail = await response.json().catch(() => ({}));
@@ -2074,7 +2044,6 @@ settingsTo.addEventListener("change", () => {
 
 settingsStt.addEventListener("change", () => refreshApply());
 
-settingsWrite.addEventListener("change", () => refreshApply());
 
 settingsSwap.addEventListener("click", () => {
   if (settingsBusy) {

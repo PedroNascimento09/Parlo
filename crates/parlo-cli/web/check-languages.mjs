@@ -9,16 +9,11 @@ const shared = read("languages.js");
 
 const writeTargets = new Function(`${shared}; return writeTargets;`)();
 
-for (const [name, page, script] of [
-  ["island", read("island.html"), read("island.html")],
-  ["app", read("index.html"), read("app.js")],
-]) {
-  if (!page.includes('src="languages.js"') && !page.includes('src="/languages.js"')) {
-    throw new Error(`the ${name} does not load the shared list`);
-  }
-  if (!script.includes("writeTargets(")) {
-    throw new Error(`the ${name} builds its own write list`);
-  }
+if (!read("island.html").includes('src="languages.js"') || !read("island.html").includes("writeTargets(")) {
+  throw new Error("the island does not load the shared list");
+}
+if (read("index.html").includes('id="settings-write"') || read("app.js").includes("writeTargets(")) {
+  throw new Error("the app offers a second write list");
 }
 
 const names = table.names;
