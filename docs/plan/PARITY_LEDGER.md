@@ -125,7 +125,7 @@ Rules:
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
 | X1 | Model catalogue | Yes | Done · dfb8b40: 52 entries, and every card carries a licence, a source and its languages | Keep, generated from the registry | 0 | A card cannot exist without a licence |
-| X2 | Per-engine benchmarks | Yes | Partial | One row per engine and device | 6 | No card claims a number without a row |
+| X2 | Per-engine benchmarks | Yes | Partial: every engine has a row for every device with its hardware and commit, but the cascade row carries no number on this machine because the sidecar benchmark is not wired into `parlo bench` | One row per engine and device | 6 | No card claims a number without a row |
 | X3 | GPU auto-detect | Yes | Done · 62bb7ff: the profile follows the detected graphics card, `/engine` names the device and the reason, and Settings can force the processor | Parity | 2 | The chosen device is shown and overridable |
 | X4 | Download resume and repair | Yes | Blocked · the byte-level resume lives in `engines/cascade`, off limits in this campaign; `crates/parlo-cli/src/models.rs` only reports `download_remaining` | Parity | 1 | A killed download resumes at the byte |
 | X5 | Model packs | Yes | No | Parity | 5 | A pack installs a working set in one action |
@@ -149,7 +149,7 @@ Rules:
 | ID | Capability | VoiceStudio | Parlo today | Target | Phase | Acceptance |
 |---|---|---|---|---|---|---|
 | Q1 | Automated tests | Large suite | Done · 8d0a20b: 380 Rust, 87 core and the full Python suite, 803 tests in all; `ROUTES` names all 90 route rows, the sweep refuses every one without the token, the behaviour tests answer the pages, meetings, vocabulary, voice, models, history, dub, insert and settings routes, and `the_route_table_covers_every_route_the_router_serves` fails when a route arrives without a row | 600+, route and flow tests | 6 | Every route has a test |
-| Q2 | Published benchmarks | Yes | Yes, one machine | Per engine, per device | 6 | Hardware and commit beside every number |
+| Q2 | Published benchmarks | Yes | Done · 555fbe6: `parlo bench` publishes one row per engine and device with the cores, the memory, the gpu, the profile and the commit, `the_published_table_is_the_one_the_run_generates` fails when `docs/BENCHMARKS.md` drifts from `docs/benchmarks.json`, and `every_published_number_names_real_hardware_and_a_real_commit` fails on a hardware line without cores or a commit this repository does not hold | Per engine, per device | 6 | Hardware and commit beside every number |
 | Q3 | Licence gate | Yes | Yes | Keep, cover every model | 6 | A copyleft crate fails the build |
 | Q4 | Network audit | Documented | Done · bedc7c8: the suite fails when a page or the CLI reaches any host besides the release check and the model registry | Automated, per release | 6 | A release fails if a request leaves the machine |
 | Q5 | Crash-free sessions | Claimed | Unproven | Two hours, no crash | 6 | A recorded two-hour run |
@@ -183,8 +183,8 @@ The destination is full parity. The dates are honest: this is not a quarter, and
 
 ## Progress
 
-49 of 80 rows are Done (61.3%). Seven Partial rows counted at half give 65.6%.
+50 of 80 rows are Done (62.5%). Six Partial rows counted at half give 66.3%.
 
 ## Next
 
-D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are Q2, one benchmark row per engine and device, then T9, a corrected line that keeps its original beside it.
+D5, D10, T4 and X4 stay parked: the first three on the engine files, X4 on the byte-level resume that lives there too. The next unblocked rows are Q3, a copyleft crate that fails the build, then T9, a corrected line that keeps its original beside it.
