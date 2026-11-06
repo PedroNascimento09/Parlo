@@ -242,7 +242,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir assets
-          gh release download "${{ github.event.inputs.tag || github.ref_name }}" --dir assets
+          gh release download "${{ github.event.inputs.tag || github.ref_name }}" --repo "${{ github.repository }}" --dir assets
 
       - name: Write SHA256SUMS.txt
         working-directory: assets
