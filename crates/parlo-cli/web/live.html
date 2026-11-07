@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="parlo-version" content="__PARLO_VERSION__">
 <meta name="color-scheme" content="light dark">
-<title>Parlo Live</title>
+<title data-i18n="live.title">Parlo Live</title>
 <style>
   :root {
     --shell: rgba(255, 253, 248, 0.96);
@@ -134,23 +134,59 @@
 <body>
   <header>
     <span class="dot" aria-hidden="true"></span>
-    <span id="state">Live paused</span>
+    <span id="state" data-i18n="live.paused">Live paused</span>
   </header>
   <main>
     <section class="column" aria-labelledby="heard-title">
-      <h2 id="heard-title">Heard</h2>
+      <h2 id="heard-title" data-i18n="live.heard">Heard</h2>
       <div class="lines" id="heard" aria-live="polite"></div>
     </section>
     <section class="column" aria-labelledby="translated-title">
-      <h2 id="translated-title">Translated</h2>
+      <h2 id="translated-title" data-i18n="live.translated">Translated</h2>
       <div class="lines" id="translated" aria-live="polite"></div>
     </section>
   </main>
   <footer>
-    <button id="toggle" type="button">Start</button>
+    <button id="toggle" type="button" data-i18n="live.start">Start</button>
   </footer>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";
+let strings = {};
+
+function t(key, fallback, values = {}) {
+  const text = strings[key] || fallback;
+  return Object.entries(values).reduce(
+    (out, [name, value]) => out.split("{" + name + "}").join(String(value)),
+    text,
+  );
+}
+
+function applyText() {
+  document.title = t("live.title", "Parlo Live");
+  for (const element of document.querySelectorAll("[data-i18n]")) {
+    element.textContent = t(element.dataset.i18n, element.textContent);
+  }
+}
+
+async function loadLocale() {
+  try {
+    const response = await fetch("/locale", { cache: "no-store" });
+    if (response.ok) {
+      const table = await response.json();
+      strings = table.strings || {};
+      document.documentElement.lang = table.locale || "en";
+      document.documentElement.dir = table.locale === "ar" ? "rtl" : "ltr";
+    }
+  } catch {
+    strings = {};
+  }
+  applyText();
+  toggleButton.textContent = running ? t("live.stop", "Stop") : t("live.start", "Start");
+  if (running) {
+    setState(t("live.listening", "Live · listening, every 2.5 seconds · Escape stops"), true);
+  }
+}
+
 const TARGET_RATE = 16000;
 const WINDOW_SECONDS = 2.5;
 const MAX_LINES = 6;
@@ -258,10 +294,10 @@ async function send(buffer, rate) {
     if (shown) {
       addLine(translatedEl, shown, false);
     } else if (said) {
-      addLine(translatedEl, "Add a translation pair in Library, Models.", true);
+      addLine(translatedEl, t("live.addPair", "Add a translation pair in Library, Models."), true);
     }
   } catch (failure) {
-    setState("The engine did not answer", running);
+    setState(t("live.engineSilent", "The engine did not answer"), running);
   }
   sending = false;
 }
@@ -272,7 +308,7 @@ async function start() {
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
     });
   } catch (failure) {
-    setState("The microphone is blocked", false);
+    setState(t("live.micBlocked", "The microphone is blocked"), false);
     return;
   }
   context = new (window.AudioContext || window.webkitAudioContext)();
@@ -303,14 +339,14 @@ async function start() {
   processor.connect(sink);
   sink.connect(context.destination);
   running = true;
-  toggleButton.textContent = "Stop";
-  setState("Live · listening, every 2.5 seconds · Escape stops", true);
+  toggleButton.textContent = t("live.stop", "Stop");
+  setState(t("live.listening", "Live · listening, every 2.5 seconds · Escape stops"), true);
 }
 
 function stop() {
   running = false;
-  toggleButton.textContent = "Start";
-  setState("Live paused", false);
+  toggleButton.textContent = t("live.start", "Start");
+  setState(t("live.paused", "Live paused"), false);
   if (processor) {
     processor.onaudioprocess = null;
     processor.disconnect();
@@ -350,6 +386,7 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+loadLocale();
 start();
 </script>
 </body>

@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="parlo-version" content="__PARLO_VERSION__">
 <meta name="color-scheme" content="light dark">
-<title>Parlo Captions</title>
+<title data-i18n="captions.title">Parlo Captions</title>
 <style>
   :root {
     --shell: rgba(255, 253, 248, 0.94);
@@ -103,17 +103,60 @@
 <body>
   <header>
     <span class="dot" aria-hidden="true"></span>
-    <span id="state">Captions paused</span>
+    <span id="state" data-i18n="captions.paused">Captions paused</span>
   </header>
   <div class="lines" id="lines" aria-live="polite"></div>
   <footer>
-    <button id="source" type="button">Sound: Microphone</button>
-    <button id="size" type="button">Smaller</button>
-    <button id="save" type="button">Save</button>
-    <button id="toggle" type="button">Start</button>
+    <button id="source" type="button" data-i18n="captions.soundMicrophone">Sound: Microphone</button>
+    <button id="size" type="button" data-i18n="captions.smaller">Smaller</button>
+    <button id="save" type="button" data-i18n="captions.save">Save</button>
+    <button id="toggle" type="button" data-i18n="captions.start">Start</button>
   </footer>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";
+let strings = {};
+
+function t(key, fallback, values = {}) {
+  const text = strings[key] || fallback;
+  return Object.entries(values).reduce(
+    (out, [name, value]) => out.split("{" + name + "}").join(String(value)),
+    text,
+  );
+}
+
+function applyText() {
+  document.title = t("captions.title", "Parlo Captions");
+  for (const element of document.querySelectorAll("[data-i18n]")) {
+    element.textContent = t(element.dataset.i18n, element.textContent);
+  }
+}
+
+async function loadLocale() {
+  try {
+    const response = await fetch("/locale", { cache: "no-store" });
+    if (response.ok) {
+      const table = await response.json();
+      strings = table.strings || {};
+      document.documentElement.lang = table.locale || "en";
+      document.documentElement.dir = table.locale === "ar" ? "rtl" : "ltr";
+    }
+  } catch {
+    strings = {};
+  }
+  applyText();
+  toggleButton.textContent = running ? t("captions.stop", "Stop") : t("captions.start", "Start");
+  if (running) {
+    setState(listeningText(), true);
+  }
+}
+
+function listeningText() {
+  const source = system
+    ? t("captions.computerSource", "Captions from the computer's sound")
+    : t("captions.microphoneSource", "Captions from the microphone");
+  return t("captions.listening", "{source} · listening, every 2.5 seconds · Escape stops", { source });
+}
+
 const TARGET_RATE = 16000;
 const WINDOW_SECONDS = 2.5;
 const MAX_LINES = 6;
@@ -230,7 +273,7 @@ async function send(buffer, rate) {
       addLine(said, true);
     }
   } catch (failure) {
-    setState("The engine did not answer", running);
+    setState(t("captions.engineSilent", "The engine did not answer"), running);
   }
   sending = false;
 }
@@ -239,14 +282,14 @@ async function start() {
   try {
     if (system) {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        throw new Error("This browser cannot capture the computer's sound.");
+        throw new Error(t("captions.cannotCapture", "This browser cannot capture the computer's sound."));
       }
       const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       display.getVideoTracks().forEach((track) => track.stop());
       const audio = display.getAudioTracks();
       if (!audio.length) {
         display.getTracks().forEach((track) => track.stop());
-        throw new Error("No sound was shared. Choose a tab or window and tick Share audio.");
+        throw new Error(t("captions.noSound", "No sound was shared. Choose a tab or window and tick Share audio."));
       }
       stream = new MediaStream(audio);
     } else {
@@ -257,8 +300,8 @@ async function start() {
   } catch (failure) {
     setState(
       system
-        ? (failure && failure.message) || "No sound was shared. Choose a tab or window and tick Share audio."
-        : "The microphone is blocked",
+        ? (failure && failure.message) || t("captions.noSound", "No sound was shared. Choose a tab or window and tick Share audio.")
+        : t("captions.micBlocked", "The microphone is blocked"),
       false
     );
     return;
@@ -292,18 +335,14 @@ async function start() {
   sink.connect(context.destination);
   running = true;
   startedAt = Date.now();
-  toggleButton.textContent = "Stop";
-  setState(
-    (system ? "Captions from the computer's sound" : "Captions from the microphone") +
-      " · listening, every 2.5 seconds · Escape stops",
-    true
-  );
+  toggleButton.textContent = t("captions.stop", "Stop");
+  setState(listeningText(), true);
 }
 
 function stop() {
   running = false;
-  toggleButton.textContent = "Start";
-  setState("Captions paused", false);
+  toggleButton.textContent = t("captions.start", "Start");
+  setState(t("captions.paused", "Captions paused"), false);
   if (processor) {
     processor.onaudioprocess = null;
     processor.disconnect();
@@ -341,11 +380,13 @@ sourceButton.addEventListener("click", () => {
     stop();
   }
   system = !system;
-  sourceButton.textContent = system ? "Sound: Computer" : "Sound: Microphone";
+  sourceButton.textContent = system
+    ? t("captions.soundComputer", "Sound: Computer")
+    : t("captions.soundMicrophone", "Sound: Microphone");
   setState(
     system
-      ? "Computer sound selected. Press Start, choose a tab or window, and tick Share audio."
-      : "Microphone selected. Press Start.",
+      ? t("captions.computerSelected", "Computer sound selected. Press Start, choose a tab or window, and tick Share audio.")
+      : t("captions.microphoneSelected", "Microphone selected. Press Start."),
     false
   );
 });
@@ -359,7 +400,7 @@ document.addEventListener("keydown", (event) => {
 
 saveButton.addEventListener("click", async () => {
   if (!session.length) {
-    setState("Nothing to save yet", running);
+    setState(t("captions.nothingToSave", "Nothing to save yet"), running);
     return;
   }
   saveButton.disabled = true;
@@ -370,9 +411,9 @@ saveButton.addEventListener("click", async () => {
       body: JSON.stringify({ lines: session }),
     });
     const detail = await response.json().catch(() => ({}));
-    setState(detail.message || detail.error || "The captions were not saved", running);
+    setState(detail.message || detail.error || t("captions.notSaved", "The captions were not saved"), running);
   } catch (failure) {
-    setState("The captions were not saved", running);
+    setState(t("captions.notSaved", "The captions were not saved"), running);
   } finally {
     saveButton.disabled = false;
   }
@@ -385,6 +426,7 @@ sizeButton.addEventListener("click", () => {
   }
 });
 
+loadLocale();
 start();
 </script>
 </body>
