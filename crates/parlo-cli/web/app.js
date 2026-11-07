@@ -8406,6 +8406,14 @@ function watchJob(id, kind) {
         setTimeout(() => watchJob(id, kind), 1200);
         return;
       }
+      if (job.state === "unknown") {
+        toolsJobNote.textContent = t("tools.jobMissing", "The run is no longer available.");
+        return;
+      }
+      if (job.state !== "done") {
+        toolsJobNote.textContent = job.error || t("tools.jobState", "The run ended unexpectedly.");
+        return;
+      }
       toolsJobNote.textContent = job.error || "";
       let parsed = null;
       try {
