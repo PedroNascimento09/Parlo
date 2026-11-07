@@ -1,6 +1,6 @@
-version: 0.2.5
+version: 0.2.6
 script:
-  - curl -fsSL -o parlo-linux-x86_64.tar.gz https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.5/parlo-linux-x86_64.tar.gz
+  - curl -fsSL -o parlo-linux-x86_64.tar.gz https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.6/parlo-linux-x86_64.tar.gz
   - echo "c0b1556ab2ce38be58cdc2ee063c2cf7c9ac7e517a7c78855a5eb9259b356d07  parlo-linux-x86_64.tar.gz" | sha256sum -c -
   - tar -xzf parlo-linux-x86_64.tar.gz
 AppDir:
@@ -9,7 +9,7 @@ AppDir:
     id: io.github.pedronascimento09.parlo
     name: parlo
     icon: parlo
-    version: 0.2.5
+    version: 0.2.6
     exec: parlo
     exec_args: $@
   files:
@@ -21,4 +21,4 @@ AppDir:
       - LICENSE
 AppImage:
   arch: x86_64
-  file_name: parlo-0.2.5-x86_64.AppImage
+  file_name: parlo-0.2.6-x86_64.AppImage

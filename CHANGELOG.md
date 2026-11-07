@@ -4,6 +4,16 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.6] - 7 November 2026
+
+- The installers now check the published SHA-256 before they unpack anything: both `scripts/install.ps1` and `scripts/install.sh` read `SHA256SUMS.txt` from the release, compare the archive they just downloaded and stop with a sentence that names the file when the hash does not match, so a truncated or replaced download no longer installs.
+
+- The language table and the README now describe the build that ships: `docs/LANGUAGES.md` lists only the pairs the catalog carries and says which directions run through English, the recogniser download is the 640 MB measured on disk instead of an invented 800 MB, and the three cleanup levels carry the names the window uses.
+
+- CI now asserts what `parlo doctor` promises instead of demanding success: the smoke step accepts the documented exit code 1 on a machine without models and still fails when the first-session line disappears, and the benchmark check compares a state only when the local run measured one.
+
+- The repository root no longer carries nineteen screenshots and a stale `sbom.cdx.json`; the README shows one real capture of the bar instead.
+
 ## [0.2.5] - 6 November 2026
 
 - Parlo now recommends a model per language instead of leaving people with Portuguese and English: choosing a language in Settings shows the voice that reads it, the recogniser that hears it and the translation pack that starts from it, for the twenty-one languages the app presents, and any of those picks can still be replaced by another model the person installs.

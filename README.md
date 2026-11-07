@@ -19,6 +19,14 @@ Parlo is a desktop program that turns speech into text without sending anything 
 
 If you want the shortest path into it, use the installer below. If you want to support the project, the short version is at the bottom, in two lines.
 
+<p align="center">
+  <img src="docs/demo.gif" width="760" alt="The Parlo bar while it writes a translated sentence">
+</p>
+
+<p align="center">
+  <sub>This machine's bar, captured while it wrote a translated sentence. Spanish needs its own translation pack; the pairs the build ships are in <a href="docs/LANGUAGES.md">languages</a>.</sub>
+</p>
+
 ## Install
 
 **Windows, from the terminal:**

@@ -1,7 +1,7 @@
 class Parlo < Formula
   desc "Offline dictation, translation and meetings"
   homepage "https://github.com/PedroNascimento09/Parlo"
-  version "0.2.5"
+  version "0.2.6"
   url "https://github.com/PedroNascimento09/Parlo/releases/download/v#{version}/parlo-macos-aarch64.tar.gz"
   sha256 "a5664c446a558e03d151a4ba36aea46153965453377fe6025457bfe0b6e30da4"
   license "Apache-2.0"
