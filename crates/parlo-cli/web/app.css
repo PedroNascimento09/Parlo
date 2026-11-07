@@ -2372,11 +2372,6 @@ select.field-input {
   gap: 4px 16px;
 }
 
-.home-style-note {
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .style-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -2443,7 +2438,7 @@ select.field-input {
 .sheet-scrim {
   position: absolute;
   inset: 0;
-  background: color-mix(in srgb, var(--ink) 42%, transparent);
+  background: color-mix(in srgb, #14120f 58%, transparent);
 }
 
 .sheet-panel {
