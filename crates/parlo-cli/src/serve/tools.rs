@@ -100,20 +100,19 @@ pub fn snapshot() -> String {
     .to_string()
 }
 
+#[cfg(target_os = "windows")]
 fn microphone(inputs: &[String]) -> String {
-    #[cfg(target_os = "windows")]
-    {
-        crate::mic::windows_guidance(inputs)
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        match crate::mic::list_command().run() {
-            Ok(listing) => match crate::mic::find_module(&listing) {
-                Some(id) => format!("virtual microphone  loaded as module {id}\noutput              parlo listen --play feeds it"),
-                None => "virtual microphone  not loaded\nnext                install pactl, then load the null sink".to_string(),
-            },
-            Err(error) => format!("virtual microphone  could not be checked: {error}"),
-        }
+    crate::mic::windows_guidance(inputs)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn microphone(_inputs: &[String]) -> String {
+    match crate::mic::list_command().run() {
+        Ok(listing) => match crate::mic::find_module(&listing) {
+            Some(id) => format!("virtual microphone  loaded as module {id}\noutput              parlo listen --play feeds it"),
+            None => "virtual microphone  not loaded\nnext                install pactl, then load the null sink".to_string(),
+        },
+        Err(error) => format!("virtual microphone  could not be checked: {error}"),
     }
 }
 

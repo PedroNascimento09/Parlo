@@ -69,11 +69,11 @@ impl Shortcut {
         parts.join("+")
     }
 }
-
 #[cfg(windows)]
 pub fn taken_by_another_program(shortcut: &Shortcut) -> bool {
     use std::ffi::c_void;
 
+    #[link(name = "user32")]
     extern "system" {
         fn RegisterHotKey(window: *mut c_void, id: i32, modifiers: u32, key: u32) -> i32;
         fn UnregisterHotKey(window: *mut c_void, id: i32) -> i32;
