@@ -1728,6 +1728,13 @@ select.field-input {
   justify-content: flex-end;
 }
 
+@media (max-width: 560px) {
+  .models-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
 .models-action {
   padding: 6px 12px;
   border: 1px solid var(--line-strong);
@@ -2680,7 +2687,7 @@ select.field-input {
 
 
   .insights-numbers {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
 
