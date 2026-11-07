@@ -727,16 +727,18 @@ The table below is its output, and `docs/benchmarks.json` is the same run as dat
 The cascade row is measured by `engines/cascade/scripts/benchmark.py` on a committed 2.8 s recording of a spoken Portuguese sentence, with the models folder this machine uses, so a machine without Parakeet reports that instead of a number.
 
 <!-- bench:start -->
+
 | Engine | Device | Result | RTF | Frames | Hardware | Commit |
 |---|---|---|---|---|---|---|
-| cascade | cpu | no number: Universal cascade needs Parakeet 0.6B v3 on disk, and the python stack that reads them | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| cascade | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| echo | cpu | measured on this machine | 0.003 | 125 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| echo | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| hibiki | cpu | not in this build | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| hibiki | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| cloud | cpu | not in this build | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
-| cloud | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | ee3570c |
+| cascade | cpu | measured on this machine | 0.170 | 1 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| cascade | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| echo | cpu | measured on this machine | 0.002 | 125 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| echo | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| hibiki | cpu | not in this build | - | 0 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| hibiki | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| cloud | cpu | not in this build | - | 0 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+| cloud | gpu | no gpu on this machine | - | 0 | 12 cores, 15 GB of memory, no gpu | d187a7c |
+
 <!-- bench:end -->
 
 ## What gets measured

@@ -1371,7 +1371,9 @@
       "text.Not in the dictionary": "ليس في القاموس",
       "text.Diagnostics": "التشخيص",
       "text.Copied.": "تم النسخ.",
-      "text.The tools could not be read.": "تعذر قراءة الأدوات."
+      "text.The tools could not be read.": "تعذر قراءة الأدوات.",
+      "text.A virtual microphone is ready.": "الميكروفون الافتراضي جاهز.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "لا يوجد ميكروفون افتراضي مثبت. شغّل parlo mic setup لعرض الخطوات."
     },
     "cs": {
       "about.after": ". Nová verze se instaluje z krabice v horní části domovské stránky a nikdy sama.",
@@ -2698,7 +2700,9 @@
       "text.Not in the dictionary": "Není ve slovníku",
       "text.Diagnostics": "Diagnostika",
       "text.Copied.": "Zkopírováno.",
-      "text.The tools could not be read.": "Nástroje se nepodařilo načíst."
+      "text.The tools could not be read.": "Nástroje se nepodařilo načíst.",
+      "text.A virtual microphone is ready.": "Virtuální mikrofon je připraven.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Virtuální mikrofon není nainstalován. Spusť parlo mic setup pro postup."
     },
     "da": {
       "about.after": ". En ny version installeres fra boksen øverst i Home, og aldrig alene.",
@@ -4025,7 +4029,9 @@
       "text.Not in the dictionary": "Findes ikke i ordbogen",
       "text.Diagnostics": "Diagnostik",
       "text.Copied.": "Kopieret.",
-      "text.The tools could not be read.": "Værktøjerne kunne ikke læses."
+      "text.The tools could not be read.": "Værktøjerne kunne ikke læses.",
+      "text.A virtual microphone is ready.": "Den virtuelle mikrofon er klar.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Ingen virtuel mikrofon er installeret. Kør parlo mic setup for trinnene."
     },
     "de": {
       "about.after": ". Eine neue Version wird aus der Box oben in Home installiert und niemals alleine.",
@@ -5352,7 +5358,9 @@
       "text.Not in the dictionary": "Nicht im Wörterbuch",
       "text.Diagnostics": "Diagnose",
       "text.Copied.": "Kopiert.",
-      "text.The tools could not be read.": "Die Werkzeuge konnten nicht gelesen werden."
+      "text.The tools could not be read.": "Die Werkzeuge konnten nicht gelesen werden.",
+      "text.A virtual microphone is ready.": "Das virtuelle Mikrofon ist bereit.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Kein virtuelles Mikrofon installiert. Führe parlo mic setup für die Schritte aus."
     },
     "en": {
       "about.after": ". A new version installs from the box at the top of Home, and never on its own.",
@@ -6679,7 +6687,9 @@
       "text.Not in the dictionary": "Not in the dictionary",
       "text.Diagnostics": "Diagnostics",
       "text.Copied.": "Copied.",
-      "text.The tools could not be read.": "The tools could not be read."
+      "text.The tools could not be read.": "The tools could not be read.",
+      "text.A virtual microphone is ready.": "A virtual microphone is ready.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "No virtual microphone is installed. Run parlo mic setup for the steps."
     },
     "es": {
       "about.after": ". Una nueva versión se instala desde el cuadro en la parte superior de Inicio, y nunca sola.",
@@ -8006,7 +8016,9 @@
       "text.Not in the dictionary": "No está en el diccionario",
       "text.Diagnostics": "Diagnóstico",
       "text.Copied.": "Copiado.",
-      "text.The tools could not be read.": "No se pudieron leer las herramientas."
+      "text.The tools could not be read.": "No se pudieron leer las herramientas.",
+      "text.A virtual microphone is ready.": "El micrófono virtual está listo.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "No hay micrófono virtual instalado. Ejecuta parlo mic setup para ver los pasos."
     },
     "fi": {
       "about.after": ". Uusi versio asennetaan etusivun yläreunassa olevasta laatikosta, ei koskaan itsestään.",
@@ -9333,7 +9345,9 @@
       "text.Not in the dictionary": "Ei sanastossa",
       "text.Diagnostics": "Diagnostiikka",
       "text.Copied.": "Kopioitu.",
-      "text.The tools could not be read.": "Työkaluja ei voitu lukea."
+      "text.The tools could not be read.": "Työkaluja ei voitu lukea.",
+      "text.A virtual microphone is ready.": "Virtuaalimikrofoni on valmis.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Virtuaalimikrofonia ei ole asennettu. Aja parlo mic setup nähdäksesi vaiheet."
     },
     "fr": {
       "about.after": ". Une nouvelle version s'installe depuis la boîte en haut de l'Accueil, et jamais seule.",
@@ -10660,7 +10674,9 @@
       "text.Not in the dictionary": "Absent du dictionnaire",
       "text.Diagnostics": "Diagnostic",
       "text.Copied.": "Copié.",
-      "text.The tools could not be read.": "Les outils n'ont pas pu être lus."
+      "text.The tools could not be read.": "Les outils n'ont pas pu être lus.",
+      "text.A virtual microphone is ready.": "Le micro virtuel est prêt.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Aucun micro virtuel n'est installé. Lancez parlo mic setup pour voir les étapes."
     },
     "it": {
       "about.after": ". Una nuova versione viene installata dalla casella nella parte superiore della Home e mai da sola.\n@@10:30@@\nRimuovere __PARLO_PH_0__ e le relative esportazioni da questo computer?",
@@ -11987,7 +12003,9 @@
       "text.Not in the dictionary": "Non è nel dizionario",
       "text.Diagnostics": "Diagnostica",
       "text.Copied.": "Copiato.",
-      "text.The tools could not be read.": "Non è stato possibile leggere gli strumenti."
+      "text.The tools could not be read.": "Non è stato possibile leggere gli strumenti.",
+      "text.A virtual microphone is ready.": "Il microfono virtuale è pronto.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Nessun microfono virtuale installato. Esegui parlo mic setup per i passaggi."
     },
     "ja": {
       "about.after": "。新しいバージョンは、ホームの上部にあるボックスからインストールされます。単独でインストールされることはありません。",
@@ -13314,7 +13332,9 @@
       "text.Not in the dictionary": "辞書にない",
       "text.Diagnostics": "診断",
       "text.Copied.": "コピーしました。",
-      "text.The tools could not be read.": "ツールを読み取れませんでした。"
+      "text.The tools could not be read.": "ツールを読み取れませんでした。",
+      "text.A virtual microphone is ready.": "仮想マイクの準備ができています。",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "仮想マイクがありません。parlo mic setup で手順を確認してください。"
     },
     "ko": {
       "about.after": ". 새 버전은 홈 상단에 있는 상자에서 설치되며 자체적으로는 설치되지 않습니다.",
@@ -14641,7 +14661,9 @@
       "text.Not in the dictionary": "사전에 없음",
       "text.Diagnostics": "진단",
       "text.Copied.": "복사했습니다.",
-      "text.The tools could not be read.": "도구를 읽을 수 없습니다."
+      "text.The tools could not be read.": "도구를 읽을 수 없습니다.",
+      "text.A virtual microphone is ready.": "가상 마이크가 준비되었습니다.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "가상 마이크가 없습니다. parlo mic setup 으로 단계를 확인하세요."
     },
     "nb": {
       "about.after": ". En ny versjon installeres fra boksen på toppen av Home, og aldri på egen hånd.",
@@ -15968,7 +15990,9 @@
       "text.Not in the dictionary": "Finnes ikke i ordlisten",
       "text.Diagnostics": "Diagnostikk",
       "text.Copied.": "Kopiert.",
-      "text.The tools could not be read.": "Verktøyene kunne ikke leses."
+      "text.The tools could not be read.": "Verktøyene kunne ikke leses.",
+      "text.A virtual microphone is ready.": "Den virtuelle mikrofonen er klar.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Ingen virtuell mikrofon er installert. Kjør parlo mic setup for stegene."
     },
     "nl": {
       "about.after": ". Een nieuwe versie wordt geïnstalleerd vanuit de box bovenaan Home, en nooit uit zichzelf.",
@@ -17295,7 +17319,9 @@
       "text.Not in the dictionary": "Niet in het woordenboek",
       "text.Diagnostics": "Diagnose",
       "text.Copied.": "Gekopieerd.",
-      "text.The tools could not be read.": "De gereedschappen konden niet worden gelezen."
+      "text.The tools could not be read.": "De gereedschappen konden niet worden gelezen.",
+      "text.A virtual microphone is ready.": "De virtuele microfoon is klaar.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Geen virtuele microfoon geïnstalleerd. Voer parlo mic setup uit voor de stappen."
     },
     "pl": {
       "about.after": ". Nowa wersja instaluje się z pudełka na górze strony głównej, nigdy samodzielnie.",
@@ -18622,7 +18648,9 @@
       "text.Not in the dictionary": "Brak w słowniku",
       "text.Diagnostics": "Diagnostyka",
       "text.Copied.": "Skopiowano.",
-      "text.The tools could not be read.": "Nie udało się odczytać narzędzi."
+      "text.The tools could not be read.": "Nie udało się odczytać narzędzi.",
+      "text.A virtual microphone is ready.": "Mikrofon wirtualny jest gotowy.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Brak wirtualnego mikrofonu. Uruchom parlo mic setup, aby zobaczyć kroki."
     },
     "pt": {
       "about.after": ". Uma nova versão instala-se pela caixa no topo do Início, e nunca sozinha.",
@@ -19949,7 +19977,9 @@
       "text.Not in the dictionary": "Fora do dicionário",
       "text.Diagnostics": "Diagnóstico",
       "text.Copied.": "Copiado.",
-      "text.The tools could not be read.": "Não foi possível ler as ferramentas."
+      "text.The tools could not be read.": "Não foi possível ler as ferramentas.",
+      "text.A virtual microphone is ready.": "O microfone virtual está pronto.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Não há microfone virtual instalado. Corre parlo mic setup para veres os passos."
     },
     "ro": {
       "about.after": ". O nouă versiune se instalează din caseta din partea de sus a Acasă și niciodată singură.",
@@ -21276,7 +21306,9 @@
       "text.Not in the dictionary": "Nu este în dicționar",
       "text.Diagnostics": "Diagnostic",
       "text.Copied.": "Copiat.",
-      "text.The tools could not be read.": "Instrumentele nu au putut fi citite."
+      "text.The tools could not be read.": "Instrumentele nu au putut fi citite.",
+      "text.A virtual microphone is ready.": "Microfonul virtual este gata.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Nu există microfon virtual instalat. Rulează parlo mic setup pentru pași."
     },
     "ru": {
       "about.after": ". Новая версия устанавливается из коробки в верхней части главного экрана, а не сама по себе.",
@@ -22603,7 +22635,9 @@
       "text.Not in the dictionary": "Нет в словаре",
       "text.Diagnostics": "Диагностика",
       "text.Copied.": "Скопировано.",
-      "text.The tools could not be read.": "Не удалось прочитать инструменты."
+      "text.The tools could not be read.": "Не удалось прочитать инструменты.",
+      "text.A virtual microphone is ready.": "Виртуальный микрофон готов.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Виртуальный микрофон не установлен. Запустите parlo mic setup, чтобы увидеть шаги."
     },
     "sv": {
       "about.after": ". En ny version installeras från lådan överst på Home, och aldrig på egen hand.",
@@ -23930,7 +23964,9 @@
       "text.Not in the dictionary": "Finns inte i ordlistan",
       "text.Diagnostics": "Diagnostik",
       "text.Copied.": "Kopierat.",
-      "text.The tools could not be read.": "Verktygen kunde inte läsas."
+      "text.The tools could not be read.": "Verktygen kunde inte läsas.",
+      "text.A virtual microphone is ready.": "Den virtuella mikrofonen är redo.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Ingen virtuell mikrofon är installerad. Kör parlo mic setup för stegen."
     },
     "tr": {
       "about.after": ". Yeni bir sürüm Ana Sayfa'nın üst kısmındaki kutudan yüklenir ve hiçbir zaman tek başına yüklenmez.",
@@ -25257,7 +25293,9 @@
       "text.Not in the dictionary": "Sözlükte yok",
       "text.Diagnostics": "Tanılama",
       "text.Copied.": "Kopyalandı.",
-      "text.The tools could not be read.": "Araçlar okunamadı."
+      "text.The tools could not be read.": "Araçlar okunamadı.",
+      "text.A virtual microphone is ready.": "Sanal mikrofon hazır.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Sanal mikrofon kurulu değil. Adımlar için parlo mic setup komutunu çalıştır."
     },
     "uk": {
       "about.after": ". Нова версія встановлюється з коробки у верхній частині головної сторінки, але ніколи самостійно.",
@@ -26584,7 +26622,9 @@
       "text.Not in the dictionary": "Немає у словнику",
       "text.Diagnostics": "Діагностика",
       "text.Copied.": "Скопійовано.",
-      "text.The tools could not be read.": "Не вдалося прочитати інструменти."
+      "text.The tools could not be read.": "Не вдалося прочитати інструменти.",
+      "text.A virtual microphone is ready.": "Віртуальний мікрофон готовий.",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "Віртуальний мікрофон не встановлено. Запустіть parlo mic setup, щоб побачити кроки."
     },
     "zh": {
       "about.after": "。新版本从主页顶部的框中安装，而不是单独安装。",
@@ -27911,7 +27951,9 @@
       "text.Not in the dictionary": "词典中没有",
       "text.Diagnostics": "诊断",
       "text.Copied.": "已复制。",
-      "text.The tools could not be read.": "无法读取工具。"
+      "text.The tools could not be read.": "无法读取工具。",
+      "text.A virtual microphone is ready.": "虚拟麦克风已就绪。",
+      "text.No virtual microphone is installed. Run parlo mic setup for the steps.": "未安装虚拟麦克风。运行 parlo mic setup 查看步骤。"
     }
   }
 }

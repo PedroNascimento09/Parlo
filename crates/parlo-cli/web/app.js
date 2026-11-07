@@ -974,7 +974,7 @@ updateRestart.addEventListener("click", async () => {
 function formatSize(bytes) {
   const megabytes = Math.round((bytes || 0) / (1024 * 1024));
   if (megabytes < 1) {
-    return "Missing";
+    return t("text.Missing", "Missing");
   }
   return megabytes + " MB";
 }
@@ -1172,7 +1172,7 @@ function describeModels(state) {
 
     const fact = document.createElement("span");
     fact.className = "models-fact" + (model.installed ? " ready" : "");
-    fact.textContent = model.installed ? formatSize(model.bytes) : "Missing";
+    fact.textContent = model.installed ? formatSize(model.bytes) : t("text.Missing", "Missing");
 
     const actions = document.createElement("div");
     actions.className = "models-actions";
@@ -1292,7 +1292,7 @@ function describeModels(state) {
       feature + " " + t("text.needs", "needs") + " " + names.join(joiner),
   );
   modelsNote.textContent = sentences.length
-    ? "Missing: " + sentences.join("; ") + ". Each one downloads on its own."
+    ? t("text.Missing: {items}. Each one downloads on its own.", "", { items: sentences.join("; ") })
     : "Some models are missing. They are a one time download and stay on this machine.";
   modelsInstall.hidden = false;
   modelsDictation.hidden = !missing.some((model) => model.id === "parakeet");
@@ -8282,7 +8282,11 @@ function paintTools(snapshot) {
       t("text.Output devices", "") + ": " + (snapshot.outputs.length ? snapshot.outputs.join(", ") : "–");
   }
   if (toolsMic) {
-    toolsMic.textContent = snapshot.microphone;
+    const names = snapshot.inputs || [];
+    const virtual = names.some((name) => /cable|vb-audio|virtual/i.test(name));
+    toolsMic.textContent = virtual
+      ? t("text.A virtual microphone is ready.", "")
+      : t("text.No virtual microphone is installed. Run parlo mic setup for the steps.", "");
   }
   if (toolsHardware) {
     toolsHardware.textContent =

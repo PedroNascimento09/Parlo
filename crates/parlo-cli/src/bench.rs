@@ -49,7 +49,7 @@ pub fn readings() -> Vec<Reading> {
         .map(|elapsed| elapsed.as_secs())
         .unwrap_or_default();
     let models = crate::models::status();
-    let engine_dir = crate::models::cascade_dir();
+    let engine_dir = engine_dir();
     let run = |args: &[String], root: &Path| run_benchmark(&engine_dir, args, root);
     let mut readings = Vec::new();
     for spec in crate::registry::PIPELINES {
@@ -71,6 +71,33 @@ pub fn readings() -> Vec<Reading> {
         }
     }
     readings
+}
+
+fn engine_dir() -> std::path::PathBuf {
+    let configured = crate::models::cascade_dir();
+    let script = |dir: &std::path::Path| dir.join("scripts").join("benchmark.py").is_file();
+    if script(&configured) {
+        return configured;
+    }
+    let relative = std::path::PathBuf::from("engines").join("cascade");
+    let mut roots: Vec<std::path::PathBuf> = Vec::new();
+    if let Ok(current) = std::env::current_dir() {
+        roots.push(current);
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            roots.push(parent.to_path_buf());
+        }
+    }
+    for root in roots {
+        for ancestor in root.ancestors() {
+            let candidate = ancestor.join(&relative);
+            if script(&candidate) {
+                return candidate;
+            }
+        }
+    }
+    configured
 }
 
 fn outcome(
@@ -132,8 +159,7 @@ fn cascade(engine_dir: &Path, run: &Runner<'_>) -> Result<(f64, f64, u64), Strin
         .map_err(|error| format!("{}: {error}", engine_dir.display()))?;
     let args = benchmark_arguments(&engine)?;
     let stdout = run(&args, &crate::models::models_root())?;
-    let report: serde_json::Value = serde_json::from_str(stdout.trim())
-        .map_err(|_| "the benchmark printed a report this app cannot read".to_string())?;
+    let report = report(&stdout)?;
     let rtf = report["rtf"]
         .as_f64()
         .ok_or_else(|| "the benchmark reported no real time factor".to_string())?;
@@ -147,6 +173,27 @@ fn cascade(engine_dir: &Path, run: &Runner<'_>) -> Result<(f64, f64, u64), Strin
         rtf,
         seconds,
         report["segments"].as_u64().unwrap_or_default(),
+    ))
+}
+
+fn report(stdout: &str) -> Result<serde_json::Value, String> {
+    let normalized = stdout.replace('\r', "\n");
+    let starts: Vec<usize> = normalized
+        .match_indices('{')
+        .map(|(index, _)| index)
+        .collect();
+    for start in starts.into_iter().rev() {
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(normalized[start..].trim())
+        else {
+            continue;
+        };
+        if value.get("rtf").is_some() {
+            return Ok(value);
+        }
+    }
+    let last = stdout.lines().rev().take(6).collect::<Vec<_>>().join("\n");
+    Err(format!(
+        "the benchmark printed a report this app cannot read:\n{last}"
     ))
 }
 
@@ -180,16 +227,17 @@ fn run_benchmark(engine_dir: &Path, args: &[String], models_root: &Path) -> Resu
         .env("PARLO_MODELS_DIR", models_root)
         .output()
         .map_err(|error| format!("cannot start {python}: {error}"))?;
+    let printed = String::from_utf8_lossy(&output.stdout);
+    let logged = String::from_utf8_lossy(&output.stderr);
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let reason = stderr
+        let reason = logged
             .lines()
             .rev()
             .find(|line| !line.trim().is_empty())
             .unwrap_or("the benchmark printed no reason");
         return Err(reason.trim().to_string());
     }
-    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    Ok(format!("{printed}\n{logged}"))
 }
 
 fn missing(spec: &crate::registry::PipelineSpec, models: &[crate::models::Model]) -> String {

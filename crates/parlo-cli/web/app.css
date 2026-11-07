@@ -1123,7 +1123,9 @@ select.field-input {
 .settings-note,
 .voice-note,
 .models-note,
-.dub-note,
+.dub-note {
+  margin: 24px 0 0;
+}
 
 .insights-numbers {
   display: grid;
