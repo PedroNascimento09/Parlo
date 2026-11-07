@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -15,6 +15,7 @@
     --accent: #2f6b4f;
     --accent-ink: #fbf9f2;
     --track: rgba(25, 21, 18, 0.1);
+    --menu: #fffdf8;
     color-scheme: light dark;
   }
   @media (prefers-color-scheme: dark) {
@@ -26,6 +27,7 @@
       --accent: #9ed9b4;
       --accent-ink: #10201a;
       --track: rgba(244, 239, 228, 0.12);
+      --menu: #1a1713;
     }
   }
   * { box-sizing: border-box; }
@@ -55,6 +57,21 @@
     animation: settle 160ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
   }
   body.ready .island { gap: 18px; padding: 12px 14px 12px 18px; }
+  @media (max-width: 520px) {
+    .island,
+    body.ready .island {
+      width: auto;
+      max-width: calc(100vw - 16px);
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 22px;
+    }
+    .actions {
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+  }
   .wave {
     display: flex;
     align-items: center;
@@ -117,6 +134,21 @@
   body.listening .stop { display: block; }
   .stop:hover { filter: brightness(0.94); }
   .stop:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .dismiss {
+    display: none;
+    margin-left: auto;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 8px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  body:not(.ready):not(.listening) .dismiss { display: block; }
+  .dismiss:hover { color: var(--ink); }
+  .dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .readout {
     display: grid;
     gap: 2px;
@@ -215,7 +247,7 @@
     padding: 6px;
     border: 1px solid var(--line);
     border-radius: 14px;
-    background: #0e1011;
+    background: var(--menu);
     box-shadow: 0 18px 34px rgba(0, 0, 0, 0.45);
     display: grid;
     gap: 2px;
@@ -239,12 +271,20 @@
   }
   .write-option:hover,
   .write-option:focus-visible {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--line);
     color: var(--ink);
     outline: none;
   }
   .write-option[aria-selected="true"] {
     color: var(--accent);
+  }
+  .write-option.needs-download {
+    color: var(--muted);
+  }
+  .write-option.needs-download::after {
+    content: " · download";
+    color: var(--accent);
+    font-size: 11px;
   }
   @keyframes menuIn {
     from { opacity: 0; transform: translateY(4px); }
@@ -330,38 +370,60 @@
   }
 </style>
 </head>
-<body>
+<body class="ready">
   <div class="island">
     <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <span class="clock" id="clock" aria-hidden="true">0:00</span>
-    <button type="button" class="pause" id="pause" aria-pressed="false">Pause</button>
-    <button type="button" class="stop" id="stop">Stop</button>
+    <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
+    <button type="button" class="pause" id="cancel" data-i18n="island.cancel">Cancel</button>
+    <button type="button" class="stop" id="stop" data-i18n="island.stop">Stop</button>
+    <button type="button" class="dismiss" id="dismiss" aria-label="Close" data-i18n-aria-label="island.close">×</button>
     <div class="readout">
-      <span class="state" id="state">Ready</span>
-      <span class="line pending" id="line">Hold the shortcut to talk.</span>
+      <span class="state" id="state"></span>
+      <span class="line pending" id="line"></span>
     </div>
     <div class="actions">
-      <div class="write" role="group" aria-label="Write in">
-        <span class="write-label">Write</span>
-        <button type="button" class="write-btn" id="write" aria-haspopup="listbox" aria-expanded="false" aria-label="Dictation writes">
-          <span id="write-name">Spoken language</span>
+      <div class="write" role="group" aria-label="Write in" data-i18n-aria-label="island.writeIn">
+        <span class="write-label" data-i18n="island.write">Write</span>
+        <button type="button" class="write-btn" id="write" aria-haspopup="listbox" aria-expanded="false" aria-label="Dictation writes" data-i18n-aria-label="island.dictationWrites">
+          <span id="write-name" data-i18n="island.spokenLanguage">Spoken language</span>
         </button>
-        <div class="write-menu" id="write-menu" role="listbox" aria-label="Dictation writes" hidden></div>
+        <div class="write-menu" id="write-menu" role="listbox" aria-label="Dictation writes" data-i18n-aria-label="island.dictationWrites" hidden></div>
       </div>
       <span class="rule" aria-hidden="true"></span>
       <div class="tidy">
-        <span class="switch-label" id="tidy-label">Clean up</span>
-        <span class="tidy-hint" id="tidy-hint">Drops filler and repeats</span>
+        <span class="switch-label" id="tidy-label" data-i18n="island.cleanup">Clean up</span>
+        <span class="tidy-hint" id="tidy-hint" data-i18n="island.drops">Drops filler and repeats</span>
       </div>
       <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
         <span class="knob"></span>
       </button>
-      <button type="button" class="record" id="record">Record</button>
+      <button type="button" class="record" id="record" data-i18n="island.record">Record</button>
     </div>
   </div>
 <script src="languages.js"></script>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";
+let strings = {};
+
+function t(key, fallback, values = {}) {
+  const text = strings[key] || fallback;
+  return Object.entries(values).reduce(
+    (out, [name, value]) => out.split("{" + name + "}").join(String(value)),
+    text,
+  );
+}
+
+function applyText() {
+  document.title = t("island.title", "Parlo Dictate");
+  for (const element of document.querySelectorAll("[data-i18n]")) {
+    element.textContent = t(element.dataset.i18n, element.textContent);
+  }
+  for (const element of document.querySelectorAll("[data-i18n-aria-label]")) {
+    element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel, element.getAttribute("aria-label")));
+  }
+}
+
 const TARGET_RATE = 16000;
 const MAX_SECONDS = 60;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
@@ -396,6 +458,8 @@ let writeSource = "";
 let writePairs = [];
 let writeNames = {};
 let writeChoice = localStorage.getItem("parlo-write");
+let coverage = new Set();
+let coverageReady = false;
 if (writeChoice === "same") {
   writeChoice = "";
   localStorage.setItem("parlo-write", "");
@@ -425,12 +489,12 @@ function report(state) {
 function describeMicrophone(failure) {
   const name = failure && failure.name;
   if (name === "NotAllowedError") {
-    return "The microphone is blocked. Allow it in the Parlo window and try again.";
+    return t("island.micBlockedHelp", "The microphone is blocked. Allow it in the Parlo window and try again.");
   }
   if (name === "NotFoundError") {
-    return "No microphone was found. Plug one in and try again.";
+    return t("island.micMissing", "No microphone was found. Plug one in and try again.");
   }
-  return "The microphone did not open. Check that another program is not using it.";
+  return t("island.micFailed", "The microphone did not open. Check that another program is not using it.");
 }
 
 function downsample(samples, from, to) {
@@ -496,20 +560,36 @@ function paintLevel(block) {
   });
 }
 
+let attempt = 0;
+
 async function begin() {
   if (busy || stream) {
     return;
   }
+  const ticket = ++attempt;
+  document.body.classList.remove("ready");
+  setState(t("island.listening", "Listening"), "", true);
   const app = await beginTarget();
+  if (ticket !== attempt) {
+    return;
+  }
   target = Boolean(app);
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
     });
   } catch (failure) {
+    if (ticket !== attempt) {
+      return;
+    }
     document.body.classList.remove("ready");
-    setState("Microphone blocked", describeMicrophone(failure), true);
+    setState(t("island.micBlocked", "Microphone blocked"), describeMicrophone(failure), true);
     report("error");
+    return;
+  }
+  if (ticket !== attempt) {
+    stream.getTracks().forEach((track) => track.stop());
+    stream = null;
     return;
   }
   context = new (window.AudioContext || window.webkitAudioContext)();
@@ -610,7 +690,7 @@ function paintClock() {
 }
 
 function paintPause() {
-  pauseEl.textContent = paused ? "Resume" : "Pause";
+  pauseEl.textContent = paused ? t("island.resume", "Resume") : t("island.pause", "Pause");
   pauseEl.setAttribute("aria-pressed", String(paused));
   document.body.classList.toggle("paused", paused);
 }
@@ -724,9 +804,31 @@ async function beginTarget() {
   }
 }
 
+async function loadLocale() {
+  try {
+    const response = await fetch("/locale", { cache: "no-store" });
+    if (response.ok) {
+      const table = await response.json();
+      strings = table.strings || {};
+      document.documentElement.lang = table.locale || "en";
+      document.documentElement.dir = table.locale === "ar" ? "rtl" : "ltr";
+    }
+  } catch {
+    strings = {};
+  }
+  applyText();
+  paintPause();
+  paintTidy();
+  paintWrite();
+  buildWriteMenu();
+}
+
 async function loadSettings() {
   try {
-    const response = await fetch("/settings", { cache: "no-store" });
+    const response = await fetch("/settings", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
     if (!response.ok) {
       return;
     }
@@ -749,7 +851,14 @@ async function loadVersion() {
     if (!update.available || !update.latest) {
       return;
     }
-    setState("Ready", "v" + update.latest + " is available, you are on v" + version + ".", true);
+    setState(
+      t("island.update", "Update"),
+      t("island.updateLine", "v{latest} is available, you are on v{version}.", {
+        latest: update.latest,
+        version,
+      }),
+      true,
+    );
   } catch (failure) {
     return;
   }
@@ -773,6 +882,7 @@ async function writeIntoField(text, signal) {
 }
 
 function cancel() {
+  attempt += 1;
   const hadSomething = Boolean(stream) || busy;
   if (controller) {
     controller.abort();
@@ -782,11 +892,12 @@ function cancel() {
     release();
   }
   busy = false;
-  document.body.classList.remove("listening", "ready");
+  document.body.classList.remove("listening");
   if (hadSomething) {
-    setState("Cancelled", "Nothing was inserted.", true);
+    document.body.classList.remove("ready");
+    setState(t("island.cancelled", "Cancelled"), t("island.nothingInserted", "Nothing was inserted."), true);
   } else {
-    setState("Ready", lastText || "Hold the shortcut to talk.", !lastText);
+    ready();
   }
   report("cancelled");
 }
@@ -799,12 +910,12 @@ async function stop() {
   let failed = false;
   const captured = release();
   if (!captured) {
-    setState("Ready", lastText || "Hold the shortcut to talk.", !lastText);
+    ready();
     busy = false;
     report("idle");
     return;
   }
-  setState("Cleaning up", "Polishing the sentence.", true);
+  setState(t("island.cleaning", "Cleaning up"), t("island.polishing", "Polishing the sentence."), true);
   report("processing");
   controller = new AbortController();
   const { signal } = controller;
@@ -815,7 +926,11 @@ async function stop() {
       "x-parlo-clean": tidy ? "on" : "off",
     };
     const write = effectiveWrite();
-    if (write) {
+    if (write === "same") {
+      if (writeSource) {
+        headers["x-parlo-write"] = writeSource;
+      }
+    } else if (write) {
       headers["x-parlo-write"] = write;
     }
     const response = await fetch("/dictate", {
@@ -832,14 +947,15 @@ async function stop() {
     const spoken = (result.text || "").trim();
     const text = (result.translation || "").trim() || spoken;
     if (!text) {
-      setState("Nothing heard", "Speak a little closer to the microphone.", true);
+      setState(t("island.nothingHeard", "Nothing heard"), t("island.speakCloser", "Speak a little closer to the microphone."), true);
+      document.body.classList.remove("ready");
       busy = false;
       report("error");
       return;
     }
     lastText = text;
     const inserted = await writeIntoField(text, signal);
-    setState(inserted ? "Written" : "Copied", text, false);
+    setState(inserted ? t("island.written", "Written") : t("island.copied", "Copied"), text, false);
     if (!inserted) {
       try {
         const response = await fetch("/clipboard", {
@@ -853,31 +969,52 @@ async function stop() {
         }
         const copied = await response.json();
         setState(
-          "Copied",
-          "Copied. Your previous clipboard returns in " + (copied.lease_seconds || 10) + " seconds.",
-          false
+          t("island.copied", "Copied"),
+          t("island.clipboardReturns", "Copied. Your previous clipboard returns in {seconds} seconds.", {
+            seconds: copied.lease_seconds || 10,
+          }),
+          false,
         );
       } catch (failure) {
         if (!signal.aborted) {
           try {
             await navigator.clipboard.writeText(text);
           } catch (copyFailure) {
-            setState("Copied", "The clipboard refused the text, select it here and copy by hand.", true);
+            setState(
+              t("island.copied", "Copied"),
+              t("island.clipboardRefused", "The clipboard refused the text, select it here and copy by hand."),
+              true,
+            );
           }
         }
       }
     }
   } catch (failure) {
+    document.body.classList.remove("ready");
     if (signal.aborted) {
-      setState("Ready", "Cancelled. Nothing was inserted.", true);
+      setState(t("island.cancelled", "Cancelled"), t("island.nothingInserted", "Nothing was inserted."), true);
     } else {
-      setState("Failed", failure.message || "The dictation failed.", true);
+      setState(t("island.failed", "Failed"), failure.message || t("island.dictationFailed", "The dictation failed."), true);
     }
     failed = true;
   }
   controller = null;
   busy = false;
   report(failed ? (signal.aborted ? "cancelled" : "error") : "success");
+}
+
+function tap() {
+  attempt += 1;
+  if (controller) {
+    controller.abort();
+    controller = null;
+  }
+  if (stream) {
+    release();
+  }
+  busy = false;
+  document.body.classList.remove("listening");
+  ready();
 }
 
 function handsFree() {
@@ -888,8 +1025,6 @@ function arm() {
   if (stream || busy) {
     return;
   }
-  document.body.classList.remove("ready", "listening");
-  setState("Ready", "Hold the shortcut to talk.", true);
   report("armed");
 }
 
@@ -899,12 +1034,15 @@ function ready() {
   }
   document.body.classList.add("ready");
   document.body.classList.remove("listening");
+  setState("", "", true);
   report("armed");
 }
 
 function paintTidy() {
   tidyEl.setAttribute("aria-checked", String(tidy));
-  tidyHint.textContent = tidy ? "Drops filler and repeats" : "Keeps every spoken word";
+  tidyHint.textContent = tidy
+    ? t("island.drops", "Drops filler and repeats")
+    : t("island.keeps", "Keeps every spoken word");
 }
 
 const writeEl = document.getElementById("write");
@@ -915,21 +1053,28 @@ function writableTargets() {
   return writeTargets(writePairs, writeNames, writeSource);
 }
 
+function languageName(code) {
+  return t("language." + code, writeNames[code] || code.toUpperCase());
+}
+
 function writeOptions() {
-  return [{ code: "", name: "Spoken language" }].concat(
-    writableTargets().map((code) => ({ code, name: writeNames[code] || code.toUpperCase() })),
+  return [{ code: "same", name: t("island.spokenLanguage", "Spoken language") }].concat(
+    writableTargets().map((code) => ({ code, name: languageName(code) })),
   );
 }
 
 function effectiveWrite() {
   const chosen = writeChoice === null ? writeTarget : writeChoice;
+  if (chosen === "same") {
+    return "same";
+  }
   return writeOptions().some((option) => option.code === chosen) ? chosen : "";
 }
 
 function paintWrite() {
   const active = effectiveWrite();
   const shown = writeOptions().find((option) => option.code === active);
-  writeName.textContent = shown ? shown.name : "Spoken language";
+  writeName.textContent = shown ? shown.name : t("island.spokenLanguage", "Spoken language");
   for (const item of writeMenu.children) {
     item.setAttribute("aria-selected", String(item.dataset.code === active));
   }
@@ -953,11 +1098,6 @@ function chooseWrite(code) {
   openWriteMenu(false);
   paintWrite();
   writeEl.focus();
-  setState(
-    "Ready",
-    code ? "Writes " + (writeNames[code] || code.toUpperCase()) + " until you change it." : "Writes the language you speak.",
-    true,
-  );
 }
 
 function buildWriteMenu() {
@@ -969,10 +1109,50 @@ function buildWriteMenu() {
     item.dataset.code = option.code;
     item.setAttribute("role", "option");
     item.textContent = option.name;
-    item.addEventListener("click", () => chooseWrite(option.code));
+    if (option.code && option.code !== "same" && !covered(option.code)) {
+      item.classList.add("needs-download");
+      item.title = t("island.needsModel", "Parlo needs the model for this language; open Parlo to download it");
+      item.addEventListener("click", openModels);
+    } else {
+      item.addEventListener("click", () => chooseWrite(option.code));
+    }
     writeMenu.append(item);
   }
   paintWrite();
+}
+
+function pairKey(from, to) {
+  return from + ">" + to;
+}
+
+function covered(code) {
+  return !coverageReady || coverage.has(pairKey(writeSource, code));
+}
+
+function openModels() {
+  window.open(location.origin + "/?t=" + encodeURIComponent(token) + "#library/models", "_blank");
+}
+
+async function loadCoverage() {
+  try {
+    const response = await fetch("/models", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const state = await response.json();
+    const models = Array.isArray(state.models) ? state.models : [];
+    coverage = new Set();
+    for (const model of models) {
+      const pair = Array.isArray(model.languages) ? model.languages : [];
+      if (model.installed && model.kind === "translation" && pair.length >= 2) {
+        coverage.add(pairKey(pair[0], pair[1]));
+      }
+    }
+    coverageReady = true;
+  } catch (failure) {
+    return;
+  }
+  buildWriteMenu();
 }
 
 async function loadLanguages() {
@@ -1035,6 +1215,9 @@ document.getElementById("stop").addEventListener("click", () => {
   stop();
 });
 
+document.getElementById("cancel").addEventListener("click", cancel);
+document.getElementById("dismiss").addEventListener("click", cancel);
+
 paintTidy();
 paintWrite();
 
@@ -1043,13 +1226,8 @@ window.parloReady = ready;
 window.parloBegin = begin;
 window.parloStop = stop;
 window.parloCancel = cancel;
+window.parloTap = tap;
 window.parloHandsFree = handsFree;
-
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    ready();
-  }
-});
 
 pauseEl.addEventListener("click", togglePause);
 
@@ -1064,12 +1242,9 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
+loadLocale();
 loadVersion();
-loadSettings();
-loadLanguages();
-if (!document.hidden) {
-  ready();
-}
+Promise.all([loadSettings(), loadLanguages()]).then(loadCoverage);
 </script>
 </body>
 </html>
