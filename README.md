@@ -68,7 +68,7 @@ Neither of those replaces code signing. Windows still treats the installer as un
 
 ## The first run
 
-The installer carries the programs, not the models. Open Parlo, and the Models panel lists what is missing. Press **Download models** once, and about 800 MB lands in your user data folder. After that, Parlo works with the network switched off.
+The installer carries the programs, not the models. Open Parlo, and the Models panel lists what is missing, with the size of each one, before anything moves. Press **Download models** once and it fetches those; after that Parlo works with the network switched off.
 
 The first start can take around twenty seconds while the engine loads. The window says so instead of looking stuck.
 
@@ -122,7 +122,7 @@ Each key changes in Settings, is validated when you save it, is refused when it 
 | **A model manager that tells the truth** | One line per model: size on disk, `Installed · not loaded`, `Loaded`, `In use` or `Not installed`, a measured quality number or the honest “no measured number”. Each line has `Load`, `Download now` and `Remove`, and its delay before being released, from 10 minutes to 4 hours or `Keep loaded`. Downloads can be stopped, and the whole models folder can move to another disk with a byte-by-byte comparison before the old copy is deleted. |
 | **Two recognisers, chosen by machine** | Parakeet TDT 0.6B v3 int8 is the default; Whisper `tiny` to `large-v3` is selectable where 640 MB is too much. The list names the cores, the memory and whether AVX2 is present, and why this machine got the recommendation it got. |
 | **Translation with a pivot** | Portuguese and English, in both directions. 100 original sentences are checked for numbers, clocks, negations, names and completeness before a release is called good. PT→DE runs through English and is published as not validated by a native speaker. |
-| **Cleanup that respects what you said** | Three levels: what the recogniser heard, the phrase you wanted with auto-corrections and hesitations removed, and a neater version with spacing and capitals. The heard phrase always stays beside it. |
+| **Cleanup that respects what you said** | Three levels, named in Settings as `Keep my words as they came`, `Light, fix the obvious` and `Intelligent, tidy the sentence`. The first writes what the recogniser heard, the second removes self-corrections and hesitations, the third adds spacing and capitals. The heard phrase always stays beside it. |
 | **Words Parlo should learn** | A local vocabulary corrects the names the recogniser keeps getting wrong, one word at a time, before any model reads the sentence. |
 | **A history you can reuse** | Each dictation keeps what was said, what was written and the program it arrived in, and one click puts a line back on the clipboard. |
 | **A voice panel with a real sample** | 10 to 30 seconds are recorded in the window or refused with the measured length; a silent recording is also refused; the sample can be sealed as DPAPI encryption, played back, exported as a file marked synthetic, or deleted with the profile. |
@@ -201,4 +201,4 @@ The Windows build is unsigned. SmartScreen may ask once on first download. That 
 
 ## License
 
-The code is **Apache-2.0**. Model weights keep the terms of their own publishers: Parakeet is CC-BY-4.0, the OPUS-MT packages are CC BY 4.0, and the optional Piper adapter is GPL-3.0-or-later, installed separately and never embedded in an archive. [LICENSES.md](LICENSES.md) is the index and [NOTICES_DE_TERCEIROS.md](THIRD_PARTY_NOTICES.md) carries the notices.
+The code is **Apache-2.0**. Model weights keep the terms of their own publishers: Parakeet is CC-BY-4.0, the OPUS-MT packages are CC BY 4.0, and the optional Piper adapter is GPL-3.0-or-later, installed separately and never embedded in an archive. [LICENSES.md](LICENSES.md) is the index and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) carries the notices.
