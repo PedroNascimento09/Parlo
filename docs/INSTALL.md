@@ -17,7 +17,7 @@ It installs into `%LOCALAPPDATA%\Programs\Parlo` for your user alone, adds **Par
 2. Paste this line and press **Enter**:
 
 ```powershell
-irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex
+irm https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.ps1|iex
 ```
 
 3. When it finishes, **Parlo** is in the Start menu. Open it, press **Download models** in the Models panel, and wait once.
@@ -39,7 +39,7 @@ The wait people notice is afterwards, on the first start: about **800 MB of mode
 ## macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
+curl -fsSL https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.sh|bash
 ```
 
 The published build is for Apple silicon. It lands in `~/Applications/Parlo`, and `parlo-app` is linked into `~/.local/bin`. Without the terminal: download `parlo-macos-aarch64.tar.gz`, unpack it with a double-click, and open `parlo-app`; macOS may ask for confirmation the first time because the build is unsigned.
@@ -47,7 +47,7 @@ The published build is for Apple silicon. It lands in `~/Applications/Parlo`, an
 ## Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
+curl -fsSL https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.sh|bash
 ```
 
 It unpacks into `~/.local/opt/parlo` and links `parlo-app` into `~/.local/bin`, so the window opens from any terminal. The window needs WebKitGTK, which most desktops already have; on a minimal system install `libwebkit2gtk-4.1-0`.

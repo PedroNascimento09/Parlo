@@ -29,7 +29,7 @@ Parlo is a desktop program that turns speech into text without sending anything 
 **Windows, from the terminal:**
 
 ```powershell
-irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex
+irm https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.ps1|iex
 ```
 
 That downloads the same content as the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. Same app, one command.
@@ -39,7 +39,7 @@ If Windows says **Windows protected your PC**, choose **More info**, then **Run 
 **macOS and Linux:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
+curl -fsSL https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.sh|bash
 ```
 
 **Download from a browser, if you prefer:**

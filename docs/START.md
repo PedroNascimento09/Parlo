@@ -9,7 +9,7 @@ Five minutes from a computer that has never run Parlo to a sentence you dictated
 **macOS and Linux.**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
+curl -fsSL https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.sh|bash
 ```
 
 If Windows blocks Parlo-Setup.exe, SmartScreen or another antivirus is most likely flagging an unsigned, freshly built release rather than malware. The project keeps the exact file hash and the build provenance next to the download, and it has a false-positive submission procedure for Microsoft Defender and other security products: [False positives](SECURITY_FALSE_POSITIVE.md).
