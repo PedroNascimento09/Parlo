@@ -244,14 +244,22 @@ fn start_job(kind: &str, seconds: u64) -> Result<String, String> {
                     })
                 }
             });
-        let mut result = outcome.unwrap_or_default();
+        let mut error = String::new();
+        let mut result = match outcome {
+            Ok(output) => output,
+            Err(message) => {
+                error = message;
+                String::new()
+            }
+        };
         if report.is_file() {
-            result = std::fs::read_to_string(&report).unwrap_or_default();
+            result = std::fs::read_to_string(&report).unwrap_or(result);
         }
         if let Ok(mut store) = jobs().lock() {
             if let Some(job) = store.get_mut(&key) {
                 job.state = "done".to_string();
                 job.result = result;
+                job.error = error;
             }
         }
     });

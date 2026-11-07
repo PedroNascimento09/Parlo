@@ -8406,14 +8406,19 @@ function watchJob(id, kind) {
         setTimeout(() => watchJob(id, kind), 1200);
         return;
       }
-      if (job.error) {
-        toolsJobNote.textContent = job.error;
-        return;
+      toolsJobNote.textContent = job.error || "";
+      let parsed = null;
+      try {
+        parsed = JSON.parse(job.result || "");
+      } catch (_) {
+        parsed = null;
       }
-      toolsJobNote.textContent = "";
-      const parsed = JSON.parse(job.result || "{}");
-      toolsJobCards[kind] = kind === "bench" ? benchCard(parsed) : soakCard(parsed);
-      showJobCards();
+      if (parsed && typeof parsed === "object" && Object.keys(parsed).length) {
+        toolsJobCards[kind] = kind === "bench" ? benchCard(parsed) : soakCard(parsed);
+        showJobCards();
+      } else if (!job.error && job.result) {
+        toolsJobNote.textContent = job.result;
+      }
     })
     .catch((error) => {
       toolsJobNote.textContent = error.message;
