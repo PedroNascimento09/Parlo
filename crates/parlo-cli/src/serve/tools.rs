@@ -245,7 +245,7 @@ fn start_job(kind: &str, seconds: u64) -> Result<String, String> {
                 }
             });
         let mut result = outcome.unwrap_or_default();
-        if result.trim().is_empty() && report.is_file() {
+        if report.is_file() {
             result = std::fs::read_to_string(&report).unwrap_or_default();
         }
         if let Ok(mut store) = jobs().lock() {

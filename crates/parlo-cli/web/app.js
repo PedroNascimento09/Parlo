@@ -8248,6 +8248,14 @@ const toolsSayNote = document.getElementById("tools-say-note");
 const toolsJobNote = document.getElementById("tools-job-note");
 const toolsJobList = document.getElementById("tools-job-list");
 let toolsSnapshot = null;
+const toolsJobCards = {};
+
+function showJobCards() {
+  const cards = ["bench", "soak"]
+    .filter((kind) => toolsJobCards[kind])
+    .map((kind) => toolsJobCards[kind]);
+  toolsJobList.replaceChildren(...cards);
+}
 
 function toolsFetch(path, method, payload) {
   const options = { method: method || "GET", headers: { Authorization: "Bearer " + token } };
@@ -8404,7 +8412,8 @@ function watchJob(id, kind) {
       }
       toolsJobNote.textContent = "";
       const parsed = JSON.parse(job.result || "{}");
-      toolsJobList.replaceChildren(kind === "bench" ? benchCard(parsed) : soakCard(parsed));
+      toolsJobCards[kind] = kind === "bench" ? benchCard(parsed) : soakCard(parsed);
+      showJobCards();
     })
     .catch((error) => {
       toolsJobNote.textContent = error.message;
@@ -8413,7 +8422,8 @@ function watchJob(id, kind) {
 
 function runJob(kind, seconds) {
   toolsJobNote.textContent = t("text.Running…", "");
-  toolsJobList.replaceChildren();
+  delete toolsJobCards[kind];
+  showJobCards();
   toolsFetch("/tools/job", "POST", { kind, seconds })
     .then((job) => watchJob(job.id, kind))
     .catch((error) => {
