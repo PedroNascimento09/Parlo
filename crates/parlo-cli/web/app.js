@@ -7522,12 +7522,38 @@ const styleControls = [
   ...document.querySelectorAll(".style-card"),
   ...document.querySelectorAll(".style-chip"),
 ];
-const settingsStyle = document.getElementById("settings-style");
-const styleSheet = document.getElementById("style-sheet");
-const toneOpen = document.getElementById("tone-open");
-const toneNow = document.getElementById("tone-now");
 const STYLES = ["formal", "casual", "excited"];
-const STYLE_NAMES = { formal: "Formal", casual: "Casual", excited: "Excited" };
+const THEMES = ["system", "light", "dark"];
+const themeChoices = [...document.querySelectorAll("[data-theme-choice]")];
+
+function storedTheme() {
+  const value = localStorage.getItem("parlo.theme");
+  return THEMES.includes(value) ? value : "system";
+}
+
+function applyTheme() {
+  const choice = storedTheme();
+  const dark =
+    choice === "dark" ||
+    (choice === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  for (const button of themeChoices) {
+    button.setAttribute("aria-pressed", String(button.dataset.themeChoice === choice));
+  }
+}
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (storedTheme() === "system") {
+    applyTheme();
+  }
+});
+
+for (const button of themeChoices) {
+  button.addEventListener("click", () => {
+    localStorage.setItem("parlo.theme", button.dataset.themeChoice);
+    applyTheme();
+  });
+}
 
 function gateStep(name) {
   const index = GATE_STEPS.indexOf(name);
@@ -7558,25 +7584,6 @@ function paintStyleControls() {
   for (const control of styleControls) {
     control.setAttribute("aria-pressed", String(control.dataset.style === chosen));
   }
-  if (settingsStyle) {
-    settingsStyle.value = chosen || "formal";
-  }
-  if (toneNow) {
-    const style = chosen || "formal";
-    toneNow.textContent = t("home." + style, STYLE_NAMES[style]);
-  }
-}
-
-if (toneOpen && styleSheet) {
-  toneOpen.addEventListener("click", () => styleSheet.showModal());
-}
-
-if (styleSheet) {
-  styleSheet.addEventListener("click", (event) => {
-    if (event.target.closest("[data-style]") || event.target === styleSheet) {
-      styleSheet.close();
-    }
-  });
 }
 
 function chooseStyle(style) {
@@ -7736,12 +7743,6 @@ gateMicCheck.addEventListener("click", async () => {
 gateMicNext.addEventListener("click", () => gateStep("gate-style"));
 gateMicSkip.addEventListener("click", () => gateStep("gate-style"));
 gateFinish.addEventListener("click", closeGate);
-
-if (settingsStyle) {
-  settingsStyle.addEventListener("change", () => {
-    chooseStyle(settingsStyle.value);
-  });
-}
 
 const settingsName = document.getElementById("settings-name");
 const settingsNameSave = document.getElementById("settings-name-save");

@@ -1340,7 +1340,12 @@
       "word.to.Spanish": "الاسبانية",
       "text.Listening": "يستمع",
       "text.{count} character": "{count} شخصية",
-      "text.Show the rest · {count} more": "أظهر الباقي · {count} أخرى"
+      "text.Show the rest · {count} more": "أظهر الباقي · {count} أخرى",
+      "text.Appearance": "المظهر",
+      "text.Follow Windows": "اتبع Windows",
+      "text.Light": "فاتح",
+      "text.Dark": "داكن",
+      "text.Windows picks the theme until you choose one here.": "يختار Windows المظهر حتى تختار واحدًا هنا."
     },
     "cs": {
       "about.after": ". Nová verze se instaluje z krabice v horní části domovské stránky a nikdy sama.",
@@ -2636,7 +2641,12 @@
       "word.to.Spanish": "španělština",
       "text.Listening": "Poslouchá",
       "text.{count} character": "{count} postava",
-      "text.Show the rest · {count} more": "Zobrazit zbytek · další {count}"
+      "text.Show the rest · {count} more": "Zobrazit zbytek · další {count}",
+      "text.Appearance": "Vzhled",
+      "text.Follow Windows": "Podle Windows",
+      "text.Light": "Světlý",
+      "text.Dark": "Tmavý",
+      "text.Windows picks the theme until you choose one here.": "Windows vybírá vzhled, dokud si zde nevybereš."
     },
     "da": {
       "about.after": ". En ny version installeres fra boksen øverst i Home, og aldrig alene.",
@@ -3932,7 +3942,12 @@
       "word.to.Spanish": "spansk",
       "text.Listening": "Lytter",
       "text.{count} character": "{count} figur",
-      "text.Show the rest · {count} more": "Vis resten · {count} mere"
+      "text.Show the rest · {count} more": "Vis resten · {count} mere",
+      "text.Appearance": "Udseende",
+      "text.Follow Windows": "Følg Windows",
+      "text.Light": "Lys",
+      "text.Dark": "Mørk",
+      "text.Windows picks the theme until you choose one here.": "Windows vælger tema, indtil du vælger et her."
     },
     "de": {
       "about.after": ". Eine neue Version wird aus der Box oben in Home installiert und niemals alleine.",
@@ -5228,7 +5243,12 @@
       "word.to.Spanish": "Spanisch",
       "text.Listening": "Hört zu",
       "text.{count} character": "{count} Figur",
-      "text.Show the rest · {count} more": "Rest anzeigen · {count} weitere"
+      "text.Show the rest · {count} more": "Rest anzeigen · {count} weitere",
+      "text.Appearance": "Darstellung",
+      "text.Follow Windows": "Windows folgen",
+      "text.Light": "Hell",
+      "text.Dark": "Dunkel",
+      "text.Windows picks the theme until you choose one here.": "Windows wählt das Theme, bis Sie hier eines auswählen."
     },
     "en": {
       "about.after": ". A new version installs from the box at the top of Home, and never on its own.",
@@ -6524,7 +6544,12 @@
       "word.to.Spanish": "Spanish",
       "text.Listening": "Listening",
       "text.{count} character": "{count} character",
-      "text.Show the rest · {count} more": "Show the rest · {count} more"
+      "text.Show the rest · {count} more": "Show the rest · {count} more",
+      "text.Appearance": "Appearance",
+      "text.Follow Windows": "Follow Windows",
+      "text.Light": "Light",
+      "text.Dark": "Dark",
+      "text.Windows picks the theme until you choose one here.": "Windows picks the theme until you choose one here."
     },
     "es": {
       "about.after": ". Una nueva versión se instala desde el cuadro en la parte superior de Inicio, y nunca sola.",
@@ -7820,7 +7845,12 @@
       "word.to.Spanish": "español",
       "text.Listening": "Escuchando",
       "text.{count} character": "{count} personaje",
-      "text.Show the rest · {count} more": "Mostrar el resto · {count} más"
+      "text.Show the rest · {count} more": "Mostrar el resto · {count} más",
+      "text.Appearance": "Apariencia",
+      "text.Follow Windows": "Seguir Windows",
+      "text.Light": "Claro",
+      "text.Dark": "Oscuro",
+      "text.Windows picks the theme until you choose one here.": "Windows elige el tema hasta que elijas uno aquí."
     },
     "fi": {
       "about.after": ". Uusi versio asennetaan etusivun yläreunassa olevasta laatikosta, ei koskaan itsestään.",
@@ -9116,7 +9146,12 @@
       "word.to.Spanish": "espanja",
       "text.Listening": "Kuuntelee",
       "text.{count} character": "{count} hahmo",
-      "text.Show the rest · {count} more": "Näytä loput · {count} lisää"
+      "text.Show the rest · {count} more": "Näytä loput · {count} lisää",
+      "text.Appearance": "Ulkoasu",
+      "text.Follow Windows": "Seuraa Windowsia",
+      "text.Light": "Vaalea",
+      "text.Dark": "Tumma",
+      "text.Windows picks the theme until you choose one here.": "Windows valitsee teeman, kunnes valitset tässä."
     },
     "fr": {
       "about.after": ". Une nouvelle version s'installe depuis la boîte en haut de l'Accueil, et jamais seule.",
@@ -10412,7 +10447,12 @@
       "word.to.Spanish": "Espagnol",
       "text.Listening": "Écoute",
       "text.{count} character": "{count} personnage",
-      "text.Show the rest · {count} more": "Afficher le reste · {count} de plus"
+      "text.Show the rest · {count} more": "Afficher le reste · {count} de plus",
+      "text.Appearance": "Apparence",
+      "text.Follow Windows": "Suivre Windows",
+      "text.Light": "Clair",
+      "text.Dark": "Sombre",
+      "text.Windows picks the theme until you choose one here.": "Windows choisit le thème jusqu'à ce que vous en choisissiez un ici."
     },
     "it": {
       "about.after": ". Una nuova versione viene installata dalla casella nella parte superiore della Home e mai da sola.\n@@10:30@@\nRimuovere __PARLO_PH_0__ e le relative esportazioni da questo computer?",
@@ -11708,7 +11748,12 @@
       "word.to.Spanish": "spagnolo",
       "text.Listening": "In ascolto",
       "text.{count} character": "{count} personaggio",
-      "text.Show the rest · {count} more": "Mostra il resto · altri {count}"
+      "text.Show the rest · {count} more": "Mostra il resto · altri {count}",
+      "text.Appearance": "Aspetto",
+      "text.Follow Windows": "Segui Windows",
+      "text.Light": "Chiaro",
+      "text.Dark": "Scuro",
+      "text.Windows picks the theme until you choose one here.": "Windows sceglie il tema finché non ne scegli uno qui."
     },
     "ja": {
       "about.after": "。新しいバージョンは、ホームの上部にあるボックスからインストールされます。単独でインストールされることはありません。",
@@ -13004,7 +13049,12 @@
       "word.to.Spanish": "スペイン語",
       "text.Listening": "聞き取り中",
       "text.{count} character": "{count} キャラクター",
-      "text.Show the rest · {count} more": "残りを表示 · あと{count}件"
+      "text.Show the rest · {count} more": "残りを表示 · あと{count}件",
+      "text.Appearance": "外観",
+      "text.Follow Windows": "Windows に合わせる",
+      "text.Light": "ライト",
+      "text.Dark": "ダーク",
+      "text.Windows picks the theme until you choose one here.": "ここで選ぶまで Windows がテーマを決めます。"
     },
     "ko": {
       "about.after": ". 새 버전은 홈 상단에 있는 상자에서 설치되며 자체적으로는 설치되지 않습니다.",
@@ -14300,7 +14350,12 @@
       "word.to.Spanish": "스페인어",
       "text.Listening": "듣는 중",
       "text.{count} character": "{count} 캐릭터",
-      "text.Show the rest · {count} more": "나머지 보기 · {count}개 더"
+      "text.Show the rest · {count} more": "나머지 보기 · {count}개 더",
+      "text.Appearance": "화면",
+      "text.Follow Windows": "Windows 따르기",
+      "text.Light": "라이트",
+      "text.Dark": "다크",
+      "text.Windows picks the theme until you choose one here.": "여기서 선택할 때까지 Windows가 테마를 고릅니다."
     },
     "nb": {
       "about.after": ". En ny versjon installeres fra boksen på toppen av Home, og aldri på egen hånd.",
@@ -15596,7 +15651,12 @@
       "word.to.Spanish": "spansk",
       "text.Listening": "Lytter",
       "text.{count} character": "{count} figur",
-      "text.Show the rest · {count} more": "Vis resten · {count} til"
+      "text.Show the rest · {count} more": "Vis resten · {count} til",
+      "text.Appearance": "Utseende",
+      "text.Follow Windows": "Følg Windows",
+      "text.Light": "Lys",
+      "text.Dark": "Mørk",
+      "text.Windows picks the theme until you choose one here.": "Windows velger tema til du velger ett her."
     },
     "nl": {
       "about.after": ". Een nieuwe versie wordt geïnstalleerd vanuit de box bovenaan Home, en nooit uit zichzelf.",
@@ -16892,7 +16952,12 @@
       "word.to.Spanish": "Spaans",
       "text.Listening": "Luistert",
       "text.{count} character": "{count} personage",
-      "text.Show the rest · {count} more": "Toon de rest · nog {count}"
+      "text.Show the rest · {count} more": "Toon de rest · nog {count}",
+      "text.Appearance": "Weergave",
+      "text.Follow Windows": "Windows volgen",
+      "text.Light": "Licht",
+      "text.Dark": "Donker",
+      "text.Windows picks the theme until you choose one here.": "Windows kiest het thema tot je hier een kiest."
     },
     "pl": {
       "about.after": ". Nowa wersja instaluje się z pudełka na górze strony głównej, nigdy samodzielnie.",
@@ -18188,7 +18253,12 @@
       "word.to.Spanish": "Hiszpański",
       "text.Listening": "Słucham",
       "text.{count} character": "{count} postać",
-      "text.Show the rest · {count} more": "Pokaż resztę · jeszcze {count}"
+      "text.Show the rest · {count} more": "Pokaż resztę · jeszcze {count}",
+      "text.Appearance": "Wygląd",
+      "text.Follow Windows": "Jak Windows",
+      "text.Light": "Jasny",
+      "text.Dark": "Ciemny",
+      "text.Windows picks the theme until you choose one here.": "Windows wybiera motyw, dopóki nie wybierzesz go tutaj."
     },
     "pt": {
       "about.after": ". Uma nova versão instala-se pela caixa no topo do Início, e nunca sozinha.",
@@ -19484,7 +19554,12 @@
       "word.to.Spanish": "espanhol",
       "text.Listening": "A ouvir",
       "text.{count} character": "{count} personagem",
-      "text.Show the rest · {count} more": "Mostrar o resto · mais {count}"
+      "text.Show the rest · {count} more": "Mostrar o resto · mais {count}",
+      "text.Appearance": "Aparência",
+      "text.Follow Windows": "Seguir o Windows",
+      "text.Light": "Claro",
+      "text.Dark": "Escuro",
+      "text.Windows picks the theme until you choose one here.": "O Windows escolhe o tema até escolheres um aqui."
     },
     "ro": {
       "about.after": ". O nouă versiune se instalează din caseta din partea de sus a Acasă și niciodată singură.",
@@ -20780,7 +20855,12 @@
       "word.to.Spanish": "spaniolă",
       "text.Listening": "Ascultă",
       "text.{count} character": "{count} personaj",
-      "text.Show the rest · {count} more": "Arată restul · încă {count}"
+      "text.Show the rest · {count} more": "Arată restul · încă {count}",
+      "text.Appearance": "Aspect",
+      "text.Follow Windows": "Urmează Windows",
+      "text.Light": "Luminoasă",
+      "text.Dark": "Întunecată",
+      "text.Windows picks the theme until you choose one here.": "Windows alege tema până când alegi una aici."
     },
     "ru": {
       "about.after": ". Новая версия устанавливается из коробки в верхней части главного экрана, а не сама по себе.",
@@ -22076,7 +22156,12 @@
       "word.to.Spanish": "испанский",
       "text.Listening": "Слушаю",
       "text.{count} character": "{count} персонаж",
-      "text.Show the rest · {count} more": "Показать остальные · ещё {count}"
+      "text.Show the rest · {count} more": "Показать остальные · ещё {count}",
+      "text.Appearance": "Оформление",
+      "text.Follow Windows": "Как в Windows",
+      "text.Light": "Светлая",
+      "text.Dark": "Тёмная",
+      "text.Windows picks the theme until you choose one here.": "Windows выбирает тему, пока вы не выберете её здесь."
     },
     "sv": {
       "about.after": ". En ny version installeras från lådan överst på Home, och aldrig på egen hand.",
@@ -23372,7 +23457,12 @@
       "word.to.Spanish": "spanska",
       "text.Listening": "Lyssnar",
       "text.{count} character": "{count} figur",
-      "text.Show the rest · {count} more": "Visa resten · {count} till"
+      "text.Show the rest · {count} more": "Visa resten · {count} till",
+      "text.Appearance": "Utseende",
+      "text.Follow Windows": "Följ Windows",
+      "text.Light": "Ljus",
+      "text.Dark": "Mörk",
+      "text.Windows picks the theme until you choose one here.": "Windows väljer tema tills du väljer ett här."
     },
     "tr": {
       "about.after": ". Yeni bir sürüm Ana Sayfa'nın üst kısmındaki kutudan yüklenir ve hiçbir zaman tek başına yüklenmez.",
@@ -24668,7 +24758,12 @@
       "word.to.Spanish": "İspanyolca",
       "text.Listening": "Dinliyor",
       "text.{count} character": "{count} karakter",
-      "text.Show the rest · {count} more": "Kalanı göster · {count} tane daha"
+      "text.Show the rest · {count} more": "Kalanı göster · {count} tane daha",
+      "text.Appearance": "Görünüm",
+      "text.Follow Windows": "Windows'u izle",
+      "text.Light": "Açık",
+      "text.Dark": "Koyu",
+      "text.Windows picks the theme until you choose one here.": "Siz burada seçene kadar temayı Windows seçer."
     },
     "uk": {
       "about.after": ". Нова версія встановлюється з коробки у верхній частині головної сторінки, але ніколи самостійно.",
@@ -25964,7 +26059,12 @@
       "word.to.Spanish": "Іспанська",
       "text.Listening": "Слухаю",
       "text.{count} character": "{count} персонаж",
-      "text.Show the rest · {count} more": "Показати решту · ще {count}"
+      "text.Show the rest · {count} more": "Показати решту · ще {count}",
+      "text.Appearance": "Вигляд",
+      "text.Follow Windows": "Як у Windows",
+      "text.Light": "Світла",
+      "text.Dark": "Темна",
+      "text.Windows picks the theme until you choose one here.": "Windows вибирає тему, доки ви не виберете її тут."
     },
     "zh": {
       "about.after": "。新版本从主页顶部的框中安装，而不是单独安装。",
@@ -27260,7 +27360,12 @@
       "word.to.Spanish": "西班牙语",
       "text.Listening": "正在聆听",
       "text.{count} character": "{count} 个角色",
-      "text.Show the rest · {count} more": "显示其余 · 还有 {count} 条"
+      "text.Show the rest · {count} more": "显示其余 · 还有 {count} 条",
+      "text.Appearance": "外观",
+      "text.Follow Windows": "跟随 Windows",
+      "text.Light": "浅色",
+      "text.Dark": "深色",
+      "text.Windows picks the theme until you choose one here.": "在你于此处选择之前，由 Windows 决定外观。"
     }
   }
 }

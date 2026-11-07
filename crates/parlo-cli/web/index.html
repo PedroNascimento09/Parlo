@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="parlo-version" content="__PARLO_VERSION__">
 <meta name="color-scheme" content="light dark">
+<script>
+try {
+  const choice = localStorage.getItem("parlo.theme") || "system";
+  const dark = choice === "dark" || (choice === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+} catch (error) {
+  document.documentElement.dataset.theme = "light";
+}
+</script>
 <title>Parlo</title>
 <link rel="stylesheet" href="/app.css">
 </head>
@@ -231,11 +240,31 @@
         <p class="home-hint" data-i18n="home.hint">Let go, and the sentence lands where the cursor is.</p>
         <p class="stage-sub" hidden><span id="status-languages" data-i18n="text.Portuguese to English">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
       </div>
-      <button class="tone-open home-tone" id="tone-open" type="button" aria-haspopup="dialog">
-        <span class="tone-label" data-i18n="home.tone">Tone</span>
-        <span class="tone-now" id="tone-now" data-i18n="text.Formal">Formal</span>
-      </button>
     </div>
+
+    <section class="home-style" aria-labelledby="home-style-title">
+      <div class="home-style-head">
+        <h2 class="home-label" id="home-style-title" data-i18n="style.title">Writing style</h2>
+        <p class="home-style-note" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</p>
+      </div>
+      <div class="style-cards style-cards-home" role="group" aria-label="Writing style" data-i18n-aria-label="style.title">
+        <button class="style-card" data-style="formal" type="button" aria-pressed="false">
+          <span class="style-title" data-i18n="home.formal">Formal</span>
+          <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
+          <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
+        </button>
+        <button class="style-card" data-style="casual" type="button" aria-pressed="false">
+          <span class="style-title" data-i18n="home.casual">Casual</span>
+          <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
+          <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
+        </button>
+        <button class="style-card" data-style="excited" type="button" aria-pressed="false">
+          <span class="style-title" data-i18n="home.excited">Excited</span>
+          <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
+          <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
+        </button>
+      </div>
+    </section>
 
     <div class="home-grid">
       <figure class="last home-last" id="home-last" hidden>
@@ -257,9 +286,16 @@
       </section>
     </div>
 
-    <nav class="home-tools home-links" aria-label="Windows" data-i18n-aria-label="home.tools">
+    <nav class="home-tools home-links" aria-label="Every part of Parlo" data-i18n-aria-label="home.tools">
       <button id="home-live" type="button" data-i18n="home.live">Live</button>
       <button id="home-captions" type="button" data-i18n="home.captions">Captions</button>
+      <a href="#library/meetings" data-i18n="nav.meetings">Meetings</a>
+      <a href="#library/files" data-i18n="library.tabs.files">Files</a>
+      <a href="#library/batch" data-i18n="library.tabs.batch">Batch</a>
+      <a href="#library/stories" data-i18n="library.tabs.stories">Stories</a>
+      <a href="#library/history" data-i18n="library.tabs.history">History</a>
+      <a href="#voice" data-i18n="text.Voice Studio">Voice Studio</a>
+      <a href="#insights" data-i18n="nav.insights">Insights</a>
     </nav>
   </section>
 
@@ -318,6 +354,17 @@
       <button id="settings-name-save" class="install" type="button" data-i18n="text.Save name">Save name</button>
       <p class="settings-note field-wide" id="settings-name-note" aria-live="polite"></p>
     </div>
+    <div class="settings-row">
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="text.Appearance">Appearance</span>
+        <div class="theme-picker" role="group" aria-label="Appearance" data-i18n-aria-label="text.Appearance">
+          <button class="swap theme-choice" type="button" data-theme-choice="system" aria-pressed="true" data-i18n="text.Follow Windows">Follow Windows</button>
+          <button class="swap theme-choice" type="button" data-theme-choice="light" aria-pressed="false" data-i18n="text.Light">Light</button>
+          <button class="swap theme-choice" type="button" data-theme-choice="dark" aria-pressed="false" data-i18n="text.Dark">Dark</button>
+        </div>
+        <p class="settings-note" data-i18n="text.Windows picks the theme until you choose one here.">Windows picks the theme until you choose one here.</p>
+      </div>
+    </div>
   </section>
 
   <section class="settings" id="settings" aria-labelledby="settings-title">
@@ -341,14 +388,27 @@
     </div>
     <p class="settings-note" id="features-note" aria-live="polite"></p>
     <div class="settings-row">
-      <label class="field" for="settings-style">
-        <span class="field-label" data-i18n="text.Writing style">Writing style</span>
-        <select id="settings-style" class="field-input">
-          <option value="formal" data-i18n="text.Formal">Formal</option>
-          <option value="casual" data-i18n="text.Casual">Casual</option>
-          <option value="excited" data-i18n="text.Excited">Excited</option>
-        </select>
-      </label>
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="style.title">Writing style</span>
+        <div class="style-cards style-cards-settings" role="group" aria-label="Writing style" data-i18n-aria-label="style.title">
+        <button class="style-card" data-style="formal" type="button" aria-pressed="false">
+          <span class="style-title" data-i18n="home.formal">Formal</span>
+          <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
+          <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
+        </button>
+        <button class="style-card" data-style="casual" type="button" aria-pressed="false">
+          <span class="style-title" data-i18n="home.casual">Casual</span>
+          <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
+          <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
+        </button>
+        <button class="style-card" data-style="excited" type="button" aria-pressed="false">
+          <span class="style-title" data-i18n="home.excited">Excited</span>
+          <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
+          <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
+        </button>
+        </div>
+        <p class="settings-note" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</p>
+      </div>
       <label class="check" for="settings-manage-memory">
         <input id="settings-manage-memory" type="checkbox">
         <span data-i18n="text.Let Parlo manage model memory">Let Parlo manage model memory</span>
@@ -1310,32 +1370,6 @@
 
 </div>
 </div>
-
-<dialog class="sheet" id="style-sheet" aria-labelledby="style-sheet-title">
-  <form method="dialog">
-    <button class="sheet-close" type="submit" data-i18n="style.close">Close</button>
-  </form>
-  <p class="sheet-kicker" data-i18n="style.title">Writing style</p>
-  <h2 id="style-sheet-title" data-i18n="style.question">How should Parlo write?</h2>
-  <p class="sheet-note" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</p>
-  <div class="sheet-options" role="group" aria-label="Writing style" data-i18n-aria-label="style.title">
-    <button class="style-card" data-style="formal" type="button" aria-pressed="false">
-      <span class="style-title" data-i18n="home.formal">Formal</span>
-      <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
-      <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
-    </button>
-    <button class="style-card" data-style="casual" type="button" aria-pressed="false">
-      <span class="style-title" data-i18n="home.casual">Casual</span>
-      <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
-      <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
-    </button>
-    <button class="style-card" data-style="excited" type="button" aria-pressed="false">
-      <span class="style-title" data-i18n="home.excited">Excited</span>
-      <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
-      <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
-    </button>
-  </div>
-</dialog>
 <script src="/languages.js"></script>
 <script src="/routes.js"></script>
 <script src="/app.js"></script>
