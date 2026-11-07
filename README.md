@@ -106,7 +106,7 @@ cargo build --release -p parlo-cli -p parlo-app
 target/release/parlo-app
 ```
 
-O instalador tem 40.2 MB. Na primeira iniciação a lista de modelos oferece apenas o reconhecedor, cerca de 640 MB, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas, e cada uma nombra o modelo e o seu tamanho antes de qualquer coisa se mover. Depois disso a máquina pode ficar desconectada. `parlo install` e `parlo uninstall` fazem o mesmo a partir de um terminal, e a desinstalação mantém os teus modelos a menos que adicionares `--purge`.
+O instalador é leve porque separa o programa de parte pesada. O programa instala numa fracção de segundo; a engine pesada é um descarregamento à parte, e o primeiro uso dentro da app oferece o reconhecedor, cerca de 640 MB, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas, e cada uma nombra o modelo e o seu tamanho antes de qualquer coisa se mover. Depois disso a máquina pode ficar desconectada. `parlo install` e `parlo uninstall` fazem o mesmo a partir de um terminal, e a desinstalação mantém os teus modelos a menos que adicionares `--purge`.
 
 ## A partir do terminal
 

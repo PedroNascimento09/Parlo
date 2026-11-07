@@ -1121,7 +1121,13 @@ function describeModels(state) {
 
     const name = document.createElement("span");
     name.className = "models-name";
-    name.textContent = model.name || "Model";
+    const headline = document.createElement("span");
+    headline.className = "models-name-line";
+    const label = document.createElement("span");
+    label.className = "models-name-label";
+    label.textContent = model.name || "Model";
+    headline.append(label);
+    name.append(headline);
 
     const kind = document.createElement("span");
     kind.className = "models-kind";
@@ -1145,7 +1151,7 @@ function describeModels(state) {
           : model.state === "in use"
             ? "In use"
             : "Installed · unloaded";
-      name.append(badge);
+      headline.append(badge);
     }
 
     const lifecycle = describeLifecycle(model);
@@ -7897,9 +7903,18 @@ document.addEventListener("click", (event) => {
 const vocabularyHint = document.getElementById("vocabulary-hint");
 if (vocabularyHint) {
   const examples = {
-    term: 'A name Parlo keeps getting wrong: hear "parlo" and write "Parlo".',
-    abbreviation: 'A short form you say out loud: "qr" becomes "quarta-feira".',
-    snippet: 'A phrase that becomes longer text: say "my channel" and Parlo writes https://www.youtube.com/@example.',
+    term: t("text.A name Parlo keeps getting wrong: hear {heard} and write {written}.", "", {
+      heard: '"parlo"',
+      written: '"Parlo"',
+    }),
+    abbreviation: t("text.A short form you say out loud: {heard} becomes {written}.", "", {
+      heard: '"qr"',
+      written: '"quarta-feira"',
+    }),
+    snippet: t("text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.", "", {
+      heard: '"my channel"',
+      written: 'https://www.youtube.com/@example',
+    }),
   };
   const paintHint = () => {
     const kind = vocabularyKind.value;

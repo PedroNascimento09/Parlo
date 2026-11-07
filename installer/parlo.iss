@@ -69,7 +69,6 @@ Source: "{#Payload}\parlo.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo-app.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Payload}\parlo.png"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#Payload}\parlo-engine\*"; DestDir: "{app}\parlo-engine"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Root}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\NOTICE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Root}\LICENSES.md"; DestDir: "{app}"; Flags: ignoreversion

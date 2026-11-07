@@ -12,6 +12,8 @@ Five minutes from a computer that has never run Parlo to a sentence you dictated
 curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
 ```
 
+If Windows blocks Parlo-Setup.exe, SmartScreen or another antivirus is most likely flagging an unsigned, freshly built release rather than malware. The project keeps the exact file hash and the build provenance next to the download, and it has a false-positive submission procedure for Microsoft Defender and other security products: [False positives](SECURITY_FALSE_POSITIVE.md).
+
 The archive, the Windows script without an installer and building from source are all in [Install](INSTALL.md).
 
 ## 2. Open the window and download the models once

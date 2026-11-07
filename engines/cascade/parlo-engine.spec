@@ -52,6 +52,7 @@ dropped = (
     "transformers",
     "PIL",
     "hf_xet",
+    "scipy",
 )
 
 
