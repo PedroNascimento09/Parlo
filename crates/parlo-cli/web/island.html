@@ -57,6 +57,7 @@
     animation: settle 160ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
   }
   body.ready .island { gap: 18px; padding: 12px 14px 12px 18px; }
+  body.menu { align-items: end; padding-bottom: 12px; }
   @media (max-width: 520px) {
     .island,
     body.ready .island {
@@ -254,6 +255,8 @@
     display: grid;
     gap: 2px;
     z-index: 5;
+    max-height: 240px;
+    overflow-y: auto;
     animation: menuIn 130ms cubic-bezier(0.2, 0.9, 0.3, 1);
   }
   .write-menu[hidden] {
@@ -427,6 +430,8 @@ function applyText() {
 }
 
 const TARGET_RATE = 16000;
+const ISLAND_HEIGHT = 132;
+const ISLAND_OPEN_HEIGHT = 372;
 const MAX_SECONDS = 60;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
@@ -470,6 +475,51 @@ let controller = null;
 let sentChunks = 0;
 let partials = null;
 let tidy = localStorage.getItem("parlo-tidy") !== "off";
+
+function tauriWindow() {
+  const api = window.__TAURI__;
+  if (!api || !api.window || !api.window.getCurrentWindow) {
+    return null;
+  }
+  return api.window.getCurrentWindow();
+}
+
+let hideTimer = null;
+
+function keepIsland() {
+  clearTimeout(hideTimer);
+  hideTimer = null;
+}
+
+function hideAfterDelay(milliseconds) {
+  keepIsland();
+  hideTimer = setTimeout(() => {
+    const win = tauriWindow();
+    if (win && win.hide) {
+      win.hide().catch(() => {});
+    }
+  }, milliseconds);
+}
+
+async function setIslandHeight(height) {
+  const win = tauriWindow();
+  const dpi = window.__TAURI__ && window.__TAURI__.dpi;
+  if (!win || !dpi) {
+    return;
+  }
+  try {
+    const scale = await win.scaleFactor();
+    const size = await win.outerSize();
+    const position = await win.outerPosition();
+    const before = size.height / scale;
+    await win.setSize(new dpi.LogicalSize(size.width / scale, height));
+    await win.setPosition(
+      new dpi.LogicalPosition(position.x / scale, position.y / scale + before - height),
+    );
+  } catch (failure) {
+    return;
+  }
+}
 
 function startDragging(event) {
   if (event.button !== 0) {
@@ -588,6 +638,7 @@ async function begin() {
   if (busy || stream) {
     return;
   }
+  keepIsland();
   const ticket = ++attempt;
   document.body.classList.remove("ready");
   setState(t("island.listening", "Listening"), "", true);
@@ -978,6 +1029,7 @@ async function stop() {
     lastText = text;
     const inserted = await writeIntoField(text, signal);
     setState(inserted ? t("island.written", "Written") : t("island.copied", "Copied"), text, false);
+    hideAfterDelay(4000);
     if (!inserted) {
       try {
         const response = await fetch("/clipboard", {
@@ -1105,9 +1157,12 @@ function paintWrite() {
 function openWriteMenu(open) {
   writeMenu.hidden = !open;
   writeEl.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("menu", open);
+  setIslandHeight(open ? ISLAND_OPEN_HEIGHT : ISLAND_HEIGHT);
   if (!open) {
     return;
   }
+  keepIsland();
   const active = writeMenu.querySelector('[aria-selected="true"]') || writeMenu.firstElementChild;
   if (active) {
     active.focus();

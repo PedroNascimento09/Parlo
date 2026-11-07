@@ -111,10 +111,12 @@ mod win {
         pub fn GetWindowThreadProcessId(window: Window, process: *mut u32) -> u32;
         pub fn SendInput(count: u32, inputs: *const Input, size: i32) -> u32;
         pub fn SetForegroundWindow(window: Window) -> i32;
+        pub fn AttachThreadInput(mine: u32, theirs: u32, attach: i32) -> i32;
     }
 
     #[link(name = "kernel32")]
     extern "system" {
+        pub fn GetCurrentThreadId() -> u32;
         pub fn GetCurrentProcessId() -> u32;
         pub fn OpenProcess(access: u32, inherit: i32, process: u32) -> *mut c_void;
         pub fn QueryFullProcessImageNameW(
@@ -204,7 +206,14 @@ fn focus(window: win::Window) -> Result<(), ()> {
         return Ok(());
     }
     unsafe {
+        let in_front = GetForegroundWindow();
+        let mine = GetCurrentThreadId();
+        let theirs = GetWindowThreadProcessId(in_front, std::ptr::null_mut());
+        let attached = theirs != 0 && mine != theirs && AttachThreadInput(mine, theirs, 1) != 0;
         SetForegroundWindow(window);
+        if attached {
+            AttachThreadInput(mine, theirs, 0);
+        }
     }
     std::thread::sleep(std::time::Duration::from_millis(60));
     if unsafe { GetForegroundWindow() } == window {
