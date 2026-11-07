@@ -1,6 +1,21 @@
 const token = new URLSearchParams(location.search).get("t") || "";
 const versionMeta = document.querySelector('meta[name="parlo-version"]').content;
 const version = versionMeta.startsWith("__") ? "" : versionMeta;
+const masthead = document.querySelector(".masthead");
+
+if (masthead) {
+  const syncMasthead = () => {
+    document.documentElement.style.setProperty(
+      "--masthead-height",
+      `${masthead.offsetHeight}px`,
+    );
+  };
+  syncMasthead();
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(syncMasthead).observe(masthead);
+  }
+  window.addEventListener("resize", syncMasthead);
+}
 
 const talk = document.getElementById("talk");
 const label = talk.querySelector(".talk-label");
@@ -8,6 +23,7 @@ const sub = talk.querySelector(".talk-sub");
 const meterFill = document.getElementById("meter-fill");
 const progress = document.getElementById("progress");
 const errorBox = document.getElementById("error");
+const errorText = document.getElementById("error-text");
 const translation = document.getElementById("translation");
 const updateBox = document.getElementById("update");
 const updateVersion = document.getElementById("update-version");
@@ -27,6 +43,9 @@ const micEl = document.getElementById("status-mic");
 const latencyEl = document.getElementById("status-latency");
 const versionEl = document.getElementById("status-version");
 const modelsBox = document.getElementById("models");
+const homeEngine = document.getElementById("home-engine");
+const homeModel = document.getElementById("home-model");
+const homeMic = document.getElementById("home-mic");
 const modelsList = document.getElementById("models-list");
 const modelsCancel = document.getElementById("models-cancel");
 const featureTranslation = document.getElementById("feature-translation");
@@ -153,6 +172,7 @@ let chunks = [];
 let maxTimer = null;
 let player = null;
 let localUpdate = { available: false, latest: "", notes: "" };
+let updateSequence = 0;
 let modelsTimer = null;
 let modelsPolling = false;
 let welcomeTimer = null;
@@ -171,14 +191,16 @@ const versionLabel = version ? "v" + version : "";
 versionEl.textContent = versionLabel;
 
 function showError(message) {
-  errorBox.textContent = message;
+  errorText.textContent = message;
   errorBox.hidden = false;
 }
 
 function clearError() {
-  errorBox.textContent = "";
+  errorText.textContent = "";
   errorBox.hidden = true;
 }
+
+document.getElementById("error-close").addEventListener("click", clearError);
 
 function setProgress(message) {
   progress.textContent = message || "";
@@ -242,15 +264,44 @@ async function openMicrophone() {
   media = await navigator.mediaDevices.getUserMedia({
     audio: { channelCount: 1, echoCancellation: true },
   });
-  micEl.textContent = "ready";
+  micEl.textContent = statusWord("ready");
   return media;
 }
 
-function drawMeter() {
-  meterFrame = requestAnimationFrame(drawMeter);
-  if (!analyser || !levels) {
+function releaseMicrophone() {
+  if (recording || sampling || meetingRecording) {
     return;
   }
+  if (meterFrame) {
+    cancelAnimationFrame(meterFrame);
+    meterFrame = null;
+  }
+  if (inputSource) {
+    inputSource.disconnect();
+    inputSource = null;
+  }
+  inputKind = "";
+  if (media) {
+    media.getTracks().forEach((track) => track.stop());
+    media = null;
+  }
+  if (context && context.state !== "closed") {
+    context.close().catch(() => {});
+  }
+  context = null;
+  analyser = null;
+  processor = null;
+  levels = null;
+  meterFill.style.width = "0%";
+  micEl.textContent = statusWord("not opened yet");
+}
+
+function drawMeter() {
+  if (!analyser || !levels) {
+    meterFrame = null;
+    return;
+  }
+  meterFrame = requestAnimationFrame(drawMeter);
   analyser.getFloatTimeDomainData(levels);
   let sum = 0;
   for (let index = 0; index < levels.length; index += 1) {
@@ -282,7 +333,9 @@ function ensureGraph() {
   processor.connect(silence);
   silence.connect(context.destination);
   levels = new Float32Array(analyser.fftSize);
-  drawMeter();
+  if (!meterFrame) {
+    drawMeter();
+  }
 }
 
 function attach(stream, kind) {
@@ -409,7 +462,9 @@ async function recordVoiceSample(profile, button) {
     return;
   }
   if (meetingRecording) {
-    showError("Finish the meeting before recording a voice sample.");
+    showError(
+      t("studio.busyMeeting", "Finish the meeting before recording a voice sample."),
+    );
     return;
   }
   clearError();
@@ -419,14 +474,17 @@ async function recordVoiceSample(profile, button) {
     sampling = true;
     const started = Date.now();
     const tick = setInterval(() => {
-      button.textContent = "Recording " + Math.max(0, 10 - Math.round((Date.now() - started) / 1000)) + " s";
+      button.textContent = t("studio.recordingLeft", "{count} s left", {
+        count: Math.max(0, 10 - Math.round((Date.now() - started) / 1000)),
+      });
     }, 250);
-    button.textContent = "Recording 10 s";
+    button.textContent = t("studio.recording", "Recording 10 s");
     await new Promise((done) => setTimeout(done, 10000));
     sampling = false;
     clearInterval(tick);
-    button.textContent = "Saving the sample";
+    button.textContent = t("studio.saving", "Saving the sample");
     const samples = downsample(mergedVoiceChunks(), audio.sampleRate, 16000);
+    releaseMicrophone();
     const response = await fetch("/voice/sample", {
       method: "POST",
       headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token, "X-Parlo-Voice": profile.id },
@@ -434,12 +492,16 @@ async function recordVoiceSample(profile, button) {
     });
     const answer = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(answer.error || "The sample was not saved.");
+      throw new Error(answer.error || t("studio.sampleError", "The sample was not saved."));
     }
-    voiceStatus.textContent = "Sample saved. Listen to it before you use this voice.";
+    voiceStatus.textContent = t(
+      "studio.sampleSaved",
+      "Sample saved. Listen to it before you use this voice.",
+    );
     await loadVoices();
   } catch (failure) {
     sampling = false;
+    releaseMicrophone();
     showError(failure.message);
   }
 }
@@ -454,7 +516,7 @@ async function playVoiceSample(profile) {
     });
     if (!response.ok) {
       const answer = await response.json().catch(() => ({}));
-      throw new Error(answer.error || "The sample could not be read.");
+      throw new Error(answer.error || t("studio.readError", "The sample could not be read."));
     }
     play(await response.blob());
   } catch (failure) {
@@ -472,7 +534,7 @@ async function exportVoice(profile) {
     });
     if (!response.ok) {
       const answer = await response.json().catch(() => ({}));
-      throw new Error(answer.error || "The profile could not be exported.");
+      throw new Error(answer.error || t("studio.exportError", "The profile could not be exported."));
     }
     const blob = await response.blob();
     const link = document.createElement("a");
@@ -480,7 +542,10 @@ async function exportVoice(profile) {
     link.download = "parlo-voice-" + profile.id + ".txt";
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-    voiceStatus.textContent = "Exported. The file marks the voice as synthetic and names its origin.";
+    voiceStatus.textContent = t(
+      "studio.exported",
+      "Exported. The file marks the voice as synthetic and names its origin.",
+    );
   } catch (failure) {
     showError(failure.message);
   }
@@ -556,12 +621,12 @@ function listenButton(text, className = "swap speaker-chip") {
   const button = document.createElement("button");
   button.type = "button";
   button.className = className;
-  button.textContent = "Listen";
-  button.title = "Hear this line aloud";
+  button.textContent = t("text.Listen", "Listen");
+  button.title = t("text.Hear this line aloud", "Hear this line aloud");
   button.addEventListener("click", async () => {
     const label = button.textContent;
     button.disabled = true;
-    button.textContent = "Reading";
+    button.textContent = t("text.Reading", "Reading");
     try {
       await speakText(text);
     } finally {
@@ -587,16 +652,17 @@ async function begin() {
   try {
     await ensureAudio();
   } catch (failure) {
-    micEl.textContent = "blocked";
+    releaseMicrophone();
+    micEl.textContent = statusWord("blocked");
     showError(describeMicrophoneError(failure));
     return;
   }
   chunks = [];
   recording = true;
-  micEl.textContent = "listening";
+  micEl.textContent = statusWord("listening");
   talk.setAttribute("aria-pressed", "true");
-  label.textContent = "Listening";
-  sub.textContent = "Release when you are done";
+  label.textContent = t("text.Listening", "Listening");
+  sub.textContent = t("text.Release when you are done", "Release when you are done");
   clearTimeout(maxTimer);
   maxTimer = setTimeout(() => finish(), MAX_SECONDS * 1000);
 }
@@ -606,11 +672,11 @@ async function finish() {
     return;
   }
   recording = false;
-  micEl.textContent = "ready";
+  micEl.textContent = statusWord("ready");
   clearTimeout(maxTimer);
   talk.setAttribute("aria-pressed", "false");
-  label.textContent = "Speak a translation";
-  sub.textContent = "Hold while you speak; the answer plays aloud.";
+  label.textContent = t("text.Speak a translation", "Speak a translation");
+  sub.textContent = t("text.Hold while you speak; the answer plays aloud.", "Hold while you speak; the answer plays aloud.");
 
   const captured = chunks;
   chunks = [];
@@ -618,6 +684,7 @@ async function finish() {
   const length = captured.reduce((total, chunk) => total + chunk.length, 0);
   const seconds = length / rate;
   if (seconds < MIN_SECONDS) {
+    releaseMicrophone();
     showError("Hold the button while you speak, then release it.");
     return;
   }
@@ -628,6 +695,7 @@ async function finish() {
     merged.set(chunk, offset);
     offset += chunk.length;
   }
+  releaseMicrophone();
 
   setProgress("Translating " + seconds.toFixed(1) + " s of speech.");
   try {
@@ -685,13 +753,22 @@ async function refreshHealth() {
       return;
     }
     const health = await response.json();
-    engineEl.textContent = health.engine || "unknown";
+    engineEl.textContent = statusWord(health.engine || "unknown");
+    if (homeEngine) {
+      homeEngine.textContent = statusWord(health.engine || "unknown");
+    }
     languagesEl.textContent = describePair(health.from, health.to);
   } catch (failure) {
-    engineEl.textContent = "not answering";
+    engineEl.textContent = statusWord("not answering");
+    if (homeEngine) {
+      homeEngine.textContent = statusWord("not answering");
+    }
   }
   try {
-    const response = await fetch("/settings", { cache: "no-store" });
+    const response = await fetch("/settings", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
     if (!response.ok) {
       return;
     }
@@ -699,11 +776,20 @@ async function refreshHealth() {
     currentShortcut = values.shortcut || "not set";
     shortcutEl.textContent = currentShortcut;
     insightsKey.textContent = currentShortcut;
-    modeEl.textContent = values.write
-      ? "writing in " + (LANGUAGE_NAMES[values.write] || values.write)
-      : "translating";
+    const translating = values.write
+      ? values.write !== values.from
+      : values.translation && values.from !== values.to;
+    const written = values.write || (translating ? values.to : values.from);
+    modeEl.textContent = translating
+      ? t("mode.translating", "translating to {language}", { language: languageName(written) })
+      : t("mode.writing", "writing in {language}", { language: languageName(written) });
   } catch (failure) {
-    shortcutEl.textContent = "unknown";
+    shortcutEl.textContent = statusWord("unknown");
+  }
+  if (homeMic) {
+    homeMic.textContent = statusWord(
+      localStorage.getItem("parlo.mic") === "ready" ? "ready" : "not checked",
+    );
   }
 }
 
@@ -716,28 +802,40 @@ function showUpdate(candidate, notes) {
 }
 
 function allowInstall(allowed) {
+  const focused = document.activeElement === installButton;
   installButton.hidden = !allowed;
+  if (!allowed && focused && !updateBox.hidden) {
+    updateLink.focus();
+  }
 }
 
 async function checkLocalUpdate() {
+  const sequence = ++updateSequence;
   try {
     const response = await fetch("/update", { cache: "no-store" });
     if (!response.ok) {
       return;
     }
-    localUpdate = await response.json();
+    const detail = await response.json();
+    if (sequence !== updateSequence) {
+      return;
+    }
+    localUpdate = detail;
     if (!localUpdate.available) {
-      allowInstall(false);
+      if (updateBox.hidden) {
+        allowInstall(false);
+      }
       return;
     }
     showUpdate(localUpdate.latest, localUpdate.notes);
     const build = localUpdate.build !== false;
     allowInstall(build);
     if (!build) {
-      updateText.textContent =
-        "Release " +
-        localUpdate.latest +
-        " has no build for this computer yet. See what changed; the download appears here when it is ready.";
+      updateText.textContent = t(
+        "update.noBuild",
+        "Release {version} has no build for this computer yet. See what changed; the download appears here when it is ready.",
+        { version: localUpdate.latest },
+      );
     }
   } catch (failure) {
     allowInstall(false);
@@ -752,28 +850,34 @@ aboutVersion.textContent = version || "unknown";
 
 aboutCheck.addEventListener("click", async () => {
   aboutCheck.disabled = true;
-  aboutNote.textContent = "Asking GitHub for the latest release.";
+  aboutNote.textContent = t("about.asking", "Asking GitHub for the latest release.");
   await checkLocalUpdate();
   aboutNote.textContent = localUpdate.available
-    ? "Release " + localUpdate.latest + " is available. The box at the top of Home installs it."
-    : "This is the latest release.";
+    ? t(
+        "about.available",
+        "Release {version} is available. The box at the top of Home installs it.",
+        { version: localUpdate.latest },
+      )
+    : t("about.latest", "This is the latest release.");
   aboutCheck.disabled = false;
 });
 
 function describeUpdatePhase(state) {
   if (state.phase === "downloading") {
-    return "Downloading the new version: " + (state.percent || 0) + "%.";
+    return t("update.downloading", "Downloading the new version: {percent}%.", {
+      percent: state.percent || 0,
+    });
   }
   if (state.phase === "unpacking") {
-    return "Unpacking the new version.";
+    return t("update.unpacking", "Unpacking the new version.");
   }
   if (state.phase === "checking") {
-    return "Checking the new program is there.";
+    return t("update.checking", "Checking the new program is there.");
   }
   if (state.phase === "ready") {
-    return "Ready. Parlo closes and starts the new version.";
+    return t("update.ready", "Ready. Parlo closes and starts the new version.");
   }
-  return "Waiting for the release.";
+  return t("update.waiting", "Waiting for the release.");
 }
 
 async function pollUpdateProgress() {
@@ -786,7 +890,7 @@ async function pollUpdateProgress() {
     progressFill.style.width = (state.percent || 0) + "%";
     progressNote.textContent = describeUpdatePhase(state);
   } catch (failure) {
-    progressNote.textContent = "Parlo is closing to replace itself.";
+    progressNote.textContent = t("update.closingShort", "Parlo is closing to replace itself.");
   }
 }
 
@@ -795,12 +899,12 @@ async function installUpdate() {
     return;
   }
   installButton.disabled = true;
-  installButton.textContent = "Installing…";
+  installButton.textContent = t("update.installing", "Installing…");
   clearError();
   updateBox.hidden = false;
   progressBox.hidden = false;
   progressFill.style.width = "0%";
-  progressNote.textContent = "Starting the download.";
+  progressNote.textContent = t("update.starting", "Starting the download.");
   const poll = setInterval(pollUpdateProgress, 400);
   try {
     const response = await fetch("/update", {
@@ -809,22 +913,43 @@ async function installUpdate() {
     });
     const detail = await response.json().catch(() => ({}));
     if (!response.ok) {
-      updateText.textContent = detail.error || "The update could not be installed. Run parlo update in a terminal instead.";
+      updateText.textContent =
+        detail.error ||
+        t(
+          "update.failed",
+          "The update could not be installed. Run parlo update in a terminal instead.",
+        );
       progressNote.textContent = "";
       installButton.disabled = false;
-      installButton.textContent = "Install update";
+      installButton.textContent = t("update.install", "Install update");
       return;
     }
     progressFill.style.width = "100%";
     const installed = detail.version || localUpdate.latest || "";
-    updateText.textContent =
-      "Parlo " + installed + " is unpacked. The window closes and the new version starts on its own.";
-    progressNote.textContent = "If Parlo does not come back by itself, press Restart now.";
+    updateText.textContent = t(
+      "update.unpacked",
+      "Parlo {version} is unpacked. The window closes and the new version starts on its own.",
+      { version: installed },
+    );
+    progressNote.textContent = t(
+      "update.restartHint",
+      "If Parlo does not come back by itself, press Restart now.",
+    );
+    const installFocused = document.activeElement === installButton;
     installButton.hidden = true;
     updateRestart.hidden = false;
+    if (installFocused) {
+      updateRestart.focus();
+    }
   } catch (failure) {
-    updateText.textContent = "Parlo is closing to replace itself, which is what should happen. The new version starts on its own.";
-    progressNote.textContent = "If Parlo does not come back by itself, open it again.";
+    updateText.textContent = t(
+      "update.closing",
+      "Parlo is closing to replace itself, which is what should happen. The new version starts on its own.",
+    );
+    progressNote.textContent = t(
+      "update.reopenHint",
+      "If Parlo does not come back by itself, open it again.",
+    );
   } finally {
     clearInterval(poll);
   }
@@ -837,9 +962,12 @@ updateRestart.addEventListener("click", async () => {
       method: "POST",
       headers: { Authorization: "Bearer " + token },
     });
-    progressNote.textContent = "Parlo is starting again.";
+    progressNote.textContent = t("update.startingAgain", "Parlo is starting again.");
   } catch (failure) {
-    progressNote.textContent = "Parlo did not answer. Open it again from the Start menu.";
+    progressNote.textContent = t(
+      "update.noAnswer",
+      "Parlo did not answer. Open it again from the Start menu.",
+    );
   }
 });
 
@@ -997,7 +1125,9 @@ function describeModels(state) {
 
     const kind = document.createElement("span");
     kind.className = "models-kind";
-    kind.textContent = model.kind || "";
+    kind.textContent = MODEL_KIND_KEYS[model.kind]
+      ? t(MODEL_KIND_KEYS[model.kind], model.kind)
+      : model.kind || "";
     name.append(kind);
 
     const reason = document.createElement("span");
@@ -1050,7 +1180,10 @@ function describeModels(state) {
     if (model.installed) {
       const policy = document.createElement("select");
       policy.className = "field-input models-policy";
-      policy.setAttribute("aria-label", "Free " + model.name + " after");
+      policy.setAttribute(
+        "aria-label",
+        t("models.freeAfter", "Free {name} after", { name: model.name }),
+      );
       [
         ["", "Follows the global setting"],
         ["10", "Free after 10 min"],
@@ -1121,11 +1254,17 @@ function describeModels(state) {
     }
   }
 
-  if (state.ready) {
+  const allModels = state.models || [];
+  const dictationReady = allModels.some(
+    (model) => model.installed && model.kind === "recogniser",
+  );
+  const missing = allModels.filter((model) => !model.installed);
+
+  if (!missing.length) {
     modelsDownloading = false;
-    modelsNote.textContent = "Everything the translator needs is on this machine, so you can speak now.";
+    modelsNote.textContent = "Every model this build offers is on this machine.";
     modelsInstall.hidden = true;
-    reflectFirstRun(true, true, false);
+    reflectFirstRun(false, dictationReady, false);
     return true;
   }
 
@@ -1135,27 +1274,30 @@ function describeModels(state) {
       "Downloading models, this can take a few minutes on a normal connection. You can leave this page open.";
     modelsInstall.hidden = true;
     modelsDictation.hidden = true;
-    reflectFirstRun(false, Boolean(state.dictation), true);
+    reflectFirstRun(false, dictationReady, true);
     return false;
   }
-
-  const missing = (state.models || []).filter((model) => !model.installed);
   const byFeature = new Map();
   for (const model of missing) {
-    const feature = model.feature || "A feature";
+    const feature = t("text." + (model.feature || "A feature"), model.feature || "A feature");
     if (!byFeature.has(feature)) {
       byFeature.set(feature, []);
     }
-    byFeature.get(feature).push(model.name);
+    byFeature.get(feature).push(t("text." + model.name, model.name));
   }
-  const sentences = Array.from(byFeature, ([feature, names]) => feature + " needs " + names.join(" and "));
+  const joiner = " " + t("text.and", "and") + " ";
+  const sentences = Array.from(
+    byFeature,
+    ([feature, names]) =>
+      feature + " " + t("text.needs", "needs") + " " + names.join(joiner),
+  );
   modelsNote.textContent = sentences.length
     ? "Missing: " + sentences.join("; ") + ". Each one downloads on its own."
     : "Some models are missing. They are a one time download and stay on this machine.";
   modelsInstall.hidden = false;
-  modelsDictation.hidden = missing.every((model) => model.installed) || !missing.some((model) => model.id === "parakeet");
+  modelsDictation.hidden = !missing.some((model) => model.id === "parakeet");
   modelsInstall.disabled = modelsPolling;
-  reflectFirstRun(false, Boolean(state.dictation), false);
+  reflectFirstRun(false, dictationReady, false);
   return false;
 }
 
@@ -1319,6 +1461,7 @@ async function loadModels() {
     }
     const state = await response.json();
     describeHomeModels(state);
+    loadStudioVoices();
     return describeModels(state);
   } catch (failure) {
     showModelsError("The model list could not be read. The translator still works if its models are already installed.");
@@ -1331,9 +1474,11 @@ function formatFree(bytes) {
     return "";
   }
   if (bytes >= 1024 * 1024 * 1024) {
-    return (bytes / (1024 * 1024 * 1024)).toFixed(0) + " GB free";
+    return t("models.freeGb", "{size} GB free", {
+      size: (bytes / (1024 * 1024 * 1024)).toFixed(0),
+    });
   }
-  return formatSize(bytes) + " free";
+  return t("models.free", "{size} free", { size: formatSize(bytes) });
 }
 
 function describeHomeModels(state) {
@@ -1342,9 +1487,20 @@ function describeHomeModels(state) {
   const free = formatFree(state.free_bytes);
   const talking =
     installed.length === 0
-      ? "none installed yet"
-      : installed.length + " installed · " + formatSize(bytes);
+      ? t("models.noneInstalled", "none installed yet")
+      : t("models.installed", "{count} installed · {size}", {
+          count: installed.length,
+          size: formatSize(bytes),
+        });
   statusModels.textContent = free ? talking + " · " + free : talking;
+  if (homeModel) {
+    const recogniser = (state.models || []).find(
+      (model) => model.installed && model.kind === "recogniser",
+    );
+    homeModel.textContent = recogniser
+      ? recogniser.name || recogniser.id
+      : t("common.notInstalled", "not installed");
+  }
 }
 
 function showModelsError(message) {
@@ -1425,10 +1581,6 @@ async function downloadModels(path = "/models") {
 modelsInstall.addEventListener("click", () => downloadModels());
 welcomeInstall.addEventListener("click", () => downloadChosenModels(["parakeet"]));
 
-document.getElementById("welcome-more").addEventListener("click", () => {
-  libraryTab = "models";
-  showLibraryTab("models");
-});
 modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 
 const LANGUAGE_NAMES = {
@@ -1557,32 +1709,25 @@ function storedName() {
   return (localStorage.getItem("parlo.name") || "").trim();
 }
 
-function streakDays() {
-  const dayKey = (ms) => {
-    const day = new Date(ms);
-    day.setHours(0, 0, 0, 0);
-    return day.getTime();
-  };
-  const days = new Set(historyEntries.map((entry) => dayKey((entry.at || 0) * 1000)));
-  let streak = 0;
-  let cursor = dayKey(Date.now());
-  while (days.has(cursor)) {
-    streak += 1;
-    cursor -= 86400000;
-  }
-  return streak;
-}
-
 function paintHome() {
   const name = storedName();
+  const locale = document.documentElement.lang || "en";
   if (homeGreeting) {
     const hour = new Date().getHours();
     const base =
-      hour < 5 ? "Still awake?" : hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
-    homeGreeting.textContent = name ? "Welcome back, " + name : base;
+      hour < 5
+        ? t("home.night", "Still awake?")
+        : hour < 12
+          ? t("home.morning", "Good morning")
+          : hour < 19
+            ? t("home.afternoon", "Good afternoon")
+            : t("home.evening", "Good evening");
+    homeGreeting.textContent = name
+      ? t("home.greetingName", "{greeting}, {name}", { greeting: base, name })
+      : base;
   }
   if (homeDate) {
-    homeDate.textContent = new Intl.DateTimeFormat("en-GB", {
+    homeDate.textContent = new Intl.DateTimeFormat(locale, {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -1591,8 +1736,9 @@ function paintHome() {
   if (homeLast) {
     const entry = historyEntries.find((item) => (item.translation || item.text || "").trim());
     if (entry) {
+      homeLastLabel.textContent = t("home.last", "Last thing you said");
       homeLastText.textContent = (entry.translation || entry.text).trim();
-      homeLastWhen.textContent = new Intl.DateTimeFormat("en-GB", {
+      homeLastWhen.textContent = new Intl.DateTimeFormat(locale, {
         day: "numeric",
         month: "short",
         hour: "2-digit",
@@ -1605,8 +1751,11 @@ function paintHome() {
       homeLast.classList.remove("empty");
       homeLast.hidden = false;
     } else {
-      homeLastLabel.textContent = "Nothing yet";
-      homeLastText.textContent = "Hold the shortcut, say a sentence, and the last one lands here.";
+      homeLastLabel.textContent = t("home.nothing", "Nothing yet");
+      homeLastText.textContent = t(
+        "home.nothingText",
+        "Hold the shortcut, say a sentence, and the last one lands here.",
+      );
       homeLastWhen.textContent = "";
       homeLastApp.textContent = "";
       homeLastApp.hidden = true;
@@ -1615,26 +1764,11 @@ function paintHome() {
       homeLast.hidden = false;
     }
   }
-  const wordsEl = document.getElementById("home-words");
-  if (!wordsEl) {
-    return;
-  }
-  const textOf = (entry) => entry.translation || entry.text || "";
-  const words = historyEntries.reduce(
-    (total, entry) => total + textOf(entry).split(/\s+/).filter(Boolean).length,
-    0,
-  );
-  const seconds = historyEntries.reduce((total, entry) => total + (entry.seconds || 0), 0);
-  wordsEl.textContent = String(words);
-  document.getElementById("home-wpm").textContent =
-    seconds > 0 && words > 0 ? String(Math.round(words / (seconds / 60))) : "–";
-  document.getElementById("home-streak").textContent = String(streakDays());
 }
 
 const historyNote = document.getElementById("history-note");
 const historySearch = document.getElementById("history-search");
 const historyApp = document.getElementById("history-app");
-const historyMode = document.getElementById("history-mode");
 const historyFavourite = document.getElementById("history-favourite");
 const statusModels = document.getElementById("status-models");
 let historyEntries = [];
@@ -1642,8 +1776,27 @@ const historyClear = document.getElementById("history-clear");
 const historyFilters = document.getElementById("history-filters");
 const historyTools = document.getElementById("history-tools");
 
+function languageName(code) {
+  return t("language." + code, LANGUAGE_NAMES[code] || code.toUpperCase());
+}
+
+function stateLabel(value) {
+  return t("state." + value, value);
+}
+
+function batchStateLabel(value) {
+  return stateLabel(value);
+}
+
+function uiLocale() {
+  return document.documentElement.lang || "en";
+}
+
 function describePair(from, to) {
-  return (LANGUAGE_NAMES[from] || from) + " to " + (LANGUAGE_NAMES[to] || to);
+  return t("settings.pair", "{from} to {to}", {
+    from: languageName(from),
+    to: languageName(to),
+  });
 }
 
 function settingsChanged() {
@@ -1680,8 +1833,11 @@ function reflectSettings(values) {
   };
   const pair = describePair(savedSettings.from, savedSettings.to);
   settingsNote.textContent = savedSettings.write
-    ? pair + ", dictation writes " + (LANGUAGE_NAMES[savedSettings.write] || savedSettings.write)
-    : pair + ", dictation keeps the language spoken";
+    ? t("settings.writes", "{pair}, dictation writes {language}", {
+        pair,
+        language: languageName(savedSettings.write),
+      })
+    : t("settings.keeps", "{pair}, dictation keeps the language spoken", { pair });
   refreshApply();
 }
 
@@ -1738,133 +1894,17 @@ if (settingsUndoSave) {
   );
 }
 
-function paintPicks() {
-  for (const pick of document.querySelectorAll(".parlo-pick")) {
-    const select = pick.selectSource;
-    const label = pick.querySelector(".parlo-pick-label");
-    if (!select || !label) {
-      continue;
-    }
-    const option = select.options[select.selectedIndex];
-    label.textContent = option ? option.textContent : "";
-  }
-}
 
-function enhanceSelect(select) {
-  if (select.dataset.pick) {
-    return;
-  }
-  select.dataset.pick = "1";
-  select.classList.add("parlo-pick-native");
-  select.style.display = "none";
-  const box = document.createElement("div");
-  box.className = "parlo-pick";
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "parlo-pick-button";
-  button.setAttribute("aria-haspopup", "listbox");
-  button.setAttribute("aria-expanded", "false");
-  const label = document.createElement("span");
-  label.className = "parlo-pick-label";
-  button.append(label);
-  const list = document.createElement("ul");
-  list.className = "parlo-pick-list";
-  list.setAttribute("role", "listbox");
-  list.hidden = true;
-  box.append(button, list);
-  box.selectSource = select;
-  const host = select.closest("label.field") || select;
-  host.after(box);
 
-  const close = () => {
-    list.hidden = true;
-    button.setAttribute("aria-expanded", "false");
-  };
 
-  const open = () => {
-    list.replaceChildren(
-      ...[...select.options].map((option) => {
-        const item = document.createElement("li");
-        item.className = "parlo-pick-item";
-        item.setAttribute("role", "option");
-        item.setAttribute("aria-selected", String(option.selected));
-        item.textContent = option.textContent;
-        item.addEventListener("click", () => {
-          select.value = option.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
-          paintPicks();
-          close();
-          button.focus();
-        });
-        return item;
-      }),
-    );
-    list.hidden = false;
-    button.setAttribute("aria-expanded", "true");
-  };
-
-  button.addEventListener("click", () => {
-    if (list.hidden) {
-      open();
-    } else {
-      close();
-    }
-  });
-  button.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      const step = event.key === "ArrowDown" ? 1 : -1;
-      const next = Math.min(select.options.length - 1, Math.max(0, select.selectedIndex + step));
-      select.value = select.options[next].value;
-      select.dispatchEvent(new Event("change", { bubbles: true }));
-      paintPicks();
-      return;
-    }
-    if (event.key === "Escape") {
-      close();
-    }
-  });
-  select.addEventListener("change", paintPicks);
-  document.addEventListener("click", (event) => {
-    if (!box.contains(event.target)) {
-      close();
-    }
-  });
-}
-
-function enhanceAllSelects() {
-  for (const select of document.querySelectorAll("select")) {
-    enhanceSelect(select);
-  }
-  paintPicks();
-}
-
-enhanceAllSelects();
-
-new MutationObserver((records) => {
-  for (const record of records) {
-    for (const node of record.addedNodes) {
-      if (node.nodeType !== 1) {
-        continue;
-      }
-      if (node.tagName === "SELECT") {
-        enhanceSelect(node);
-      } else if (node.querySelectorAll) {
-        for (const select of node.querySelectorAll("select")) {
-          enhanceSelect(select);
-        }
-      }
-    }
-  }
-  paintPicks();
-}).observe(document.body, { childList: true, subtree: true });
-
-setInterval(paintPicks, 400);
 
 function captureShortcut(input, note) {
   input.addEventListener("focus", () => input.classList.add("capturing"));
   input.addEventListener("blur", () => input.classList.remove("capturing"));
   input.addEventListener("keydown", (event) => {
+    if (event.key === "Tab") {
+      return;
+    }
     event.preventDefault();
     const modifiers = [];
     if (event.ctrlKey) modifiers.push("Ctrl");
@@ -1891,6 +1931,43 @@ for (const input of [settingsShortcut, settingsHandsFree, settingsCaptions, sett
   }
 }
 
+let localeStrings = {};
+function t(key, fallback, values = {}) {
+  let text = localeStrings[key] || fallback || key;
+  for (const [name, value] of Object.entries(values)) {
+    text = text.replaceAll("{" + name + "}", String(value));
+  }
+  return text;
+}
+
+function statusWord(value) {
+  const keys = {
+    ready: "common.ready",
+    unknown: "common.unknown",
+    "not answering": "common.notAnswering",
+    "not checked": "common.notChecked",
+    "not installed": "common.notInstalled",
+    "not set": "common.notSet",
+    "not opened yet": "common.notOpened",
+    blocked: "common.blocked",
+    listening: "common.listening",
+    starting: "common.starting",
+    checking: "common.checking",
+  };
+  return keys[value] ? t(keys[value], value) : value;
+}
+
+function paintGateProgress(index, total) {
+  const progress = document.getElementById("gate-progress");
+  if (!progress) {
+    return;
+  }
+  const template = localeStrings["gate.step"] || "Step {current} of {total}";
+  progress.textContent = template
+    .replace("{current}", String(index + 1))
+    .replace("{total}", String(total));
+}
+
 async function applyLocale() {
   try {
     const response = await fetch("/locale", { cache: "no-store" });
@@ -1898,7 +1975,11 @@ async function applyLocale() {
       return;
     }
     const table = await response.json();
-    document.documentElement.lang = table.locale || "en";
+    localeStrings = table.strings || {};
+    const code = table.locale || "en";
+    document.documentElement.lang = code;
+    document.documentElement.dir = code === "ar" ? "rtl" : "ltr";
+    document.documentElement.dataset.locale = code;
     if (settingsLocale) {
       settingsLocale.replaceChildren(
         ...(table.available || []).map((entry) => {
@@ -1916,18 +1997,75 @@ async function applyLocale() {
         node.textContent = value;
       }
     });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+      const value = table.strings && table.strings[node.dataset.i18nPlaceholder];
+      if (value) {
+        node.placeholder = value;
+      }
+    });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
+      const value = table.strings && table.strings[node.dataset.i18nAriaLabel];
+      if (value) {
+        node.setAttribute("aria-label", value);
+      }
+    });
+    const steps = Array.from(document.querySelectorAll(".gate-step"));
+    const visible = steps.findIndex((step) => !step.hidden);
+    if (visible !== -1) {
+      paintGateProgress(visible, steps.length);
+    }
+    if (modelState.models.length) {
+      describeHomeModels(modelState);
+      if (modelsList) {
+        describeModels(modelState);
+      }
+    }
+    if (catalogLast.length && catalogList) {
+      renderCatalog(catalogLast);
+    }
+    if (settingsLocale && settingsLocale.value) {
+      showRecommendation(settingsLocale.value);
+    }
+    paintHome();
+    paintStyleControls();
+    refreshHealth();
+    if (document.getElementById("voice-list")) {
+      loadVoices();
+      loadPacks();
+      loadStudioVoices();
+    }
   } catch (failure) {
     return;
   }
 }
 
+function loadEverything() {
+  loadHistory();
+  loadMeetings();
+  loadBatches();
+  loadStories();
+  loadDubProjects();
+  loadVocabulary();
+  loadIntelligence();
+  loadWatch();
+  loadCatalog();
+}
+
 async function loadSettings() {
   try {
-    const response = await fetch("/settings", { cache: "no-store" });
+    const response = await fetch("/settings", {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
     if (!response.ok) {
       return;
     }
     const values = await response.json();
+    if (values.name) {
+      localStorage.setItem("parlo.name", values.name);
+      paintHome();
+      paintSettingsName();
+    }
     if (settingsCompute) {
       settingsCompute.value = values.compute === "cpu" ? "cpu" : "auto";
     }
@@ -2136,10 +2274,9 @@ if (settingsLocaleSave) {
       });
       const detail = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(detail.error || "That language cannot be used.");
+        throw new Error(detail.error || t("settings.languageError", "That language cannot be used."));
       }
-      await applyLocale();
-      localeNote.textContent = "Saved. The interface now speaks this language.";
+      location.reload();
     } catch (failure) {
       showError(failure.message);
     }
@@ -2381,7 +2518,10 @@ async function testIntelligence() {
     if (!response.ok) {
       throw new Error(detail.error || "Parlo could not run the test.");
     }
-    const engine = detail.engine === "cloud" || detail.engine === "local" ? detail.engine : "the rules";
+    const engine =
+      detail.engine === "cloud" || detail.engine === "local"
+        ? detail.engine
+        : t("settings.theRules", "the rules");
     const model = detail.model ? " with " + detail.model : "";
     intelligenceTestNote.textContent = detail.fallback
       ? "Tested " + engine + model + ", which declined, so " + detail.reason + "."
@@ -2453,7 +2593,9 @@ function showDub(result) {
   }
   dubDownload.hidden = false;
   dubDownload.href = "/dub/" + encodeURIComponent(result.id);
-  dubDownload.textContent = "Download " + (result.name || "the dubbed file");
+  dubDownload.textContent = t("dub.downloadNamed", "Download {name}", {
+    name: result.name || t("dub.theDubbedFile", "the dubbed file"),
+  });
   const lines = result.lines || [];
   dubExports.replaceChildren();
   for (const item of result.exports || []) {
@@ -2491,9 +2633,9 @@ function showDub(result) {
     " · " +
     formatClock(result.seconds) +
     " of audio" +
-    (result.to ? " · " + (LANGUAGE_NAMES[result.to] || result.to) : "") +
+    (result.to ? " · " + languageName(result.to) : "") +
     (result.timing && result.timing !== "natural"
-      ? " · " + (TIMING_NAMES[result.timing] || result.timing)
+      ? " · " + t("timing." + result.timing, TIMING_NAMES[result.timing] || result.timing)
       : "");
   dubLines.replaceChildren();
   for (const line of lines) {
@@ -2536,7 +2678,7 @@ function showDub(result) {
       const reason = document.createElement("p");
       reason.className = "dub-source";
       reason.textContent = line.failed
-        ? "Failed: " + (line.failure || "the engine could not render it")
+        ? "Failed: " + (line.failure || t("dub.lineFailed", "the engine could not render it"))
         : "Skipped. Retry it to put the line back.";
       body.append(reason);
     }
@@ -2637,7 +2779,7 @@ function fillDubTargets(project, chosen) {
   for (const code of codes) {
     const option = document.createElement("option");
     option.value = code;
-    option.textContent = LANGUAGE_NAMES[code] || code.toUpperCase();
+    option.textContent = languageName(code);
     dubTarget.append(option);
   }
   dubTarget.value = codes.includes(chosen) ? chosen : project.to;
@@ -2654,15 +2796,16 @@ function showProject(project) {
   dubSave.hidden = false;
   const lines = project.segments || [];
   dubProjectLabel.textContent =
-    (project.title || "Imported subtitles") +
+    (project.title || t("dub.importedSubtitles", "Imported subtitles")) +
     " · " +
-    lines.length +
-    (lines.length === 1 ? " cue" : " cues");
+    t(lines.length === 1 ? "dub.cueOne" : "dub.cueMany", "{count} cues", {
+      count: lines.length,
+    });
   const edited = lines.some((line) => line.state === "edited");
   dubCount.textContent =
-    lines.length +
-    (lines.length === 1 ? " line" : " lines") +
-    (edited ? " · edited" : " · imported");
+    t(lines.length === 1 ? "dub.lineOne" : "dub.lineMany", "{count} lines", {
+      count: lines.length,
+    }) + (edited ? t("dub.edited", " · edited") : t("dub.imported", " · imported"));
   dubLines.replaceChildren();
   const field = (labelText, input) => {
     const label = document.createElement("label");
@@ -2788,26 +2931,34 @@ function showProject(project) {
 }
 
 const DUB_STATUS = {
-  done: "Ready",
-  interrupted: "Interrupted",
-  failed: "Failed",
-  draft: "Not rendered",
-  invalid: "Invalid",
+  done: "dub.ready",
+  interrupted: "dub.interrupted",
+  failed: "dub.failed",
+  draft: "dub.notRendered",
+  invalid: "dub.invalid",
 };
+
+function dubProjectStatus(value) {
+  return t(DUB_STATUS[value] || "", value);
+}
 
 function projectSummary(project) {
   const parts = [];
   if (project.segments) {
-    parts.push(project.segments + (project.segments === 1 ? " line" : " lines"));
+    parts.push(
+      t(project.segments === 1 ? "dub.lineOne" : "dub.lineMany", "{count} lines", {
+        count: project.segments,
+      }),
+    );
   }
   if (project.seconds) {
-    parts.push(Math.round(project.seconds) + " s");
+    parts.push(t("dub.seconds", "{count} s", { count: Math.round(project.seconds) }));
   }
   if (project.from && project.to) {
-    parts.push(project.from.toUpperCase() + " to " + project.to.toUpperCase());
+    parts.push(describePair(project.from, project.to));
   }
   if (project.updated_at) {
-    parts.push(new Date(project.updated_at * 1000).toLocaleString());
+    parts.push(new Date(project.updated_at * 1000).toLocaleString(uiLocale()));
   }
   return parts.join(" · ");
 }
@@ -2852,7 +3003,13 @@ async function recoverProject(id, button) {
 }
 
 async function removeProject(project) {
-  if (!window.confirm("Remove " + (project.title || "this project") + " and its exports from this computer?")) {
+  if (
+    !window.confirm(
+      t("dub.removeConfirm", "Remove {title} and its exports from this computer?", {
+        title: project.title || t("dub.thisProject", "this project"),
+      }),
+    )
+  ) {
     return;
   }
   const response = await fetch("/dub/project/" + encodeURIComponent(project.id), {
@@ -2877,7 +3034,10 @@ function renderDubProjects(projects) {
   if (!projects.length) {
     const empty = document.createElement("p");
     empty.className = "dub-projects-empty";
-    empty.textContent = "No projects yet. Import subtitles or dub a file to start one.";
+    empty.textContent = t(
+      "dub.noProjects",
+      "No projects yet. Import subtitles or dub a file to start one.",
+    );
     dubProjectList.append(empty);
     return;
   }
@@ -2887,10 +3047,10 @@ function renderDubProjects(projects) {
     const head = document.createElement("div");
     head.className = "dub-project-head";
     const title = document.createElement("h4");
-    title.textContent = project.title || "Untitled project";
+    title.textContent = project.title || t("dub.untitledProject", "Untitled project");
     const badge = document.createElement("span");
     badge.className = "dub-project-badge";
-    badge.textContent = DUB_STATUS[project.status] || project.status;
+    badge.textContent = dubProjectStatus(project.status);
     head.append(title, badge);
     const meta = document.createElement("p");
     meta.className = "dub-project-meta";
@@ -2908,7 +3068,7 @@ function renderDubProjects(projects) {
       const open = document.createElement("button");
       open.type = "button";
       open.className = "swap";
-      open.textContent = "Open";
+      open.textContent = t("dub.open", "Open");
       open.addEventListener("click", () => {
         openProject(project.id).catch((failure) => showError(failure.message));
       });
@@ -2918,7 +3078,7 @@ function renderDubProjects(projects) {
       const recover = document.createElement("button");
       recover.type = "button";
       recover.className = "install";
-      recover.textContent = "Recover";
+      recover.textContent = t("dub.recover", "Recover");
       recover.addEventListener("click", () => recoverProject(project.id, recover));
       actions.append(recover);
     }
@@ -2926,7 +3086,7 @@ function renderDubProjects(projects) {
       const download = document.createElement("a");
       download.className = "swap";
       download.href = project.exports[0].url;
-      download.textContent = "Download";
+      download.textContent = t("dub.download", "Download");
       actions.append(download);
     }
     const remove = document.createElement("button");
@@ -2987,7 +3147,7 @@ function fillBatchTargets(preferred) {
     input.value = code;
     input.checked = checked.includes(code);
     const text = document.createElement("span");
-    text.textContent = LANGUAGE_NAMES[code];
+    text.textContent = languageName(code);
     label.append(input, text);
     batchTargets.append(label);
   }
@@ -2999,7 +3159,7 @@ function fillBatchSource() {
   for (const code of codes) {
     const option = document.createElement("option");
     option.value = code;
-    option.textContent = LANGUAGE_NAMES[code];
+    option.textContent = languageName(code);
     batchFrom.append(option);
   }
   batchFrom.value = codes.includes(savedSettings.from) ? savedSettings.from : codes[0];
@@ -3013,27 +3173,19 @@ function selectedBatchTargets() {
 function batchSummary(batch) {
   const done = batch.items.filter((item) => item.state === "done").length;
   const failed = batch.items.filter((item) => item.state === "failed").length;
+  const failure = failed ? t("batch.failedPart", " · {count} failed", { count: failed }) : "";
   if (batch.story) {
-    const title = batch.items[0] ? batch.items[0].title : "Story";
-    return (
-      title +
-      " · story · " +
-      done +
-      " done" +
-      (failed ? " · " + failed + " failed" : "")
-    );
+    const title = batch.items[0] ? batch.items[0].title : t("batch.story", "Story");
+    return t("batch.storySummary", "{title} · story · {done} done", { title, done }) + failure;
   }
-  const targets = batch.targets.map((code) => LANGUAGE_NAMES[code] || code.toUpperCase()).join(", ");
+  const targets = batch.targets.map(languageName).join(", ");
   return (
-    batch.items.length +
-    (batch.items.length === 1 ? " render · " : " renders · ") +
-    (LANGUAGE_NAMES[batch.from] || batch.from) +
-    " to " +
-    targets +
-    " · " +
-    done +
-    " done" +
-    (failed ? " · " + failed + " failed" : "")
+    t(batch.items.length === 1 ? "batch.summaryOne" : "batch.summaryMany", "", {
+      count: batch.items.length,
+      from: languageName(batch.from),
+      targets,
+      done,
+    }) + failure
   );
 }
 
@@ -3052,10 +3204,12 @@ function renderBatches(batches) {
     const head = document.createElement("div");
     head.className = "batch-card-head";
     const title = document.createElement("h3");
-    title.textContent = batch.story ? "Story render" : "Batch " + batch.id.slice(-6);
+    title.textContent = batch.story
+      ? t("batch.storyRender", "Story render")
+      : t("batch.title", "Batch {id}", { id: batch.id.slice(-6) });
     const state = document.createElement("span");
     state.className = "batch-badge";
-    state.textContent = batch.state;
+    state.textContent = batchStateLabel(batch.state);
     head.append(title, state);
     const summary = document.createElement("p");
     summary.className = "batch-summary";
@@ -3083,10 +3237,10 @@ function renderBatches(batches) {
       row.className = "batch-item " + item.state;
       const text = document.createElement("span");
       text.textContent =
-        item.title + " → " + (LANGUAGE_NAMES[item.to] || item.to.toUpperCase());
+        item.title + " → " + languageName(item.to);
       const status = document.createElement("span");
       status.className = "batch-item-state";
-      status.textContent = item.state === "running" ? "Rendering" : item.state;
+      status.textContent = stateLabel(item.state === "running" ? "rendering" : item.state);
       row.append(text, status);
       if (item.state === "done") {
         const link = document.createElement("a");
@@ -3283,10 +3437,10 @@ function storyIdentifier(prefix) {
 
 function fillStoryLanguages() {
   storyLanguage.replaceChildren();
-  for (const [code, name] of Object.entries(LANGUAGE_NAMES)) {
+  for (const code of Object.keys(LANGUAGE_NAMES)) {
     const option = document.createElement("option");
     option.value = code;
-    option.textContent = name;
+    option.textContent = languageName(code);
     storyLanguage.append(option);
   }
   storyLanguage.value = LANGUAGE_NAMES[savedSettings.from] ? savedSettings.from : "pt";
@@ -3298,7 +3452,8 @@ function storyVoiceOptions(selected) {
   for (const voice of storyVoices) {
     const option = document.createElement("option");
     option.value = voice.id;
-    option.textContent = voice.label + (voice.installed ? "" : " · not installed");
+    option.textContent =
+      voice.label + (voice.installed ? "" : " · " + t("common.notInstalled", "not installed"));
     select.append(option);
   }
   select.value = storyVoices.some((voice) => voice.id === selected)
@@ -3315,15 +3470,19 @@ function storyCharacterRow(character) {
   name.className = "field-input story-name";
   name.type = "text";
   name.maxLength = 40;
-  name.placeholder = "Character name";
+  name.placeholder = t("text.Character name", "Character name");
   name.value = character.name || "";
-  name.setAttribute("aria-label", "Character name");
-  const voice = storyVoiceOptions(character.voice);
-  voice.setAttribute("aria-label", "Voice for " + (character.name || "this character"));
+  name.setAttribute("aria-label", t("text.Character name", "Character name"));
+  const voice = storyVoiceOptions(character.voice);      voice.setAttribute(
+        "aria-label",
+        t("studio.voiceFor", "Voice for {name}", {
+          name: character.name || t("studio.thisCharacter", "this character"),
+        }),
+      );
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "swap";
-  remove.textContent = "Remove";
+  remove.textContent = t("text.Remove", "Remove");
   remove.addEventListener("click", () => {
     row.remove();
     refreshStorySpeakers();
@@ -3343,12 +3502,16 @@ function storyLineRow(line) {
   text.className = "field-input story-text";
   text.type = "text";
   text.maxLength = 1000;
-  text.placeholder = "Line of dialogue";
+  text.placeholder = t("text.Line of dialogue", "Line of dialogue");
   text.value = line.text || "";
-  text.setAttribute("aria-label", "Line of dialogue");
+  text.setAttribute("aria-label", t("text.Line of dialogue", "Line of dialogue"));
   const pace = document.createElement("select");
   pace.className = "field-input story-pace";
-  for (const [value, label] of [["0.9", "Slower"], ["1", "Natural"], ["1.1", "Faster"]]) {
+  for (const [value, label] of [
+    ["0.9", t("text.Slower", "Slower")],
+    ["1", t("text.Natural", "Natural")],
+    ["1.1", t("text.Faster", "Faster")],
+  ]) {
     const option = document.createElement("option");
     option.value = value;
     option.textContent = label;
@@ -3357,10 +3520,10 @@ function storyLineRow(line) {
   pace.value = String(line.pace || 1);
   const state = document.createElement("span");
   state.className = "story-line-state";
-  state.textContent = line.state || "pending";
+  state.textContent = stateLabel(line.state || "pending");
   const audio = document.createElement("a");
   audio.className = "story-line-audio";
-  audio.textContent = "Play line";
+  audio.textContent = t("text.Play line", "Play line");
   audio.hidden = !line.out || !storyCurrent;
   if (storyCurrent && line.out) {
     audio.href = "/stories/" + encodeURIComponent(storyCurrent.id) + "/lines/" + encodeURIComponent(line.id);
@@ -3515,7 +3678,7 @@ function updateStoryState(story) {
       continue;
     }
     const state = row.querySelector(".story-line-state");
-    state.textContent = line.state || "pending";
+    state.textContent = stateLabel(line.state || "pending");
     state.classList.toggle("failed", line.state === "failed");
     const audio = row.querySelector(".story-line-audio");
     audio.hidden = !line.out;
@@ -3596,7 +3759,7 @@ function renderStoryCards(stories) {
       (story.chapters.length === 1 ? " chapter" : " chapters");
     const state = document.createElement("span");
     state.className = "story-card-state";
-    state.textContent = story.state || "draft";
+    state.textContent = stateLabel(story.state || "draft");
     card.append(title, meta, state);
     card.addEventListener("click", () => loadStory(story.id));
     storyList.append(card);
@@ -3762,10 +3925,10 @@ function setWatchStatus(message) {
 
 function watchSummary(folder) {
   const targets = folder.targets
-    .map((code) => LANGUAGE_NAMES[code] || code.toUpperCase())
+    .map(languageName)
     .join(", ");
   return (
-    (LANGUAGE_NAMES[folder.from] || folder.from) +
+    languageName(folder.from) +
     " to " +
     targets +
     " · every " +
@@ -3795,7 +3958,7 @@ function renderWatch(folders) {
     path.textContent = folder.path;
     const state = document.createElement("span");
     state.className = "watch-state";
-    state.textContent = folder.state;
+    state.textContent = stateLabel(folder.state);
     head.append(path, state);
     const summary = document.createElement("p");
     summary.className = "batch-summary";
@@ -4336,18 +4499,6 @@ talk.addEventListener("pointerdown", (event) => {
 
 window.addEventListener("pointerup", () => finish());
 window.addEventListener("pointercancel", () => finish());
-
-function openSection() {
-  const fragment = (location.hash || "").replace("#", "");
-  if (fragment === "settings") {
-    const section = document.getElementById("settings");
-    if (!section) {
-      return;
-    }
-    section.scrollIntoView({ block: "center" });
-    settingsFrom.focus();
-  }
-}
 
 async function loadMeetings() {
   try {
@@ -5167,8 +5318,133 @@ const CATALOG_KINDS = {
   voice: "Voice",
 };
 
+const MODEL_KIND_KEYS = {
+  asr: "catalog.kind.asr",
+  translation: "catalog.kind.mt",
+  tts: "catalog.kind.tts",
+  voice: "catalog.kind.voice",
+  speaker: "catalog.kind.speaker",
+};
+
 let catalogEntries = [];
+let recommendLanguage = (document.documentElement.lang || "en").split("-")[0];
 let machine = null;
+
+function languageLabel(code) {
+  try {
+    const names = new Intl.DisplayNames([document.documentElement.lang || "en"], { type: "language" });
+    return names.of(code) || code.toUpperCase();
+  } catch (failure) {
+    return code.toUpperCase();
+  }
+}
+
+function renderCatalogRecommendation(entries) {
+  const host = document.getElementById("catalog-recommend");
+  if (!host) {
+    return;
+  }
+  host.replaceChildren();
+  host.setAttribute("role", "region");
+  host.setAttribute("aria-labelledby", "catalog-recommend-title");
+  const recognisers = entries.filter(
+    (entry) => entry.kind === "asr" && entry.unit && Array.isArray(entry.languages) && entry.languages.length,
+  );
+  if (!recognisers.length) {
+    host.hidden = true;
+    return;
+  }
+  const languages = [...new Set(recognisers.flatMap((entry) => entry.languages))].sort();
+  if (!languages.includes(recommendLanguage)) {
+    recommendLanguage = languages.includes("en") ? "en" : languages[0];
+  }
+  const ranked = recognisers
+    .filter((entry) => entry.languages.includes(recommendLanguage))
+    .sort(
+      (left, right) =>
+        (left.bench?.value ?? Number.MAX_SAFE_INTEGER) -
+          (right.bench?.value ?? Number.MAX_SAFE_INTEGER) ||
+        (left.size_mb ?? Number.MAX_SAFE_INTEGER) - (right.size_mb ?? Number.MAX_SAFE_INTEGER),
+    );
+  const pick = ranked[0];
+  if (!pick) {
+    host.hidden = true;
+    return;
+  }
+  const title = document.createElement("h3");
+  title.id = "catalog-recommend-title";
+  title.textContent = t("catalog.recommendTitle", "Parlo recommends");
+  const body = document.createElement("p");
+  body.className = "catalog-recommend-body";
+  body.textContent = t(
+    "catalog.recommendBody",
+    "For {language}, {name} fits best: one download covers {count} languages, so you do not need a separate model for each.",
+    {
+      language: languageLabel(recommendLanguage),
+      name: pick.name || pick.id,
+      count: pick.languages.length,
+    },
+  );
+  const choose = document.createElement("label");
+  choose.className = "catalog-recommend-choose";
+  choose.textContent = t("text.Language", "Language");
+  const select = document.createElement("select");
+  select.className = "field-input";
+  select.id = "catalog-recommend-language";
+  select.setAttribute("aria-label", t("text.Language", "Language"));
+  for (const code of languages) {
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = languageLabel(code);
+    option.selected = code === recommendLanguage;
+    select.append(option);
+  }
+  select.addEventListener("change", () => {
+    recommendLanguage = select.value;
+    renderCatalogRecommendation(entries);
+  });
+  choose.append(select);
+  const action = document.createElement("button");
+  action.type = "button";
+  action.className = "install";
+  const installed = modelState.models.some((model) => model.id === pick.unit && model.installed);
+  if (installed) {
+    action.textContent = t("text.On disk", "On disk");
+    action.disabled = true;
+  } else {
+    action.textContent = t("text.Download", "Download");
+    action.addEventListener("click", () => downloadCatalogModel(pick, action));
+  }
+  action.setAttribute("aria-label", `${pick.name || pick.id}: ${action.textContent}`);
+  host.append(title, body, choose, action);
+  const translator = entries.find(
+    (entry) => entry.kind === "mt" && Array.isArray(entry.languages) && entry.languages.length > 2,
+  );
+  if (translator) {
+    const note = document.createElement("p");
+    note.className = "catalog-recommend-body";
+    note.textContent =
+      t("catalog.kind.mt", "Translation") +
+      ": " +
+      t("catalog.coverage", "One download covers {count} languages", {
+        count: translator.languages.length,
+      });
+    const multi = document.createElement("button");
+    multi.type = "button";
+    multi.className = "install";
+    const onDisk = modelState.models.some((model) => model.id === translator.unit && model.installed);
+    if (onDisk) {
+      multi.textContent = t("text.On disk", "On disk");
+      multi.disabled = true;
+    } else {
+      multi.textContent = t("text.Download", "Download");
+      multi.addEventListener("click", () => downloadCatalogModel(translator, multi));
+    }
+    multi.setAttribute("aria-label", `${translator.name || translator.id}: ${multi.textContent}`);
+    host.append(note, multi);
+  }
+  host.hidden = false;
+}
 
 async function loadHardware() {
   try {
@@ -5308,7 +5584,7 @@ function catalogLanguages(entry) {
     const more = document.createElement("button");
     more.type = "button";
     more.className = "langs-more";
-    more.textContent = "info";
+    more.textContent = t("text.Languages", "Languages");
     more.setAttribute("aria-expanded", "false");
     const list = document.createElement("ul");
     list.className = "langs-list";
@@ -5352,9 +5628,16 @@ function catalogCard(entry, items) {
   if (parloPick(entry, items)) {
     const pick = document.createElement("span");
     pick.className = "pick";
-    pick.textContent = "Parlo pick";
-    pick.title = "The best balance of accuracy, memory and speed in this section on this machine.";
+    pick.textContent = t("catalog.pick", "Parlo pick");
     head.append(pick);
+  }
+  if (Array.isArray(entry.languages) && entry.languages.length > 2) {
+    const coverage = document.createElement("span");
+    coverage.className = "model-coverage";
+    coverage.textContent = t("catalog.coverage", "One download covers {count} languages", {
+      count: entry.languages.length,
+    });
+    head.append(coverage);
   }
   const licence = document.createElement("span");
   licence.className = "model-licence";
@@ -5363,7 +5646,10 @@ function catalogCard(entry, items) {
 
   const purpose = document.createElement("p");
   purpose.className = "model-purpose";
-  purpose.textContent = entry.purpose || CATALOG_KINDS[entry.kind] || entry.kind;
+  purpose.textContent =
+    entry.kind === "mt"
+      ? t("catalog.kind.mt", "Translation")
+      : entry.purpose || t("catalog.kind." + entry.kind, CATALOG_KINDS[entry.kind] || entry.kind);
   card.append(head, purpose);
 
   const facts = document.createElement("dl");
@@ -5451,7 +5737,8 @@ function renderCatalog(entries) {
   if (!sections.has(catalogTab)) {
     catalogTab = known.length ? known[0][0] : "other";
   }
-  for (const [key, label] of known) {
+  for (const [key, rawLabel] of known) {
+    const label = t("text." + rawLabel, rawLabel);
     const tab = document.createElement("button");
     tab.type = "button";
     tab.className = "catalog-tab";
@@ -5464,18 +5751,25 @@ function renderCatalog(entries) {
     });
     catalogTabs.append(tab);
   }
+  renderCatalogRecommendation(entries);
   const items = sections.get(catalogTab) || [];
   for (const entry of items) {
     catalogList.append(catalogCard(entry, items));
   }
-  const label = (CATALOG_CATEGORIES.find(([key]) => key === catalogTab) || [catalogTab, catalogTab])[1];
-  catalogNote.textContent =
-    items.length +
-    " in " +
-    label +
-    ", " +
-    entries.length +
-    " in this build. A bar compares published figures with the best in the same category; the line under it names where the figure comes from.";
+  const rawLabel = (CATALOG_CATEGORIES.find(([key]) => key === catalogTab) || [catalogTab, catalogTab])[1];
+  catalogNote.textContent = t(
+    "catalog.note",
+    "{count} in {label}, {total} in this build. A bar compares published figures with the best in the same category; the line under it names where the figure comes from.",
+    { count: items.length, label: t("text." + rawLabel, rawLabel), total: entries.length },
+  );
+}
+
+function historyStamp(entries) {
+  return entries
+    .map((entry) =>
+      [entry.id, entry.at, entry.favourite ? 1 : 0, (entry.text || "").length, (entry.translation || "").length].join(":"),
+    )
+    .join("|");
 }
 
 async function loadHistory() {
@@ -5487,7 +5781,11 @@ async function loadHistory() {
     if (!response.ok) {
       return;
     }
-    historyEntries = await response.json();
+    const next = await response.json();
+    if (historyStamp(next) === historyStamp(historyEntries)) {
+      return;
+    }
+    historyEntries = next;
     fillHistoryApps();
     renderHistory();
   } catch (failure) {
@@ -5520,12 +5818,8 @@ function fillHistoryApps() {
 
 function matchesHistory(entry) {
   const app = historyApp.value;
-  const mode = historyMode.value;
   const needle = historySearch.value.trim().toLowerCase();
   if (app && (entry.app || "") !== app) {
-    return false;
-  }
-  if (mode && (entry.mode || "") !== mode) {
     return false;
   }
   if (historyFavourite.checked && !entry.favourite) {
@@ -5683,29 +5977,47 @@ function renderHistory() {
     }
     historyNote.textContent =
       "Nothing dictated yet. Press Ctrl+Alt+D, speak, and the sentence appears here with the program it landed in.";
-    historyClear.hidden = true;
+    historyClearWrap.hidden = true;
+    historyClearConfirm.hidden = true;
     return;
   }
   const shown = historyEntries.filter(matchesHistory);
   for (const entry of shown) {
     const term = document.createElement("dt");
     const moment = new Date((entry.at || 0) * 1000);
-    const where = [entry.app, entry.mode].filter(Boolean).join(" · ");
-    term.textContent =
-      moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
-      " · " +
-      (LANGUAGE_NAMES[entry.from] || entry.from) +
-      " → " +
-      (LANGUAGE_NAMES[entry.to] || entry.to) +
-      (entry.seconds > 0 ? " · " + entry.seconds.toFixed(1) + " s" : "") +
-      (where ? " · " + where : "");
+    const when = [
+      moment.toLocaleDateString([], { day: "numeric", month: "short" }),
+      moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    ];
+    if (entry.from && entry.to && entry.from !== entry.to) {
+      when.push(
+        languageName(entry.from) +
+          " → " +
+          languageName(entry.to),
+      );
+    }
+    if (entry.seconds > 0) {
+      when.push(entry.seconds.toFixed(1) + " s");
+    }
+    const program = (entry.app || "").trim();
+    if (program && program !== "unknown") {
+      when.push(program);
+    }
+    term.textContent = when.join(" · ");
     const detail = document.createElement("dd");
-    const reuse = document.createElement("button");
-    reuse.type = "button";
-    reuse.className = "swap";
-    reuse.textContent = entry.translation || entry.text;
-    reuse.title = "Copy this text again";
-    reuse.addEventListener("click", () => copyHistory(reuse.textContent));
+    const words = document.createElement("button");
+    words.type = "button";
+    words.className = "history-text";
+    words.textContent = entry.text;
+    words.title = "Copy this dictation again";
+    words.addEventListener("click", () => copyHistory(entry.text));
+    detail.append(words);
+    if (entry.translation && entry.translation !== entry.text) {
+      const translation = document.createElement("p");
+      translation.className = "history-translation";
+      translation.textContent = entry.translation;
+      detail.append(translation);
+    }
     const actions = document.createElement("div");
     actions.className = "history-actions";
     const listen = listenButton(entry.translation || entry.text, "swap");
@@ -5728,12 +6040,34 @@ function renderHistory() {
     remove.className = "swap";
     remove.textContent = "Delete";
     remove.title = "Remove this dictation from this computer";
-    remove.addEventListener("click", () => deleteHistory(entry));
+    const ask = document.createElement("div");
+    ask.className = "history-confirm";
+    ask.hidden = true;
+    const question = document.createElement("span");
+    question.textContent = "Delete this dictation?";
+    const sure = document.createElement("button");
+    sure.type = "button";
+    sure.className = "install";
+    sure.textContent = "Delete";
+    const keep = document.createElement("button");
+    keep.type = "button";
+    keep.className = "swap";
+    keep.textContent = "Keep";
+    ask.append(question, sure, keep);
+    remove.addEventListener("click", () => {
+      ask.hidden = false;
+      sure.focus();
+    });
+    keep.addEventListener("click", () => {
+      ask.hidden = true;
+      remove.focus();
+    });
+    sure.addEventListener("click", () => deleteHistory(entry, sure, keep));
     actions.append(listen, star, correct, remove);
-    detail.append(reuse, actions);
+    detail.append(words, actions);
     const card = document.createElement("div");
     card.className = "history-entry";
-    card.append(term, detail);
+    card.append(term, detail, ask);
     historyList.append(card);
   }
   historyNote.textContent =
@@ -5746,7 +6080,7 @@ function renderHistory() {
   if (historyTools) {
     historyTools.hidden = false;
   }
-  historyClear.hidden = false;
+  historyClearWrap.hidden = false;
 }
 
 async function copyHistory(text) {
@@ -5835,19 +6169,31 @@ async function learnTerm(pair, line) {
   }
 }
 
-async function deleteHistory(entry) {
-  if (!window.confirm("Delete this dictation from this computer?")) {
-    return;
+async function deleteHistory(entry, ...buttons) {
+  for (const button of buttons) {
+    button.disabled = true;
   }
+  historyNote.textContent = "Deleting this dictation…";
   try {
     await historyPost("/history/delete", { id: entry.id });
     await loadHistory();
   } catch (failure) {
     historyNote.textContent = failure.message;
+    for (const button of buttons) {
+      button.disabled = false;
+    }
   }
 }
 
+const historyClearWrap = document.getElementById("history-clear-wrap");
+const historyClearConfirm = document.getElementById("history-clear-confirm");
+const historyClearYes = document.getElementById("history-clear-yes");
+const historyClearKeep = document.getElementById("history-clear-keep");
+
 async function clearHistory() {
+  historyClearYes.disabled = true;
+  historyClearKeep.disabled = true;
+  historyNote.textContent = "Deleting every dictation…";
   try {
     const response = await fetch("/history/clear", {
       method: "POST",
@@ -5856,29 +6202,35 @@ async function clearHistory() {
     if (!response.ok) {
       throw new Error("status " + response.status);
     }
-    historyEntries = [];
-    renderHistory();
+    historyClearConfirm.hidden = true;
+    await loadHistory();
   } catch (failure) {
-    historyNote.textContent = "The history could not be cleared. Try again.";
+    historyNote.textContent = "The dictations could not be deleted. Try again.";
+  } finally {
+    historyClearYes.disabled = false;
+    historyClearKeep.disabled = false;
   }
 }
 
 
 
-historyClear.addEventListener("click", () => clearHistory());
+historyClear.addEventListener("click", () => {
+  historyClearConfirm.hidden = false;
+  historyClearYes.focus();
+});
+historyClearKeep.addEventListener("click", () => {
+  historyClearConfirm.hidden = true;
+  historyClear.focus();
+});
+historyClearYes.addEventListener("click", () => clearHistory());
 historySearch.addEventListener("input", () => renderHistory());
 historyApp.addEventListener("change", () => renderHistory());
-historyMode.addEventListener("change", () => renderHistory());
 historyFavourite.addEventListener("change", () => renderHistory());
 
-window.addEventListener("hashchange", openSection);
 window.addEventListener("load", () => {
   loadMeetings();
   loadCatalog();
   loadHistory();
-  if (location.hash) {
-    openSection();
-  }
 });
 
 talk.addEventListener("contextmenu", (event) => event.preventDefault());
@@ -5899,22 +6251,35 @@ talk.addEventListener("keyup", (event) => {
 
 installButton.addEventListener("click", () => installUpdate());
 
-ensureAudio().catch((failure) => {
-  micEl.textContent = "blocked";
-  showError(describeMicrophoneError(failure));
-});
+micEl.textContent = "not opened yet";
 refreshHealth();
-setInterval(refreshHealth, 5000);
+setInterval(() => {
+  if (document.visibilityState === "visible") {
+    refreshHealth();
+  }
+}, 30000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    refreshHealth();
+  }
+});
+window.addEventListener("focus", refreshHealth);
+setInterval(() => {
+  if (document.visibilityState !== "visible") {
+    return;
+  }
+  const historyVisible = !document.getElementById("history").hidden;
+  const homeVisible = !document.getElementById("status-list").hidden;
+  if (historyVisible || homeVisible) {
+    loadHistory();
+  }
+}, 4000);
 
 const ROUTES = {
   home: [
     "update",
     "welcome",
-    "progress",
-    "error",
-    "translation",
     "status-list",
-    "recent",
   ],
   library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub", "batch", "stories"],
   meetings: ["meetings"],
@@ -5924,6 +6289,7 @@ const ROUTES = {
     "settings-tabs",
     "settings-layout",
     "settings-foot",
+    "language",
     "you",
     "programs",
     "settings",
@@ -5959,9 +6325,20 @@ function showRoute(name) {
 }
 
 function routeNow() {
-  const route = (location.hash || "#home").slice(1);
-  localStorage.setItem("parlo.route", route);
-  showRoute(route);
+  const parsed = ParloRoutes.parseHash(location.hash);
+  libraryTab = parsed.libraryTab;
+  settingsTab = parsed.settingsTab;
+  showRoute(parsed.route);
+  localStorage.setItem("parlo.route", parsed.canonical);
+}
+
+function navigate(route, tab) {
+  const path = "#" + route + (tab ? "/" + tab : "");
+  if (location.hash === path) {
+    routeNow();
+  } else {
+    location.hash = path;
+  }
 }
 
 const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "insights", 6: "settings" };
@@ -6004,6 +6381,7 @@ let libraryTab = "history";
 
 function showLibraryTab(name) {
   const chosen = LIBRARY_TABS[name] ? name : "history";
+  libraryTab = chosen;
   for (const [key, ids] of Object.entries(LIBRARY_TABS)) {
     for (const id of ids) {
       const element = document.getElementById(id);
@@ -6019,17 +6397,17 @@ function showLibraryTab(name) {
 
 for (const button of document.querySelectorAll("#library-tabs .tab")) {
   button.addEventListener("click", () => {
-    libraryTab = button.dataset.tab;
-    showLibraryTab(libraryTab);
+    navigate("library", button.dataset.tab);
   });
 }
 
 const SETTINGS_TABS = {
   you: ["you"],
+  language: ["language"],
   dictation: ["settings", "programs"],
   languages: ["languages"],
   shortcuts: ["shortcuts"],
-  advanced: ["intelligence", "provider", "privacy", "about"],
+  advanced: ["intelligence", "provider", "privacy", "about", "retention"],
 };
 
 let settingsTab = "dictation";
@@ -6052,8 +6430,7 @@ function showSettingsTab(name) {
 
 for (const button of document.querySelectorAll("#settings-tabs .tab")) {
   button.addEventListener("click", () => {
-    settingsTab = button.dataset.tab;
-    showSettingsTab(settingsTab);
+    navigate("settings", button.dataset.tab);
   });
 }
 
@@ -6070,18 +6447,15 @@ document.addEventListener("click", (event) => {
 
 window.addEventListener("hashchange", routeNow);
 if (!location.hash) {
-  const remembered = localStorage.getItem("parlo.route");
-  if (remembered) {
-    location.hash = "#" + remembered;
-  }
+  const remembered = localStorage.getItem("parlo.route") || "home";
+  history.replaceState(null, "", "#" + remembered);
 }
 routeNow();
 checkLocalUpdate();
 loadModels();
-loadSettings();
+loadSettings().then(showNameGateIfNeeded);
 applyLocale();
-loadIntelligence();
-loadVocabulary();
+loadEverything();
 
 const voiceForm = document.getElementById("voice-form");
 const voiceList = document.getElementById("voice-list");
@@ -6097,10 +6471,12 @@ function voiceHeaders() {
 function describeVoice(profile) {
   const source =
     profile.consent.origin === "third-party"
-      ? "someone else's voice, with permission"
-      : "your own voice";
-  const state = profile.consent.revoked_at ? "authorisation revoked" : "authorised";
-  const seal = profile.encrypted ? " · sealed" : "";
+      ? t("studio.thirdShort", "someone else's voice, with permission")
+      : t("studio.ownShort", "your own voice");
+  const state = profile.consent.revoked_at
+    ? t("studio.revokedShort", "authorisation revoked")
+    : t("studio.authorised", "authorised");
+  const seal = profile.encrypted ? " · " + t("studio.sealed", "sealed") : "";
   return profile.language + " · " + source + " · " + state + seal;
 }
 
@@ -6116,12 +6492,20 @@ function voiceButton(text, handler) {
 function renderVoices(profiles) {
   voiceList.replaceChildren();
   if (!profiles.length) {
-    voiceStatus.textContent = "No voice profiles on this computer yet.";
+    voiceStatus.textContent = t(
+      "studio.profilesEmpty",
+      "No voice profiles on this computer yet.",
+    );
     return;
   }
   voiceStatus.textContent =
-    profiles.length +
-    (profiles.length === 1 ? " voice profile on this computer." : " voice profiles on this computer.");
+    profiles.length === 1
+      ? t("studio.profileOne", "{count} voice profile on this computer.", {
+          count: profiles.length,
+        })
+      : t("studio.profileMany", "{count} voice profiles on this computer.", {
+          count: profiles.length,
+        });
   for (const profile of profiles) {
     const item = document.createElement("li");
     item.className = "voice-item";
@@ -6130,39 +6514,76 @@ function renderVoices(profiles) {
     title.textContent = profile.label;
     const meta = document.createElement("p");
     meta.className = "voice-item-meta";
-    meta.textContent = describeVoice(profile) + " · since " + new Date(profile.created_at * 1000).toLocaleDateString();
+    meta.textContent =
+      describeVoice(profile) +
+      " · " +
+      t("studio.since", "since") +
+      " " +
+      new Date(profile.created_at * 1000).toLocaleDateString(document.documentElement.lang || "en");
     const actions = document.createElement("div");
     actions.className = "voice-item-actions";
     const revoked = Boolean(profile.consent.revoked_at);
     const hasSample = (profile.artefacts || []).includes("sample.wav");
     if (revoked) {
-      actions.append(voiceButton("Play default voice", () => playVoiceSample(profile)));
+      actions.append(
+        voiceButton(t("studio.playDefault", "Play default voice"), () =>
+          playVoiceSample(profile),
+        ),
+      );
       const note = document.createElement("p");
       note.className = "voice-item-note";
-      note.textContent = "Revoked. The sample is gone and playback falls back to the default voice.";
+      note.textContent = t(
+        "studio.revoked",
+        "Revoked. The sample is gone and playback falls back to the default voice.",
+      );
       item.append(note);
     } else if (hasSample) {
-      actions.append(voiceButton("Play sample", () => playVoiceSample(profile)));
+      actions.append(
+        voiceButton(t("studio.playSample", "Play sample"), () => playVoiceSample(profile)),
+        voiceButton(t("studio.uploadSample", "Upload a recording"), () => pickVoiceSample(profile)),
+      );
     } else {
       actions.append(
-        voiceButton("Record 10 s", (event) => recordVoiceSample(profile, event.currentTarget))
+        voiceButton(t("studio.record", "Record 10 s"), (event) =>
+          recordVoiceSample(profile, event.currentTarget),
+        ),
+        voiceButton(t("studio.uploadSample", "Upload a recording"), () => pickVoiceSample(profile)),
       );
     }
-    actions.append(voiceButton("Export", () => exportVoice(profile)));
+    actions.append(voiceButton(t("studio.export", "Export"), () => exportVoice(profile)));
     if (!profile.consent.revoked_at) {
       actions.append(
-        voiceButton("Revoke", () =>
-          voiceCall("/voice/revoke", profile, "Revoked. This voice will not be used again until you create and authorise a new profile.")
-        )
+        voiceButton(t("studio.revoke", "Revoke"), () =>
+          voiceCall(
+            "/voice/revoke",
+            profile,
+            t(
+              "studio.revokedDone",
+              "Revoked. This voice will not be used again until you create and authorise a new profile.",
+            ),
+          ),
+        ),
       );
     }
     actions.append(
-      voiceButton("Delete", () => {
-        if (!window.confirm("Delete " + profile.label + " and everything made from it? This cannot be undone.")) {
+      voiceButton(t("studio.delete", "Delete"), () => {
+        if (
+          !window.confirm(
+            t(
+              "studio.deleteConfirm",
+              "Delete {label} and everything made from it? This cannot be undone.",
+              { label: profile.label },
+            ),
+          )
+        ) {
           return;
         }
-        voiceCall("/voice/delete", profile, "Deleted, with the sample and anything made from it.");
-      })
+        voiceCall(
+          "/voice/delete",
+          profile,
+          t("studio.deleted", "Deleted, with the sample and anything made from it."),
+        );
+      }),
     );
     item.append(title, meta, actions);
     voiceList.append(item);
@@ -6179,7 +6600,7 @@ async function voiceCall(path, profile, done) {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(payload.error || "The request failed.");
+      throw new Error(payload.error || t("studio.revokeError", "The request failed."));
     }
     voiceStatus.textContent = payload.message || done;
     await loadVoices();
@@ -6197,7 +6618,10 @@ async function loadVoices() {
     const payload = await response.json();
     renderVoices(payload.profiles || []);
   } catch (failure) {
-    voiceStatus.textContent = "The voice list is not available right now.";
+    voiceStatus.textContent = t(
+      "studio.listError",
+      "The voice list is not available right now.",
+    );
   }
 }
 
@@ -6213,7 +6637,12 @@ voiceOrigin.addEventListener("change", () => {
 voiceForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (voiceOrigin.value === "third-party" && !voiceAuthorisation.checked) {
-    showError("Tick the permission box before creating a profile for someone else's voice.");
+    showError(
+      t(
+        "studio.permissionError",
+        "Tick the permission box before creating a profile for someone else's voice.",
+      ),
+    );
     return;
   }
   clearError();
@@ -6228,14 +6657,18 @@ voiceForm.addEventListener("submit", async (event) => {
         language: document.getElementById("voice-language").value,
         origin: voiceOrigin.value,
         declared_authorisation: voiceAuthorisation.checked,
+        encrypt: document.getElementById("voice-encrypt").checked,
       }),
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      throw new Error(payload.error || "The profile could not be created.");
+      throw new Error(payload.error || t("studio.profileError", "The profile could not be created."));
     }
-    voiceStatus.textContent =
-      "Created " + payload.label + ". The sample is recorded when the voice engine ships, and this profile is stored on this computer only.";
+    voiceStatus.textContent = t(
+      "studio.profileCreated",
+      "Created {label}. Record a sample when you are ready; it stays on this computer.",
+      { label: payload.label },
+    );
     voiceForm.reset();
     voiceAuthorisationRow.hidden = true;
     await loadVoices();
@@ -6258,11 +6691,17 @@ if (compareRun) {
     const sentence = compareText.value.trim();
     compareReadings.replaceChildren();
     if (!sentence) {
-      compareNote.textContent = "Write the sentence both voices should read.";
+      compareNote.textContent = t(
+        "studio.compareEmpty",
+        "Write the sentence both voices should read.",
+      );
       return;
     }
     compareRun.disabled = true;
-    compareNote.textContent = "Reading it twice. This takes a few seconds.";
+    compareNote.textContent = t(
+      "studio.compareWorking",
+      "Reading it twice. This takes a few seconds.",
+    );
     try {
       const response = await fetch("/voice/compare", {
         method: "POST",
@@ -6271,7 +6710,9 @@ if (compareRun) {
       });
       const answer = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(answer.error || "The two voices could not be read.");
+        throw new Error(
+          answer.error || t("studio.compareFailed", "The two voices could not be read."),
+        );
       }
       for (const reading of answer.readings) {
         const line = document.createElement("li");
@@ -6287,7 +6728,10 @@ if (compareRun) {
         bytes[index] = decoded.charCodeAt(index);
       }
       play(new Blob([bytes], { type: "audio/wav" }));
-      compareNote.textContent = "First voice, then the second, in the order chosen.";
+      compareNote.textContent = t(
+        "studio.compareDone",
+        "First voice, then the second, in the order chosen.",
+      );
     } catch (failure) {
       compareNote.textContent = failure.message;
       showError(failure.message);
@@ -6310,11 +6754,30 @@ async function sendPack(body) {
     headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
     body,
   });
-  const answer = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(answer.error || "The pack could not be saved.");
-  }
+  const answer = await response.json().catch(() => ({}));    if (!response.ok) {
+      throw new Error(answer.error || t("studio.packSaveError", "The pack could not be saved."));
+    }
   return answer;
+}
+
+async function exportPack(name) {
+  try {
+    const response = await fetch("/voice/packs/" + encodeURIComponent(name), {
+      cache: "no-store",
+      headers: { Authorization: "Bearer " + token },
+    });
+    if (!response.ok) {
+      throw new Error(t("studio.packExportError", "The pack could not be exported."));
+    }
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(await response.blob());
+    link.download = name + ".json";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    packNote.textContent = t("studio.packSaved", "Saved {name} on this computer.", { name });
+  } catch (failure) {
+    packNote.textContent = failure.message;
+  }
 }
 
 async function loadPacks() {
@@ -6333,16 +6796,24 @@ async function loadPacks() {
       const use = document.createElement("button");
       use.type = "button";
       use.className = "swap";
-      use.textContent = "Use " + pack.name;
+      use.textContent = t("studio.packUse", "Use {name}", { name: pack.name });
       use.addEventListener("click", () => {
         compareFirst.value = pack.voices[0];
         compareSecond.value = pack.voices[1];
-        compareNote.textContent =
-          "Pack " + pack.name + " is chosen. Write the sentence and read it in both.";
+        compareNote.textContent = t(
+          "studio.packChosen",
+          "Pack {name} is chosen. Write the sentence and read it in both.",
+          { name: pack.name },
+        );
         compareText.focus();
       });
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "swap";
+      save.textContent = t("studio.export", "Export");
+      save.addEventListener("click", () => exportPack(pack.name));
       item.textContent = pack.name + ": " + pack.voices.join(", ") + " ";
-      item.append(use);
+      item.append(use, save);
       packList.append(item);
     }
   } catch (failure) {
@@ -6354,7 +6825,7 @@ if (packSave) {
   packSave.addEventListener("click", async () => {
     const name = packName.value.trim();
     if (!name) {
-      packNote.textContent = "Give the pack a name first.";
+      packNote.textContent = t("studio.packNameError", "Give the pack a name first.");
       return;
     }
     try {
@@ -6367,7 +6838,9 @@ if (packSave) {
           notice: "Nothing in this pack leaves this computer.",
         }),
       );
-      packNote.textContent = "Saved " + saved.name + " on this computer.";
+      packNote.textContent = t("studio.packSaved", "Saved {name} on this computer.", {
+        name: saved.name,
+      });
       await loadPacks();
     } catch (failure) {
       packNote.textContent = failure.message;
@@ -6384,8 +6857,11 @@ if (packImport) {
     }
     try {
       const saved = await sendPack(await file.text());
-      packNote.textContent =
-        "Imported " + saved.name + " with " + saved.voices.length + " voices, and they are installed.";
+      packNote.textContent = t(
+        "studio.packImported",
+        "Imported {name} with {count} voices, and they are installed.",
+        { name: saved.name, count: saved.voices.length },
+      );
       await loadPacks();
     } catch (failure) {
       packNote.textContent = failure.message;
@@ -6417,9 +6893,13 @@ if (voiceImport && voiceImportFile) {
       });
       const answer = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(answer.error || "The voice file could not be read.");
+        throw new Error(answer.error || t("studio.importError", "The voice file could not be read."));
       }
-      voiceImportNote.textContent = "Imported " + answer.label + ", and its consent record came with it.";
+      voiceImportNote.textContent = t(
+        "studio.importNote",
+        "Imported {label}, and its consent record came with it.",
+        { label: answer.label },
+      );
       await loadVoices();
     } catch (failure) {
       showError(failure.message);
@@ -6430,6 +6910,323 @@ if (voiceImport && voiceImportFile) {
 }
 
 loadVoices();
+
+const voiceSampleFile = document.getElementById("voice-sample-file");
+let voiceSampleTarget = "";
+
+function pickVoiceSample(profile) {
+  if (!voiceSampleFile) {
+    return;
+  }
+  voiceSampleTarget = profile.id;
+  voiceSampleFile.value = "";
+  voiceSampleFile.click();
+}
+
+if (voiceSampleFile) {
+  voiceSampleFile.addEventListener("change", async () => {
+    const file = voiceSampleFile.files && voiceSampleFile.files[0];
+    if (!file || !voiceSampleTarget) {
+      return;
+    }
+    clearError();
+    voiceStatus.textContent = t("studio.saving", "Saving the sample");
+    try {
+      const response = await fetch("/voice/sample", {
+        method: "POST",
+        headers: {
+          "Content-Type": "audio/wav",
+          Authorization: "Bearer " + token,
+          "X-Parlo-Voice": voiceSampleTarget,
+        },
+        body: await file.arrayBuffer(),
+      });
+      const answer = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(answer.error || t("studio.uploadError", "The recording could not be read."));
+      }
+      voiceStatus.textContent = t("studio.uploadNote", "Imported the recording for {label}.", {
+        label: answer.label || t("studio.namePlaceholder", "My voice"),
+      });
+      await loadVoices();
+    } catch (failure) {
+      voiceStatus.textContent = failure.message;
+      showError(failure.message);
+    } finally {
+      voiceSampleFile.value = "";
+      voiceSampleTarget = "";
+    }
+  });
+}
+
+const studioText = document.getElementById("studio-text");
+const studioVoice = document.getElementById("studio-voice");
+const studioGenerate = document.getElementById("studio-generate");
+const studioNote = document.getElementById("studio-note");
+const studioResult = document.getElementById("studio-result");
+const studioAudio = document.getElementById("studio-audio");
+const studioDownload = document.getElementById("studio-download");
+const studioTakes = document.getElementById("studio-takes");
+const studioCount = document.getElementById("studio-count");
+const studioClear = document.getElementById("studio-clear");
+const studioTakesClear = document.getElementById("studio-takes-clear");
+const studioTabs = Array.from(document.querySelectorAll("[data-studio-tab]"));
+
+function paintStudioCount() {
+  if (studioText && studioCount) {
+    studioCount.textContent =
+      studioText.value.length + " / " + (studioText.maxLength > 0 ? studioText.maxLength : 4096);
+  }
+}
+
+function showStudioTab(name, moveFocus) {
+  const chosen = studioTabs.find((tab) => tab.dataset.studioTab === name) || studioTabs[0];
+  if (!chosen) {
+    return;
+  }
+  for (const tab of studioTabs) {
+    const selected = tab === chosen;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    const panel = document.getElementById(tab.getAttribute("aria-controls"));
+    if (panel) {
+      panel.hidden = !selected;
+    }
+  }
+  if (moveFocus) {
+    chosen.focus();
+  }
+}
+
+for (const tab of studioTabs) {
+  tab.addEventListener("click", () => showStudioTab(tab.dataset.studioTab));
+  tab.addEventListener("keydown", (event) => {
+    const step = document.documentElement.dir === "rtl" ? -1 : 1;
+    const index = studioTabs.indexOf(tab);
+    let next = -1;
+    if (event.key === "ArrowRight") {
+      next = index + step;
+    } else if (event.key === "ArrowLeft") {
+      next = index - step;
+    } else if (event.key === "Home") {
+      next = 0;
+    } else if (event.key === "End") {
+      next = studioTabs.length - 1;
+    }
+    if (next < 0 || next >= studioTabs.length) {
+      return;
+    }
+    event.preventDefault();
+    showStudioTab(studioTabs[next].dataset.studioTab, true);
+  });
+}
+
+if (studioTabs.length) {
+  showStudioTab("voices");
+}
+
+if (studioText) {
+  studioText.addEventListener("input", paintStudioCount);
+  studioText.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      studioGenerate.click();
+    }
+  });
+  paintStudioCount();
+}
+
+if (studioClear) {
+  studioClear.addEventListener("click", () => {
+    studioText.value = "";
+    paintStudioCount();
+    studioText.focus();
+  });
+}
+
+if (studioTakesClear) {
+  studioTakesClear.addEventListener("click", () => {
+    const empty = document.createElement("li");
+    empty.className = "studio-empty";
+    empty.textContent = t(
+      "studio.takesEmpty",
+      "Takes you generate this session appear here.",
+    );
+    studioTakes.replaceChildren(empty);
+    studioNote.textContent = t("studio.takesCleared", "Takes cleared.");
+  });
+}
+
+function studioTake(text, url) {
+  const item = document.createElement("li");
+  item.className = "studio-take";
+  const title = document.createElement("span");
+  title.className = "studio-take-text";
+  title.textContent = text.length > 72 ? text.slice(0, 72).trimEnd() + "…" : text;
+  const play = document.createElement("button");
+  play.type = "button";
+  play.className = "voice-action";
+  play.textContent = t("studio.playSample", "Play sample");
+  play.addEventListener("click", () => {
+    const audio = new Audio(url);
+    audio.play().catch(() => {
+      studioNote.textContent = t(
+        "studio.pronounceAudio",
+        "Pronunciation shown. Audio is unavailable: {reason}",
+        { reason: t("studio.failed", "The voice could not be generated.") },
+      );
+    });
+  });
+  const download = document.createElement("a");
+  download.className = "studio-take-download";
+  download.href = url;
+  download.download = "parlo-studio.wav";
+  download.textContent = t("studio.download", "Download WAV");
+  item.append(title, play, download);
+  const empty = studioTakes.querySelector(".studio-empty");
+  if (empty) {
+    empty.remove();
+  }
+  studioTakes.prepend(item);
+  while (studioTakes.children.length > 5) {
+    studioTakes.lastElementChild.remove();
+  }
+}
+
+function fillCompareVoices(voices) {
+  const first = document.getElementById("compare-first");
+  const second = document.getElementById("compare-second");
+  const run = document.getElementById("compare-run");
+  const note = document.getElementById("compare-note");
+  if (!first || !second || !run) {
+    return;
+  }
+  const previous = [first.value, second.value];
+  const options = () =>
+    voices.map((voice) => {
+      const option = document.createElement("option");
+      option.value = voice.id;
+      option.textContent = voice.name || voice.id;
+      return option;
+    });
+  const ids = voices.map((voice) => voice.id);
+  first.replaceChildren(...options());
+  second.replaceChildren(...options());
+  first.value = ids.includes(previous[0]) ? previous[0] : ids[0] || "";
+  second.value =
+    ids.includes(previous[1]) && previous[1] !== first.value
+      ? previous[1]
+      : ids.find((id) => id !== first.value) || "";
+  const ready = ids.length >= 2;
+  run.disabled = !ready;
+  if (!ready) {
+    note.textContent = t(
+      "studio.compareNeedTwo",
+      "Install two voices in Library, Models, to compare them.",
+    );
+  }
+}
+
+async function loadStudioVoices() {
+  if (!studioVoice || !studioGenerate) {
+    return;
+  }
+  try {
+    const response = await fetch("/models", { cache: "no-store" });
+    if (!response.ok) {
+      return;
+    }
+    const state = await response.json();
+    const voices = (state.models || []).filter(
+      (model) => model.kind === "voice" && model.installed,
+    );
+    const previous = studioVoice.value;
+    const automatic = document.createElement("option");
+    automatic.value = "";
+    automatic.textContent = t("studio.voiceAuto", "Automatic voice");
+    studioVoice.replaceChildren(
+      automatic,
+      ...voices.map((voice) => {
+        const option = document.createElement("option");
+        option.value = voice.id;
+        option.textContent = voice.name || voice.id;
+        return option;
+      }),
+    );
+    if (voices.some((voice) => voice.id === previous)) {
+      studioVoice.value = previous;
+    }
+    studioGenerate.disabled = !voices.length;
+    fillCompareVoices(voices);
+    if (!voices.length) {
+      studioNote.textContent = t(
+        "studio.noVoice",
+        "Install a voice in Library, Models, and it will appear here.",
+      );
+    } else if (studioNote.textContent === t("studio.noVoice", "Install a voice in Library, Models, and it will appear here.")) {
+      studioNote.textContent = "";
+    }
+  } catch (failure) {
+    return;
+  }
+}
+
+if (studioTakes && !studioTakes.children.length) {
+  const empty = document.createElement("li");
+  empty.className = "studio-empty";
+  empty.textContent = t("studio.takesEmpty", "Takes you generate this session appear here.");
+  studioTakes.append(empty);
+}
+
+if (studioGenerate) {
+  studioGenerate.addEventListener("click", async () => {
+    const text = studioText.value.trim();
+    if (!text) {
+      studioNote.textContent = t("studio.emptyText", "Write something to read aloud first.");
+      studioText.focus();
+      return;
+    }
+    studioGenerate.disabled = true;
+    studioGenerate.textContent = t("studio.generating", "Generating…");
+    studioNote.textContent = t("studio.generating", "Generating…");
+    try {
+      const body = { input: text, response_format: "wav" };
+      if (studioVoice.value) {
+        body.voice = studioVoice.value;
+      }
+      const response = await fetch("/v1/audio/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        const message =
+          detail && detail.error && detail.error.message
+            ? detail.error.message
+            : detail && detail.error
+              ? detail.error
+              : t("studio.failed", "The voice could not be generated.");
+        throw new Error(message);
+      }
+      const url = URL.createObjectURL(await response.blob());
+      studioAudio.src = url;
+      studioDownload.href = url;
+      studioDownload.download = "parlo-studio.wav";
+      studioResult.hidden = false;
+      studioNote.textContent = t("studio.ready", "Ready to play.");
+      studioTake(text, url);
+      studioAudio.play().catch(() => {});
+    } catch (failure) {
+      studioNote.textContent = failure.message || t("studio.failed", "The voice could not be generated.");
+    } finally {
+      studioGenerate.disabled = studioVoice.options.length < 2;
+      studioGenerate.textContent = t("studio.generate", "Generate speech");
+    }
+  });
+}
+
+loadStudioVoices();
 
 
 async function loadFeatures() {
@@ -6482,16 +7279,37 @@ for (const input of [featureTranslation, featureVoice, featureCaptions]) {
 }
 loadFeatures();
 
-document.getElementById("welcome-setup").addEventListener("click", () => {
-  showSettingsTab("dictation");
-});
+const homeCaptions = document.getElementById("home-captions");
+if (homeCaptions) {
+  homeCaptions.addEventListener("click", () => {
+    window.open("/captions?t=" + encodeURIComponent(token), "_blank", "noopener");
+  });
+}
+
+const homeLive = document.getElementById("home-live");
+if (homeLive) {
+  homeLive.addEventListener("click", () => {
+    window.open("/live?t=" + encodeURIComponent(token), "_blank", "noopener");
+  });
+}
 
 const nameGate = document.getElementById("name-gate");
 const nameInput = document.getElementById("name-input");
 const nameSave = document.getElementById("name-save");
 const nameNote = document.getElementById("name-note");
-const gateName = document.getElementById("gate-name");
-const gateStyle = document.getElementById("gate-style");
+const gateProgress = document.getElementById("gate-progress");
+const gateFrom = document.getElementById("gate-from");
+const gateTo = document.getElementById("gate-to");
+const gateSwap = document.getElementById("gate-swap");
+const gatePairSave = document.getElementById("gate-pair-save");
+const gatePairNote = document.getElementById("gate-pair-note");
+const gateMicCheck = document.getElementById("gate-mic-check");
+const gateMicNext = document.getElementById("gate-mic-next");
+const gateMicSkip = document.getElementById("gate-mic-skip");
+const gateMicNote = document.getElementById("gate-mic-note");
+const gateShortcutKey = document.getElementById("gate-shortcut-key");
+const gateFinish = document.getElementById("gate-finish");
+const GATE_STEPS = ["gate-name", "gate-languages", "gate-microphone", "gate-style", "gate-shortcut"];
 const styleControls = [
   ...document.querySelectorAll(".style-card"),
   ...document.querySelectorAll(".style-chip"),
@@ -6502,6 +7320,25 @@ const toneOpen = document.getElementById("tone-open");
 const toneNow = document.getElementById("tone-now");
 const STYLES = ["formal", "casual", "excited"];
 const STYLE_NAMES = { formal: "Formal", casual: "Casual", excited: "Excited" };
+
+function gateStep(name) {
+  const index = GATE_STEPS.indexOf(name);
+  for (const [position, id] of GATE_STEPS.entries()) {
+    const step = document.getElementById(id);
+    if (step) {
+      step.hidden = position !== index;
+    }
+  }
+  if (gateProgress) {
+    paintGateProgress(index, GATE_STEPS.length);
+  }
+}
+
+function paintGate() {
+  gateFrom.value = savedSettings.from;
+  gateTo.value = savedSettings.to;
+  gateShortcutKey.textContent = currentShortcut || "Ctrl+Alt+D";
+}
 
 function storedStyle() {
   const value = localStorage.getItem("parlo.style");
@@ -6517,7 +7354,8 @@ function paintStyleControls() {
     settingsStyle.value = chosen || "formal";
   }
   if (toneNow) {
-    toneNow.textContent = STYLE_NAMES[chosen] || STYLE_NAMES.formal;
+    const style = chosen || "formal";
+    toneNow.textContent = t("home." + style, STYLE_NAMES[style]);
   }
 }
 
@@ -6545,17 +7383,19 @@ function chooseStyle(style) {
 
 function closeGate() {
   nameGate.hidden = true;
-  gateName.hidden = false;
-  gateStyle.hidden = true;
   document.body.classList.remove("gating");
+  navigate("home");
   paintHome();
 }
 
-if (!storedName()) {
+function showNameGateIfNeeded() {
+  if (storedName()) {
+    return;
+  }
   document.body.classList.add("gating");
   nameGate.hidden = false;
-  gateName.hidden = false;
-  gateStyle.hidden = true;
+  paintGate();
+  gateStep("gate-name");
   nameInput.focus();
 }
 
@@ -6565,6 +7405,11 @@ function storeName(raw) {
     return "";
   }
   localStorage.setItem("parlo.name", value);
+  fetch("/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ name: value }),
+  }).catch(() => {});
   paintHome();
   paintSettingsName();
   return value;
@@ -6578,14 +7423,16 @@ function paintSettingsName() {
 
 nameSave.addEventListener("click", () => {
   if (!storeName(nameInput.value)) {
-    nameNote.textContent = "Two letters at least, so it reads like a name.";
+    nameNote.textContent = t(
+      "gate.name.short",
+      "Two letters at least, so it reads like a name.",
+    );
     nameInput.focus();
     return;
   }
   nameNote.textContent = "";
-  gateName.hidden = true;
-  gateStyle.hidden = false;
-  paintStyleControls();
+  paintGate();
+  gateStep("gate-languages");
 });
 
 nameInput.addEventListener("keydown", (event) => {
@@ -6601,13 +7448,86 @@ for (const control of styleControls) {
   });
 }
 
-document.getElementById("style-save").addEventListener("click", closeGate);
+document.getElementById("style-save").addEventListener("click", () => {
+  paintGate();
+  gateStep("gate-shortcut");
+});
 document.getElementById("style-skip").addEventListener("click", () => {
   if (!storedStyle()) {
     chooseStyle("formal");
   }
-  closeGate();
+  paintGate();
+  gateStep("gate-shortcut");
 });
+
+function keepGatePair(changed) {
+  if (gateFrom.value !== gateTo.value) {
+    return;
+  }
+  const other = gateFrom.value === "pt" ? "en" : "pt";
+  if (changed === "from") {
+    gateTo.value = other;
+  } else {
+    gateFrom.value = other;
+  }
+}
+
+gateFrom.addEventListener("change", () => keepGatePair("from"));
+gateTo.addEventListener("change", () => keepGatePair("to"));
+gateSwap.addEventListener("click", () => {
+  const from = gateFrom.value;
+  gateFrom.value = gateTo.value;
+  gateTo.value = from;
+});
+
+gatePairSave.addEventListener("click", async () => {
+  gatePairSave.disabled = true;
+  gatePairNote.textContent = t("gate.pair.saving", "Saving the pair…");
+  try {
+    const response = await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ from: gateFrom.value, to: gateTo.value, write: "" }),
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      gatePairNote.textContent = detail.error || "The pair could not be saved. Try again.";
+      return;
+    }
+    reflectSettings(detail);
+    gatePairNote.textContent = "";
+    gateStep("gate-microphone");
+  } catch (failure) {
+    gatePairNote.textContent = "The pair could not be saved. Check that Parlo is still running.";
+  } finally {
+    gatePairSave.disabled = false;
+  }
+});
+
+gateMicCheck.addEventListener("click", async () => {
+  gateMicCheck.disabled = true;
+  gateMicNote.textContent = "Waiting for Windows…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    for (const track of stream.getTracks()) {
+      track.stop();
+    }
+    localStorage.setItem("parlo.mic", "ready");
+    if (homeMic) {
+      homeMic.textContent = statusWord("ready");
+    }
+    gateMicNote.textContent = "The microphone answers. Continue when you are ready.";
+    gateMicNext.disabled = false;
+  } catch (failure) {
+    gateMicNote.textContent =
+      "Windows did not allow it. Open Settings > Privacy & security > Microphone, allow desktop apps, then try again.";
+    gateMicCheck.disabled = false;
+  }
+});
+
+gateMicNext.addEventListener("click", () => gateStep("gate-style"));
+gateMicSkip.addEventListener("click", () => gateStep("gate-style"));
+gateFinish.addEventListener("click", closeGate);
 
 if (settingsStyle) {
   settingsStyle.addEventListener("change", () => {
@@ -6636,6 +7556,7 @@ const programsWrite = document.getElementById("programs-write");
 const programsSave = document.getElementById("programs-save");
 const programsNote = document.getElementById("programs-note");
 const programsList = document.getElementById("programs-list");
+const programsEmpty = document.getElementById("programs-empty");
 const programsKnown = document.getElementById("programs-known");
 let appProfiles = {};
 
@@ -6645,10 +7566,9 @@ function paintPrograms() {
   }
   programsList.replaceChildren();
   const entries = Object.entries(appProfiles);
-  if (!entries.length) {
-    const empty = document.createElement("p");
-    empty.textContent = "No program has a style of its own yet.";
-    programsList.append(empty);
+  programsList.hidden = !entries.length;
+  if (programsEmpty) {
+    programsEmpty.hidden = entries.length > 0;
   }
   for (const [program, profile] of entries) {
     const row = document.createElement("div");
@@ -6825,7 +7745,10 @@ if (historyExport) {
 
 if (historyDays) {
   const note = document.getElementById("history-note");
-  fetch("/settings", { cache: "no-store" })
+  fetch("/settings", {
+    cache: "no-store",
+    headers: { Authorization: "Bearer " + token },
+  })
     .then((response) => (response.ok ? response.json() : null))
     .then((settings) => {
       if (settings) {
@@ -6923,20 +7846,25 @@ async function showRecommendation(language) {
   const row = recommendationTable.find((item) => item.language === language);
   const picks = row ? row.picks || [] : [];
   if (!picks.length) {
-    localeRecommendation.textContent =
-      "Parlo has no local model for this language yet.";
+    localeRecommendation.textContent = t(
+      "locale.noModel",
+      "Parlo has no local model for this language yet.",
+    );
     return;
   }
   const words = picks.map((pick) => {
+    const name = t("text." + pick.name, pick.name);
     if (pick.feature === "voice") {
-      return pick.name + " for read aloud";
+      return t("locale.readAloud", "{name} for read aloud", { name });
     }
     if (pick.feature === "dictation") {
-      return pick.name + " for dictation";
+      return t("locale.dictation", "{name} for dictation", { name });
     }
-    return pick.name + " for translation";
+    return t("locale.translation", "{name} for translation", { name });
   });
-  localeRecommendation.textContent = "Parlo recommends " + words.join(", ") + ".";
+  localeRecommendation.textContent = t("locale.recommends", "Parlo recommends {items}.", {
+    items: words.join(", "),
+  });
 }
 
 if (settingsLocale) {
@@ -6946,4 +7874,139 @@ if (settingsLocale) {
   if (settingsLocale.value) {
     showRecommendation(settingsLocale.value);
   }
+}
+
+const pronounceText = document.getElementById("pronounce-text");
+const pronounceRun = document.getElementById("pronounce-run");
+const pronounceNote = document.getElementById("pronounce-note");
+const pronounceResult = document.getElementById("pronounce-result");
+const pronounceWritten = document.getElementById("pronounce-written");
+const pronounceIpa = document.getElementById("pronounce-ipa");
+const pronounceRespell = document.getElementById("pronounce-respell");
+
+if (pronounceRun) {
+  pronounceRun.addEventListener("click", async () => {
+    const text = pronounceText.value.trim();
+    if (!text) {
+      pronounceNote.textContent = t(
+        "studio.pronounceEmpty",
+        "Write a word or a sentence first.",
+      );
+      pronounceText.focus();
+      return;
+    }
+    pronounceRun.disabled = true;
+    pronounceNote.textContent = t("studio.pronounceLookup", "Looking it up…");
+    try {
+      const response = await fetch("/pronounce?text=" + encodeURIComponent(text), {
+        cache: "no-store",
+        headers: { Authorization: "Bearer " + token },
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          detail.error || t("studio.pronounceBad", "That word could not be looked up."),
+        );
+      }
+      pronounceWritten.textContent = detail.word || detail.text;
+      pronounceIpa.textContent = detail.ipa || t("studio.noDictionary", "not in the dictionary");
+      pronounceRespell.textContent = detail.respell || detail.text;
+      pronounceResult.hidden = false;
+      const speech = await fetch("/v1/audio/speech", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ input: detail.respell || detail.text, response_format: "wav" }),
+      });
+      if (!speech.ok) {
+        const error = await speech.json().catch(() => ({}));
+        pronounceNote.textContent = t(
+          "studio.pronounceAudio",
+          "Pronunciation shown. Audio is unavailable: {reason}",
+          { reason: error.error || "install a voice first." },
+        );
+        return;
+      }
+      const audio = new Audio(URL.createObjectURL(await speech.blob()));
+      audio.addEventListener("ended", () => URL.revokeObjectURL(audio.src), { once: true });
+      await audio.play();
+      pronounceNote.textContent = t("studio.pronouncePlaying", "Playing {word}.", {
+        word: detail.word || text,
+      });
+    } catch (failure) {
+      pronounceNote.textContent =
+        failure.message ||
+        t(
+          "studio.pronounceFailed",
+          "The pronunciation could not be played. Check that Parlo is running.",
+        );
+    } finally {
+      pronounceRun.disabled = false;
+    }
+  });
+}
+
+const retentionDays = document.getElementById("retention-days");
+const retentionCheck = document.getElementById("retention-check");
+const retentionNote = document.getElementById("retention-note");
+const retentionResult = document.getElementById("retention-result");
+const retentionCount = document.getElementById("retention-count");
+const retentionDelete = document.getElementById("retention-delete");
+
+if (retentionCheck && retentionDays && retentionDelete) {
+  const check = async () => {
+    retentionCheck.disabled = true;
+    retentionNote.textContent = "Checking…";
+    try {
+      const response = await fetch("/retention?days=" + encodeURIComponent(retentionDays.value), {
+        cache: "no-store",
+        headers: { Authorization: "Bearer " + token },
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "The meetings could not be checked.");
+      }
+      const count = detail.count || 0;
+      const titles = (detail.meetings || [])
+        .slice(0, 3)
+        .map((meeting) => meeting.title)
+        .join(", ");
+      retentionResult.hidden = false;
+      retentionCount.textContent = count
+        ? count + " meeting(s) older than " + detail.days + " days" + (titles ? ": " + titles : ".")
+        : "No meetings are older than " + detail.days + " days.";
+      retentionDelete.hidden = count === 0;
+      retentionDelete.textContent = "Delete " + count + " meeting(s) permanently";
+      retentionNote.textContent = count
+        ? "Nothing has been deleted yet. Confirm below if the list is right."
+        : "Nothing to delete.";
+    } catch (failure) {
+      retentionNote.textContent = failure.message || "The meetings could not be checked.";
+    } finally {
+      retentionCheck.disabled = false;
+    }
+  };
+
+  retentionCheck.addEventListener("click", check);
+  retentionDelete.addEventListener("click", async () => {
+    retentionDelete.disabled = true;
+    retentionNote.textContent = "Deleting…";
+    try {
+      const response = await fetch("/retention", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ days: Number(retentionDays.value), apply: true }),
+      });
+      const detail = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(detail.error || "The meetings could not be deleted.");
+      }
+      retentionNote.textContent = detail.removed + " meeting(s) deleted.";
+      retentionResult.hidden = true;
+      await loadMeetings();
+    } catch (failure) {
+      retentionNote.textContent = failure.message || "The meetings could not be deleted.";
+    } finally {
+      retentionDelete.disabled = false;
+    }
+  });
 }
