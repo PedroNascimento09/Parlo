@@ -93,6 +93,8 @@ Nenhum dos dois substitui uma assinatura de código: o Windows continua a tratar
 
 **Gestores de pacotes.** winget, Homebrew, AUR, Snap, um pacote Debian, um AppImage e Nix têm cada um uma manifestação em [packaging](packaging/README.md) com o comando que instala. São receitas, não uma instalação testada: nenhum canal foi corrido de ponta a ponta da máquina que os escreveu, por isso cada um lá está marcado como parcial com o que ainda falta. Um Dockerfile na mesma pasta inicia o servidor de um recipiente, também parcial por nenhuma imagem ter sido construída aqui.
 
+**Aviso do Windows.** O instalador Windows não está assinado. Pode aparecer o aviso do SmartScreen na primeira descarga; isso é esperado para um instalador novo e não assinado, e não é uma afirmação de que o ficheiro é malicioso. Podes verificar o ficheiro que descarregaste com o SHA-256 do release e, se quiseres, consultar [Realidade da assinatura no Windows](docs/WINDOWS_SIGNING_REALITY.md).
+
 **macOS e Linux**, em qualquer terminal:
 
 ```bash
