@@ -183,9 +183,23 @@ Local mode makes no network calls. Audio is never written to disk unless you pas
 
 The Windows build is unsigned. SmartScreen may ask once on first download. That is the expected behaviour for a new, unsigned installer on Windows, and it is not a claim that the file is malicious. You can verify the file you downloaded with the release SHA-256, and if you want the longer version, see [Windows code-signing reality](docs/WINDOWS_SIGNING_REALITY.md).
 
-## Documents
+## Where to read next
 
-[Start here](docs/START.md) · [App guide](docs/APP.md) · [Interface](docs/UX.md) · [Architecture](docs/ARCHITECTURE.md) · [Engines](docs/ENGINES.md) · [Models](docs/MODEL_MANAGER.md) · [Model policy](docs/MODEL_POLICY.md) · [Plugins](docs/PLUGIN_DEVELOPMENT.md) · [Dubbing](docs/DUB.md) · [Benchmarks](docs/BENCHMARKS.md) · [Install](docs/INSTALL.md) · [Privacy](docs/PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
+- [Start here](docs/START.md)
+- [App guide](docs/APP.md)
+- [Interface](docs/UX.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Engines](docs/ENGINES.md)
+- [Models](docs/MODEL_MANAGER.md)
+- [Model policy](docs/MODEL_POLICY.md)
+- [Plugins](docs/PLUGIN_DEVELOPMENT.md)
+- [Dubbing](docs/DUB.md)
+- [Benchmarks](docs/BENCHMARKS.md)
+- [Install](docs/INSTALL.md)
+- [Privacy](docs/PRIVACY.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## License
 

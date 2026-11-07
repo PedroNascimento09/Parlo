@@ -4,6 +4,8 @@ Thanks for helping. Parlo is early, so the most valuable contributions right now
 
 If you are unsure whether something is worth opening, open it anyway. A bad issue is easier to fix than a good idea nobody told us about.
 
+Portuguese and English are both fine in issues and pull requests.
+
 ## Setup
 
 ```bash
@@ -67,7 +69,7 @@ Never paste code from a source you cannot cite. If a change follows another proj
 ## First contributions that actually help
 
 - Add a hardware report for a machine you own.
-- Translate the README into your language.
+- Translate an issue or a doc into Portuguese or English if it helps someone who cannot read the other language.
 - Test Parlo with a calling app we have not covered.
 - Improve an error message that confused you.
 - Reproduce a bug on a different machine and say what is different.

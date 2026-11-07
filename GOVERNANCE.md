@@ -2,13 +2,13 @@
 
 Parlo is maintained by its copyright holders and grows through community contributions. This page says who decides what, so nobody has to guess.
 
-Parlo is a personal project with a public process. That means the rules are written down, decisions are visible, and the project tries to say no in the open when it says no.
+Parlo is a personal project with a public process. That means the rules are written down, decisions are visible, and the project says no in the open when it says no.
 
 ## Roles
 
-- **Maintainers** merge changes, cut releases and speak for the project. Today that is the repository owner.
+- **Maintainers** merge changes, cut releases and speak for the project. Today that is the repository owner and one co-maintainer.
 - **Contributors** send patches under the [Developer Certificate of Origin](https://developercertificate.org/) and keep the copyright of what they write.
-- **Users** report bugs, measure hardware and translate the documentation.
+- **Users** report bugs, measure hardware and translate issues or docs when it helps someone who cannot read the other language.
 
 A contributor who lands several accepted changes is invited to review pull requests in the area they touched. Review is not authority: a maintainer merges.
 
