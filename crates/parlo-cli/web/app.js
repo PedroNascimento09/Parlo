@@ -1743,17 +1743,7 @@ function paintHome() {
       homeLast.classList.remove("empty");
       homeLast.hidden = false;
     } else {
-      homeLastLabel.textContent = t("home.nothing", "Nothing yet");
-      homeLastText.textContent = t(
-        "home.nothingText",
-        "Hold the shortcut, say a sentence, and the last one lands here.",
-      );
-      homeLastWhen.textContent = "";
-      homeLastApp.textContent = "";
-      homeLastApp.hidden = true;
-      homeLastDot.hidden = true;
-      homeLast.classList.add("empty");
-      homeLast.hidden = false;
+      homeLast.hidden = true;
     }
   }
 }
@@ -6004,7 +5994,7 @@ function matchesHistory(entry) {
 function paintInsights() {
   const wordsEl = document.getElementById("insights-words");
   const empty = historyEntries.length === 0;
-  for (const id of ["insights-bars", "insights-empty"]) {
+  for (const id of ["insights-bars", "insights-empty", "insights-numbers"]) {
     const node = document.getElementById(id);
     if (node) {
       node.hidden = id === "insights-empty" ? !empty : empty;
@@ -7595,16 +7585,18 @@ function paintStyleTrigger(chosen) {
     return;
   }
   if (!chosen) {
-    styleOpenName.textContent = t("style.title", "Writing style");
-    styleOpenSub.textContent = t(
+    styleOpenName.textContent = t(
       "style.note",
       "Shapes the punctuation everywhere you dictate.",
     );
+    styleOpenSub.textContent = "";
+    styleOpenSub.hidden = true;
     return;
   }
   const [nameKey, subKey] = STYLE_TEXT[chosen];
   styleOpenName.textContent = t(nameKey, "");
   styleOpenSub.textContent = t(subKey, "");
+  styleOpenSub.hidden = false;
 }
 
 function openStyleSheet() {
