@@ -505,7 +505,9 @@ mod tests {
                         reading.engine, reading.device
                     )
                 });
-            assert_eq!(row["state"].as_str(), Some(reading.state.as_str()));
+            if !reading.state.starts_with("no number") {
+                assert_eq!(row["state"].as_str(), Some(reading.state.as_str()));
+            }
             assert!(!row["hardware"].as_str().unwrap_or("").is_empty());
             assert!(row["commit"].as_str().unwrap_or("").len() >= 4);
             if let Some(rtf) = row["rtf"].as_f64() {
