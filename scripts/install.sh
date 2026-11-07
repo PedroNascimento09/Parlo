@@ -35,6 +35,27 @@ archive="${TMPDIR:-/tmp}/$asset"
 echo "Downloading $asset..."
 curl -fL --retry 2 --progress-bar "$url" -o "$archive"
 
+sums="${archive}.sums"
+curl -fsSL "https://github.com/PedroNascimento09/Parlo/releases/latest/download/SHA256SUMS.txt" -o "$sums" \
+    || { rm -f "$archive"; echo "The published hashes could not be downloaded, so nothing was verified or installed." >&2; exit 1; }
+expected="$(awk -v name="$asset" '$2 == name || $2 == "*" name { print tolower($1); exit }' "$sums")"
+rm -f "$sums"
+if [ -z "$expected" ]; then
+    rm -f "$archive"
+    echo "The release publishes no hash for $asset, so nothing was installed." >&2
+    exit 1
+fi
+if command -v sha256sum >/dev/null; then
+    actual="$(sha256sum "$archive" | awk '{ print tolower($1) }')"
+else
+    actual="$(shasum -a 256 "$archive" | awk '{ print tolower($1) }')"
+fi
+if [ "$actual" != "$expected" ]; then
+    rm -f "$archive"
+    echo "The download does not match the published hash. Nothing was installed; run this again." >&2
+    exit 1
+fi
+
 rm -rf "$dest"
 mkdir -p "$dest"
 tar -xzf "$archive" -C "$dest"
