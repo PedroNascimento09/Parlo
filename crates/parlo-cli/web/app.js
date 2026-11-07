@@ -8219,3 +8219,248 @@ if (retentionCheck && retentionDays && retentionDelete) {
     }
   });
 }
+
+const toolsInputs = document.getElementById("tools-inputs");
+const toolsOutputs = document.getElementById("tools-outputs");
+const toolsMic = document.getElementById("tools-mic");
+const toolsProfile = document.getElementById("tools-profile");
+const toolsEngineList = document.getElementById("tools-engine-list");
+const toolsHardware = document.getElementById("tools-hardware");
+const toolsModelsPath = document.getElementById("tools-models-path");
+const toolsMcp = document.getElementById("tools-mcp");
+const toolsRecordNote = document.getElementById("tools-record-note");
+const toolsSayNote = document.getElementById("tools-say-note");
+const toolsJobNote = document.getElementById("tools-job-note");
+const toolsJobList = document.getElementById("tools-job-list");
+let toolsSnapshot = null;
+
+function toolsFetch(path, method, payload) {
+  const options = { method: method || "GET", headers: { Authorization: "Bearer " + token } };
+  if (payload) {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(payload);
+  }
+  return fetch(path, options).then((response) =>
+    response.json().then((value) => {
+      if (!response.ok) {
+        throw new Error(value.error || response.statusText);
+      }
+      return value;
+    }),
+  );
+}
+
+function paintEngines(snapshot) {
+  if (!toolsProfile || !toolsEngineList) {
+    return;
+  }
+  const profile = snapshot.profile;
+  toolsProfile.textContent = t("text.Profile {profile}, {cores} cores, {gpu}", "", {
+    profile: profile.label,
+    cores: profile.cores,
+    gpu: profile.gpu_mb ? profile.gpu_mb + " MB gpu" : "no gpu",
+  });
+  toolsEngineList.replaceChildren(
+    ...snapshot.engines.map((engine) =>
+      mediaRow({
+        text: engine.name + " · " + engine.id,
+        state: engine.default ? t("text.Default", "Default") : engine.state,
+        extra: [document.createTextNode(engine.hardware + " · " + engine.license)],
+      }),
+    ),
+  );
+}
+
+function paintTools(snapshot) {
+  toolsSnapshot = snapshot;
+  if (toolsInputs) {
+    toolsInputs.textContent =
+      t("text.Input devices", "") + ": " + (snapshot.inputs.length ? snapshot.inputs.join(", ") : "–");
+  }
+  if (toolsOutputs) {
+    toolsOutputs.textContent =
+      t("text.Output devices", "") + ": " + (snapshot.outputs.length ? snapshot.outputs.join(", ") : "–");
+  }
+  if (toolsMic) {
+    toolsMic.textContent = snapshot.microphone;
+  }
+  if (toolsHardware) {
+    toolsHardware.textContent =
+      snapshot.hardware.threads + " threads · " +
+      Math.round(snapshot.hardware.memory_mb / 1024) + " GB · " +
+      snapshot.hardware.free_disk_mb + " MB free";
+  }
+  if (toolsModelsPath) {
+    toolsModelsPath.textContent = snapshot.models;
+  }
+  if (toolsMcp) {
+    toolsMcp.textContent = snapshot.mcp.command + " " + snapshot.mcp.args.join(" ");
+  }
+  paintEngines(snapshot);
+}
+
+function loadTools() {
+  return toolsFetch("/tools/snapshot")
+    .then(paintTools)
+    .catch((error) => {
+      if (toolsMic) {
+        toolsMic.textContent = t("text.The tools could not be read.", "") + " " + error.message;
+      }
+    });
+}
+
+function watchRecord(id) {
+  toolsFetch("/tools/job?id=" + encodeURIComponent(id))
+    .then((state) => {
+      if (state.state === "running") {
+        setTimeout(() => watchRecord(id), 600);
+        return;
+      }
+      if (state.error) {
+        toolsRecordNote.textContent = state.error;
+        return;
+      }
+      const result = JSON.parse(state.result || "{}");
+      const line = t("text.{seconds} s at {rate} Hz, peak {peak} dBFS", "", {
+        seconds: result.seconds,
+        rate: result.rate,
+        peak: result.peak_db,
+      });
+      toolsRecordNote.textContent = result.quiet
+        ? line + " · " + t("text.The microphone captured almost nothing.", "")
+        : line;
+    })
+    .catch((error) => {
+      toolsRecordNote.textContent = error.message;
+    });
+}
+
+function megabytes(bytes) {
+  return (bytes / 1048576).toFixed(1);
+}
+
+function benchCard(payload) {
+  const rows = payload.rows || [];
+  return mediaCard({
+    title: t("text.Benchmark", ""),
+    meta: rows.length + " · " + (payload.audio_seconds || 0) + " s",
+    body: rows.map((row) =>
+      mediaRow({
+        text: row.engine + " · " + row.device,
+        state: row.rtf ? "RTF " + row.rtf.toFixed(3) : row.state,
+        extra: [document.createTextNode(row.frames + " · " + row.hardware)],
+      }),
+    ),
+  });
+}
+
+function soakCard(payload) {
+  const memory = payload.memory_bytes || [];
+  const first = memory.length ? megabytes(memory[0]) : "–";
+  const peak = memory.length ? megabytes(Math.max(...memory)) : "–";
+  return mediaCard({
+    title: t("text.Memory over {seconds} s", "", { seconds: payload.seconds }),
+    meta: memory.length + " × " + payload.interval + " s",
+    body: [
+      mediaRow({ text: t("text.First sample", ""), state: first + " MB" }),
+      mediaRow({ text: t("text.Peak", ""), state: peak + " MB" }),
+      mediaRow({
+        text: t("text.Sessions", ""),
+        state: payload.sessions + " · " + payload.crashed,
+      }),
+    ],
+  });
+}
+
+function watchJob(id, kind) {
+  toolsFetch("/tools/job?id=" + encodeURIComponent(id))
+    .then((job) => {
+      if (job.state === "running") {
+        setTimeout(() => watchJob(id, kind), 1200);
+        return;
+      }
+      if (job.error) {
+        toolsJobNote.textContent = job.error;
+        return;
+      }
+      toolsJobNote.textContent = "";
+      const parsed = JSON.parse(job.result || "{}");
+      toolsJobList.replaceChildren(kind === "bench" ? benchCard(parsed) : soakCard(parsed));
+    })
+    .catch((error) => {
+      toolsJobNote.textContent = error.message;
+    });
+}
+
+function runJob(kind, seconds) {
+  toolsJobNote.textContent = t("text.Running…", "");
+  toolsJobList.replaceChildren();
+  toolsFetch("/tools/job", "POST", { kind, seconds })
+    .then((job) => watchJob(job.id, kind))
+    .catch((error) => {
+      toolsJobNote.textContent = error.message;
+    });
+}
+
+if (document.getElementById("tools-mic-check")) {
+  document.getElementById("tools-mic-check").addEventListener("click", loadTools);
+}
+
+if (document.getElementById("tools-listen")) {
+  document.getElementById("tools-listen").addEventListener("click", () => {
+    const live = document.getElementById("home-live");
+    if (live) {
+      live.click();
+    }
+  });
+}
+
+if (document.getElementById("tools-record")) {
+  document.getElementById("tools-record").addEventListener("click", () => {
+    toolsRecordNote.textContent = t("text.Running…", "");
+    toolsFetch("/tools/record", "POST", { seconds: 3 })
+      .then((job) => watchRecord(job.id))
+      .catch((error) => {
+        toolsRecordNote.textContent = error.message;
+      });
+  });
+}
+
+if (document.getElementById("tools-say-run")) {
+  document.getElementById("tools-say-run").addEventListener("click", () => {
+    const field = document.getElementById("tools-say");
+    toolsFetch("/tools/pronounce", "POST", { text: field.value })
+      .then((result) => {
+        const known = result.known
+          ? t("text.Known dictionary word", "")
+          : t("text.Not in the dictionary", "");
+        toolsSayNote.textContent =
+          result.spoken + (result.ipa ? " · " + result.ipa : "") + " · " + known;
+      })
+      .catch((error) => {
+        toolsSayNote.textContent = error.message;
+      });
+  });
+}
+
+if (document.getElementById("tools-mcp-copy")) {
+  document.getElementById("tools-mcp-copy").addEventListener("click", () => {
+    if (!toolsSnapshot) {
+      return;
+    }
+    const command = toolsSnapshot.mcp.command + " " + toolsSnapshot.mcp.args.join(" ");
+    navigator.clipboard.writeText(command).then(() => {
+      document.getElementById("tools-copy-note").textContent = t("text.Copied.", "");
+    });
+  });
+}
+
+if (document.getElementById("tools-bench")) {
+  document.getElementById("tools-bench").addEventListener("click", () => runJob("bench", 0));
+}
+
+if (document.getElementById("tools-soak")) {
+  document.getElementById("tools-soak").addEventListener("click", () => runJob("soak", 20));
+}
+
+loadTools();

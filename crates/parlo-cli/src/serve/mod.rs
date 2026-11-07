@@ -31,6 +31,7 @@ mod multipart;
 mod routes;
 pub(crate) mod sse;
 mod ticket;
+mod tools;
 mod ws;
 use auth::authorised;
 pub use auth::new_token;
@@ -4790,6 +4791,12 @@ fn handle(
         })
         .to_string();
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if let Some((status, payload)) =
+        tools::handle(method, path, query, &body, authorised(&headers, token))
+    {
+        return respond_json(stream, status, &payload).map(|()| Flow::Serve);
     }
 
     if path == "/health" {

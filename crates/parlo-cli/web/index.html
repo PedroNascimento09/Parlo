@@ -328,6 +328,13 @@ try {
     <h3 class="meeting-group" data-i18n="insights.weeks">The last four weeks</h3>
     <div class="insights-days" id="insights-days" aria-hidden="true"></div>
     <p class="settings-note" id="insights-days-note"></p>
+    <h3 class="meeting-group" data-i18n="text.Benchmark and memory">Benchmark and memory</h3>
+    <div class="tool-actions">
+      <button id="tools-bench" class="swap" type="button" data-i18n="text.Run the benchmark">Run the benchmark</button>
+      <button id="tools-soak" class="swap" type="button" data-i18n="text.Run a 20 second soak">Run a 20 second soak</button>
+    </div>
+    <p class="settings-note" id="tools-job-note" aria-live="polite"></p>
+    <div class="media-list" id="tools-job-list"></div>
   </section>
 
   <div class="settings-layout" id="settings-layout">
@@ -387,6 +394,20 @@ try {
       </label>
     </div>
     <p class="settings-note" id="features-note" aria-live="polite"></p>
+    <div class="settings-row">
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="text.Microphone check">Microphone check</span>
+        <p class="settings-note" id="tools-inputs"></p>
+        <p class="settings-note" id="tools-outputs"></p>
+        <p class="settings-note" id="tools-mic"></p>
+        <div class="tool-actions">
+          <button id="tools-mic-check" class="swap" type="button" data-i18n="text.Check devices">Check devices</button>
+          <button id="tools-record" class="swap" type="button" data-i18n="text.Record 3 seconds">Record 3 seconds</button>
+          <button id="tools-listen" class="swap" type="button" data-i18n="text.Open the listen window">Open the listen window</button>
+        </div>
+        <p class="settings-note" id="tools-record-note" aria-live="polite"></p>
+      </div>
+    </div>
     <div class="settings-row">
       <div class="field field-wide">
         <span class="field-label" data-i18n="style.title">Writing style</span>
@@ -593,6 +614,14 @@ try {
       <button id="vocabulary-import" class="swap" type="button" data-i18n="text.Load a list">Load a list</button>
       <input id="vocabulary-file" type="file" accept=".tsv,.txt,text/tab-separated-values,text/plain" hidden>
     </div>
+    <div class="settings-row">
+      <label class="field field-wide" for="tools-say">
+        <span class="field-label" data-i18n="text.How a name is spoken">How a name is spoken</span>
+        <input id="tools-say" class="field-input" type="text" maxlength="240" autocomplete="off" spellcheck="false" placeholder="Parlo">
+      </label>
+      <button id="tools-say-run" class="swap" type="button" data-i18n="text.Respell it">Respell it</button>
+      <p class="settings-note field-wide" id="tools-say-note" aria-live="polite"></p>
+    </div>
   </section>
 <section class="settings" id="models" aria-labelledby="models-title">
     <div class="models-head">
@@ -615,6 +644,13 @@ try {
       <button id="models-move" class="install quiet" type="button" data-i18n="text.Move the models">Move the models</button>
     </div>
     <p class="settings-note" id="models-move-note" aria-live="polite"></p>
+    <div class="settings-row">
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="text.Engines on this computer">Engines on this computer</span>
+        <p class="settings-note" id="tools-profile"></p>
+      </div>
+    </div>
+    <div class="media-list" id="tools-engine-list"></div>
   </section>
 <section class="settings" id="catalog" aria-labelledby="catalog-title">
     <div class="settings-head">
@@ -685,6 +721,18 @@ try {
       </label>
     </div>
     <button id="cleanup-apply" class="install settings-apply" type="button" data-i18n="text.Apply">Apply</button>
+    <div class="settings-row">
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="text.Diagnostics">Diagnostics</span>
+        <p class="settings-note" id="tools-hardware"></p>
+        <p class="settings-note" id="tools-models-path"></p>
+        <p class="settings-note mono" id="tools-mcp"></p>
+        <div class="tool-actions">
+          <button id="tools-mcp-copy" class="swap" type="button" data-i18n="text.Copy">Copy</button>
+        </div>
+        <p class="settings-note" id="tools-copy-note" aria-live="polite"></p>
+      </div>
+    </div>
   </section>
 
   <section class="settings" id="provider" aria-labelledby="provider-title">

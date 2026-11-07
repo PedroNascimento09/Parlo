@@ -28,7 +28,12 @@ fn millis() -> u128 {
 fn field(body: &[u8], name: &str) -> String {
     serde_json::from_slice::<serde_json::Value>(body)
         .ok()
-        .and_then(|value| value.get(name).and_then(|inner| inner.as_str()).map(str::to_string))
+        .and_then(|value| {
+            value
+                .get(name)
+                .and_then(|inner| inner.as_str())
+                .map(str::to_string)
+        })
         .unwrap_or_default()
 }
 
@@ -133,7 +138,11 @@ fn record_body(body: &[u8]) -> Result<String, String> {
     let seconds = seconds_field(body, 3).min(15);
     let recording = crate::record::capture(seconds as f32, None)?;
     let level = peak(&recording.samples);
-    let decibels = if level > 0.0 { 20.0 * f64::from(level).log10() } else { -120.0 };
+    let decibels = if level > 0.0 {
+        20.0 * f64::from(level).log10()
+    } else {
+        -120.0
+    };
     let rate = recording.format.sample_rate();
     let duration = recording.samples.len() as f32 / rate as f32;
     let path = std::env::temp_dir().join(format!("parlo-tool-record-{}.wav", millis()));
@@ -157,14 +166,17 @@ fn record_body(body: &[u8]) -> Result<String, String> {
 
 fn start_record_job(seconds: u64) -> Result<String, String> {
     let id = format!("record-{}", millis());
-    jobs().lock().map_err(|_| "jobs are unavailable".to_string())?.insert(
-        id.clone(),
-        Job {
-            state: "running".to_string(),
-            result: String::new(),
-            error: String::new(),
-        },
-    );
+    jobs()
+        .lock()
+        .map_err(|_| "jobs are unavailable".to_string())?
+        .insert(
+            id.clone(),
+            Job {
+                state: "running".to_string(),
+                result: String::new(),
+                error: String::new(),
+            },
+        );
     let key = id.clone();
     std::thread::spawn(move || {
         let body = serde_json::json!({ "seconds": seconds }).to_string();
@@ -204,28 +216,34 @@ fn start_job(kind: &str, seconds: u64) -> Result<String, String> {
         other => return Err(format!("{other} is not a job this window runs")),
     }
     let id = format!("{kind}-{}", millis());
-    jobs().lock().map_err(|_| "jobs are unavailable".to_string())?.insert(
-        id.clone(),
-        Job {
-            state: "running".to_string(),
-            result: String::new(),
-            error: String::new(),
-        },
-    );
+    jobs()
+        .lock()
+        .map_err(|_| "jobs are unavailable".to_string())?
+        .insert(
+            id.clone(),
+            Job {
+                state: "running".to_string(),
+                result: String::new(),
+                error: String::new(),
+            },
+        );
     let key = id.clone();
     std::thread::spawn(move || {
-        let outcome = command.output().map_err(|error| error.to_string()).and_then(|output| {
-            if output.status.success() {
-                Ok(String::from_utf8_lossy(&output.stdout).to_string())
-            } else {
-                let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-                Err(if stderr.is_empty() {
-                    format!("the run stopped with {}", output.status)
+        let outcome = command
+            .output()
+            .map_err(|error| error.to_string())
+            .and_then(|output| {
+                if output.status.success() {
+                    Ok(String::from_utf8_lossy(&output.stdout).to_string())
                 } else {
-                    stderr
-                })
-            }
-        });
+                    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+                    Err(if stderr.is_empty() {
+                        format!("the run stopped with {}", output.status)
+                    } else {
+                        stderr
+                    })
+                }
+            });
         let mut result = outcome.unwrap_or_default();
         if result.trim().is_empty() && report.is_file() {
             result = std::fs::read_to_string(&report).unwrap_or_default();
@@ -274,7 +292,10 @@ pub fn handle(
         return None;
     }
     if !allowed {
-        return Some(("401 Unauthorized", "{\"error\":\"wrong token\"}".to_string()));
+        return Some((
+            "401 Unauthorized",
+            "{\"error\":\"wrong token\"}".to_string(),
+        ));
     }
     let outcome = match (method, path) {
         ("GET", "/tools/snapshot") => Ok(snapshot()),
@@ -303,7 +324,16 @@ mod tests {
     #[test]
     fn the_snapshot_carries_what_every_tool_panel_reads() {
         let value: serde_json::Value = serde_json::from_str(&snapshot()).unwrap();
-        for key in ["hardware", "profile", "engines", "inputs", "outputs", "microphone", "pronounce", "mcp"] {
+        for key in [
+            "hardware",
+            "profile",
+            "engines",
+            "inputs",
+            "outputs",
+            "microphone",
+            "pronounce",
+            "mcp",
+        ] {
             assert!(value.get(key).is_some(), "{key} is missing");
         }
         assert!(value["hardware"]["threads"].as_u64().unwrap() >= 1);
