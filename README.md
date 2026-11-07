@@ -19,10 +19,6 @@ Parlo is a desktop program that turns speech into text without sending anything 
 
 If you want the shortest path into it, use the installer below. If you want to support the project, the short version is at the bottom, in two lines.
 
-O Parlo é um programa de computador que transforma a fala em escrita sem enviar nada para fora. Pressionas um atalho, falas, e a frase aparece no campo onde já estavas a escrever, limpa, e traduzida se pedires outra língua. Tudo acontece no teu computador. Nenhuma conta, nenhuma telemetria, nenhum áudio enviado.
-
-Se o que tu querias era uma forma simples de instalar, este é o lugar: abre o instalador, abre o Parlo, e em cinco minutos ou menos tens o reconhecedor pronto e a tua primeira frase dita. Se o que tu querias era apoiar o projecto, a parte de baixo diz como, em duas linhas.
-
 ## Install
 
 **Windows, from the terminal:**
@@ -33,25 +29,25 @@ irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/insta
 
 That downloads the same content as the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. Same app, one command.
 
-Se o Windows disser *Windows protected your PC*, escolhe **More info**, depois **Run anyway**. O ficheiro não está assinado, por isso isso pode aparecer uma vez.
+If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
 
-**macOS e Linux:**
+**macOS and Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
 ```
 
-**Download pelo navegador, se preferires:**
+**Download from a browser, if you prefer:**
 
 1. [Download the latest release](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe).
-2. Duplica-clique em `Parlo-Setup.exe`.
-3. Se o Windows disser *Windows protected your PC*, escolhe **More info**, depois **Run anyway**.
+2. Double-click `Parlo-Setup.exe`.
+3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**.
 
-**Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage e Nix têm cada um um manifest em [packaging](packaging/README.md) com o comando de install. Esses são receitas, não installs testados: nenhuma canal foi corrido de ponta a ponta pela máquina que escreveu os manifests, e cada um está marcado como parcial com o que falta.
+**Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the install command. Those are recipes, not fully tested installs: no channel has been run end to end by the machine that wrote the manifests, and each one is marked partial there with what is still missing.
 
-O instalador é pequeno porque separa o programa do peso. O programa instala num fraction de segundo; o reconhecedor é um download separado de cerca de 640 MB, oferecido à primeira vez que usas a app, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas e cada uma mostra o modelo e o tamanho antes de mais nada se mover. Depois, a máquina pode estar offline. `parlo install` e `parlo uninstall` fazem o mesmo do terminal, e o uninstall mantém os teus modelos a menos que adicionares `--purge`.
+The installer is light because it keeps the program separate from the heavy part. The program installs in a fraction of a second; the recogniser is a separate download of about 640 MB, offered the first time you use the app, and nothing else is downloaded until you press its button. Translation, read-aloud and captions are separate keys, and each one names the model and its size before anything moves. After that, the machine can be offline. `parlo install` and `parlo uninstall` do the same thing from a terminal, and uninstall keeps your models unless you add `--purge`.
 
-A primeira execução pode levar uns 20 segundos a carregar o motor. A janela diz isso em vez de parecer presa.
+The first start can take around twenty seconds while the engine loads. The window says so instead of looking stuck.
 
 
 Each release carries a `SHA256SUMS.txt` with the hash of every file and a build provenance record that names the workflow, commit and repository that produced it.
