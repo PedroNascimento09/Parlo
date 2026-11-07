@@ -454,14 +454,6 @@ select.field-input {
 }
 
 .tabs,
-.settings-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 24px;
-  padding-bottom: 0;
-  border-bottom: 1px solid var(--line);
-}
 
 .tab {
   margin-bottom: -1px;
@@ -511,6 +503,24 @@ select.field-input {
 .meeting-import > *:not(summary) {
   margin-top: 14px;
 }
+
+.library {
+  display: grid;
+  gap: 24px;
+}
+
+.library-tabs {
+  margin: 0;
+}
+
+.library > .library-panel {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
 
 .status {
   display: grid;
@@ -1249,9 +1259,6 @@ select.field-input {
   width: 100%;
 }
 
-.settings-nav {
-  margin-bottom: 24px;
-}
 
 #languages > .settings-row {
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) minmax(0, 1fr);

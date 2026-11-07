@@ -5,18 +5,20 @@
     root.ParloRoutes = factory();
   }
 })(typeof globalThis === "object" ? globalThis : this, function () {
-  const ROUTES = ["home", "meetings", "voice", "library", "insights", "settings"];
-  const LIBRARY_TABS = ["history", "models", "vocabulary", "files", "batch", "stories"];
-  const SETTINGS_TABS = ["you", "language", "dictation", "languages", "shortcuts", "advanced"];
+  const ROUTES = ["home", "library", "voice", "insights", "settings"];
+  const LIBRARY_TABS = ["meetings", "files", "batch", "stories", "history"];
+  const SETTINGS_TABS = ["you", "languages", "dictation", "models", "shortcuts", "advanced"];
+  const ALIASES = { meetings: "library/meetings" };
 
   function parseHash(hash) {
-    const raw = String(hash || "#home").replace(/^#/, "");
+    let raw = String(hash || "#home").replace(/^#/, "");
+    raw = ALIASES[raw] || raw;
     const slash = raw.indexOf("/");
     const name = slash === -1 ? raw : raw.slice(0, slash);
     const tab = slash === -1 ? "" : raw.slice(slash + 1);
     const route = ROUTES.includes(name) ? name : "home";
     const libraryTab =
-      route === "library" && LIBRARY_TABS.includes(tab) ? tab : "history";
+      route === "library" && LIBRARY_TABS.includes(tab) ? tab : "meetings";
     const settingsTab =
       route === "settings" && SETTINGS_TABS.includes(tab) ? tab : "dictation";
     const canonical =
@@ -28,5 +30,5 @@
     return { route, tab, libraryTab, settingsTab, canonical };
   }
 
-  return { ROUTES, LIBRARY_TABS, SETTINGS_TABS, parseHash };
+  return { ROUTES, LIBRARY_TABS, SETTINGS_TABS, ALIASES, parseHash };
 });

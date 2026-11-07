@@ -72,11 +72,10 @@
   </div>
   <nav class="rail" aria-label="Sections" data-i18n-aria-label="nav.sections">
     <a href="#home" data-route="home" aria-keyshortcuts="Alt+1" data-i18n="nav.home">Home</a>
-    <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2" data-i18n="nav.meetings">Meetings</a>
+    <a href="#library" data-route="library" aria-keyshortcuts="Alt+2" data-i18n="nav.library">Library</a>
     <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3" data-i18n="nav.voice">Voice</a>
-    <a href="#library" data-route="library" aria-keyshortcuts="Alt+4" data-i18n="nav.library">Library</a>
-    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+5" data-i18n="nav.insights">Insights</a>
-    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6" data-i18n="nav.settings">Settings</a>
+    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+4" data-i18n="nav.insights">Insights</a>
+    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5" data-i18n="nav.settings">Settings</a>
   </nav>
   <span class="version" id="status-version"></span>
 </header>
@@ -192,7 +191,6 @@
   </div>
 </section>
 
-
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title" data-i18n="welcome.title">Speak once. Be heard.</h1>
     <p class="welcome-lede"><span data-i18n="welcome.hold">Hold</span> <kbd id="welcome-key">Ctrl+Alt+D</kbd><span data-i18n="welcome.rest">, say a sentence, and let go. It lands where the cursor is, and nothing leaves this computer.</span></p>
@@ -206,7 +204,6 @@
     </div>
     <p class="progress welcome-status" id="welcome-status" aria-live="polite" hidden></p>
   </section>
-
 
   <section class="stage home" id="status-list" aria-labelledby="home-greeting">
     <header class="home-hero">
@@ -298,30 +295,15 @@
   </section>
 
   <div class="settings-layout" id="settings-layout">
-<nav class="settings-nav" id="settings-tabs" role="tablist" aria-label="Settings" data-i18n-aria-label="nav.settingsTabs">
+<nav class="tabs" id="settings-tabs" role="tablist" aria-label="Settings" data-i18n-aria-label="nav.settingsTabs">
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="you" data-i18n="settings.tabs.you">You</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="language" data-i18n="settings.tabs.language">Language</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="dictation" data-i18n="settings.tabs.dictation">Dictation</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="languages" data-i18n="settings.tabs.languages">Languages</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="dictation" data-i18n="settings.tabs.dictation">Dictation</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="models" data-i18n="text.Models">Models</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="shortcuts" data-i18n="settings.tabs.shortcuts">Shortcuts</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="advanced" data-i18n="settings.tabs.advanced">Advanced</button>
   </nav>
   <div class="settings-panes">
-  <section class="settings" id="language" aria-labelledby="language-title">
-    <div class="settings-head">
-      <h2 id="language-title" data-i18n="settings.languageTitle">Language</h2>
-      <p class="settings-note" data-i18n="settings.languageNote">English is the default. The interface and the microphone overlay follow it.</p>
-    </div>
-    <div class="settings-row">
-      <label class="field" for="settings-locale">
-        <span class="field-label" data-i18n="settings.language">Interface language</span>
-        <select id="settings-locale" class="field-input"></select>
-      </label>
-      <button id="settings-locale-save" class="install" type="button" data-i18n="settings.saveLanguage">Save language</button>
-      <p class="settings-note field-wide" id="locale-note" aria-live="polite" data-i18n="settings.languageHint">The interface switches as soon as you save.</p>
-      <p class="settings-note field-wide" id="locale-recommendation" aria-live="polite"></p>
-    </div>
-  </section>
 
   <section class="settings" id="you" aria-labelledby="you-title">
     <div class="settings-head">
@@ -481,9 +463,9 @@
     <p class="settings-note" id="programs-empty" data-i18n="text.No program has a style of its own yet." hidden>No program has a style of its own yet.</p>
   </section>
 
-  <section class="settings" id="languages" aria-labelledby="languages-title">
+<section class="settings" id="languages" aria-labelledby="languages-title">
     <div class="settings-head">
-      <h2 id="languages-title" data-i18n="text.The two languages">The two languages</h2>
+      <h2 id="languages-title" data-i18n="settings.tabs.languages">Languages</h2>
       <p class="settings-note" data-i18n="text.Changing the pair loads the models again, which takes about twenty seconds.">Changing the pair loads the models again, which takes about twenty seconds.</p>
     </div>
     <div class="settings-row">
@@ -503,8 +485,86 @@
         </select>
       </label>
     </div>
+      <div class="settings-row">
+      <label class="field" for="settings-locale">
+        <span class="field-label" data-i18n="settings.language">Interface language</span>
+        <select id="settings-locale" class="field-input"></select>
+      </label>
+      <button id="settings-locale-save" class="install" type="button" data-i18n="settings.saveLanguage">Save language</button>
+      <p class="settings-note field-wide" id="locale-note" aria-live="polite" data-i18n="settings.languageHint">The interface switches as soon as you save.</p>
+      <p class="settings-note field-wide" id="locale-recommendation" aria-live="polite"></p>
+    </div>
+  
   </section>
-
+<section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
+    <div class="settings-head">
+      <h2 id="vocabulary-title" data-i18n="library.title">Words and snippets Parlo should know</h2>
+      <p class="settings-note" id="vocabulary-note" aria-live="polite" data-i18n="text.Names and short forms stay on this computer and are applied before any model reads the sentence.">Names and short forms stay on this computer and are applied before any model reads the sentence.</p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="vocabulary-kind">
+        <span class="field-label" data-i18n="text.Kind">Kind</span>
+        <select id="vocabulary-kind" class="field-input">
+          <option value="term" data-i18n="text.A name or a term">A name or a term</option>
+          <option value="abbreviation" data-i18n="text.A short form I say">A short form I say</option>
+          <option value="snippet" data-i18n="text.A snippet I say">A snippet I say</option>
+        </select>
+      </label>
+      <label class="field" for="vocabulary-wrong">
+        <span class="field-label" data-i18n="text.What Parlo hears">What Parlo hears</span>
+        <input id="vocabulary-wrong" class="field-input" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="parlo">
+      </label>
+      <label class="field field-wide" for="vocabulary-right">
+        <span class="field-label" data-i18n="text.What it should write">What it should write</span>
+        <input id="vocabulary-right" class="field-input" type="text" maxlength="240" autocomplete="off" spellcheck="false" placeholder="Parlo">
+      </label>
+      <div class="preset-row field-wide" role="group" aria-label="Snippet examples">
+        <button class="preset" type="button" data-wrong="my linkedin" data-right="https://www.linkedin.com/in/example" data-i18n="text.My LinkedIn">My LinkedIn</button>
+        <button class="preset" type="button" data-wrong="my channel" data-right="https://www.youtube.com/@example" data-i18n="text.My channel">My channel</button>
+        <button class="preset" type="button" data-wrong="my calendar" data-right="https://cal.com/example" data-i18n="text.My calendar">My calendar</button>
+        <button class="preset" type="button" data-wrong="my sign off" data-right="Best, {{name}}" data-i18n="text.My sign off">My sign off</button>
+      </div>
+      <p class="settings-note field-wide" id="vocabulary-hint">A snippet is a phrase that becomes a longer piece of text: say "my channel" and Parlo writes https://www.youtube.com/@example.</p>
+      <button id="vocabulary-add" class="install" type="button" data-i18n="text.Add">Add</button>
+    </div>
+    <dl class="status" id="vocabulary-list"></dl>
+    <div class="settings-row" id="vocabulary-tools">
+      <button id="vocabulary-export" class="swap" type="button" data-i18n="text.Save the list">Save the list</button>
+      <button id="vocabulary-import" class="swap" type="button" data-i18n="text.Load a list">Load a list</button>
+      <input id="vocabulary-file" type="file" accept=".tsv,.txt,text/tab-separated-values,text/plain" hidden>
+    </div>
+  </section>
+<section class="settings" id="models" aria-labelledby="models-title">
+    <div class="models-head">
+      <h2 id="models-title" data-i18n="text.Models">Models</h2>
+      <p class="models-note" id="models-note" aria-live="polite"></p>
+    </div>
+    <ul class="models-list" id="models-list"></ul>
+    <div class="models-progress" id="models-progress" hidden>
+      <div class="models-bar"><span id="models-fill"></span></div>
+      <p class="models-progress-note" id="models-progress-note" aria-live="polite"></p>
+    </div>
+    <button id="models-install" class="install models-install" type="button" hidden data-i18n="text.Download models">Download models</button>
+    <button id="models-dictation" class="install models-install quiet" type="button" hidden data-i18n="text.Only what dictation needs">Only what dictation needs</button>
+    <button id="models-cancel" class="install models-install quiet" type="button" hidden data-i18n="text.Stop the download">Stop the download</button>
+    <div class="settings-row">
+      <label class="field field-wide" for="models-folder">
+        <span class="field-label" data-i18n="text.Keep the models in this folder">Keep the models in this folder</span>
+        <input id="models-folder" class="field-input" type="text" autocomplete="off" spellcheck="false" placeholder="D:/Parlo models">
+      </label>
+      <button id="models-move" class="install quiet" type="button" data-i18n="text.Move the models">Move the models</button>
+    </div>
+    <p class="settings-note" id="models-move-note" aria-live="polite"></p>
+  </section>
+<section class="settings" id="catalog" aria-labelledby="catalog-title">
+    <div class="settings-head">
+      <h2 id="catalog-title" data-i18n="text.Model library">Model library</h2>
+      <p class="settings-note" id="catalog-note" aria-live="polite" data-i18n="text.Everything this build can run.">Everything this build can run.</p>
+    </div>
+    <div class="catalog-recommend" id="catalog-recommend" hidden></div>
+    <div class="catalog-tabs" id="catalog-tabs" role="tablist" aria-label="Model categories"></div>
+    <div id="catalog-list" class="catalog-grid"></div>
+  </section>
   <section class="settings" id="shortcuts" aria-labelledby="shortcuts-title">
     <div class="settings-head">
       <h2 id="shortcuts-title" data-i18n="text.The keys">The keys</h2>
@@ -635,8 +695,6 @@
     </div>
   </section>
 
-  
-
   </div>
 </div>
 
@@ -645,55 +703,18 @@
     <button id="settings-apply" class="install settings-apply" type="button" disabled data-i18n="settings.apply">Apply</button>
   </div>
 
-  <nav class="tabs" id="library-tabs" role="tablist" aria-label="Library" data-i18n-aria-label="nav.libraryTabs">
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="history" data-i18n="library.tabs.history">History</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="models" data-i18n="library.tabs.models">Models</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="vocabulary" data-i18n="library.tabs.vocabulary">Words &amp; snippets</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="files" data-i18n="library.tabs.files">Files</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="batch" data-i18n="library.tabs.batch">Batch</button>
-    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="stories" data-i18n="library.tabs.stories">Stories</button>
-  </nav>
-
-  <section class="settings" id="vocabulary" aria-labelledby="vocabulary-title">
-    <div class="settings-head">
-      <h2 id="vocabulary-title" data-i18n="library.title">Words and snippets Parlo should know</h2>
-      <p class="settings-note" id="vocabulary-note" aria-live="polite" data-i18n="text.Names and short forms stay on this computer and are applied before any model reads the sentence.">Names and short forms stay on this computer and are applied before any model reads the sentence.</p>
-    </div>
-    <div class="settings-row">
-      <label class="field" for="vocabulary-kind">
-        <span class="field-label" data-i18n="text.Kind">Kind</span>
-        <select id="vocabulary-kind" class="field-input">
-          <option value="term" data-i18n="text.A name or a term">A name or a term</option>
-          <option value="abbreviation" data-i18n="text.A short form I say">A short form I say</option>
-          <option value="snippet" data-i18n="text.A snippet I say">A snippet I say</option>
-        </select>
-      </label>
-      <label class="field" for="vocabulary-wrong">
-        <span class="field-label" data-i18n="text.What Parlo hears">What Parlo hears</span>
-        <input id="vocabulary-wrong" class="field-input" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="parlo">
-      </label>
-      <label class="field field-wide" for="vocabulary-right">
-        <span class="field-label" data-i18n="text.What it should write">What it should write</span>
-        <input id="vocabulary-right" class="field-input" type="text" maxlength="240" autocomplete="off" spellcheck="false" placeholder="Parlo">
-      </label>
-      <div class="preset-row field-wide" role="group" aria-label="Snippet examples">
-        <button class="preset" type="button" data-wrong="my linkedin" data-right="https://www.linkedin.com/in/example" data-i18n="text.My LinkedIn">My LinkedIn</button>
-        <button class="preset" type="button" data-wrong="my channel" data-right="https://www.youtube.com/@example" data-i18n="text.My channel">My channel</button>
-        <button class="preset" type="button" data-wrong="my calendar" data-right="https://cal.com/example" data-i18n="text.My calendar">My calendar</button>
-        <button class="preset" type="button" data-wrong="my sign off" data-right="Best, {{name}}" data-i18n="text.My sign off">My sign off</button>
-      </div>
-      <p class="settings-note field-wide" id="vocabulary-hint">A snippet is a phrase that becomes a longer piece of text: say "my channel" and Parlo writes https://www.youtube.com/@example.</p>
-      <button id="vocabulary-add" class="install" type="button" data-i18n="text.Add">Add</button>
-    </div>
-    <dl class="status" id="vocabulary-list"></dl>
-    <div class="settings-row" id="vocabulary-tools">
-      <button id="vocabulary-export" class="swap" type="button" data-i18n="text.Save the list">Save the list</button>
-      <button id="vocabulary-import" class="swap" type="button" data-i18n="text.Load a list">Load a list</button>
-      <input id="vocabulary-file" type="file" accept=".tsv,.txt,text/tab-separated-values,text/plain" hidden>
-    </div>
-  </section>
-
-  <section class="settings" id="meetings" aria-labelledby="meetings-title">
+  <section class="settings library" id="library" aria-labelledby="library-title">
+    <header class="settings-head">
+      <h1 id="library-title" data-i18n="nav.library">Library</h1>
+    </header>
+    <nav class="tabs" id="library-tabs" role="tablist" aria-label="Library" data-i18n-aria-label="nav.libraryTabs">
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="meetings" data-i18n="nav.meetings">Meetings</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="files" data-i18n="library.tabs.files">Files</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="batch" data-i18n="library.tabs.batch">Batch</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="stories" data-i18n="library.tabs.stories">Stories</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="history" data-i18n="library.tabs.history">History</button>
+    </nav>
+<section class="settings library-panel" id="meetings" aria-labelledby="meetings-title">
     <div class="settings-head">
       <h2 id="meetings-title" data-i18n="text.Meetings">Meetings</h2>
       <p class="settings-note" id="meetings-note" aria-live="polite"></p>
@@ -783,7 +804,6 @@
       </div>
     </div>
 
-
 <section class="settings settings-nested" id="retention" aria-labelledby="retention-title">
     <div class="settings-head">
       <h2 id="retention-title" data-i18n="text.Meeting retention">Meeting retention</h2>
@@ -808,18 +828,206 @@
     </div>
   </section>
   </section>
-
-  <section class="settings" id="catalog" aria-labelledby="catalog-title">
-    <div class="settings-head">
-      <h2 id="catalog-title" data-i18n="text.Model library">Model library</h2>
-      <p class="settings-note" id="catalog-note" aria-live="polite" data-i18n="text.Everything this build can run.">Everything this build can run.</p>
+<section class="dub library-panel" id="dub" aria-labelledby="dub-title">
+    <div class="dub-head">
+      <h2 id="dub-title" data-i18n="text.Dub a file">Dub a file</h2>
+      <p class="dub-note" data-i18n="text.Parlo replaces the speech in a video with the other language and writes subtitles beside it.">Parlo replaces the speech in a video with the other language and writes subtitles beside it.</p>
     </div>
-    <div class="catalog-recommend" id="catalog-recommend" hidden></div>
-    <div class="catalog-tabs" id="catalog-tabs" role="tablist" aria-label="Model categories"></div>
-    <div id="catalog-list" class="catalog-grid"></div>
+    <section class="dub-projects" aria-labelledby="dub-projects-title">
+      <div class="dub-projects-head">
+        <h3 id="dub-projects-title" data-i18n="text.Projects">Projects</h3>
+        <button id="dub-projects-refresh" class="swap" type="button" data-i18n="text.Refresh">Refresh</button>
+      </div>
+      <p class="dub-projects-note" id="dub-projects-note" aria-live="polite" data-i18n="text.Finished and interrupted renders stay here after a restart.">Finished and interrupted renders stay here after a restart.</p>
+      <div class="dub-project-list" id="dub-project-list"></div>
+    </section>
+    <div class="drop" id="drop" role="button" tabindex="0" aria-describedby="drop-hint">
+      <p class="drop-title" data-i18n="text.Drop a video or audio file here">Drop a video or audio file here</p>
+      <p class="drop-hint" id="drop-hint" data-i18n="text.Or press Enter to choose one. The file is read on this machine and never uploaded.">Or press Enter to choose one. The file is read on this machine and never uploaded.</p>
+    </div>
+    <input id="file" type="file" accept="video/*,audio/*" hidden>
+    <form class="dub-url" id="dub-url-form" autocomplete="off">
+      <label class="dub-url-label" for="dub-url" data-i18n="text.Paste a media link">Paste a media link</label>
+      <div class="dub-url-row">
+        <input id="dub-url" class="dub-input" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." spellcheck="false">
+        <button id="dub-url-start" class="swap" type="submit" data-i18n="text.Dub this link">Dub this link</button>
+      </div>
+      <div class="dub-url-row">
+        <input id="dub-cookies" class="dub-input" type="text" placeholder="Cookies file for a sign-in (optional)" spellcheck="false">
+      </div>
+      <p class="dub-url-hint" data-i18n="text.A public video page or a direct audio or video file. Only http and https links; the download happens on this machine. For a video behind a sign-in, export the browser cookies as a Netscape cookies.txt file and paste its path.">A public video page or a direct audio or video file. Only http and https links; the download happens on this machine. For a video behind a sign-in, export the browser cookies as a Netscape cookies.txt file and paste its path.</p>
+    </form>
+    <div class="dub-actions">
+      <button id="dub-start" class="install" type="button" disabled data-i18n="text.Dub this file">Dub this file</button>
+      <button id="dub-import" class="swap" type="button" data-i18n="text.Import SRT or VTT">Import SRT or VTT</button>
+      <input id="dub-subtitles" type="file" accept=".srt,.vtt,text/vtt,application/x-subrip" hidden>
+      <button id="dub-save" class="swap" type="button" hidden data-i18n="text.Save changes">Save changes</button>
+      <button id="dub-clear" class="swap" type="button" hidden data-i18n="text.Remove subtitles">Remove subtitles</button>
+      <span class="dub-file" id="dub-file" aria-live="polite"></span>
+      <span class="dub-file" id="dub-project" aria-live="polite"></span>
+    </div>
+    <label class="dub-language" id="dub-language" for="dub-target" hidden>
+      <span data-i18n="text.Dubbed language">Dubbed language</span>
+      <select id="dub-target" class="dub-input"></select>
+    </label>
+    <div class="dub-timing">
+      <label for="dub-timing" data-i18n="text.Timing">Timing</label>
+      <select id="dub-timing" class="dub-input">
+        <option value="natural" data-i18n="text.Natural">Natural</option>
+        <option value="concise" data-i18n="text.Concise">Concise</option>
+        <option value="smart-fit" data-i18n="text.Smart Fit">Smart Fit</option>
+        <option value="stretch" data-i18n="text.Stretch">Stretch</option>
+        <option value="lip-sync" data-i18n="text.Lip sync (video only)">Lip sync (video only)</option>
+      </select>
+      <span class="dub-speed" id="dub-speed" hidden>
+        <label for="dub-fastest" data-i18n="text.Fastest">Fastest</label>
+        <input id="dub-fastest" class="dub-input" type="number" min="1" max="4" step="0.05" value="1.25">
+        <label for="dub-slowest" data-i18n="text.Slowest">Slowest</label>
+        <input id="dub-slowest" class="dub-input" type="number" min="0.25" max="1" step="0.05" value="0.9">
+      </span>
+      <label class="dub-background" for="dub-background">
+        <input id="dub-background" type="checkbox">
+        Keep music and background
+      </label>
+    </div>
+    <p class="progress dub-status" id="dub-status" aria-live="polite" hidden></p>
+    <div class="dub-cast" id="dub-cast" hidden>
+      <h3 class="dub-cast-title" data-i18n="text.Cast">Cast</h3>
+      <p class="dub-cast-note" data-i18n="text.Give every speaker a voice. A line can override it below.">Give every speaker a voice. A line can override it below.</p>
+      <div class="dub-cast-rows" id="dub-cast-rows"></div>
+    </div>
+    <div class="dub-result" id="dub-result" hidden>
+      <a id="dub-download" class="dub-download" href="#" download data-i18n="text.Download the dubbed file">Download the dubbed file</a>
+      <p class="dub-count" id="dub-count"></p>
+      <p class="dub-separation" id="dub-separation" hidden></p>
+      <div class="dub-exports" id="dub-exports" hidden></div>
+      <div class="dub-qc" id="dub-qc" hidden>
+        <span id="dub-issues"></span>
+        <button id="dub-prev" class="swap" type="button" data-i18n="text.Previous issue">Previous issue</button>
+        <button id="dub-next" class="swap" type="button" data-i18n="text.Next issue">Next issue</button>
+      </div>
+      <ol class="dub-lines" id="dub-lines" aria-label="Translated lines"></ol>
+    </div>
   </section>
-
-  <section class="settings" id="history" aria-labelledby="history-title">
+<section class="batch library-panel" id="batch" aria-labelledby="batch-title">
+    <div class="batch-head">
+      <h2 id="batch-title" data-i18n="text.Batch">Batch</h2>
+      <p class="batch-note" data-i18n="text.Dub many files into more than one language. Parlo renders one at a time and keeps the queue after a restart.">Dub many files into more than one language. Parlo renders one at a time and keeps the queue after a restart.</p>
+    </div>
+    <div class="batch-watch">
+      <div class="watch-head">
+        <h3 data-i18n="text.Watched folders">Watched folders</h3>
+        <p class="batch-note" data-i18n="text.A file dropped in one of these folders joins the queue once. Folders use the source language and target languages below.">A file dropped in one of these folders joins the queue once. Folders use the source language and target languages below.</p>
+      </div>
+      <div class="watch-actions">
+        <input id="watch-path" class="field-input watch-path" type="text" data-i18n-placeholder="batch.inboxPlaceholder" placeholder="C:\Users\you\Parlo inbox" aria-label="Folder to watch">
+        <label class="watch-interval" for="watch-interval">
+          <span class="field-label" data-i18n="text.Every">Every</span>
+          <input id="watch-interval" class="field-input" type="number" min="1" max="3600" value="2">
+          <span data-i18n="text.seconds">seconds</span>
+        </label>
+        <button id="watch-add" class="install" type="button" data-i18n="text.Watch folder">Watch folder</button>
+      </div>
+      <p class="batch-status" id="watch-status" aria-live="polite" hidden></p>
+      <div class="watch-list" id="watch-list"></div>
+    </div>
+    <div class="batch-setup">
+      <label class="field" for="batch-from">
+        <span class="field-label" data-i18n="text.Source language">Source language</span>
+        <select id="batch-from" class="field-input"></select>
+      </label>
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="text.Into">Into</span>
+        <div class="batch-languages" id="batch-targets" role="group" aria-label="Target languages"></div>
+      </div>
+      <label class="field" for="batch-timing">
+        <span class="field-label" data-i18n="text.Timing">Timing</span>
+        <select id="batch-timing" class="field-input">
+          <option value="natural" data-i18n="text.Natural">Natural</option>
+          <option value="concise" data-i18n="text.Concise">Concise</option>
+          <option value="smart-fit" data-i18n="text.Smart Fit">Smart Fit</option>
+          <option value="stretch" data-i18n="text.Stretch">Stretch</option>
+          <option value="lip-sync" data-i18n="text.Lip sync (video only)">Lip sync (video only)</option>
+        </select>
+      </label>
+      <label class="check" for="batch-background">
+        <input id="batch-background" type="checkbox">
+        <span data-i18n="text.Keep music and background">Keep music and background</span>
+      </label>
+    </div>
+    <div class="batch-actions">
+      <button id="batch-choose" class="swap" type="button" data-i18n="text.Choose files">Choose files</button>
+      <input id="batch-files" type="file" accept="video/*,audio/*" multiple hidden>
+      <button id="batch-create" class="install" type="button" disabled data-i18n="text.Add files to queue">Add files to queue</button>
+      <span class="batch-file" id="batch-selected" aria-live="polite"></span>
+    </div>
+    <p class="progress batch-status" id="batch-status" aria-live="polite" hidden></p>
+    <div class="batch-list" id="batch-list"></div>
+  </section>
+<section class="batch library-panel" id="stories" aria-labelledby="stories-title">
+    <div class="batch-head">
+      <h2 id="stories-title" data-i18n="text.Stories with a cast">Stories with a cast</h2>
+      <p class="batch-note" data-i18n="text.Give every character a voice, write the chapters, and render one audio file in which each line keeps its speaker's voice. Changing a voice only re-renders that character's lines.">Give every character a voice, write the chapters, and render one audio file in which each line keeps its speaker's voice. Changing a voice only re-renders that character's lines.</p>
+    </div>
+    <div class="stories-layout">
+      <aside class="story-list" aria-label="Saved stories">
+        <div class="story-list-head">
+          <h3 data-i18n="text.Your stories">Your stories</h3>
+          <button id="story-new" class="swap" type="button" data-i18n="text.New story">New story</button>
+        </div>
+        <div id="story-list"></div>
+      </aside>
+      <div class="story-editor">
+        <label class="field" for="story-title">
+          <span class="field-label" data-i18n="text.Title">Title</span>
+          <input id="story-title" class="field-input" type="text" maxlength="80" placeholder="The lighthouse keeper">
+        </label>
+        <label class="field" for="story-author">
+          <span class="field-label" data-i18n="text.Author">Author</span>
+          <input id="story-author" class="field-input" type="text" maxlength="80" placeholder="Your name">
+        </label>
+        <label class="field" for="story-year">
+          <span class="field-label" data-i18n="text.Year">Year</span>
+          <input id="story-year" class="field-input" type="number" min="1" max="9999" placeholder="2026">
+        </label>
+        <label class="field" for="story-series">
+          <span class="field-label" data-i18n="text.Series">Series</span>
+          <input id="story-series" class="field-input" type="text" maxlength="80" placeholder="Optional series">
+        </label>
+        <label class="field" for="story-comment">
+          <span class="field-label" data-i18n="text.Comment">Comment</span>
+          <input id="story-comment" class="field-input" type="text" maxlength="500" placeholder="Optional note">
+        </label>
+        <label class="field" for="story-language">
+          <span class="field-label" data-i18n="text.Language">Language</span>
+          <select id="story-language" class="field-input"></select>
+        </label>
+        <div class="story-section">
+          <div class="story-section-head">
+            <h3 data-i18n="text.Characters">Characters</h3>
+            <button id="story-add-character" class="swap" type="button" data-i18n="text.Add character">Add character</button>
+          </div>
+          <div id="story-characters" class="story-characters"></div>
+        </div>
+        <div class="story-section">
+          <div class="story-section-head">
+            <h3 data-i18n="text.Chapters">Chapters</h3>
+            <button id="story-add-chapter" class="swap" type="button" data-i18n="text.Add chapter">Add chapter</button>
+          </div>
+          <div id="story-chapters" class="story-chapters"></div>
+        </div>
+        <div class="story-actions">
+          <button id="story-save" class="install" type="button" data-i18n="text.Save story">Save story</button>
+          <button id="story-render" class="swap" type="button" data-i18n="text.Render story">Render story</button>
+          <a id="story-audiobook" class="batch-report" href="#" hidden data-i18n="text.Download M4B audiobook">Download M4B audiobook</a>
+          <a id="story-queue" class="batch-report" href="#batch" hidden data-i18n="text.Open the queue">Open the queue</a>
+        </div>
+        <p class="progress batch-status" id="story-status" aria-live="polite" hidden></p>
+        <dl class="story-state" id="story-state" hidden></dl>
+      </div>
+    </div>
+  </section>
+<section class="settings library-panel" id="history" aria-labelledby="history-title">
     <div class="settings-head">
       <h2 id="history-title" data-i18n="text.Recent dictations">Recent dictations</h2>
       <p class="settings-note" id="history-note" aria-live="polite" data-i18n="text.Nothing dictated yet.">Nothing dictated yet.</p>
@@ -861,6 +1069,7 @@
         <button id="history-clear-keep" class="swap" type="button" data-i18n="text.Keep them">Keep them</button>
       </div>
     </div>
+  </section>
   </section>
 
   <section class="voice studio" id="voice" aria-labelledby="voice-title">
@@ -1060,228 +1269,6 @@
     </nav>
   </section>
 
-  <section class="models" id="models" aria-labelledby="models-title" hidden>
-    <div class="models-head">
-      <h2 id="models-title" data-i18n="text.Models">Models</h2>
-      <p class="models-note" id="models-note" aria-live="polite"></p>
-    </div>
-    <ul class="models-list" id="models-list"></ul>
-    <div class="models-progress" id="models-progress" hidden>
-      <div class="models-bar"><span id="models-fill"></span></div>
-      <p class="models-progress-note" id="models-progress-note" aria-live="polite"></p>
-    </div>
-    <button id="models-install" class="install models-install" type="button" hidden data-i18n="text.Download models">Download models</button>
-    <button id="models-dictation" class="install models-install quiet" type="button" hidden data-i18n="text.Only what dictation needs">Only what dictation needs</button>
-    <button id="models-cancel" class="install models-install quiet" type="button" hidden data-i18n="text.Stop the download">Stop the download</button>
-    <div class="settings-row">
-      <label class="field field-wide" for="models-folder">
-        <span class="field-label" data-i18n="text.Keep the models in this folder">Keep the models in this folder</span>
-        <input id="models-folder" class="field-input" type="text" autocomplete="off" spellcheck="false" placeholder="D:/Parlo models">
-      </label>
-      <button id="models-move" class="install quiet" type="button" data-i18n="text.Move the models">Move the models</button>
-    </div>
-    <p class="settings-note" id="models-move-note" aria-live="polite"></p>
-  </section>
-
-  <section class="dub" id="dub" aria-labelledby="dub-title">
-    <div class="dub-head">
-      <h2 id="dub-title" data-i18n="text.Dub a file">Dub a file</h2>
-      <p class="dub-note" data-i18n="text.Parlo replaces the speech in a video with the other language and writes subtitles beside it.">Parlo replaces the speech in a video with the other language and writes subtitles beside it.</p>
-    </div>
-    <section class="dub-projects" aria-labelledby="dub-projects-title">
-      <div class="dub-projects-head">
-        <h3 id="dub-projects-title" data-i18n="text.Projects">Projects</h3>
-        <button id="dub-projects-refresh" class="swap" type="button" data-i18n="text.Refresh">Refresh</button>
-      </div>
-      <p class="dub-projects-note" id="dub-projects-note" aria-live="polite" data-i18n="text.Finished and interrupted renders stay here after a restart.">Finished and interrupted renders stay here after a restart.</p>
-      <div class="dub-project-list" id="dub-project-list"></div>
-    </section>
-    <div class="drop" id="drop" role="button" tabindex="0" aria-describedby="drop-hint">
-      <p class="drop-title" data-i18n="text.Drop a video or audio file here">Drop a video or audio file here</p>
-      <p class="drop-hint" id="drop-hint" data-i18n="text.Or press Enter to choose one. The file is read on this machine and never uploaded.">Or press Enter to choose one. The file is read on this machine and never uploaded.</p>
-    </div>
-    <input id="file" type="file" accept="video/*,audio/*" hidden>
-    <form class="dub-url" id="dub-url-form" autocomplete="off">
-      <label class="dub-url-label" for="dub-url" data-i18n="text.Paste a media link">Paste a media link</label>
-      <div class="dub-url-row">
-        <input id="dub-url" class="dub-input" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." spellcheck="false">
-        <button id="dub-url-start" class="swap" type="submit" data-i18n="text.Dub this link">Dub this link</button>
-      </div>
-      <div class="dub-url-row">
-        <input id="dub-cookies" class="dub-input" type="text" placeholder="Cookies file for a sign-in (optional)" spellcheck="false">
-      </div>
-      <p class="dub-url-hint" data-i18n="text.A public video page or a direct audio or video file. Only http and https links; the download happens on this machine. For a video behind a sign-in, export the browser cookies as a Netscape cookies.txt file and paste its path.">A public video page or a direct audio or video file. Only http and https links; the download happens on this machine. For a video behind a sign-in, export the browser cookies as a Netscape cookies.txt file and paste its path.</p>
-    </form>
-    <div class="dub-actions">
-      <button id="dub-start" class="install" type="button" disabled data-i18n="text.Dub this file">Dub this file</button>
-      <button id="dub-import" class="swap" type="button" data-i18n="text.Import SRT or VTT">Import SRT or VTT</button>
-      <input id="dub-subtitles" type="file" accept=".srt,.vtt,text/vtt,application/x-subrip" hidden>
-      <button id="dub-save" class="swap" type="button" hidden data-i18n="text.Save changes">Save changes</button>
-      <button id="dub-clear" class="swap" type="button" hidden data-i18n="text.Remove subtitles">Remove subtitles</button>
-      <span class="dub-file" id="dub-file" aria-live="polite"></span>
-      <span class="dub-file" id="dub-project" aria-live="polite"></span>
-    </div>
-    <label class="dub-language" id="dub-language" for="dub-target" hidden>
-      <span data-i18n="text.Dubbed language">Dubbed language</span>
-      <select id="dub-target" class="dub-input"></select>
-    </label>
-    <div class="dub-timing">
-      <label for="dub-timing" data-i18n="text.Timing">Timing</label>
-      <select id="dub-timing" class="dub-input">
-        <option value="natural" data-i18n="text.Natural">Natural</option>
-        <option value="concise" data-i18n="text.Concise">Concise</option>
-        <option value="smart-fit" data-i18n="text.Smart Fit">Smart Fit</option>
-        <option value="stretch" data-i18n="text.Stretch">Stretch</option>
-        <option value="lip-sync" data-i18n="text.Lip sync (video only)">Lip sync (video only)</option>
-      </select>
-      <span class="dub-speed" id="dub-speed" hidden>
-        <label for="dub-fastest" data-i18n="text.Fastest">Fastest</label>
-        <input id="dub-fastest" class="dub-input" type="number" min="1" max="4" step="0.05" value="1.25">
-        <label for="dub-slowest" data-i18n="text.Slowest">Slowest</label>
-        <input id="dub-slowest" class="dub-input" type="number" min="0.25" max="1" step="0.05" value="0.9">
-      </span>
-      <label class="dub-background" for="dub-background">
-        <input id="dub-background" type="checkbox">
-        Keep music and background
-      </label>
-    </div>
-    <p class="progress dub-status" id="dub-status" aria-live="polite" hidden></p>
-    <div class="dub-cast" id="dub-cast" hidden>
-      <h3 class="dub-cast-title" data-i18n="text.Cast">Cast</h3>
-      <p class="dub-cast-note" data-i18n="text.Give every speaker a voice. A line can override it below.">Give every speaker a voice. A line can override it below.</p>
-      <div class="dub-cast-rows" id="dub-cast-rows"></div>
-    </div>
-    <div class="dub-result" id="dub-result" hidden>
-      <a id="dub-download" class="dub-download" href="#" download data-i18n="text.Download the dubbed file">Download the dubbed file</a>
-      <p class="dub-count" id="dub-count"></p>
-      <p class="dub-separation" id="dub-separation" hidden></p>
-      <div class="dub-exports" id="dub-exports" hidden></div>
-      <div class="dub-qc" id="dub-qc" hidden>
-        <span id="dub-issues"></span>
-        <button id="dub-prev" class="swap" type="button" data-i18n="text.Previous issue">Previous issue</button>
-        <button id="dub-next" class="swap" type="button" data-i18n="text.Next issue">Next issue</button>
-      </div>
-      <ol class="dub-lines" id="dub-lines" aria-label="Translated lines"></ol>
-    </div>
-  </section>
-  <section class="batch" id="batch" aria-labelledby="batch-title">
-    <div class="batch-head">
-      <h2 id="batch-title" data-i18n="text.Batch">Batch</h2>
-      <p class="batch-note" data-i18n="text.Dub many files into more than one language. Parlo renders one at a time and keeps the queue after a restart.">Dub many files into more than one language. Parlo renders one at a time and keeps the queue after a restart.</p>
-    </div>
-    <div class="batch-watch">
-      <div class="watch-head">
-        <h3 data-i18n="text.Watched folders">Watched folders</h3>
-        <p class="batch-note" data-i18n="text.A file dropped in one of these folders joins the queue once. Folders use the source language and target languages below.">A file dropped in one of these folders joins the queue once. Folders use the source language and target languages below.</p>
-      </div>
-      <div class="watch-actions">
-        <input id="watch-path" class="field-input watch-path" type="text" data-i18n-placeholder="batch.inboxPlaceholder" placeholder="C:\Users\you\Parlo inbox" aria-label="Folder to watch">
-        <label class="watch-interval" for="watch-interval">
-          <span class="field-label" data-i18n="text.Every">Every</span>
-          <input id="watch-interval" class="field-input" type="number" min="1" max="3600" value="2">
-          <span data-i18n="text.seconds">seconds</span>
-        </label>
-        <button id="watch-add" class="install" type="button" data-i18n="text.Watch folder">Watch folder</button>
-      </div>
-      <p class="batch-status" id="watch-status" aria-live="polite" hidden></p>
-      <div class="watch-list" id="watch-list"></div>
-    </div>
-    <div class="batch-setup">
-      <label class="field" for="batch-from">
-        <span class="field-label" data-i18n="text.Source language">Source language</span>
-        <select id="batch-from" class="field-input"></select>
-      </label>
-      <div class="field field-wide">
-        <span class="field-label" data-i18n="text.Into">Into</span>
-        <div class="batch-languages" id="batch-targets" role="group" aria-label="Target languages"></div>
-      </div>
-      <label class="field" for="batch-timing">
-        <span class="field-label" data-i18n="text.Timing">Timing</span>
-        <select id="batch-timing" class="field-input">
-          <option value="natural" data-i18n="text.Natural">Natural</option>
-          <option value="concise" data-i18n="text.Concise">Concise</option>
-          <option value="smart-fit" data-i18n="text.Smart Fit">Smart Fit</option>
-          <option value="stretch" data-i18n="text.Stretch">Stretch</option>
-          <option value="lip-sync" data-i18n="text.Lip sync (video only)">Lip sync (video only)</option>
-        </select>
-      </label>
-      <label class="check" for="batch-background">
-        <input id="batch-background" type="checkbox">
-        <span data-i18n="text.Keep music and background">Keep music and background</span>
-      </label>
-    </div>
-    <div class="batch-actions">
-      <button id="batch-choose" class="swap" type="button" data-i18n="text.Choose files">Choose files</button>
-      <input id="batch-files" type="file" accept="video/*,audio/*" multiple hidden>
-      <button id="batch-create" class="install" type="button" disabled data-i18n="text.Add files to queue">Add files to queue</button>
-      <span class="batch-file" id="batch-selected" aria-live="polite"></span>
-    </div>
-    <p class="progress batch-status" id="batch-status" aria-live="polite" hidden></p>
-    <div class="batch-list" id="batch-list"></div>
-  </section>
-  <section class="batch" id="stories" aria-labelledby="stories-title">
-    <div class="batch-head">
-      <h2 id="stories-title" data-i18n="text.Stories with a cast">Stories with a cast</h2>
-      <p class="batch-note" data-i18n="text.Give every character a voice, write the chapters, and render one audio file in which each line keeps its speaker's voice. Changing a voice only re-renders that character's lines.">Give every character a voice, write the chapters, and render one audio file in which each line keeps its speaker's voice. Changing a voice only re-renders that character's lines.</p>
-    </div>
-    <div class="stories-layout">
-      <aside class="story-list" aria-label="Saved stories">
-        <div class="story-list-head">
-          <h3 data-i18n="text.Your stories">Your stories</h3>
-          <button id="story-new" class="swap" type="button" data-i18n="text.New story">New story</button>
-        </div>
-        <div id="story-list"></div>
-      </aside>
-      <div class="story-editor">
-        <label class="field" for="story-title">
-          <span class="field-label" data-i18n="text.Title">Title</span>
-          <input id="story-title" class="field-input" type="text" maxlength="80" placeholder="The lighthouse keeper">
-        </label>
-        <label class="field" for="story-author">
-          <span class="field-label" data-i18n="text.Author">Author</span>
-          <input id="story-author" class="field-input" type="text" maxlength="80" placeholder="Your name">
-        </label>
-        <label class="field" for="story-year">
-          <span class="field-label" data-i18n="text.Year">Year</span>
-          <input id="story-year" class="field-input" type="number" min="1" max="9999" placeholder="2026">
-        </label>
-        <label class="field" for="story-series">
-          <span class="field-label" data-i18n="text.Series">Series</span>
-          <input id="story-series" class="field-input" type="text" maxlength="80" placeholder="Optional series">
-        </label>
-        <label class="field" for="story-comment">
-          <span class="field-label" data-i18n="text.Comment">Comment</span>
-          <input id="story-comment" class="field-input" type="text" maxlength="500" placeholder="Optional note">
-        </label>
-        <label class="field" for="story-language">
-          <span class="field-label" data-i18n="text.Language">Language</span>
-          <select id="story-language" class="field-input"></select>
-        </label>
-        <div class="story-section">
-          <div class="story-section-head">
-            <h3 data-i18n="text.Characters">Characters</h3>
-            <button id="story-add-character" class="swap" type="button" data-i18n="text.Add character">Add character</button>
-          </div>
-          <div id="story-characters" class="story-characters"></div>
-        </div>
-        <div class="story-section">
-          <div class="story-section-head">
-            <h3 data-i18n="text.Chapters">Chapters</h3>
-            <button id="story-add-chapter" class="swap" type="button" data-i18n="text.Add chapter">Add chapter</button>
-          </div>
-          <div id="story-chapters" class="story-chapters"></div>
-        </div>
-        <div class="story-actions">
-          <button id="story-save" class="install" type="button" data-i18n="text.Save story">Save story</button>
-          <button id="story-render" class="swap" type="button" data-i18n="text.Render story">Render story</button>
-          <a id="story-audiobook" class="batch-report" href="#" hidden data-i18n="text.Download M4B audiobook">Download M4B audiobook</a>
-          <a id="story-queue" class="batch-report" href="#batch" hidden data-i18n="text.Open the queue">Open the queue</a>
-        </div>
-        <p class="progress batch-status" id="story-status" aria-live="polite" hidden></p>
-        <dl class="story-state" id="story-state" hidden></dl>
-      </div>
-    </div>
-  </section>
 </main>
 
 <details class="licences" id="licences">

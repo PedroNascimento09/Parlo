@@ -2040,14 +2040,11 @@ async function applyLocale() {
 }
 
 function loadEverything() {
-  loadHistory();
-  loadMeetings();
-  loadBatches();
-  loadStories();
-  loadDubProjects();
+  if (currentRoute === "home") {
+    loadHistory();
+  }
   loadVocabulary();
   loadIntelligence();
-  loadWatch();
   loadCatalog();
 }
 
@@ -6268,9 +6265,9 @@ setInterval(() => {
   if (document.visibilityState !== "visible") {
     return;
   }
-  const historyVisible = !document.getElementById("history").hidden;
-  const homeVisible = !document.getElementById("status-list").hidden;
-  if (historyVisible || homeVisible) {
+  if (currentRoute === "library") {
+    loadLibrary();
+  } else if (currentRoute === "home") {
     loadHistory();
   }
 }, 4000);
@@ -6281,19 +6278,20 @@ const ROUTES = {
     "welcome",
     "status-list",
   ],
-  library: ["library-tabs", "vocabulary", "catalog", "history", "models", "dub", "batch", "stories"],
-  meetings: ["meetings"],
+  library: ["library", "library-tabs", "meetings", "dub", "batch", "stories", "history"],
   voice: ["voice"],
   insights: ["insights"],
   settings: [
     "settings-tabs",
     "settings-layout",
     "settings-foot",
-    "language",
     "you",
-    "programs",
-    "settings",
     "languages",
+    "settings",
+    "programs",
+    "vocabulary",
+    "models",
+    "catalog",
     "shortcuts",
     "intelligence",
     "provider",
@@ -6303,8 +6301,11 @@ const ROUTES = {
   ],
 };
 
+let currentRoute = "home";
+
 function showRoute(name) {
   const route = ROUTES[name] ? name : "home";
+  currentRoute = route;
   for (const [key, ids] of Object.entries(ROUTES)) {
     for (const id of ids) {
       const element = document.getElementById(id);
@@ -6341,7 +6342,7 @@ function navigate(route, tab) {
   }
 }
 
-const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "voice", 4: "library", 5: "insights", 6: "settings" };
+const ROUTE_KEYS = { 1: "home", 2: "library", 3: "voice", 4: "insights", 5: "settings" };
 
 document.addEventListener("keydown", (event) => {
   if (!event.altKey || event.ctrlKey || event.metaKey) {
@@ -6369,18 +6370,31 @@ document.addEventListener("keydown", (event) => {
 });
 
 const LIBRARY_TABS = {
-  history: ["history"],
-  models: ["models", "catalog"],
-  vocabulary: ["vocabulary"],
+  meetings: ["meetings"],
   files: ["dub"],
   batch: ["batch"],
   stories: ["stories"],
+  history: ["history"],
 };
 
-let libraryTab = "history";
+const LIBRARY_LOADERS = {
+  meetings: [loadMeetings],
+  files: [loadDubProjects],
+  batch: [loadBatches, loadWatch],
+  stories: [loadStories],
+  history: [loadHistory],
+};
+
+let libraryTab = "meetings";
+
+function loadLibrary() {
+  for (const load of LIBRARY_LOADERS[libraryTab] || []) {
+    load();
+  }
+}
 
 function showLibraryTab(name) {
-  const chosen = LIBRARY_TABS[name] ? name : "history";
+  const chosen = LIBRARY_TABS[name] ? name : "meetings";
   libraryTab = chosen;
   for (const [key, ids] of Object.entries(LIBRARY_TABS)) {
     for (const id of ids) {
@@ -6393,6 +6407,9 @@ function showLibraryTab(name) {
   for (const button of document.querySelectorAll("#library-tabs .tab")) {
     button.setAttribute("aria-selected", String(button.dataset.tab === chosen));
   }
+  if (currentRoute === "library") {
+    loadLibrary();
+  }
 }
 
 for (const button of document.querySelectorAll("#library-tabs .tab")) {
@@ -6403,11 +6420,11 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 
 const SETTINGS_TABS = {
   you: ["you"],
-  language: ["language"],
-  dictation: ["settings", "programs"],
   languages: ["languages"],
+  dictation: ["settings", "programs", "vocabulary"],
+  models: ["models", "catalog"],
   shortcuts: ["shortcuts"],
-  advanced: ["intelligence", "provider", "privacy", "about", "retention"],
+  advanced: ["intelligence", "provider", "privacy", "about"],
 };
 
 let settingsTab = "dictation";
