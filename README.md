@@ -34,7 +34,7 @@ irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/insta
 
 That downloads the same content as the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. Same app, one command.
 
-If Windows says ***Windows protected your PC***, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
+If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
 
 **macOS and Linux:**
 
@@ -46,7 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/script
 
 1. [Download the latest release](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe).
 2. Double-click `Parlo-Setup.exe`.
-3. If Windows says ***Windows protected your PC***, choose **More info**, then **Run anyway**.
+3. If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**.
 
 **Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the install command. Those are recipes, not fully tested installs: no channel has been run end to end by the machine that wrote the manifests, and each one is marked partial there with what is still missing.
 
