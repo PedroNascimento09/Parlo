@@ -4,6 +4,20 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+
+- Snippets: `parlo snippet add "my address" "12 Rua das Flores"` types the saved phrase whenever you say the cue on its own.
+- "bullet point" and "marcador" start a list line, in the same command layer as commas and periods.
+- The island shows your words while you speak, so the sentence is readable before you stop.
+- Quiet rooms are lifted: the first second of audio sets the input gain for the dictation.
+- `docs/TESTING.md` holds the manual Notepad, Chrome and VS Code matrix every release runs.
+
+### Fixed
+
+- Writing into another application failed when Windows refused to raise its window; the foreground handoff now attaches to the target thread first.
+- The language menu was clipped by the island window and is now fully readable and scrollable.
+- The island stays until the text is written and then hides itself.
+
 ## [0.2.6] - 7 November 2026
 
 - The installers now check the published SHA-256 before they unpack anything: both `scripts/install.ps1` and `scripts/install.sh` read `SHA256SUMS.txt` from the release, compare the archive they just downloaded and stop with a sentence that names the file when the hash does not match, so a truncated or replaced download no longer installs.

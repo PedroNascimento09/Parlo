@@ -473,6 +473,9 @@ if (writeChoice === "same") {
 }
 let controller = null;
 let sentChunks = 0;
+let quietGain = 1;
+let quietPeak = 0;
+let quietBlocks = 0;
 let partials = null;
 let tidy = localStorage.getItem("parlo-tidy") !== "off";
 
@@ -618,6 +621,24 @@ function encodeWav(samples, rate) {
   return new Blob([buffer], { type: "audio/wav" });
 }
 
+function measureQuiet(block) {
+  if (quietBlocks >= 8) {
+    return;
+  }
+  let peak = 0;
+  for (let index = 0; index < block.length; index += 1) {
+    const value = Math.abs(block[index]);
+    if (value > peak) {
+      peak = value;
+    }
+  }
+  quietPeak = Math.max(quietPeak, peak);
+  quietBlocks += 1;
+  if (quietBlocks === 8) {
+    quietGain = quietPeak > 0 && quietPeak < 0.02 ? 4 : 1;
+  }
+}
+
 function paintLevel(block) {
   let peak = 0;
   for (let index = 0; index < block.length; index += 1) {
@@ -672,6 +693,9 @@ async function begin() {
   sink.gain.value = 0;
   chunks = [];
   sentChunks = 0;
+  quietGain = 1;
+  quietPeak = 0;
+  quietBlocks = 0;
   clearInterval(partials);
   partials = setInterval(sendPartial, 800);
   processor.onaudioprocess = (event) => {
@@ -681,7 +705,10 @@ async function begin() {
     const block = event.inputBuffer.getChannelData(0);
     paintLevel(block);
     const copy = new Float32Array(block.length);
-    copy.set(block);
+    measureQuiet(block);
+    for (let index = 0; index < block.length; index += 1) {
+      copy[index] = Math.max(-1, Math.min(1, block[index] * quietGain));
+    }
     chunks.push(copy);
     if (chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
       stop();
@@ -746,6 +773,7 @@ async function sendPartial() {
     const last = pieces.filter((piece) => piece.text).pop();
     if (last && !busy) {
       lastText = last.text;
+      setState(t("island.listening", "Listening"), lastText, true);
     }
   } catch (failure) {
     return;

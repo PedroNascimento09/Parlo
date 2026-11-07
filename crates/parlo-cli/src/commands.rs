@@ -3,6 +3,10 @@ const COMMANDS: &[(&str, &str)] = &[
     ("nova linha", "\n"),
     ("new paragraph", "\n\n"),
     ("novo paragrafo", "\n\n"),
+    ("bullet point", "\n• "),
+    ("bullet", "\n• "),
+    ("ponto de lista", "\n• "),
+    ("marcador", "\n• "),
     ("full stop", "."),
     ("ponto final", "."),
     ("period", "."),
@@ -36,7 +40,7 @@ pub fn apply(text: &str) -> String {
             if piece == SCRATCH {
                 scratch(&mut out);
             } else if piece.starts_with('\n') {
-                while out.ends_with(' ') {
+                while out.ends_with([' ', '\n']) {
                     out.pop();
                 }
                 out.push_str(piece);
@@ -154,6 +158,15 @@ mod tests {
     fn an_ordinary_word_is_left_alone() {
         assert_eq!(apply("the point of it"), "the point of it");
         assert_eq!(apply("commas are useful"), "commas are useful");
+    }
+
+    #[test]
+    fn a_bullet_starts_a_list_on_its_own_line() {
+        assert_eq!(
+            apply("shopping bullet point milk new line bullet point bread"),
+            "shopping\n• milk\n• bread"
+        );
+        assert_eq!(apply("lista marcador pao"), "lista\n• pao");
     }
 
     #[test]

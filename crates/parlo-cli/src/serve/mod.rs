@@ -5086,6 +5086,7 @@ fn handle(
         };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
         let text = commands::apply(&text);
+        let text = crate::snippets::apply(&text, &stored.snippets);
         let text = crate::style::shape(&text, &style);
         let mut entry =
             crate::history::Entry::now(&text, &translation, &from, &written, &app, "dictate");

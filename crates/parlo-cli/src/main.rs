@@ -55,6 +55,7 @@ mod retention;
 mod sample;
 mod serve;
 mod sidecar;
+mod snippets;
 mod soak;
 mod speakers;
 mod store;
@@ -97,6 +98,7 @@ fn main() -> ExitCode {
         Some("undo") => undo_command(),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_command(&args[1..]),
+        Some("snippet") => snippets::command(&args[1..]),
         Some("pair") => pair_command(&args[1..]),
         Some("engines") => list_engines(),
         Some("speakers") => list_speakers(),
@@ -162,6 +164,9 @@ fn print_help() {
         "  dictate [--from pt] [--seconds N]  type with your voice, text lands in the clipboard"
     );
     println!("            [--window S] [--no-copy]        no translation and no voice");
+    println!(
+        "  snippet add|list|remove [cue] [text]  say a cue and Parlo types the phrase you saved"
+    );
     println!("  serve [--port N] [--token T]       local authenticated api on 127.0.0.1");
     println!(
         "  mcp                                meetings and dictations for an MCP client, on stdio"
