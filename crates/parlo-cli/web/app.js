@@ -1775,10 +1775,7 @@ function uiLocale() {
 }
 
 function describePair(from, to) {
-  return t("settings.pair", "{from} to {to}", {
-    from: languageName(from),
-    to: languageName(to),
-  });
+  return languageName(from) + " → " + languageName(to);
 }
 
 function settingsChanged() {
@@ -1815,11 +1812,8 @@ function reflectSettings(values) {
   };
   const pair = describePair(savedSettings.from, savedSettings.to);
   settingsNote.textContent = savedSettings.write
-    ? t("settings.writes", "{pair}, dictation writes {language}", {
-        pair,
-        language: languageName(savedSettings.write),
-      })
-    : t("settings.keeps", "{pair}, dictation keeps the language spoken", { pair });
+    ? languageName(savedSettings.from) + " → " + languageName(savedSettings.write)
+    : pair;
   refreshApply();
 }
 
@@ -4772,15 +4766,7 @@ function renderMeetings(meetings) {
   });
   setNote(
     meetingNote,
-    meetings.length
-      ? t(
-          meetings.length === 1
-            ? "text.{count} meeting kept on this computer."
-            : "text.{count} meetings kept on this computer.",
-          "",
-          { count: meetings.length },
-        )
-      : "",
+    meetings.length ? meetings.length + " · " + t("nav.meetings", "Meetings") : "",
   );
 }
 
@@ -6237,6 +6223,9 @@ function renderHistory() {
           historyEntries.length === 1
             ? "text.{count} dictation kept on this computer."
             : "text.{count} dictations kept on this computer.",
+          historyEntries.length === 1
+            ? "{count} dictation kept on this computer."
+            : "{count} dictations kept on this computer.",
           "",
           { count: historyEntries.length },
         )

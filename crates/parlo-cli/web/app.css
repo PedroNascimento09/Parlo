@@ -1122,7 +1122,7 @@ textarea.field-input {
 
 .settings-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   align-items: end;
   gap: 24px 20px;
   margin-top: 24px;
@@ -1617,7 +1617,7 @@ textarea.field-input {
 
 .voice-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 18px 16px;
   margin-top: 24px;
 }
@@ -3788,4 +3788,18 @@ input[type="checkbox"]:focus-visible,
     font-size: 28px;
   }
 
+}
+
+@media (max-width: 900px) {
+  .tabs,
+  .studio-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar,
+  .studio-tabs::-webkit-scrollbar {
+    display: none;
+  }
 }
