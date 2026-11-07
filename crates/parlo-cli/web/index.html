@@ -223,9 +223,6 @@ try {
       </div>
       <div class="home-hero-side">
         <p class="home-privacy"><span class="home-dot" aria-hidden="true"></span><span data-i18n="home.stays">Stays on this computer</span></p>
-        <div class="home-wave" aria-hidden="true">
-          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-        </div>
       </div>
     </header>
 
@@ -247,23 +244,13 @@ try {
         <h2 class="home-label" id="home-style-title" data-i18n="style.title">Writing style</h2>
         <p class="home-style-note" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</p>
       </div>
-      <div class="style-cards style-cards-home" role="group" aria-label="Writing style" data-i18n-aria-label="style.title">
-        <button class="style-card" data-style="formal" type="button" aria-pressed="false">
-          <span class="style-title" data-i18n="home.formal">Formal</span>
-          <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
-          <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
-        </button>
-        <button class="style-card" data-style="casual" type="button" aria-pressed="false">
-          <span class="style-title" data-i18n="home.casual">Casual</span>
-          <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
-          <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
-        </button>
-        <button class="style-card" data-style="excited" type="button" aria-pressed="false">
-          <span class="style-title" data-i18n="home.excited">Excited</span>
-          <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
-          <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
-        </button>
-      </div>
+      <button class="style-choice" id="style-open" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="style-sheet">
+        <span class="style-choice-text">
+          <span class="style-choice-name" id="style-open-name" data-i18n="style.title">Writing style</span>
+          <span class="style-choice-sub" id="style-open-sub" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</span>
+        </span>
+        <span class="style-choice-action" data-i18n="text.Change">Change</span>
+      </button>
     </section>
 
     <div class="home-grid">
@@ -1418,6 +1405,36 @@ try {
 
 </div>
 </div>
+<div class="sheet" id="style-sheet" hidden>
+  <div class="sheet-scrim" data-sheet-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="style-sheet-title">
+    <div class="sheet-head">
+      <div class="sheet-titles">
+        <p class="sheet-kicker" data-i18n="style.title">Writing style</p>
+        <h2 class="sheet-title" id="style-sheet-title" data-i18n="gate.style.title">How do you write?</h2>
+      </div>
+      <button class="sheet-close swap" id="style-sheet-close" type="button" data-i18n="text.Close">Close</button>
+    </div>
+    <div class="sheet-options">
+      <button class="style-card" data-style="formal" type="button" aria-pressed="false">
+        <span class="style-title" data-i18n="home.formal">Formal</span>
+        <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
+        <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
+      </button>
+      <button class="style-card" data-style="casual" type="button" aria-pressed="false">
+        <span class="style-title" data-i18n="home.casual">Casual</span>
+        <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
+        <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
+      </button>
+      <button class="style-card" data-style="excited" type="button" aria-pressed="false">
+        <span class="style-title" data-i18n="home.excited">Excited</span>
+        <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
+        <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="/languages.js"></script>
 <script src="/routes.js"></script>
 <script src="/app.js"></script>

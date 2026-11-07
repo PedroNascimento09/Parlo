@@ -7528,6 +7528,15 @@ const styleControls = [
   ...document.querySelectorAll(".style-card"),
   ...document.querySelectorAll(".style-chip"),
 ];
+const styleOpen = document.getElementById("style-open");
+const styleSheet = document.getElementById("style-sheet");
+const styleOpenName = document.getElementById("style-open-name");
+const styleOpenSub = document.getElementById("style-open-sub");
+const STYLE_TEXT = {
+  formal: ["home.formal", "style.formalSub"],
+  casual: ["home.casual", "style.casualSub"],
+  excited: ["home.excited", "style.excitedSub"],
+};
 const STYLES = ["formal", "casual", "excited"];
 const THEMES = ["system", "light", "dark"];
 const themeChoices = [...document.querySelectorAll("[data-theme-choice]")];
@@ -7590,6 +7599,46 @@ function paintStyleControls() {
   for (const control of styleControls) {
     control.setAttribute("aria-pressed", String(control.dataset.style === chosen));
   }
+  paintStyleTrigger(chosen);
+}
+
+function paintStyleTrigger(chosen) {
+  if (!styleOpenName || !styleOpenSub) {
+    return;
+  }
+  if (!chosen) {
+    styleOpenName.textContent = t("style.title", "Writing style");
+    styleOpenSub.textContent = t(
+      "style.note",
+      "Shapes the punctuation everywhere you dictate.",
+    );
+    return;
+  }
+  const [nameKey, subKey] = STYLE_TEXT[chosen];
+  styleOpenName.textContent = t(nameKey, "");
+  styleOpenSub.textContent = t(subKey, "");
+}
+
+function openStyleSheet() {
+  if (!styleSheet || !styleOpen) {
+    return;
+  }
+  styleSheet.hidden = false;
+  styleOpen.setAttribute("aria-expanded", "true");
+  const chosen = styleSheet.querySelector('.style-card[aria-pressed="true"]');
+  const first = chosen || styleSheet.querySelector(".style-card");
+  if (first) {
+    first.focus();
+  }
+}
+
+function closeStyleSheet() {
+  if (!styleSheet || !styleOpen) {
+    return;
+  }
+  styleSheet.hidden = true;
+  styleOpen.setAttribute("aria-expanded", "false");
+  styleOpen.focus();
 }
 
 function chooseStyle(style) {
@@ -7666,6 +7715,32 @@ nameInput.addEventListener("keydown", (event) => {
 for (const control of styleControls) {
   control.addEventListener("click", () => {
     chooseStyle(control.dataset.style);
+    if (control.closest("#style-sheet")) {
+      closeStyleSheet();
+    }
+  });
+}
+
+if (styleOpen) {
+  styleOpen.addEventListener("click", openStyleSheet);
+}
+
+const styleSheetClose = document.getElementById("style-sheet-close");
+if (styleSheetClose) {
+  styleSheetClose.addEventListener("click", closeStyleSheet);
+}
+
+if (styleSheet) {
+  styleSheet.addEventListener("click", (event) => {
+    if (event.target.dataset.sheetClose !== undefined) {
+      closeStyleSheet();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !styleSheet.hidden) {
+      event.preventDefault();
+      closeStyleSheet();
+    }
   });
 }
 
@@ -7674,9 +7749,6 @@ document.getElementById("style-save").addEventListener("click", () => {
   gateStep("gate-shortcut");
 });
 document.getElementById("style-skip").addEventListener("click", () => {
-  if (!storedStyle()) {
-    chooseStyle("formal");
-  }
   paintGate();
   gateStep("gate-shortcut");
 });

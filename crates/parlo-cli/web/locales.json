@@ -1378,7 +1378,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "صيغة قصيرة تقولها بصوت عالٍ: {heard} تصبح {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "عبارة تتحول إلى نص أطول: قل {heard} ويكتب Parlo {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "تغيير"
     },
     "cs": {
       "about.after": ". Nová verze se instaluje z krabice v horní části domovské stránky a nikdy sama.",
@@ -2712,7 +2713,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Krátká forma, kterou říkáš nahlas: {heard} se změní na {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Fráze, která se změní v delší text: řekni {heard} a Parlo napíše {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Změnit"
     },
     "da": {
       "about.after": ". En ny version installeres fra boksen øverst i Home, og aldrig alene.",
@@ -4046,7 +4048,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "En kort form du siger højt: {heard} bliver {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "En sætning der bliver længere tekst: sig {heard}, og Parlo skriver {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Skift"
     },
     "de": {
       "about.after": ". Eine neue Version wird aus der Box oben in Home installiert und niemals alleine.",
@@ -5380,7 +5383,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Eine Kurzform, die du laut sagst: {heard} wird zu {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Ein Satz, der zu längerem Text wird: sage {heard} und Parlo schreibt {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Ändern"
     },
     "en": {
       "about.after": ". A new version installs from the box at the top of Home, and never on its own.",
@@ -6714,7 +6718,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "A short form you say out loud: {heard} becomes {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "A phrase that becomes longer text: say {heard} and Parlo writes {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Change"
     },
     "es": {
       "about.after": ". Una nueva versión se instala desde el cuadro en la parte superior de Inicio, y nunca sola.",
@@ -8048,7 +8053,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Una forma corta que dices en voz alta: {heard} pasa a {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Una frase que se convierte en texto más largo: di {heard} y Parlo escribe {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Cambiar"
     },
     "fi": {
       "about.after": ". Uusi versio asennetaan etusivun yläreunassa olevasta laatikosta, ei koskaan itsestään.",
@@ -9382,7 +9388,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Lyhyt muoto, jonka sanot ääneen: {heard} muuttuu muotoon {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Fraasi, josta tulee pidempi teksti: sano {heard}, niin Parlo kirjoittaa {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Vaihda"
     },
     "fr": {
       "about.after": ". Une nouvelle version s'installe depuis la boîte en haut de l'Accueil, et jamais seule.",
@@ -10716,7 +10723,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Une forme courte dite à voix haute : {heard} devient {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Une phrase qui devient un texte plus long : dites {heard} et Parlo écrit {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Changer"
     },
     "it": {
       "about.after": ". Una nuova versione viene installata dalla casella nella parte superiore della Home e mai da sola.\n@@10:30@@\nRimuovere __PARLO_PH_0__ e le relative esportazioni da questo computer?",
@@ -12050,7 +12058,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Una forma breve che dici ad alta voce: {heard} diventa {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Una frase che diventa testo più lungo: di' {heard} e Parlo scrive {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Cambia"
     },
     "ja": {
       "about.after": "。新しいバージョンは、ホームの上部にあるボックスからインストールされます。単独でインストールされることはありません。",
@@ -13384,7 +13393,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "声に出す短い形: {heard} は {written} になります。",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "長い文章になる言い回し: {heard} と言うと Parlo が {written} と書きます。",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "変更"
     },
     "ko": {
       "about.after": ". 새 버전은 홈 상단에 있는 상자에서 설치되며 자체적으로는 설치되지 않습니다.",
@@ -14718,7 +14728,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "소리 내어 말하는 짧은 형태: {heard} 는 {written} 가 됩니다.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "더 긴 문장이 되는 표현: {heard} 라고 말하면 Parlo가 {written} 를 씁니다.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "변경"
     },
     "nb": {
       "about.after": ". En ny versjon installeres fra boksen på toppen av Home, og aldri på egen hånd.",
@@ -16052,7 +16063,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "En kort form du sier høyt: {heard} blir {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "En frase som blir lengre tekst: si {heard}, og Parlo skriver {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Endre"
     },
     "nl": {
       "about.after": ". Een nieuwe versie wordt geïnstalleerd vanuit de box bovenaan Home, en nooit uit zichzelf.",
@@ -17386,7 +17398,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Een korte vorm die je hardop zegt: {heard} wordt {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Een zin die langere tekst wordt: zeg {heard} en Parlo schrijft {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Wijzigen"
     },
     "pl": {
       "about.after": ". Nowa wersja instaluje się z pudełka na górze strony głównej, nigdy samodzielnie.",
@@ -18720,7 +18733,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Krótka forma wypowiadana na głos: {heard} zmienia się w {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Fraza, która staje się dłuższym tekstem: powiedz {heard}, a Parlo zapisze {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Zmień"
     },
     "pt": {
       "about.after": ". Uma nova versão instala-se pela caixa no topo do Início, e nunca sozinha.",
@@ -20054,7 +20068,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Uma forma curta que dizes em voz alta: {heard} passa a {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Uma frase que se torna texto mais longo: diz {heard} e o Parlo escreve {written}.",
       "tools.jobMissing": "A execução já não está disponível.",
-      "tools.jobState": "A execução terminou de forma inesperada."
+      "tools.jobState": "A execução terminou de forma inesperada.",
+      "text.Change": "Alterar"
     },
     "ro": {
       "about.after": ". O nouă versiune se instalează din caseta din partea de sus a Acasă și niciodată singură.",
@@ -21388,7 +21403,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "O formă scurtă rostită cu voce tare: {heard} devine {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "O expresie care devine text mai lung: spune {heard} și Parlo scrie {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Schimbă"
     },
     "ru": {
       "about.after": ". Новая версия устанавливается из коробки в верхней части главного экрана, а не сама по себе.",
@@ -22722,7 +22738,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Короткая форма, которую вы произносите: {heard} становится {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Фраза, которая превращается в длинный текст: скажите {heard}, и Parlo напишет {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Изменить"
     },
     "sv": {
       "about.after": ". En ny version installeras från lådan överst på Home, och aldrig på egen hand.",
@@ -24056,7 +24073,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "En kort form du säger högt: {heard} blir {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "En fras som blir längre text: säg {heard} och Parlo skriver {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Ändra"
     },
     "tr": {
       "about.after": ". Yeni bir sürüm Ana Sayfa'nın üst kısmındaki kutudan yüklenir ve hiçbir zaman tek başına yüklenmez.",
@@ -25390,7 +25408,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Sesli söylediğin kısa bir biçim: {heard} şuna dönüşür: {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Daha uzun metne dönüşen bir ifade: {heard} de, Parlo {written} yazsın.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Değiştir"
     },
     "uk": {
       "about.after": ". Нова версія встановлюється з коробки у верхній частині головної сторінки, але ніколи самостійно.",
@@ -26724,7 +26743,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "Коротка форма, яку ви промовляєте: {heard} стає {written}.",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "Фраза, що перетворюється на довший текст: скажіть {heard}, і Parlo напише {written}.",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "Змінити"
     },
     "zh": {
       "about.after": "。新版本从主页顶部的框中安装，而不是单独安装。",
@@ -28058,7 +28078,8 @@
       "text.A short form you say out loud: {heard} becomes {written}.": "你大声说出的简短形式：{heard} 变成 {written}。",
       "text.A phrase that becomes longer text: say {heard} and Parlo writes {written}.": "会变成更长文字的说法：说 {heard}，Parlo 就写 {written}。",
       "tools.jobMissing": "The run is no longer available.",
-      "tools.jobState": "The run ended unexpectedly."
+      "tools.jobState": "The run ended unexpectedly.",
+      "text.Change": "更改"
     }
   }
 }
