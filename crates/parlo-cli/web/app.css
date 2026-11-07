@@ -1523,6 +1523,7 @@ select.field-input {
 .meeting-said {
   grid-column: 1 / -1;
   display: block;
+  max-width: 62ch;
   margin: 0;
 }
 

@@ -3090,6 +3090,7 @@ async function loadDubProjects() {
     return;
   }
   try {
+    setNote(dubProjectsNote, "");
     const response = await fetch("/dub/projects", {
       headers: { Authorization: "Bearer " + token },
     });
@@ -3761,6 +3762,7 @@ function renderStoryCards(stories) {
 
 async function loadStories() {
   try {
+    setStoryStatus("");
     const response = await fetch("/stories", {
       headers: { Authorization: "Bearer " + token },
     });
@@ -4495,6 +4497,7 @@ window.addEventListener("pointercancel", () => finish());
 
 async function loadMeetings() {
   try {
+    setNote(meetingNote, "");
     const response = await fetch("/meetings", {
       cache: "no-store",
       headers: { Authorization: "Bearer " + token },
@@ -5912,6 +5915,7 @@ function historyStamp(entries) {
 
 async function loadHistory() {
   try {
+    setNote(historyNote, "");
     const response = await fetch("/history", {
       cache: "no-store",
       headers: { Authorization: "Bearer " + token },
