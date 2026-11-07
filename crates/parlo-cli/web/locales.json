@@ -1337,7 +1337,8 @@
       "word.to.Italian": "ايطالي",
       "word.to.Portuguese": "البرتغالية",
       "word.to.Russian": "الروسية",
-      "word.to.Spanish": "الاسبانية"
+      "word.to.Spanish": "الاسبانية",
+      "text.Listening": "يستمع"
     },
     "cs": {
       "about.after": ". Nová verze se instaluje z krabice v horní části domovské stránky a nikdy sama.",
@@ -2630,7 +2631,8 @@
       "word.to.Italian": "italsky",
       "word.to.Portuguese": "portugalština",
       "word.to.Russian": "ruský",
-      "word.to.Spanish": "španělština"
+      "word.to.Spanish": "španělština",
+      "text.Listening": "Poslouchá"
     },
     "da": {
       "about.after": ". En ny version installeres fra boksen øverst i Home, og aldrig alene.",
@@ -3923,7 +3925,8 @@
       "word.to.Italian": "italiensk",
       "word.to.Portuguese": "portugisisk",
       "word.to.Russian": "russisk",
-      "word.to.Spanish": "spansk"
+      "word.to.Spanish": "spansk",
+      "text.Listening": "Lytter"
     },
     "de": {
       "about.after": ". Eine neue Version wird aus der Box oben in Home installiert und niemals alleine.",
@@ -5216,7 +5219,8 @@
       "word.to.Italian": "Italienisch",
       "word.to.Portuguese": "Portugiesisch",
       "word.to.Russian": "Russisch",
-      "word.to.Spanish": "Spanisch"
+      "word.to.Spanish": "Spanisch",
+      "text.Listening": "Hört zu"
     },
     "en": {
       "about.after": ". A new version installs from the box at the top of Home, and never on its own.",
@@ -6509,7 +6513,8 @@
       "word.to.Italian": "Italian",
       "word.to.Portuguese": "Portuguese",
       "word.to.Russian": "Russian",
-      "word.to.Spanish": "Spanish"
+      "word.to.Spanish": "Spanish",
+      "text.Listening": "Listening"
     },
     "es": {
       "about.after": ". Una nueva versión se instala desde el cuadro en la parte superior de Inicio, y nunca sola.",
@@ -7802,7 +7807,8 @@
       "word.to.Italian": "italiano",
       "word.to.Portuguese": "portugués",
       "word.to.Russian": "ruso",
-      "word.to.Spanish": "español"
+      "word.to.Spanish": "español",
+      "text.Listening": "Escuchando"
     },
     "fi": {
       "about.after": ". Uusi versio asennetaan etusivun yläreunassa olevasta laatikosta, ei koskaan itsestään.",
@@ -9095,7 +9101,8 @@
       "word.to.Italian": "italialainen",
       "word.to.Portuguese": "portugali",
       "word.to.Russian": "venäjäksi",
-      "word.to.Spanish": "espanja"
+      "word.to.Spanish": "espanja",
+      "text.Listening": "Kuuntelee"
     },
     "fr": {
       "about.after": ". Une nouvelle version s'installe depuis la boîte en haut de l'Accueil, et jamais seule.",
@@ -10388,7 +10395,8 @@
       "word.to.Italian": "Italien",
       "word.to.Portuguese": "Portugais",
       "word.to.Russian": "russe",
-      "word.to.Spanish": "Espagnol"
+      "word.to.Spanish": "Espagnol",
+      "text.Listening": "Écoute"
     },
     "it": {
       "about.after": ". Una nuova versione viene installata dalla casella nella parte superiore della Home e mai da sola.\n@@10:30@@\nRimuovere __PARLO_PH_0__ e le relative esportazioni da questo computer?",
@@ -11681,7 +11689,8 @@
       "word.to.Italian": "italiano",
       "word.to.Portuguese": "portoghese",
       "word.to.Russian": "Russo",
-      "word.to.Spanish": "spagnolo"
+      "word.to.Spanish": "spagnolo",
+      "text.Listening": "In ascolto"
     },
     "ja": {
       "about.after": "。新しいバージョンは、ホームの上部にあるボックスからインストールされます。単独でインストールされることはありません。",
@@ -12974,7 +12983,8 @@
       "word.to.Italian": "イタリア語",
       "word.to.Portuguese": "ポルトガル語",
       "word.to.Russian": "ロシア語",
-      "word.to.Spanish": "スペイン語"
+      "word.to.Spanish": "スペイン語",
+      "text.Listening": "聞き取り中"
     },
     "ko": {
       "about.after": ". 새 버전은 홈 상단에 있는 상자에서 설치되며 자체적으로는 설치되지 않습니다.",
@@ -14267,7 +14277,8 @@
       "word.to.Italian": "이탈리아어",
       "word.to.Portuguese": "포르투갈어",
       "word.to.Russian": "러시아어",
-      "word.to.Spanish": "스페인어"
+      "word.to.Spanish": "스페인어",
+      "text.Listening": "듣는 중"
     },
     "nb": {
       "about.after": ". En ny versjon installeres fra boksen på toppen av Home, og aldri på egen hånd.",
@@ -15560,7 +15571,8 @@
       "word.to.Italian": "italiensk",
       "word.to.Portuguese": "portugisisk",
       "word.to.Russian": "russisk",
-      "word.to.Spanish": "spansk"
+      "word.to.Spanish": "spansk",
+      "text.Listening": "Lytter"
     },
     "nl": {
       "about.after": ". Een nieuwe versie wordt geïnstalleerd vanuit de box bovenaan Home, en nooit uit zichzelf.",
@@ -16853,7 +16865,8 @@
       "word.to.Italian": "Italiaans",
       "word.to.Portuguese": "Portugees",
       "word.to.Russian": "Russisch",
-      "word.to.Spanish": "Spaans"
+      "word.to.Spanish": "Spaans",
+      "text.Listening": "Luistert"
     },
     "pl": {
       "about.after": ". Nowa wersja instaluje się z pudełka na górze strony głównej, nigdy samodzielnie.",
@@ -18146,7 +18159,8 @@
       "word.to.Italian": "włoski",
       "word.to.Portuguese": "portugalski",
       "word.to.Russian": "Rosyjski",
-      "word.to.Spanish": "Hiszpański"
+      "word.to.Spanish": "Hiszpański",
+      "text.Listening": "Słucham"
     },
     "pt": {
       "about.after": ". Uma nova versão instala-se pela caixa no topo do Início, e nunca sozinha.",
@@ -19439,7 +19453,8 @@
       "word.to.Italian": "italiano",
       "word.to.Portuguese": "português",
       "word.to.Russian": "russo",
-      "word.to.Spanish": "espanhol"
+      "word.to.Spanish": "espanhol",
+      "text.Listening": "A ouvir"
     },
     "ro": {
       "about.after": ". O nouă versiune se instalează din caseta din partea de sus a Acasă și niciodată singură.",
@@ -20732,7 +20747,8 @@
       "word.to.Italian": "italiană",
       "word.to.Portuguese": "portugheză",
       "word.to.Russian": "rusă",
-      "word.to.Spanish": "spaniolă"
+      "word.to.Spanish": "spaniolă",
+      "text.Listening": "Ascultă"
     },
     "ru": {
       "about.after": ". Новая версия устанавливается из коробки в верхней части главного экрана, а не сама по себе.",
@@ -22025,7 +22041,8 @@
       "word.to.Italian": "итальянский",
       "word.to.Portuguese": "португальский",
       "word.to.Russian": "русский",
-      "word.to.Spanish": "испанский"
+      "word.to.Spanish": "испанский",
+      "text.Listening": "Слушаю"
     },
     "sv": {
       "about.after": ". En ny version installeras från lådan överst på Home, och aldrig på egen hand.",
@@ -23318,7 +23335,8 @@
       "word.to.Italian": "italienska",
       "word.to.Portuguese": "portugisiska",
       "word.to.Russian": "ryska",
-      "word.to.Spanish": "spanska"
+      "word.to.Spanish": "spanska",
+      "text.Listening": "Lyssnar"
     },
     "tr": {
       "about.after": ". Yeni bir sürüm Ana Sayfa'nın üst kısmındaki kutudan yüklenir ve hiçbir zaman tek başına yüklenmez.",
@@ -24611,7 +24629,8 @@
       "word.to.Italian": "İtalyan",
       "word.to.Portuguese": "Portekizce",
       "word.to.Russian": "Rusça",
-      "word.to.Spanish": "İspanyolca"
+      "word.to.Spanish": "İspanyolca",
+      "text.Listening": "Dinliyor"
     },
     "uk": {
       "about.after": ". Нова версія встановлюється з коробки у верхній частині головної сторінки, але ніколи самостійно.",
@@ -25904,7 +25923,8 @@
       "word.to.Italian": "італійська",
       "word.to.Portuguese": "португальська",
       "word.to.Russian": "російська",
-      "word.to.Spanish": "Іспанська"
+      "word.to.Spanish": "Іспанська",
+      "text.Listening": "Слухаю"
     },
     "zh": {
       "about.after": "。新版本从主页顶部的框中安装，而不是单独安装。",
@@ -27197,7 +27217,8 @@
       "word.to.Italian": "意大利语",
       "word.to.Portuguese": "葡萄牙语",
       "word.to.Russian": "俄语",
-      "word.to.Spanish": "西班牙语"
+      "word.to.Spanish": "西班牙语",
+      "text.Listening": "正在聆听"
     }
   }
 }

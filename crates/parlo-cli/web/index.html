@@ -703,6 +703,32 @@
     <button id="settings-apply" class="install settings-apply" type="button" disabled data-i18n="settings.apply">Apply</button>
   </div>
 
+  <template id="media-card">
+    <article class="media-card">
+      <div class="media-card-head">
+        <h3 class="media-card-title"></h3>
+        <span class="media-card-state"></span>
+      </div>
+      <p class="media-card-meta"></p>
+      <div class="media-card-body"></div>
+      <div class="media-card-actions"></div>
+    </article>
+  </template>
+  <template id="media-empty">
+    <div class="media-empty">
+      <p class="empty-kicker"></p>
+      <p class="empty-title"></p>
+      <p class="empty-text"></p>
+      <div class="empty-actions"><span class="empty-hint"></span></div>
+    </div>
+  </template>
+  <template id="media-message">
+    <p class="media-message"><span class="media-message-text"></span><span class="media-message-track" hidden><span class="media-message-fill"></span></span></p>
+  </template>
+  <template id="media-row">
+    <div class="media-row"><span class="media-row-text"></span><span class="media-row-state"></span><span class="media-row-extra"></span></div>
+  </template>
+
   <section class="settings library" id="library" aria-labelledby="library-title">
     <header class="settings-head">
       <h1 id="library-title" data-i18n="nav.library">Library</h1>
@@ -793,16 +819,8 @@
       <button id="meeting-note-add" class="install" type="button" data-i18n="text.Add note">Add note</button>
     </div>
     <h3 class="meeting-group" data-i18n="text.Transcripts">Transcripts</h3>
-    <dl class="status" id="meeting-list"></dl>
-    <div class="empty-state" id="meetings-empty">
-      <p class="empty-kicker" data-i18n="text.No transcript yet">No transcript yet</p>
-      <p class="empty-title" data-i18n="text.A meeting becomes text, line by line">A meeting becomes text, line by line</p>
-      <p class="empty-text" data-i18n="text.Give it a title and press Record a meeting. Every line lands here with the time it was said, and with speaker separation installed, who said it. The transcript never leaves this computer.">Give it a title and press Record a meeting. Every line lands here with the time it was said, and with speaker separation installed, who said it. The transcript never leaves this computer.</p>
-      <div class="empty-actions">
-        <button class="install" type="button" data-focus="meeting-title" data-i18n="text.Name the first meeting">Name the first meeting</button>
-        <span class="empty-hint" data-i18n="text.Or import a transcript you already have.">Or import a transcript you already have.</span>
-      </div>
-    </div>
+    <div class="media-list" id="meeting-list"></div>
+    
 
 <section class="settings settings-nested" id="retention" aria-labelledby="retention-title">
     <div class="settings-head">
@@ -839,7 +857,7 @@
         <button id="dub-projects-refresh" class="swap" type="button" data-i18n="text.Refresh">Refresh</button>
       </div>
       <p class="dub-projects-note" id="dub-projects-note" aria-live="polite" data-i18n="text.Finished and interrupted renders stay here after a restart.">Finished and interrupted renders stay here after a restart.</p>
-      <div class="dub-project-list" id="dub-project-list"></div>
+      <div class="media-list" id="dub-project-list" aria-live="polite"></div>
     </section>
     <div class="drop" id="drop" role="button" tabindex="0" aria-describedby="drop-hint">
       <p class="drop-title" data-i18n="text.Drop a video or audio file here">Drop a video or audio file here</p>
@@ -962,7 +980,7 @@
       <span class="batch-file" id="batch-selected" aria-live="polite"></span>
     </div>
     <p class="progress batch-status" id="batch-status" aria-live="polite" hidden></p>
-    <div class="batch-list" id="batch-list"></div>
+    <div class="media-list" id="batch-list" aria-live="polite"></div>
   </section>
 <section class="batch library-panel" id="stories" aria-labelledby="stories-title">
     <div class="batch-head">
@@ -975,7 +993,7 @@
           <h3 data-i18n="text.Your stories">Your stories</h3>
           <button id="story-new" class="swap" type="button" data-i18n="text.New story">New story</button>
         </div>
-        <div id="story-list"></div>
+        <div class="media-list" id="story-list" aria-live="polite"></div>
       </aside>
       <div class="story-editor">
         <label class="field" for="story-title">
@@ -1046,7 +1064,7 @@
         Favourites only
       </label>
     </div>
-    <dl class="status" id="history-list"></dl>
+    <div class="media-list" id="history-list"></div>
     <div class="settings-row" id="history-tools">
       <button id="history-export" class="swap" type="button" data-i18n="text.Save as Markdown">Save as Markdown</button>
       <label class="field" for="history-days">

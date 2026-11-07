@@ -1613,7 +1613,6 @@ const meetingText = document.getElementById("meeting-text");
 const meetingImport = document.getElementById("meeting-import");
 const meetingList = document.getElementById("meeting-list");
 const meetingNote = document.getElementById("meetings-note");
-const meetingsEmpty = document.getElementById("meetings-empty");
 const vocabularyKind = document.getElementById("vocabulary-kind");
 const vocabularyWrong = document.getElementById("vocabulary-wrong");
 const vocabularyRight = document.getElementById("vocabulary-right");
@@ -3027,49 +3026,23 @@ async function removeProject(project) {
 }
 
 function renderDubProjects(projects) {
-  dubProjectList.replaceChildren();
-  if (!projects.length) {
-    const empty = document.createElement("p");
-    empty.className = "dub-projects-empty";
-    empty.textContent = t(
-      "dub.noProjects",
-      "No projects yet. Import subtitles or dub a file to start one.",
-    );
-    dubProjectList.append(empty);
-    return;
-  }
-  for (const project of projects) {
-    const card = document.createElement("article");
-    card.className = "dub-project " + project.status;
-    const head = document.createElement("div");
-    head.className = "dub-project-head";
-    const title = document.createElement("h4");
-    title.textContent = project.title || t("dub.untitledProject", "Untitled project");
-    const badge = document.createElement("span");
-    badge.className = "dub-project-badge";
-    badge.textContent = dubProjectStatus(project.status);
-    head.append(title, badge);
-    const meta = document.createElement("p");
-    meta.className = "dub-project-meta";
-    meta.textContent = projectSummary(project);
-    card.append(head, meta);
+  const items = projects.map((project) => {
+    const body = [];
     if (project.error) {
-      const error = document.createElement("p");
-      error.className = "dub-project-error";
-      error.textContent = project.error;
-      card.append(error);
+      body.push(mediaMessage(project.error, "error"));
     }
-    const actions = document.createElement("div");
-    actions.className = "dub-project-actions";
+    const actions = [];
     if (project.status !== "invalid") {
       const open = document.createElement("button");
       open.type = "button";
       open.className = "swap";
       open.textContent = t("dub.open", "Open");
       open.addEventListener("click", () => {
-        openProject(project.id).catch((failure) => showError(failure.message));
+        openProject(project.id).catch((failure) =>
+          setNote(dubProjectsNote, failure.message, "error"),
+        );
       });
-      actions.append(open);
+      actions.push(open);
     }
     if (project.status === "interrupted" || project.status === "failed") {
       const recover = document.createElement("button");
@@ -3077,25 +3050,40 @@ function renderDubProjects(projects) {
       recover.className = "install";
       recover.textContent = t("dub.recover", "Recover");
       recover.addEventListener("click", () => recoverProject(project.id, recover));
-      actions.append(recover);
+      actions.push(recover);
     }
     if (project.exports && project.exports.length) {
       const download = document.createElement("a");
       download.className = "swap";
       download.href = project.exports[0].url;
       download.textContent = t("dub.download", "Download");
-      actions.append(download);
+      actions.push(download);
     }
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "swap";
-    remove.textContent = "Remove";
+    remove.textContent = t("text.Remove", "Remove");
     remove.addEventListener("click", () => removeProject(project));
-    actions.append(remove);
-    card.append(actions);
-    dubProjectList.append(card);
-  }
+    actions.push(remove);
+    return mediaCard({
+      title: project.title || t("dub.untitledProject", "Untitled project"),
+      meta: projectSummary(project),
+      state: dubProjectStatus(project.status),
+      tone:
+        project.status === "failed" || project.status === "invalid" ? "failed" : project.status,
+      body,
+      actions,
+    });
+  });
+  renderMedia(dubProjectList, items, {
+    kicker: t("library.tabs.files", "Files"),
+    title: t(
+      "dub.noProjects",
+      "No projects yet. Import subtitles or dub a file to start one.",
+    ),
+  });
 }
+
 
 async function loadDubProjects() {
   if (!dubProjectList) {
@@ -3112,7 +3100,7 @@ async function loadDubProjects() {
     renderDubProjects(Array.isArray(payload.projects) ? payload.projects : []);
     dubProjectsNote.textContent = "Finished and interrupted renders stay here after a restart.";
   } catch (failure) {
-    dubProjectsNote.textContent = failure.message || "The projects could not be listed.";
+    setNote(dubProjectsNote, failure.message || "The projects could not be listed.", "error");
   }
 }
 
@@ -3187,83 +3175,91 @@ function batchSummary(batch) {
 }
 
 function renderBatches(batches) {
-  batchList.replaceChildren();
-  if (!batches.length) {
-    const empty = document.createElement("p");
-    empty.className = "batch-empty";
-    empty.textContent = "No batch yet. Choose files and at least one language.";
-    batchList.append(empty);
-    return;
-  }
-  for (const batch of batches) {
-    const card = document.createElement("article");
-    card.className = "batch-card " + batch.state;
-    const head = document.createElement("div");
-    head.className = "batch-card-head";
-    const title = document.createElement("h3");
-    title.textContent = batch.story
-      ? t("batch.storyRender", "Story render")
-      : t("batch.title", "Batch {id}", { id: batch.id.slice(-6) });
-    const state = document.createElement("span");
-    state.className = "batch-badge";
-    state.textContent = batchStateLabel(batch.state);
-    head.append(title, state);
-    const summary = document.createElement("p");
-    summary.className = "batch-summary";
-    summary.textContent = batchSummary(batch);
-    card.append(head, summary);
+  const items = batches.map((batch) => {
+    const done = batch.items.filter((item) => item.state === "done").length;
+    const active = batch.state === "queued" || batch.state === "running";
+    const body = [];
+    if (active) {
+      body.push(
+        mediaMessage(
+          t(
+            done === 1 ? "text.{count} file ready" : "text.{count} files ready",
+            "",
+            { count: done },
+          ),
+          "running",
+          batch.items.length ? (100 * done) / batch.items.length : 0,
+        ),
+      );
+    }
+    if (batch.items.length) {
+      const rows = document.createElement("div");
+      rows.className = "media-list";
+      for (const item of batch.items) {
+        const extra = [];
+        if (item.state === "done") {
+          const link = document.createElement("a");
+          link.className = "swap";
+          link.href =
+            "/batch/" + encodeURIComponent(batch.id) + "/items/" + encodeURIComponent(item.id);
+          link.textContent = t("text.Download", "Download");
+          extra.push(link);
+        }
+        if (item.state === "failed") {
+          extra.push(
+            mediaMessage(item.error || t("text.This line failed.", "the render failed"), "error"),
+          );
+          const retry = document.createElement("button");
+          retry.type = "button";
+          retry.className = "swap";
+          retry.textContent = t("text.Retry", "Retry");
+          retry.addEventListener("click", () => retryBatchItem(batch.id, item.id, retry));
+          extra.push(retry);
+        }
+        rows.append(
+          mediaRow({
+            text: item.title + " → " + languageName(item.to),
+            state: stateLabel(item.state === "running" ? "rendering" : item.state),
+            extra,
+          }),
+        );
+      }
+      body.push(rows);
+    }
+    const actions = [];
     if (batch.state === "done" || batch.state === "failed") {
       const report = document.createElement("a");
-      report.className = "batch-report";
+      report.className = "swap";
       report.href = "/batch/" + encodeURIComponent(batch.id) + "/report";
-      report.textContent = "Download report";
-      card.append(report);
+      report.textContent = t("text.Download report", "Download report");
+      actions.push(report);
     }
     if (batch.state === "draft" && batch.items.length) {
       const start = document.createElement("button");
       start.type = "button";
       start.className = "install";
-      start.textContent = "Start queue";
+      start.textContent = t("text.Start queue", "Start queue");
       start.addEventListener("click", () => startBatch(batch.id, start));
-      card.append(start);
+      actions.push(start);
     }
-    const items = document.createElement("ul");
-    items.className = "batch-items";
-    for (const item of batch.items) {
-      const row = document.createElement("li");
-      row.className = "batch-item " + item.state;
-      const text = document.createElement("span");
-      text.textContent =
-        item.title + " → " + languageName(item.to);
-      const status = document.createElement("span");
-      status.className = "batch-item-state";
-      status.textContent = stateLabel(item.state === "running" ? "rendering" : item.state);
-      row.append(text, status);
-      if (item.state === "done") {
-        const link = document.createElement("a");
-        link.className = "batch-download";
-        link.href = "/batch/" + encodeURIComponent(batch.id) + "/items/" + encodeURIComponent(item.id);
-        link.textContent = "Download";
-        row.append(link);
-      }
-      if (item.state === "failed") {
-        const reason = document.createElement("span");
-        reason.className = "batch-error";
-        reason.textContent = item.error || "the render failed";
-        row.append(reason);
-        const retry = document.createElement("button");
-        retry.type = "button";
-        retry.className = "swap";
-        retry.textContent = "Retry";
-        retry.addEventListener("click", () => retryBatchItem(batch.id, item.id, retry));
-        row.append(retry);
-      }
-      items.append(row);
-    }
-    card.append(items);
-    batchList.append(card);
-  }
+    return mediaCard({
+      title: batch.story
+        ? t("batch.storyRender", "Story render")
+        : t("batch.title", "Batch {id}", { id: batch.id.slice(-6) }),
+      meta: batchSummary(batch),
+      state: batchStateLabel(batch.state),
+      tone: batch.state === "failed" ? "failed" : batch.state,
+      body,
+      actions,
+    });
+  });
+  renderMedia(batchList, items, {
+    kicker: t("library.tabs.batch", "Batch"),
+    title: t("text.No batch yet. Choose files and at least one language.", "No batch yet."),
+  });
+  setNote(batchStatus, "");
 }
+
 
 async function loadBatches() {
   try {
@@ -3733,35 +3729,35 @@ async function saveStory() {
 }
 
 function renderStoryCards(stories) {
-  storyList.replaceChildren();
-  if (!stories.length) {
-    const empty = document.createElement("p");
-    empty.className = "batch-empty";
-    empty.textContent = "No story yet. Write one and give its characters voices.";
-    storyList.append(empty);
-    return;
-  }
-  for (const story of stories) {
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = "story-card" + (storyCurrent && storyCurrent.id === story.id ? " current" : "");
-    const title = document.createElement("strong");
-    title.textContent = story.title;
-    const meta = document.createElement("span");
-    meta.textContent =
-      (story.characters.length || 0) +
-      (story.characters.length === 1 ? " character" : " characters") +
-      " · " +
-      (story.chapters.length || 0) +
-      (story.chapters.length === 1 ? " chapter" : " chapters");
-    const state = document.createElement("span");
-    state.className = "story-card-state";
-    state.textContent = stateLabel(story.state || "draft");
-    card.append(title, meta, state);
-    card.addEventListener("click", () => loadStory(story.id));
-    storyList.append(card);
-  }
+  const items = stories.map((story) => {
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "swap";
+    open.textContent = t("text.Open", "Open");
+    open.addEventListener("click", () => loadStory(story.id));
+    const characters = story.characters.length || 0;
+    const chapters = story.chapters.length || 0;
+    return mediaCard({
+      title: story.title,
+      meta: [
+        t(characters === 1 ? "text.{count} word" : "text.{count} words", "", { count: characters }),
+        t(
+          chapters === 1 ? "text.{count} line of audio" : "text.{count} lines of audio",
+          "",
+          { count: chapters },
+        ),
+      ].join(" · "),
+      state: stateLabel(story.state || "draft"),
+      tone: story.state === "failed" ? "failed" : story.state || "draft",
+      actions: [open],
+    });
+  });
+  renderMedia(storyList, items, {
+    kicker: t("library.tabs.stories", "Stories"),
+    title: t("text.No story yet. Write one and give its characters voices.", "No story yet."),
+  });
 }
+
 
 async function loadStories() {
   try {
@@ -4508,12 +4504,132 @@ async function loadMeetings() {
     }
     renderMeetings(await response.json());
   } catch (failure) {
-    meetingNote.textContent = "The meetings could not be read.";
+    setNote(meetingNote, "The meetings could not be read.", "error");
   }
 }
 
+function mediaTemplate(id) {
+  const template = document.getElementById(id);
+  return template ? template.content.firstElementChild.cloneNode(true) : null;
+}
+
+function mediaCard({ title, meta, state, tone, body, actions }) {
+  const node = mediaTemplate("media-card");
+  node.dataset.tone = tone || "open";
+  node.querySelector(".media-card-title").textContent = title;
+  const metaNode = node.querySelector(".media-card-meta");
+  if (meta) {
+    metaNode.textContent = meta;
+  } else {
+    metaNode.remove();
+  }
+  const stateNode = node.querySelector(".media-card-state");
+  if (state) {
+    stateNode.textContent = state;
+  } else {
+    stateNode.remove();
+  }
+  const bodyNode = node.querySelector(".media-card-body");
+  for (const part of body || []) {
+    if (part) {
+      bodyNode.append(part);
+    }
+  }
+  if (!bodyNode.childElementCount) {
+    bodyNode.remove();
+  }
+  const actionNode = node.querySelector(".media-card-actions");
+  for (const action of actions || []) {
+    if (action) {
+      actionNode.append(action);
+    }
+  }
+  if (!actionNode.childElementCount) {
+    actionNode.remove();
+  }
+  return node;
+}
+
+function mediaEmpty({ kicker, title, text, hint }) {
+  const node = mediaTemplate("media-empty");
+  const put = (selector, value) => {
+    const target = node.querySelector(selector);
+    if (value) {
+      target.textContent = value;
+    } else {
+      target.remove();
+    }
+  };
+  put(".empty-kicker", kicker);
+  put(".empty-title", title);
+  put(".empty-text", text);
+  put(".empty-hint", hint);
+  if (!hint) {
+    node.querySelector(".empty-actions").remove();
+  }
+  return node;
+}
+
+function mediaMessage(text, kind, percent) {
+  const node = mediaTemplate("media-message");
+  node.dataset.kind = kind || "info";
+  node.querySelector(".media-message-text").textContent = text;
+  if (typeof percent === "number") {
+    const track = node.querySelector(".media-message-track");
+    const share = Math.max(0, Math.min(100, Math.round(percent)));
+    track.hidden = false;
+    track.setAttribute("role", "progressbar");
+    track.setAttribute("aria-valuemin", "0");
+    track.setAttribute("aria-valuemax", "100");
+    track.setAttribute("aria-valuenow", String(share));
+    node.querySelector(".media-message-fill").style.width = share + "%";
+  }
+  return node;
+}
+
+function mediaRow({ text, state, extra }) {
+  const node = mediaTemplate("media-row");
+  node.querySelector(".media-row-text").textContent = text;
+  const stateNode = node.querySelector(".media-row-state");
+  if (state) {
+    stateNode.textContent = state;
+  } else {
+    stateNode.remove();
+  }
+  const slot = node.querySelector(".media-row-extra");
+  for (const part of extra || []) {
+    if (part) {
+      slot.append(part);
+    }
+  }
+  if (!slot.childElementCount) {
+    slot.remove();
+  }
+  return node;
+}
+
+function renderMedia(host, items, copy) {
+  host.replaceChildren();
+  if (!items.length) {
+    if (copy) {
+      host.append(mediaEmpty(copy));
+    }
+    return false;
+  }
+  host.append(...items);
+  return true;
+}
+
+function setNote(node, text, kind) {
+  if (!node) {
+    return;
+  }
+  node.dataset.kind = kind || "info";
+  node.textContent = text || "";
+  node.hidden = !text;
+}
+
 function renderMeetings(meetings) {
-  meetingList.replaceChildren();
   const heading = meetingList.previousElementSibling;
   const ask = document.getElementById("meetings").querySelector("details.more");
   if (heading && heading.classList.contains("meeting-group")) {
@@ -4522,22 +4638,8 @@ function renderMeetings(meetings) {
   if (ask) {
     ask.hidden = !meetings.length;
   }
-  meetingsEmpty.hidden = meetings.length > 0;
-  if (!meetings.length) {
-    meetingNote.textContent = "Every line you record is kept on this computer.";
-    return;
-  }
-  for (const meeting of meetings) {
-    const term = document.createElement("dt");
-    const day = new Date(meeting.started_at || 0);
-    term.textContent =
-      (meeting.title || "Untitled") +
-      " · " +
-      day.toLocaleDateString() +
-      " · " +
-      meeting.segments.length +
-      " lines";
-    const detail = document.createElement("dd");
+  const items = meetings.map((meeting) => {
+    const body = [];
     const spoken = (meeting.segments || []).filter((segment) => segment.speaker !== "Note");
     if (spoken.length) {
       const lines = document.createElement("ol");
@@ -4549,85 +4651,124 @@ function renderMeetings(meetings) {
         when.className = "meeting-when";
         when.textContent = meetingClock(segment.at_ms);
         const who = document.createElement("span");
-        who.className = "meeting-who";
+        who.className = segment.named ? "meeting-who named" : "meeting-who";
         who.textContent = segment.spoken_by || segment.speaker;
-        if (segment.named) {
-          who.classList.add("named");
-        }
         const said = document.createElement("p");
         said.className = "meeting-said";
         said.textContent = segment.text;
-        said.append(document.createTextNode(" "), listenButton(segment.text));
+        said.append(document.createTextNode(" "), listenButton(segment.text, "meeting-listen"));
         line.append(when, who, said);
         lines.append(line);
       }
-      detail.append(lines);
+      body.push(lines);
     }
-    const speakers = meeting.speakers.filter((name) => name !== "Note");
+    const speakers = (meeting.speakers || []).filter((name) => name !== "Note");
     if (speakers.length) {
-      const speakerRow = document.createElement("div");
-      speakerRow.className = "meeting-row";
+      const row = document.createElement("div");
+      row.className = "meeting-row";
       const label = document.createElement("span");
       label.className = "meeting-label";
-      label.textContent = "Speakers";
-      speakerRow.append(label);
+      label.textContent = t("text.Speakers", "Speakers");
+      row.append(label);
       for (const speaker of speakers) {
         const chip = document.createElement("button");
         chip.type = "button";
         chip.className = "swap speaker-chip";
         chip.textContent = speaker;
-        chip.title = "Name this speaker everywhere in this meeting";
+        chip.title = t(
+          "text.Name this speaker everywhere in this meeting",
+          "Name this speaker everywhere in this meeting",
+        );
         chip.addEventListener("click", () => nameSpeaker(meeting, speaker));
-        speakerRow.append(chip);
+        row.append(chip);
       }
-      detail.append(speakerRow);
+      body.push(row);
     }
-    const agreed = [...(meeting.decisions || []), ...(meeting.actions || [])];
-    if (agreed.length) {
-      const summary = document.createElement("ul");
-      summary.className = "meeting-summary";
-      for (const decision of meeting.decisions || []) {
-        const line = document.createElement("li");
-        line.textContent = "Agreed · " + decision.speaker + " · " + decision.text;
-        summary.append(line);
-      }
-      for (const action of meeting.actions || []) {
-        const line = document.createElement("li");
-        line.textContent =
-          "To do · " + action.owner + (action.due ? " · " + action.due : "") + " · " + action.text;
-        summary.append(line);
-      }
-      detail.append(summary);
+    const summary = document.createElement("ul");
+    summary.className = "meeting-summary";
+    for (const decision of meeting.decisions || []) {
+      const line = document.createElement("li");
+      line.textContent = t("text.Agreed · {speaker} · {text}", "Agreed · {speaker} · {text}", {
+        speaker: decision.speaker,
+        text: decision.text,
+      });
+      summary.append(line);
+    }
+    for (const action of meeting.actions || []) {
+      const line = document.createElement("li");
+      line.textContent = action.due
+        ? t("text.To do · {owner} · {due} · {text}", "To do · {owner} · {due} · {text}", action)
+        : t("text.To do · {owner} · {text}", "To do · {owner} · {text}", action);
+      summary.append(line);
+    }
+    if (summary.childElementCount) {
+      body.push(summary);
     }
     for (const note of (meeting.segments || []).filter((segment) => segment.speaker === "Note")) {
       const line = document.createElement("p");
       line.className = "meeting-note";
-      line.textContent = "Note · " + meetingClock(note.at_ms) + " · " + note.text;
-      detail.append(line);
+      line.textContent = t("text.Note · {time} · {text}", "Note · {time} · {text}", {
+        time: meetingClock(note.at_ms),
+        text: note.text,
+      });
+      body.push(line);
     }
-    const actionRow = document.createElement("div");
-    actionRow.className = "meeting-row meeting-row-actions";
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "swap meeting-action";
-    remove.textContent = "Delete";
+    remove.className = "swap";
+    remove.textContent = t("text.Delete", "Delete");
     remove.addEventListener("click", () => deleteMeeting(meeting.id));
-    actionRow.append(remove);
     const download = document.createElement("button");
     download.type = "button";
-    download.className = "swap meeting-action";
-    download.textContent = "Save as Markdown";
-    download.title = "Save this meeting as a Markdown file";
+    download.className = "swap";
+    download.textContent = t("text.Save this meeting as a Markdown file", "Save as Markdown");
     download.addEventListener("click", () => downloadMeeting(meeting));
-    actionRow.append(download);
-    detail.append(actionRow);
-    meetingList.append(term, detail);
-  }
-  meetingNote.textContent =
-    meetings.length === 1
-      ? "1 meeting kept on this computer."
-      : meetings.length + " meetings kept on this computer.";
+    const day = new Date(meeting.started_at || 0);
+    const lines = (meeting.segments || []).length;
+    return mediaCard({
+      title: meeting.title || t("text.Untitled", "Untitled"),
+      meta: [
+        day.toLocaleDateString(),
+        lines
+          ? t(
+              lines === 1 ? "text.{count} line of audio" : "text.{count} lines of audio",
+              "",
+              { count: lines },
+            )
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      body,
+      actions: [remove, download],
+    });
+  });
+  renderMedia(meetingList, items, {
+    kicker: t("text.No transcript yet", "No transcript yet"),
+    title: t("text.A meeting becomes text, line by line", "A meeting becomes text, line by line"),
+    text: t(
+      "text.Give it a title and press Record a meeting. Every line lands here with the time it was said, and with speaker separation installed, who said it. The transcript never leaves this computer.",
+      "Give it a title and press Record a meeting. The transcript never leaves this computer.",
+    ),
+    hint: t(
+      "text.Or import a transcript you already have.",
+      "Or import a transcript you already have.",
+    ),
+  });
+  setNote(
+    meetingNote,
+    meetings.length
+      ? t(
+          meetings.length === 1
+            ? "text.{count} meeting kept on this computer."
+            : "text.{count} meetings kept on this computer.",
+          "",
+          { count: meetings.length },
+        )
+      : "",
+  );
 }
+
 
 async function downloadMeeting(meeting) {
   try {
@@ -4648,7 +4789,7 @@ async function downloadMeeting(meeting) {
     URL.revokeObjectURL(url);
     meetingNote.textContent = "Saved " + link.download + " in your downloads folder.";
   } catch (failure) {
-    meetingNote.textContent = "The meeting could not be saved as a file. Try again.";
+    setNote(meetingNote, "The meeting could not be saved as a file. Try again.", "error");
   }
 }
 
@@ -4671,7 +4812,7 @@ async function importMeeting() {
     meetingText.value = "";
     await loadMeetings();
   } catch (failure) {
-    meetingNote.textContent = failure.message || "The transcript could not be imported.";
+    setNote(meetingNote, failure.message || "The transcript could not be imported.", "error");
   }
 }
 
@@ -4701,7 +4842,7 @@ async function nameSpeaker(meeting, speaker) {
     }
     await loadMeetings();
   } catch (failure) {
-    meetingNote.textContent = failure.message || "The speaker could not be named.";
+    setNote(meetingNote, failure.message || "The speaker could not be named.", "error");
   }
 }
 
@@ -4717,7 +4858,7 @@ async function deleteMeeting(id) {
     }
     await loadMeetings();
   } catch (failure) {
-    meetingNote.textContent = "The meeting could not be deleted. Try again.";
+    setNote(meetingNote, "The meeting could not be deleted. Try again.", "error");
   }
 }
 
@@ -5189,7 +5330,7 @@ async function exportMeetings() {
         ? "Copied 1 meeting as Markdown."
         : "Copied " + meetings.length + " meetings as Markdown.";
   } catch (failure) {
-    meetingNote.textContent = "The meetings could not be exported. Try again.";
+    setNote(meetingNote, "The meetings could not be exported. Try again.", "error");
   }
 }
 
@@ -5786,7 +5927,7 @@ async function loadHistory() {
     fillHistoryApps();
     renderHistory();
   } catch (failure) {
-    historyNote.textContent = "The recent dictations could not be read.";
+    setNote(historyNote, "The recent dictations could not be read.", "error");
   }
 }
 
@@ -5966,32 +6107,15 @@ function renderHistory() {
   paintHome();
   paintInsights();
   paintPrograms();
-  historyList.replaceChildren();
-  if (!historyEntries.length) {
-    historyFilters.hidden = true;
-    if (historyTools) {
-      historyTools.hidden = true;
-    }
-    historyNote.textContent =
-      "Nothing dictated yet. Press Ctrl+Alt+D, speak, and the sentence appears here with the program it landed in.";
-    historyClearWrap.hidden = true;
-    historyClearConfirm.hidden = true;
-    return;
-  }
   const shown = historyEntries.filter(matchesHistory);
-  for (const entry of shown) {
-    const term = document.createElement("dt");
+  const items = shown.map((entry) => {
     const moment = new Date((entry.at || 0) * 1000);
     const when = [
       moment.toLocaleDateString([], { day: "numeric", month: "short" }),
       moment.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     ];
     if (entry.from && entry.to && entry.from !== entry.to) {
-      when.push(
-        languageName(entry.from) +
-          " → " +
-          languageName(entry.to),
-      );
+      when.push(languageName(entry.from) + " → " + languageName(entry.to));
     }
     if (entry.seconds > 0) {
       when.push(entry.seconds.toFixed(1) + " s");
@@ -6000,56 +6124,57 @@ function renderHistory() {
     if (program && program !== "unknown") {
       when.push(program);
     }
-    term.textContent = when.join(" · ");
-    const detail = document.createElement("dd");
     const words = document.createElement("button");
     words.type = "button";
     words.className = "history-text";
     words.textContent = entry.text;
-    words.title = "Copy this dictation again";
+    words.title = t("text.Copy this dictation again", "Copy this dictation again");
     words.addEventListener("click", () => copyHistory(entry.text));
-    detail.append(words);
+    const body = [words];
     if (entry.translation && entry.translation !== entry.text) {
       const translation = document.createElement("p");
       translation.className = "history-translation";
       translation.textContent = entry.translation;
-      detail.append(translation);
+      body.push(translation);
     }
-    const actions = document.createElement("div");
-    actions.className = "history-actions";
     const listen = listenButton(entry.translation || entry.text, "swap");
-    listen.title = "Hear this dictation aloud";
+    listen.title = t("text.Hear this dictation aloud", "Hear this dictation aloud");
     const star = document.createElement("button");
     star.type = "button";
     star.className = "swap";
-    star.textContent = entry.favourite ? "Favourite ✓" : "Favourite";
+    star.textContent = entry.favourite
+      ? t("text.Favourite ✓", "Favourite")
+      : t("text.Favourite", "Favourite");
     star.setAttribute("aria-pressed", String(Boolean(entry.favourite)));
-    star.title = "Mark this dictation so the favourite filter keeps it";
+    star.title = t(
+      "text.Mark this dictation so the favourite filter keeps it",
+      "Favourite",
+    );
     star.addEventListener("click", () => setFavourite(entry));
     const correct = document.createElement("button");
     correct.type = "button";
     correct.className = "swap";
-    correct.textContent = "Correct";
-    correct.title = "Replace the sentence Parlo wrote down";
+    correct.textContent = t("text.Correct", "Correct");
+    correct.title = t("text.Replace the sentence Parlo wrote down", "Correct");
     correct.addEventListener("click", () => editHistory(entry));
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "swap";
-    remove.textContent = "Delete";
-    remove.title = "Remove this dictation from this computer";
-    const ask = document.createElement("div");
+    remove.textContent = t("text.Delete this dictation?", "Delete");
+    remove.title = t("text.Remove this dictation from this computer", "Delete");
+    const ask = document.createElement("span");
     ask.className = "history-confirm";
     ask.hidden = true;
     const question = document.createElement("span");
-    question.textContent = "Delete this dictation?";
+    question.textContent = t("text.Delete this dictation?", "Delete this dictation?");
     const sure = document.createElement("button");
     sure.type = "button";
     sure.className = "install";
-    sure.textContent = "Delete";
+    sure.textContent = t("text.Delete", "Delete");
     const keep = document.createElement("button");
     keep.type = "button";
     keep.className = "swap";
-    keep.textContent = "Keep";
+    keep.textContent = t("text.Keep", "Keep");
     ask.append(question, sure, keep);
     remove.addEventListener("click", () => {
       ask.hidden = false;
@@ -6060,32 +6185,56 @@ function renderHistory() {
       remove.focus();
     });
     sure.addEventListener("click", () => deleteHistory(entry, sure, keep));
-    actions.append(listen, star, correct, remove);
-    detail.append(words, actions);
-    const card = document.createElement("div");
-    card.className = "history-entry";
-    card.append(term, detail, ask);
-    historyList.append(card);
-  }
-  historyNote.textContent =
-    shown.length === historyEntries.length
-      ? historyEntries.length === 1
-        ? "1 dictation kept on this computer."
-        : historyEntries.length + " dictations kept on this computer."
-      : shown.length + " of " + historyEntries.length + " dictations match.";
-  historyFilters.hidden = false;
+    body.push(ask);
+    return mediaCard({
+      title: when[0],
+      meta: when.slice(1).join(" · "),
+      body,
+      actions: [listen, star, correct, remove],
+    });
+  });
+  const hasEntries = renderMedia(historyList, items, {
+    kicker: t("library.tabs.history", "History"),
+    title: t(
+      "text.Nothing dictated yet. Press Ctrl+Alt+D, speak, and the sentence appears here with the program it landed in.",
+      "Nothing dictated yet.",
+    ),
+    text: t(
+      "text.Words, minutes, the programs your text landed in and a four week chart all come from the dictations kept on this computer. Nothing else is counted.",
+      "",
+    ),
+  });
+  historyFilters.hidden = !hasEntries;
   if (historyTools) {
-    historyTools.hidden = false;
+    historyTools.hidden = !hasEntries;
   }
-  historyClearWrap.hidden = false;
+  historyClearWrap.hidden = !hasEntries;
+  if (!hasEntries) {
+    historyClearConfirm.hidden = true;
+    setNote(historyNote, "");
+    return;
+  }
+  setNote(
+    historyNote,
+    shown.length === historyEntries.length
+      ? t(
+          historyEntries.length === 1
+            ? "text.{count} dictation kept on this computer."
+            : "text.{count} dictations kept on this computer.",
+          "",
+          { count: historyEntries.length },
+        )
+      : t("text.{count} dictation", "", { count: shown.length }) + " / " + historyEntries.length,
+  );
 }
+
 
 async function copyHistory(text) {
   try {
     await navigator.clipboard.writeText(text);
     historyNote.textContent = "Copied to the clipboard. Paste it where you need it.";
   } catch (failure) {
-    historyNote.textContent = "The clipboard refused the text. Select it here and copy by hand.";
+    setNote(historyNote, "The clipboard refused the text. Select it here and copy by hand.", "error");
   }
 }
 
@@ -6107,7 +6256,7 @@ async function setFavourite(entry) {
     await historyPost("/history/favourite", { id: entry.id, value: !entry.favourite });
     await loadHistory();
   } catch (failure) {
-    historyNote.textContent = failure.message;
+    setNote(historyNote, failure.message, "error");
   }
 }
 
@@ -6122,7 +6271,7 @@ async function editHistory(entry) {
     renderLearned(updated.suggestions || []);
     historyNote.textContent = "Corrected on this computer. Nothing was sent anywhere.";
   } catch (failure) {
-    historyNote.textContent = failure.message;
+    setNote(historyNote, failure.message, "error");
   }
 }
 
@@ -6202,7 +6351,7 @@ async function clearHistory() {
     historyClearConfirm.hidden = true;
     await loadHistory();
   } catch (failure) {
-    historyNote.textContent = "The dictations could not be deleted. Try again.";
+    setNote(historyNote, "The dictations could not be deleted. Try again.", "error");
   } finally {
     historyClearYes.disabled = false;
     historyClearKeep.disabled = false;
