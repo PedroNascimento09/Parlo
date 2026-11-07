@@ -4,7 +4,7 @@ Thanks for helping. Parlo is early, so the most valuable contributions right now
 
 If you are unsure whether something is worth opening, open it anyway. A bad issue is easier to fix than a good idea nobody told us about.
 
-Portuguese and English are both fine in issues and pull requests.
+Write issues and pull requests in English.
 
 ## Setup
 
