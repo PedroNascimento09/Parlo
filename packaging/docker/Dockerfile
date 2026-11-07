@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
 
 ARG PARLO_VERSION=0.2.6
-ARG PARLO_SHA256=c0b1556ab2ce38be58cdc2ee063c2cf7c9ac7e517a7c78855a5eb9259b356d07
+ARG PARLO_SHA256=5600d387001d22c26472c2eec6f6bc3d07ef906f06a42cb7e3732b27987157fe
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \

@@ -8,7 +8,7 @@ license=('Apache-2.0')
 depends=('gtk3' 'webkit2gtk-4.1' 'alsa-lib')
 options=('!strip' '!debug')
 source=("parlo-linux-x86_64.tar.gz::https://github.com/PedroNascimento09/Parlo/releases/download/v${pkgver}/parlo-linux-x86_64.tar.gz")
-sha256sums=('c0b1556ab2ce38be58cdc2ee063c2cf7c9ac7e517a7c78855a5eb9259b356d07')
+sha256sums=('5600d387001d22c26472c2eec6f6bc3d07ef906f06a42cb7e3732b27987157fe')
 
 package() {
   install -Dm755 "${srcdir}/parlo" "${pkgdir}/usr/bin/parlo"
