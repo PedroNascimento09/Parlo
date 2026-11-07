@@ -25,6 +25,10 @@ Tell the people you speak with that your voice is being translated. It is the de
 
 Parlo only translates the voice of the person speaking live. It does not accept a recording as a source for a synthetic voice, and it does not offer a way to clone someone else. Feature requests that would break this rule are declined.
 
+## Safety is not a slogan here
+
+The app translates speech; it does not absolve the person using it from the normal rules about consent, fraud, privacy, and harassment. If a use would be wrong without Parlo, it is still wrong with Parlo.
+
 ## Enforcement
 
 The maintainers may close issues, reject contributions, or block accounts that promote misuse. Nothing in the MIT license grants permission to use the software unlawfully; the license governs the code, this policy governs the community.

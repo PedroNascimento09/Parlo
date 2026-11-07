@@ -10,6 +10,8 @@ Parlo is pre-release. Only the latest commit on `main` receives security fixes.
 | 0.1.x | Yes |
 | older | No |
 
+If you are reporting something that could affect people who install from a release, prefer the release version line rather than the development line.
+
 ## Reporting a vulnerability
 
 Report privately through GitHub Security Advisories on the repository: **Security** tab, then **Report a vulnerability**.
@@ -19,11 +21,18 @@ Do not open a public issue, and do not include vulnerability details in a pull r
 Please include:
 
 - What the issue allows an attacker to do.
-- The version or commit.
+- The version or commit you can reproduce it on.
 - Steps to reproduce, with the smallest proof you can build.
 - Your operating system.
 
 You can expect an acknowledgement within 72 hours and an assessment within 7 days. Fixes are released as soon as they are ready, and reporters are credited unless they ask otherwise.
+
+## What Parlo is trying to protect
+
+- The common case is a local, offline translation and dictation tool that should never send audio or transcripts anywhere unless the user explicitly enables a cloud path.
+- If a change would make audio, transcripts, or voice samples leave the machine without the user asking, treat it as a serious issue.
+- If a change would let one person’s files or settings be read or written by another person’s input, treat it as a serious issue.
+- If a change would let an untrusted model file or untrusted input start running code, treat it as a serious issue.
 
 ## Scope
 

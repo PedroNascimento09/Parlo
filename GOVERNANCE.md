@@ -2,6 +2,8 @@
 
 Parlo is maintained by its copyright holders and grows through community contributions. This page says who decides what, so nobody has to guess.
 
+Parlo is a personal project with a public process. That means the rules are written down, decisions are visible, and the project tries to say no in the open when it says no.
+
 ## Roles
 
 - **Maintainers** merge changes, cut releases and speak for the project. Today that is the repository owner.
@@ -31,6 +33,8 @@ Third-party code is never accepted without a traceable origin and a licence that
 ## Releases
 
 A release happens when the accumulated work is worth a download, not per commit. The version advances one step from the last published tag, the notes live in `docs/releases/`, and a release only publishes when the licence gate passes in strict mode.
+
+The project does not treat every commit as a release, and it does not bump a version just because it can. If a new version is not noticeably useful to someone downloading it, it is not a release yet.
 
 ## Conduct and security
 

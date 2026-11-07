@@ -1,6 +1,6 @@
 # Support
 
-Parlo is a small open-source project without a support contract. What follows is what you can reasonably expect.
+Parlo is a small open-source project without a support contract. This page says what you can reasonably expect, and what you cannot.
 
 ## Where to ask
 
@@ -15,6 +15,8 @@ Parlo is a small open-source project without a support contract. What follows is
 
 Attach the output of `parlo doctor` and `parlo profile`, name your operating system and version, and say which engine and recogniser you used. A short recording helps enormously, but never upload a recording of another person without their consent.
 
+If something is flaky, say whether it failed once or every time, and whether it failed on a cold start or a warm one. That distinction matters more than it looks like it should.
+
 Known limits are documented: no GPU is required but slower machines run a smaller window, dubbing needs `ffmpeg`, and the virtual microphone needs Linux and PipeWire.
 
 ## What you will not get
@@ -26,3 +28,5 @@ Known limits are documented: no GPU is required but slower machines run a smalle
 ## Versions
 
 Only the latest release and `main` receive fixes. An older release is answered with "please update" unless the problem is a security issue.
+
+If a bug report is missing the basics above, it is not ignored on purpose; it is just harder to act on. Say what you did, what happened, and what you expected, and the issue is already most of the way there.

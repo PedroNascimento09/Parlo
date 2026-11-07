@@ -2,6 +2,8 @@
 
 Thanks for helping. Parlo is early, so the most valuable contributions right now are bug reports, hardware reports, and documentation fixes.
 
+If you are unsure whether something is worth opening, open it anyway. A bad issue is easier to fix than a good idea nobody told us about.
+
 ## Setup
 
 ```bash
@@ -36,6 +38,8 @@ CI runs the same checks on Linux, macOS, and Windows. A pull request that fails 
 - Public behaviour changes come with a documentation update.
 - No new dependency unless the alternative is meaningfully worse. Explain it in the description.
 
+If a pull request is large, say why it had to be large. Large changes are not refused because they are large; they are refused when they are vague.
+
 ## Code style
 
 - English identifiers, English messages, no comments: the code should explain itself, and the `docs/` folder explains the design.
@@ -60,16 +64,19 @@ You keep the copyright of what you write. No assignment is asked for.
 
 Never paste code from a source you cannot cite. If a change follows another project closely, name it and its licence in the pull request. A dependency under a copyleft licence belongs in an optional component, never in the core, and `python tools/licenses.py check` refuses it there.
 
-## Good first issues
+## First contributions that actually help
 
 - Add a hardware report for a machine you own.
 - Translate the README into your language.
 - Test Parlo with a calling app we have not covered.
 - Improve an error message that confused you.
+- Reproduce a bug on a different machine and say what is different.
 
 ## Reporting bugs
 
 Include the output of `parlo doctor`, your operating system and version, the exact command, and what you expected. Audio issues are much easier to fix with a short recording, but never upload a recording of another person without their consent.
+
+If something is flaky, say whether it failed once or every time, and whether it failed on a cold start or a warm one.
 
 ## Security issues
 
