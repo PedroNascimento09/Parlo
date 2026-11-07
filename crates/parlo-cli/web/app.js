@@ -3176,6 +3176,8 @@ function batchSummary(batch) {
 }
 
 function renderBatches(batches) {
+  batchBusy = batches.some((batch) => batch.state === "queued" || batch.state === "running");
+  lastBatches = batches;
   const items = batches.map((batch) => {
     const done = batch.items.filter((item) => item.state === "done").length;
     const active = batch.state === "queued" || batch.state === "running";
@@ -3196,7 +3198,7 @@ function renderBatches(batches) {
     if (batch.items.length) {
       const rows = document.createElement("div");
       rows.className = "media-list";
-      for (const item of batch.items) {
+      for (const item of batch.items.slice(0, batchRowsShown)) {
         const extra = [];
         if (item.state === "done") {
           const link = document.createElement("a");
@@ -3222,6 +3224,17 @@ function renderBatches(batches) {
             text: item.title + " → " + languageName(item.to),
             state: stateLabel(item.state === "running" ? "rendering" : item.state),
             extra,
+          }),
+        );
+      }
+      if (batch.items.length > batchRowsShown) {
+        rows.append(
+          mediaMore(batch.items.length - batchRowsShown, () => {
+            batchRowsShown = lastBatches.reduce(
+              (most, entry) => Math.max(most, entry.items.length),
+              12,
+            );
+            renderBatches(lastBatches);
           }),
         );
       }
@@ -3741,7 +3754,11 @@ function renderStoryCards(stories) {
     return mediaCard({
       title: story.title,
       meta: [
-        t(characters === 1 ? "text.{count} word" : "text.{count} words", "", { count: characters }),
+        t(
+          characters === 1 ? "text.{count} character" : "text.{count} characters",
+          "",
+          { count: characters },
+        ),
         t(
           chapters === 1 ? "text.{count} line of audio" : "text.{count} lines of audio",
           "",
@@ -4611,7 +4628,16 @@ function mediaRow({ text, state, extra }) {
   return node;
 }
 
-function renderMedia(host, items, copy) {
+function mediaMore(count, onMore) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "swap media-more";
+  button.textContent = t("text.Show the rest · {count} more", "", { count });
+  button.addEventListener("click", onMore);
+  return button;
+}
+
+function renderMedia(host, items, copy, limit = 24) {
   host.replaceChildren();
   if (!items.length) {
     if (copy) {
@@ -4619,7 +4645,10 @@ function renderMedia(host, items, copy) {
     }
     return false;
   }
-  host.append(...items);
+  host.append(...items.slice(0, limit));
+  if (items.length > limit) {
+    host.append(mediaMore(items.length - limit, () => renderMedia(host, items, copy, items.length)));
+  }
   return true;
 }
 
@@ -6419,7 +6448,7 @@ setInterval(() => {
     return;
   }
   if (currentRoute === "library") {
-    loadLibrary();
+    refreshLibraryWork();
   } else if (currentRoute === "home") {
     loadHistory();
   }
@@ -6539,6 +6568,15 @@ const LIBRARY_LOADERS = {
 };
 
 let libraryTab = "meetings";
+let batchBusy = false;
+let lastBatches = [];
+let batchRowsShown = 12;
+
+function refreshLibraryWork() {
+  if (libraryTab === "batch" && batchBusy) {
+    loadBatches();
+  }
+}
 
 function loadLibrary() {
   for (const load of LIBRARY_LOADERS[libraryTab] || []) {

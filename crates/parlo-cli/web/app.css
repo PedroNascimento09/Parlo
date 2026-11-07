@@ -594,6 +594,11 @@ select.field-input {
   gap: 8px;
 }
 
+.media-more {
+  justify-self: start;
+  margin-top: 4px;
+}
+
 .media-card-actions > * {
   min-width: 0;
   white-space: normal;

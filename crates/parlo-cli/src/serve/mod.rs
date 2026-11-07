@@ -59,6 +59,7 @@ const INDEX: &str = include_str!("../../web/index.html");
 const STYLESHEET: &str = include_str!("../../web/app.css");
 const SCRIPT: &str = include_str!("../../web/app.js");
 const LANGUAGES: &str = include_str!("../../web/languages.js");
+const ROUTES_SCRIPT: &str = include_str!("../../web/routes.js");
 const LANGUAGES_TABLE: &str = include_str!("../../web/languages.json");
 const ISLAND: &str = include_str!("../../web/island.html");
 const CAPTIONS: &str = include_str!("../../web/captions.html");
@@ -519,7 +520,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\"}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\",\"translation\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -538,7 +539,8 @@ impl Session {
             stored.share,
             json_string(&stored.share_pin),
             stored.share_port,
-            json_string(&stored.locale)
+            json_string(&stored.locale),
+            stored.features.translation
         )
     }
 }
@@ -1199,6 +1201,103 @@ fn handle(
             None => serde_json::json!({ "app": serde_json::Value::Null }),
         };
         return respond_json(stream, "200 OK", &answer.to_string()).map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/pronounce" {
+        let text = parameter(query, "text");
+        let text = if text.trim().is_empty() {
+            parameter(query, "word")
+        } else {
+            text
+        };
+        let text = text.trim();
+        if text.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"send a word or a sentence to pronounce\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let entry = parlo_core::pronounce::lookup(text);
+        let body = serde_json::json!({
+            "text": text,
+            "respell": parlo_core::pronounce::respell_in(text, None),
+            "word": entry.map(|entry| entry.word.clone()),
+            "ipa": entry.map(|entry| entry.ipa.clone()),
+            "cmu": entry.map(|entry| entry.cmu.clone()),
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
+    }
+
+    if method == "GET" && path == "/retention" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let days = parameter(query, "days").parse::<u64>().unwrap_or(30);
+        return match stale_retention(days) {
+            Ok((rows, stale)) => {
+                let body = serde_json::json!({
+                    "days": days,
+                    "count": stale.len(),
+                    "meetings": rows,
+                })
+                .to_string();
+                respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
+            }
+            Err(error) => respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve),
+        };
+    }
+
+    if method == "POST" && path == "/retention" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = serde_json::from_slice(&body).unwrap_or_default();
+        let days = request["days"].as_u64().unwrap_or(30);
+        let apply = request["apply"].as_bool().unwrap_or(false);
+        let (rows, stale) = match stale_retention(days) {
+            Ok(result) => result,
+            Err(error) => {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve)
+            }
+        };
+        let mut removed = 0;
+        if apply {
+            for id in &stale {
+                if let Err(error) = crate::meeting::delete(id) {
+                    return respond_json(
+                        stream,
+                        "500 Internal Server Error",
+                        &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+                removed += 1;
+            }
+        }
+        let body = serde_json::json!({
+            "days": days,
+            "count": stale.len(),
+            "removed": removed,
+            "applied": apply,
+            "meetings": rows,
+        })
+        .to_string();
+        return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
 
     if method == "GET" && path == "/meetings" {
@@ -2011,6 +2110,10 @@ fn handle(
     }
 
     if method == "GET" && path == "/settings" {
+        if !authorised(&headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
         return respond_json(stream, "200 OK", &session.as_json()).map(|()| Flow::Serve);
     }
 
@@ -4496,6 +4599,16 @@ fn handle(
         .map(|()| Flow::Serve);
     }
 
+    if method == "GET" && path == "/routes.js" {
+        return respond(
+            stream,
+            "200 OK",
+            "text/javascript; charset=utf-8",
+            ROUTES_SCRIPT.as_bytes(),
+        )
+        .map(|()| Flow::Serve);
+    }
+
     if method == "GET" && path == "/languages.js" {
         return respond(
             stream,
@@ -4927,11 +5040,34 @@ fn handle(
                 .map(|profile| profile.write.clone())
                 .unwrap_or_default()
         };
-        let target = dictation_target(&write, &session.chosen().from);
+        let chosen = session.chosen();
+        let from = chosen.from.clone();
+        let to = chosen.to.clone();
+        let target = dictation_target(&write, &from, &to, stored.features.translation);
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
-        let (text, translation) = match session.write(&pcm16, &target, clean.as_deref()) {
-            Ok(pair) => pair,
+        let first = session.write(&pcm16, &target, clean.as_deref());
+        let (text, translation, note, written) = match first {
+            Ok((text, translation)) => (text, translation, String::new(), target.clone()),
+            Err(error) if target != from && error.contains("no translation model") => {
+                match session.write(&pcm16, &from, clean.as_deref()) {
+                    Ok((text, translation)) => (
+                        text,
+                        translation,
+                        "The translation model is missing, so the sentence stayed in the language spoken."
+                            .to_string(),
+                        from.clone(),
+                    ),
+                    Err(error) => {
+                        return respond_json(
+                            stream,
+                            "500 Internal Server Error",
+                            &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                        )
+                        .map(|()| Flow::Serve);
+                    }
+                }
+            }
             Err(error) => {
                 return respond_json(
                     stream,
@@ -4944,14 +5080,8 @@ fn handle(
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
         let text = commands::apply(&text);
         let text = crate::style::shape(&text, &style);
-        let mut entry = crate::history::Entry::now(
-            &text,
-            &translation,
-            &session.chosen().from,
-            &target,
-            &app,
-            "dictate",
-        );
+        let mut entry =
+            crate::history::Entry::now(&text, &translation, &from, &written, &app, "dictate");
         entry.seconds = f64::from(seconds);
         if let Err(error) = crate::history::append(&entry) {
             println!("could not store the dictation: {error}");
@@ -4961,10 +5091,11 @@ fn handle(
             started.elapsed().as_millis()
         );
         let body = format!(
-            "{{\"text\":\"{}\",\"translation\":\"{}\",\"seconds\":{seconds:.3},\"latency_ms\":{}}}",
+            "{{\"text\":\"{}\",\"translation\":\"{}\",\"seconds\":{seconds:.3},\"latency_ms\":{},\"note\":\"{}\"}}",
             json_string(&text),
             json_string(&translation),
-            started.elapsed().as_millis()
+            started.elapsed().as_millis(),
+            json_string(&note)
         );
         return respond_json(stream, "200 OK", &body).map(|()| Flow::Serve);
     }
@@ -5560,11 +5691,13 @@ fn respond_audio(stream: &mut dyn Stream, body: &[u8], transcript: &str) -> Resu
         .map_err(|error| error.to_string())
 }
 
-fn dictation_target(write: &str, from: &str) -> String {
-    if write.is_empty() {
-        from.to_string()
-    } else {
+fn dictation_target(write: &str, from: &str, to: &str, translating: bool) -> String {
+    if !write.is_empty() {
         write.to_string()
+    } else if translating && from != to {
+        to.to_string()
+    } else {
+        from.to_string()
     }
 }
 
@@ -5590,6 +5723,28 @@ fn parameter(query: &str, name: &str) -> String {
         .find(|(key, _)| *key == name)
         .map(|(_, value)| percent_decode(value))
         .unwrap_or_default()
+}
+
+fn stale_retention(days: u64) -> Result<(Vec<serde_json::Value>, Vec<String>), String> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|elapsed| elapsed.as_millis() as u64)
+        .unwrap_or_default();
+    let cutoff = crate::retention::cutoff_ms(days, now)?;
+    let meetings = crate::meeting::list();
+    let stale = crate::retention::stale(&meetings, cutoff);
+    let rows = meetings
+        .iter()
+        .filter(|meeting| stale.contains(&meeting.id))
+        .map(|meeting| {
+            serde_json::json!({
+                "id": meeting.id,
+                "title": meeting.title,
+                "started_at": meeting.started_at,
+            })
+        })
+        .collect();
+    Ok((rows, stale))
 }
 
 fn restyle_fields(request: &serde_json::Value) -> Result<(String, String), String> {
@@ -5706,7 +5861,125 @@ mod tests {
     use parlo_core::engine::{Engine, EngineOutput, StreamPiece};
 
     #[test]
-    fn an_empty_write_choice_follows_the_spoken_language() {
+    fn the_library_payloads_carry_the_fields_the_panels_read() {
+        let meeting = crate::meeting::Meeting {
+            id: "m1".to_string(),
+            title: "Review".to_string(),
+            started_at: 1,
+            segments: vec![crate::meeting::Segment {
+                at_ms: 0,
+                speaker: "Speaker 1".to_string(),
+                text: "We ship on Friday.".to_string(),
+                name: None,
+            }],
+            speaker_hint: None,
+        };
+        let payload = meeting_json(meeting);
+        for key in [
+            "id",
+            "title",
+            "started_at",
+            "speakers",
+            "segments",
+            "actions",
+            "decisions",
+        ] {
+            assert!(payload.get(key).is_some(), "meetings lost {key}");
+        }
+        let segment = &payload["segments"][0];
+        for key in ["at_ms", "speaker", "spoken_by", "text", "named"] {
+            assert!(segment.get(key).is_some(), "a meeting line lost {key}");
+        }
+
+        let batch = crate::batch::Batch {
+            id: "b1".to_string(),
+            from: "en".to_string(),
+            targets: vec!["pt".to_string()],
+            timing: "natural".to_string(),
+            fastest: 1.0,
+            slowest: 2.0,
+            keep_background: false,
+            state: crate::batch::RUNNING.to_string(),
+            created_at: 1,
+            updated_at: 1,
+            story: None,
+            items: vec![crate::batch::Item {
+                id: "i1".to_string(),
+                source: "a.wav".to_string(),
+                title: "a.wav".to_string(),
+                to: "pt".to_string(),
+                state: crate::batch::DONE.to_string(),
+                stage: "ready".to_string(),
+                progress: 1.0,
+                error: None,
+                out: Some("a.pt.wav".to_string()),
+                srt: None,
+                seconds: 1.0,
+                lines: 1,
+                started_at: None,
+                ended_at: None,
+            }],
+        };
+        let payload = serde_json::to_value(&batch).expect("a batch payload");
+        for key in ["id", "state", "from", "targets", "story", "items"] {
+            assert!(payload.get(key).is_some(), "batches lost {key}");
+        }
+        for key in ["id", "title", "to", "state", "error"] {
+            assert!(
+                payload["items"][0].get(key).is_some(),
+                "a batch item lost {key}"
+            );
+        }
+
+        let story = crate::story::Story {
+            id: "s1".to_string(),
+            title: "Coast".to_string(),
+            author: None,
+            year: None,
+            series: None,
+            comment: None,
+            language: "pt".to_string(),
+            state: crate::story::DRAFT.to_string(),
+            batch: None,
+            error: None,
+            rendered: 0,
+            cached: 0,
+            failed: 0,
+            created_at: 1,
+            updated_at: 1,
+            characters: vec![crate::story::Character {
+                id: "c1".to_string(),
+                name: "Keeper".to_string(),
+                voice: "pt_PT-tugão-medium".to_string(),
+            }],
+            chapters: vec![crate::story::Chapter {
+                id: "ch1".to_string(),
+                title: "Chapter 1".to_string(),
+                lines: Vec::new(),
+            }],
+        };
+        let payload = serde_json::to_value(&story).expect("a story payload");
+        for key in ["id", "title", "state", "characters", "chapters"] {
+            assert!(payload.get(key).is_some(), "stories lost {key}");
+        }
+
+        let app = include_str!("../../web/app.js");
+        for token in [
+            "meeting.segments",
+            "meeting.speakers",
+            "meeting.decisions",
+            "meeting.actions",
+            "batch.targets",
+            "story.characters",
+            "project.exports",
+            "entry.translation",
+        ] {
+            assert!(app.contains(token), "the panels no longer read {token}");
+        }
+    }
+
+    #[test]
+    fn an_empty_write_choice_follows_the_pair() {
         let table: serde_json::Value =
             serde_json::from_str(include_str!("../../web/languages.json"))
                 .expect("a language table");
@@ -5717,8 +5990,9 @@ mod tests {
                 crate::config::check_language(to),
                 "{to} would be refused with a 400"
             );
-            assert_eq!(dictation_target("", from), from);
-            assert_eq!(dictation_target(to, from), to);
+            assert_eq!(dictation_target("", from, to, true), to);
+            assert_eq!(dictation_target("", from, to, false), from);
+            assert_eq!(dictation_target(to, from, to, true), to);
         }
     }
 
@@ -6014,10 +6288,11 @@ mod tests {
     }
 
     #[test]
-    fn dictation_writes_the_language_spoken_unless_another_is_asked_for() {
-        assert_eq!(dictation_target("", "pt"), "pt");
-        assert_eq!(dictation_target("", "en"), "en");
-        assert_eq!(dictation_target("en", "pt"), "en");
+    fn dictation_follows_the_pair_until_a_language_is_chosen() {
+        assert_eq!(dictation_target("", "en", "pt", true), "pt");
+        assert_eq!(dictation_target("", "en", "pt", false), "en");
+        assert_eq!(dictation_target("en", "en", "pt", true), "en");
+        assert_eq!(dictation_target("de", "en", "pt", true), "de");
     }
 
     #[test]
@@ -7066,6 +7341,9 @@ mod tests {
 
     const ROUTES: &[(&str, &str, bool)] = &[
         ("GET", "/call", true),
+        ("GET", "/pronounce", false),
+        ("GET", "/retention", true),
+        ("POST", "/retention", true),
         ("GET", "/meetings", true),
         ("POST", "/meeting/window", true),
         ("POST", "/meeting/summary", true),
@@ -7096,7 +7374,7 @@ mod tests {
         ("ANY", "/history/favourite", false),
         ("ANY", "/history/edit", false),
         ("GET", "/locale", false),
-        ("GET", "/settings", false),
+        ("GET", "/settings", true),
         ("POST", "/settings", true),
         ("GET", "/intelligence", false),
         ("POST", "/intelligence", true),
@@ -7117,6 +7395,7 @@ mod tests {
         ("GET", "/voice/packs", false),
         ("POST", "/voice/packs", true),
         ("POST", "/dub", true),
+        ("GET", "/models", false),
         ("POST", "/models", true),
         ("POST", "/models/dictation", true),
         ("POST", "/models/rest", true),
@@ -7138,6 +7417,7 @@ mod tests {
         ("GET", "/live", false),
         ("GET", "/live.html", false),
         ("GET", "/app.js", false),
+        ("GET", "/routes.js", false),
         ("GET", "/languages.js", false),
         ("GET", "/languages.json", false),
         ("POST", "/ticket", true),

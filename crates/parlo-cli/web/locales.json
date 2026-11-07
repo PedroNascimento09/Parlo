@@ -1338,7 +1338,9 @@
       "word.to.Portuguese": "البرتغالية",
       "word.to.Russian": "الروسية",
       "word.to.Spanish": "الاسبانية",
-      "text.Listening": "يستمع"
+      "text.Listening": "يستمع",
+      "text.{count} character": "{count} شخصية",
+      "text.Show the rest · {count} more": "أظهر الباقي · {count} أخرى"
     },
     "cs": {
       "about.after": ". Nová verze se instaluje z krabice v horní části domovské stránky a nikdy sama.",
@@ -2632,7 +2634,9 @@
       "word.to.Portuguese": "portugalština",
       "word.to.Russian": "ruský",
       "word.to.Spanish": "španělština",
-      "text.Listening": "Poslouchá"
+      "text.Listening": "Poslouchá",
+      "text.{count} character": "{count} postava",
+      "text.Show the rest · {count} more": "Zobrazit zbytek · další {count}"
     },
     "da": {
       "about.after": ". En ny version installeres fra boksen øverst i Home, og aldrig alene.",
@@ -3926,7 +3930,9 @@
       "word.to.Portuguese": "portugisisk",
       "word.to.Russian": "russisk",
       "word.to.Spanish": "spansk",
-      "text.Listening": "Lytter"
+      "text.Listening": "Lytter",
+      "text.{count} character": "{count} figur",
+      "text.Show the rest · {count} more": "Vis resten · {count} mere"
     },
     "de": {
       "about.after": ". Eine neue Version wird aus der Box oben in Home installiert und niemals alleine.",
@@ -5220,7 +5226,9 @@
       "word.to.Portuguese": "Portugiesisch",
       "word.to.Russian": "Russisch",
       "word.to.Spanish": "Spanisch",
-      "text.Listening": "Hört zu"
+      "text.Listening": "Hört zu",
+      "text.{count} character": "{count} Figur",
+      "text.Show the rest · {count} more": "Rest anzeigen · {count} weitere"
     },
     "en": {
       "about.after": ". A new version installs from the box at the top of Home, and never on its own.",
@@ -6514,7 +6522,9 @@
       "word.to.Portuguese": "Portuguese",
       "word.to.Russian": "Russian",
       "word.to.Spanish": "Spanish",
-      "text.Listening": "Listening"
+      "text.Listening": "Listening",
+      "text.{count} character": "{count} character",
+      "text.Show the rest · {count} more": "Show the rest · {count} more"
     },
     "es": {
       "about.after": ". Una nueva versión se instala desde el cuadro en la parte superior de Inicio, y nunca sola.",
@@ -7808,7 +7818,9 @@
       "word.to.Portuguese": "portugués",
       "word.to.Russian": "ruso",
       "word.to.Spanish": "español",
-      "text.Listening": "Escuchando"
+      "text.Listening": "Escuchando",
+      "text.{count} character": "{count} personaje",
+      "text.Show the rest · {count} more": "Mostrar el resto · {count} más"
     },
     "fi": {
       "about.after": ". Uusi versio asennetaan etusivun yläreunassa olevasta laatikosta, ei koskaan itsestään.",
@@ -9102,7 +9114,9 @@
       "word.to.Portuguese": "portugali",
       "word.to.Russian": "venäjäksi",
       "word.to.Spanish": "espanja",
-      "text.Listening": "Kuuntelee"
+      "text.Listening": "Kuuntelee",
+      "text.{count} character": "{count} hahmo",
+      "text.Show the rest · {count} more": "Näytä loput · {count} lisää"
     },
     "fr": {
       "about.after": ". Une nouvelle version s'installe depuis la boîte en haut de l'Accueil, et jamais seule.",
@@ -10396,7 +10410,9 @@
       "word.to.Portuguese": "Portugais",
       "word.to.Russian": "russe",
       "word.to.Spanish": "Espagnol",
-      "text.Listening": "Écoute"
+      "text.Listening": "Écoute",
+      "text.{count} character": "{count} personnage",
+      "text.Show the rest · {count} more": "Afficher le reste · {count} de plus"
     },
     "it": {
       "about.after": ". Una nuova versione viene installata dalla casella nella parte superiore della Home e mai da sola.\n@@10:30@@\nRimuovere __PARLO_PH_0__ e le relative esportazioni da questo computer?",
@@ -11690,7 +11706,9 @@
       "word.to.Portuguese": "portoghese",
       "word.to.Russian": "Russo",
       "word.to.Spanish": "spagnolo",
-      "text.Listening": "In ascolto"
+      "text.Listening": "In ascolto",
+      "text.{count} character": "{count} personaggio",
+      "text.Show the rest · {count} more": "Mostra il resto · altri {count}"
     },
     "ja": {
       "about.after": "。新しいバージョンは、ホームの上部にあるボックスからインストールされます。単独でインストールされることはありません。",
@@ -12984,7 +13002,9 @@
       "word.to.Portuguese": "ポルトガル語",
       "word.to.Russian": "ロシア語",
       "word.to.Spanish": "スペイン語",
-      "text.Listening": "聞き取り中"
+      "text.Listening": "聞き取り中",
+      "text.{count} character": "{count} キャラクター",
+      "text.Show the rest · {count} more": "残りを表示 · あと{count}件"
     },
     "ko": {
       "about.after": ". 새 버전은 홈 상단에 있는 상자에서 설치되며 자체적으로는 설치되지 않습니다.",
@@ -14278,7 +14298,9 @@
       "word.to.Portuguese": "포르투갈어",
       "word.to.Russian": "러시아어",
       "word.to.Spanish": "스페인어",
-      "text.Listening": "듣는 중"
+      "text.Listening": "듣는 중",
+      "text.{count} character": "{count} 캐릭터",
+      "text.Show the rest · {count} more": "나머지 보기 · {count}개 더"
     },
     "nb": {
       "about.after": ". En ny versjon installeres fra boksen på toppen av Home, og aldri på egen hånd.",
@@ -15572,7 +15594,9 @@
       "word.to.Portuguese": "portugisisk",
       "word.to.Russian": "russisk",
       "word.to.Spanish": "spansk",
-      "text.Listening": "Lytter"
+      "text.Listening": "Lytter",
+      "text.{count} character": "{count} figur",
+      "text.Show the rest · {count} more": "Vis resten · {count} til"
     },
     "nl": {
       "about.after": ". Een nieuwe versie wordt geïnstalleerd vanuit de box bovenaan Home, en nooit uit zichzelf.",
@@ -16866,7 +16890,9 @@
       "word.to.Portuguese": "Portugees",
       "word.to.Russian": "Russisch",
       "word.to.Spanish": "Spaans",
-      "text.Listening": "Luistert"
+      "text.Listening": "Luistert",
+      "text.{count} character": "{count} personage",
+      "text.Show the rest · {count} more": "Toon de rest · nog {count}"
     },
     "pl": {
       "about.after": ". Nowa wersja instaluje się z pudełka na górze strony głównej, nigdy samodzielnie.",
@@ -18160,7 +18186,9 @@
       "word.to.Portuguese": "portugalski",
       "word.to.Russian": "Rosyjski",
       "word.to.Spanish": "Hiszpański",
-      "text.Listening": "Słucham"
+      "text.Listening": "Słucham",
+      "text.{count} character": "{count} postać",
+      "text.Show the rest · {count} more": "Pokaż resztę · jeszcze {count}"
     },
     "pt": {
       "about.after": ". Uma nova versão instala-se pela caixa no topo do Início, e nunca sozinha.",
@@ -19454,7 +19482,9 @@
       "word.to.Portuguese": "português",
       "word.to.Russian": "russo",
       "word.to.Spanish": "espanhol",
-      "text.Listening": "A ouvir"
+      "text.Listening": "A ouvir",
+      "text.{count} character": "{count} personagem",
+      "text.Show the rest · {count} more": "Mostrar o resto · mais {count}"
     },
     "ro": {
       "about.after": ". O nouă versiune se instalează din caseta din partea de sus a Acasă și niciodată singură.",
@@ -20748,7 +20778,9 @@
       "word.to.Portuguese": "portugheză",
       "word.to.Russian": "rusă",
       "word.to.Spanish": "spaniolă",
-      "text.Listening": "Ascultă"
+      "text.Listening": "Ascultă",
+      "text.{count} character": "{count} personaj",
+      "text.Show the rest · {count} more": "Arată restul · încă {count}"
     },
     "ru": {
       "about.after": ". Новая версия устанавливается из коробки в верхней части главного экрана, а не сама по себе.",
@@ -22042,7 +22074,9 @@
       "word.to.Portuguese": "португальский",
       "word.to.Russian": "русский",
       "word.to.Spanish": "испанский",
-      "text.Listening": "Слушаю"
+      "text.Listening": "Слушаю",
+      "text.{count} character": "{count} персонаж",
+      "text.Show the rest · {count} more": "Показать остальные · ещё {count}"
     },
     "sv": {
       "about.after": ". En ny version installeras från lådan överst på Home, och aldrig på egen hand.",
@@ -23336,7 +23370,9 @@
       "word.to.Portuguese": "portugisiska",
       "word.to.Russian": "ryska",
       "word.to.Spanish": "spanska",
-      "text.Listening": "Lyssnar"
+      "text.Listening": "Lyssnar",
+      "text.{count} character": "{count} figur",
+      "text.Show the rest · {count} more": "Visa resten · {count} till"
     },
     "tr": {
       "about.after": ". Yeni bir sürüm Ana Sayfa'nın üst kısmındaki kutudan yüklenir ve hiçbir zaman tek başına yüklenmez.",
@@ -24630,7 +24666,9 @@
       "word.to.Portuguese": "Portekizce",
       "word.to.Russian": "Rusça",
       "word.to.Spanish": "İspanyolca",
-      "text.Listening": "Dinliyor"
+      "text.Listening": "Dinliyor",
+      "text.{count} character": "{count} karakter",
+      "text.Show the rest · {count} more": "Kalanı göster · {count} tane daha"
     },
     "uk": {
       "about.after": ". Нова версія встановлюється з коробки у верхній частині головної сторінки, але ніколи самостійно.",
@@ -25924,7 +25962,9 @@
       "word.to.Portuguese": "португальська",
       "word.to.Russian": "російська",
       "word.to.Spanish": "Іспанська",
-      "text.Listening": "Слухаю"
+      "text.Listening": "Слухаю",
+      "text.{count} character": "{count} персонаж",
+      "text.Show the rest · {count} more": "Показати решту · ще {count}"
     },
     "zh": {
       "about.after": "。新版本从主页顶部的框中安装，而不是单独安装。",
@@ -27218,7 +27258,9 @@
       "word.to.Portuguese": "葡萄牙语",
       "word.to.Russian": "俄语",
       "word.to.Spanish": "西班牙语",
-      "text.Listening": "正在聆听"
+      "text.Listening": "正在聆听",
+      "text.{count} character": "{count} 个角色",
+      "text.Show the rest · {count} more": "显示其余 · 还有 {count} 条"
     }
   }
 }
