@@ -12,12 +12,9 @@
   <a href="https://github.com/PedroNascimento09/Parlo/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
   <a href="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PedroNascimento09/Parlo/ci.yml?style=flat-square"></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-1e4f4a?style=flat-square"></a>
-  <a href="https://github.com/PedroNascimento09/Parlo/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
 </p>
 
 Parlo is a desktop program that turns speech into text without sending anything out. Press a shortcut, speak, and the phrase appears in the field you were already typing in, cleaned up and, if you ask, translated into another language. Everything stays on your computer. No account, no telemetry, no audio sent.
-
-If you want the shortest path into it, use the installer below. If you want to support the project, the short version is at the bottom, in two lines.
 
 <p align="center">
   <img src="docs/demo.gif" width="760" alt="The Parlo bar while it writes a translated sentence">
@@ -37,7 +34,7 @@ irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/insta
 
 That downloads the same content as the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. Same app, one command.
 
-If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
+If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
 
 **macOS and Linux:**
 
@@ -49,14 +46,11 @@ curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/script
 
 1. [Download the latest release](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe).
 2. Double-click `Parlo-Setup.exe`.
-3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**.
+3. If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**.
 
 **Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the install command. Those are recipes, not fully tested installs: no channel has been run end to end by the machine that wrote the manifests, and each one is marked partial there with what is still missing.
 
 The installer is light because it keeps the program separate from the heavy part. The program installs in a fraction of a second; the recogniser is a separate download of about 640 MB, offered the first time you use the app, and nothing else is downloaded until you press its button. Translation, read-aloud and captions are separate keys, and each one names the model and its size before anything moves. After that, the machine can be offline. `parlo install` and `parlo uninstall` do the same thing from a terminal, and uninstall keeps your models unless you add `--purge`.
-
-The first start can take around twenty seconds while the engine loads. The window says so instead of looking stuck.
-
 
 Each release carries a `SHA256SUMS.txt` with the hash of every file and a build provenance record that names the workflow, commit and repository that produced it.
 
@@ -80,11 +74,7 @@ The installer carries the programs, not the models. Open Parlo, and the Models p
 
 The first start can take around twenty seconds while the engine loads. The window says so instead of looking stuck.
 
----
-
-If the app makes sense to you, the simplest way to support it is to [star the repository](https://github.com/PedroNascimento09/Parlo). That is it. No message, no account, and it is the thing that most helps the project be seen by people who have not found it yet.
-
-If you also want to leave a message, the message is the repository, not my inbox.
+## What you can do
 
 **Dictate into any program.** `Ctrl+Alt+D` opens a small bar at the top of the screen, on the monitor where the cursor is. Speak, and the sentence is written into the window that had the focus, in the language you were writing in. `Ctrl+Alt+Shift+D` keeps listening open while you need it. When a program cannot accept typed text, the sentence goes to the clipboard, and `Escape` discards it.
 
@@ -188,6 +178,8 @@ Local mode makes no network calls. Audio is never written to disk unless you pas
 ## The honest state of the download on Windows
 
 The Windows build is unsigned. SmartScreen may ask once on first download. That is the expected behaviour for a new, unsigned installer on Windows, and it is not a claim that the file is malicious. You can verify the file you downloaded with the release SHA-256, and if you want the longer version, see [Windows code-signing reality](docs/WINDOWS_SIGNING_REALITY.md).
+
+If the app makes sense to you, the simplest way to support it is to [star the repository](https://github.com/PedroNascimento09/Parlo). That is it: no message, no account, and it is what helps the most.
 
 ## Where to read next
 
