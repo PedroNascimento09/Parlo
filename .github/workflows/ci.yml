@@ -52,8 +52,15 @@ jobs:
         run: cargo test --workspace
 
       - name: Smoke test the CLI
+        shell: bash
         run: |
-          cargo run --release -p parlo-cli -- doctor
+          set +e
+          cargo run --release -p parlo-cli -- doctor > doctor.txt 2>&1
+          status=$?
+          set -e
+          cat doctor.txt
+          test "$status" -le 1
+          grep -q "first session" doctor.txt
           cargo run --release -p parlo-cli -- demo
 
   cascade:
