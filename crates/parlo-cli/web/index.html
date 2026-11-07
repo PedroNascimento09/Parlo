@@ -307,20 +307,24 @@ try {
         <a class="home-link" href="#settings/dictation" data-i18n="insights.setup">Set up dictation</a>
       </div>
     </div>
-    <h3 class="meeting-group" data-i18n="insights.apps">Where the text landed</h3>
-    <ul class="insights-apps" id="insights-apps"></ul>
-    <h3 class="meeting-group" data-i18n="insights.topWords">Words you reach for</h3>
-    <ol class="insights-words" id="insights-top-words"></ol>
-    <h3 class="meeting-group" data-i18n="insights.weeks">The last four weeks</h3>
-    <div class="insights-days" id="insights-days" aria-hidden="true"></div>
-    <p class="settings-note" id="insights-days-note"></p>
-    <h3 class="meeting-group" data-i18n="text.Benchmark and memory">Benchmark and memory</h3>
-    <div class="tool-actions">
-      <button id="tools-bench" class="swap" type="button" data-i18n="text.Run the benchmark">Run the benchmark</button>
-      <button id="tools-soak" class="swap" type="button" data-i18n="text.Run a 20 second soak">Run a 20 second soak</button>
+    <div class="insights-bars" id="insights-bars">
+      <h3 class="meeting-group" data-i18n="insights.apps">Where the text landed</h3>
+      <ul class="insights-apps" id="insights-apps"></ul>
+      <h3 class="meeting-group" data-i18n="insights.topWords">Words you reach for</h3>
+      <ol class="insights-words" id="insights-top-words"></ol>
+      <h3 class="meeting-group" data-i18n="insights.weeks">The last four weeks</h3>
+      <div class="insights-days" id="insights-days" aria-hidden="true"></div>
+      <p class="settings-note" id="insights-days-note"></p>
     </div>
-    <p class="settings-note" id="tools-job-note" aria-live="polite"></p>
-    <div class="media-list" id="tools-job-list"></div>
+    <details class="insights-tools" id="insights-tools">
+      <summary data-i18n="text.Benchmark and memory">Benchmark and memory</summary>
+      <div class="tool-actions">
+        <button id="tools-bench" class="swap" type="button" data-i18n="text.Run the benchmark">Run the benchmark</button>
+        <button id="tools-soak" class="swap" type="button" data-i18n="text.Run a 20 second soak">Run a 20 second soak</button>
+      </div>
+      <p class="settings-note" id="tools-job-note" aria-live="polite"></p>
+      <div class="media-list" id="tools-job-list"></div>
+    </details>
   </section>
 
   <div class="settings-layout" id="settings-layout">
@@ -328,6 +332,7 @@ try {
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="you" data-i18n="settings.tabs.you">You</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="languages" data-i18n="settings.tabs.languages">Languages</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="dictation" data-i18n="settings.tabs.dictation">Dictation</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-tab="vocabulary" data-i18n="settings.tabs.vocabulary">Vocabulary</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="models" data-i18n="text.Models">Models</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="shortcuts" data-i18n="settings.tabs.shortcuts">Shortcuts</button>
     <button type="button" class="tab" role="tab" aria-selected="false" data-tab="advanced" data-i18n="settings.tabs.advanced">Advanced</button>
@@ -585,13 +590,7 @@ try {
         <span class="field-label" data-i18n="text.What it should write">What it should write</span>
         <input id="vocabulary-right" class="field-input" type="text" maxlength="240" autocomplete="off" spellcheck="false" placeholder="Parlo">
       </label>
-      <div class="preset-row field-wide" role="group" aria-label="Snippet examples">
-        <button class="preset" type="button" data-wrong="my linkedin" data-right="https://www.linkedin.com/in/example" data-i18n="text.My LinkedIn">My LinkedIn</button>
-        <button class="preset" type="button" data-wrong="my channel" data-right="https://www.youtube.com/@example" data-i18n="text.My channel">My channel</button>
-        <button class="preset" type="button" data-wrong="my calendar" data-right="https://cal.com/example" data-i18n="text.My calendar">My calendar</button>
-        <button class="preset" type="button" data-wrong="my sign off" data-right="Best, {{name}}" data-i18n="text.My sign off">My sign off</button>
-      </div>
-      <p class="settings-note field-wide" id="vocabulary-hint">A snippet is a phrase that becomes a longer piece of text: say "my channel" and Parlo writes https://www.youtube.com/@example.</p>
+      <p class="settings-note field-wide" id="vocabulary-hint" data-i18n="vocabulary.hint">A snippet turns a short phrase into a longer piece of text, like your sign off.</p>
       <button id="vocabulary-add" class="install" type="button" data-i18n="text.Add">Add</button>
     </div>
     <dl class="status" id="vocabulary-list"></dl>
@@ -612,9 +611,9 @@ try {
 <section class="settings" id="models" aria-labelledby="models-title">
     <div class="models-head">
       <h2 id="models-title" data-i18n="text.Models">Models</h2>
-      <p class="models-note" id="models-note" aria-live="polite"></p>
     </div>
     <ul class="models-list" id="models-list"></ul>
+    <p class="models-note" id="models-note" aria-live="polite"></p>
     <div class="models-progress" id="models-progress" hidden>
       <div class="models-bar"><span id="models-fill"></span></div>
       <p class="models-progress-note" id="models-progress-note" aria-live="polite"></p>

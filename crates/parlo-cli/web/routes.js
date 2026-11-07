@@ -7,7 +7,15 @@
 })(typeof globalThis === "object" ? globalThis : this, function () {
   const ROUTES = ["home", "library", "voice", "insights", "settings"];
   const LIBRARY_TABS = ["meetings", "files", "batch", "stories", "history"];
-  const SETTINGS_TABS = ["you", "languages", "dictation", "models", "shortcuts", "advanced"];
+  const SETTINGS_TABS = [
+    "you",
+    "languages",
+    "dictation",
+    "vocabulary",
+    "models",
+    "shortcuts",
+    "advanced",
+  ];
   const ALIASES = { meetings: "library/meetings" };
 
   function parseHash(hash) {

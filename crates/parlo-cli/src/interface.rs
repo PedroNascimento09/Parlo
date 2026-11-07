@@ -141,6 +141,9 @@ mod tests {
                 );
             }
         }
-        assert_eq!(tabs, 6, "the app keeps six settings tabs: you, languages, dictation, models, shortcuts, advanced");
+        assert_eq!(
+            tabs, 7,
+            "the app keeps seven settings tabs: you, languages, dictation, vocabulary, models, shortcuts, advanced"
+        );
     }
 }

@@ -1268,7 +1268,7 @@ function describeModels(state) {
 
   if (!missing.length) {
     modelsDownloading = false;
-    modelsNote.textContent = "Every model this build offers is on this machine.";
+    modelsNote.textContent = "";
     modelsInstall.hidden = true;
     reflectFirstRun(false, dictationReady, false);
     return true;
@@ -1283,23 +1283,10 @@ function describeModels(state) {
     reflectFirstRun(false, dictationReady, true);
     return false;
   }
-  const byFeature = new Map();
-  for (const model of missing) {
-    const feature = t("text." + (model.feature || "A feature"), model.feature || "A feature");
-    if (!byFeature.has(feature)) {
-      byFeature.set(feature, []);
-    }
-    byFeature.get(feature).push(t("text." + model.name, model.name));
-  }
-  const joiner = " " + t("text.and", "and") + " ";
-  const sentences = Array.from(
-    byFeature,
-    ([feature, names]) =>
-      feature + " " + t("text.needs", "needs") + " " + names.join(joiner),
+  modelsNote.textContent = t(
+    "text.Some models are missing. They are a one time download and stay on this machine.",
+    "Some models are missing. They are a one time download and stay on this machine.",
   );
-  modelsNote.textContent = sentences.length
-    ? t("text.Missing: {items}. Each one downloads on its own.", "", { items: sentences.join("; ") })
-    : "Some models are missing. They are a one time download and stay on this machine.";
   modelsInstall.hidden = false;
   modelsDictation.hidden = !missing.some((model) => model.id === "parakeet");
   modelsInstall.disabled = modelsPolling;
@@ -4968,8 +4955,10 @@ function renderVocabulary(profile) {
     rows.push({ kind: "snippet", wrong, right });
   }
   if (!rows.length) {
-    vocabularyNote.textContent =
-      "Nothing here yet. A snippet is the quickest win: say \"my linkedin\" and Parlo writes your link.";
+    vocabularyNote.textContent = t(
+      "vocabulary.empty",
+      "Nothing here yet. Add a name Parlo keeps getting wrong, or a snippet that stands for a longer line.",
+    );
     return;
   }
   for (const row of rows) {
@@ -4988,8 +4977,9 @@ function renderVocabulary(profile) {
     detail.append(written, remove);
     vocabularyList.append(term, detail);
   }
-  const count = rows.length === 1 ? "1 entry kept" : rows.length + " entries kept";
-  vocabularyNote.textContent = count + " on this computer.";
+  vocabularyNote.textContent = t("vocabulary.count", "{count} on this computer.", {
+    count: rows.length,
+  });
 }
 
 async function loadVocabulary() {
@@ -6014,10 +6004,7 @@ function matchesHistory(entry) {
 function paintInsights() {
   const wordsEl = document.getElementById("insights-words");
   const empty = historyEntries.length === 0;
-  for (const node of document.querySelectorAll("#insights h3.meeting-group")) {
-    node.hidden = empty;
-  }
-  for (const id of ["insights-apps", "insights-top-words", "insights-days", "insights-days-note", "insights-empty"]) {
+  for (const id of ["insights-bars", "insights-empty"]) {
     const node = document.getElementById(id);
     if (node) {
       node.hidden = id === "insights-empty" ? !empty : empty;
@@ -6618,7 +6605,8 @@ for (const button of document.querySelectorAll("#library-tabs .tab")) {
 const SETTINGS_TABS = {
   you: ["you"],
   languages: ["languages"],
-  dictation: ["settings", "programs", "vocabulary"],
+  dictation: ["settings", "programs"],
+  vocabulary: ["vocabulary"],
   models: ["models", "catalog"],
   shortcuts: ["shortcuts"],
   advanced: ["intelligence", "provider", "privacy", "about"],
@@ -7956,21 +7944,6 @@ async function loadProfiles() {
 loadProfiles();
 paintSettingsName();
 paintStyleControls();
-
-document.addEventListener("click", (event) => {
-  const preset = event.target.closest(".preset");
-  if (!preset) {
-    return;
-  }
-  vocabularyKind.value = "snippet";
-  vocabularyKind.dispatchEvent(new Event("change"));
-  document.getElementById("vocabulary-wrong").value = preset.dataset.wrong;
-  document.getElementById("vocabulary-right").value = preset.dataset.right.replace(
-    "{{name}}",
-    storedName() || "Alex",
-  );
-  document.getElementById("vocabulary-right").focus();
-});
 
 const vocabularyHint = document.getElementById("vocabulary-hint");
 if (vocabularyHint) {

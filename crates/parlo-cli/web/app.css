@@ -296,7 +296,6 @@ footer p + p {
 .talk,
 .live,
 .catalog-tab,
-.preset,
 
 .tab {
   border-radius: var(--radius-sm);
@@ -436,25 +435,6 @@ select.field-input {
   height: 16px;
   margin: 2px 0 0;
   accent-color: var(--accent);
-}
-
-.preset-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.preset {
-  padding: 8px 12px;
-  border: 1px solid var(--line-strong);
-  background: transparent;
-  color: var(--ink-soft);
-  font-size: 13px;
-}
-
-.preset:hover {
-  background: var(--surface-sunken);
-  color: var(--ink);
 }
 
 .tabs {
@@ -1028,7 +1008,7 @@ select.field-input {
 .insights-numbers dd {
   margin: 6px 0 0;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 32px;
   line-height: 1;
   color: var(--ink);
 }
@@ -1125,6 +1105,35 @@ select.field-input {
 .models-note,
 .dub-note {
   margin: 24px 0 0;
+}
+
+.insights-bars {
+  display: grid;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.insights-tools {
+  margin-top: 34px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.insights-tools > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-family: var(--font-label);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.insights-tools[open] > summary {
+  color: var(--ink);
+}
+
+.insights-tools .tool-actions {
+  margin-top: 14px;
 }
 
 .insights-numbers {
@@ -1288,7 +1297,6 @@ select.field-input {
 .settings-row > .field-wide,
 .settings-row > .check,
 .settings-row > .settings-note,
-.settings-row > .preset-row,
 .settings-row > .meeting-actions,
 .settings-row > .settings-apply {
   grid-column: 1 / -1;
