@@ -1909,7 +1909,8 @@ for (const input of [settingsShortcut, settingsHandsFree, settingsCaptions, sett
 
 let localeStrings = {};
 function t(key, fallback, values = {}) {
-  let text = localeStrings[key] || fallback || key;
+  const english = fallback || key.replace(/^text\./, "");
+  let text = localeStrings[key] || english;
   for (const [name, value] of Object.entries(values)) {
     text = text.replaceAll("{" + name + "}", String(value));
   }
@@ -4766,7 +4767,17 @@ function renderMeetings(meetings) {
   });
   setNote(
     meetingNote,
-    meetings.length ? meetings.length + " · " + t("nav.meetings", "Meetings") : "",
+    meetings.length
+      ? t(
+          meetings.length === 1
+            ? "text.{count} meeting kept on this computer."
+            : "text.{count} meetings kept on this computer.",
+          meetings.length === 1
+            ? "{count} meeting kept on this computer."
+            : "{count} meetings kept on this computer.",
+          { count: meetings.length },
+        )
+      : "",
   );
 }
 
@@ -5926,6 +5937,7 @@ async function loadHistory() {
     }
     const next = await response.json();
     if (historyStamp(next) === historyStamp(historyEntries)) {
+      paintHistoryNote();
       return;
     }
     historyEntries = next;
@@ -6203,7 +6215,7 @@ function renderHistory() {
     ),
     text: t(
       "text.Words, minutes, the programs your text landed in and a four week chart all come from the dictations kept on this computer. Nothing else is counted.",
-      "",
+      "Words, minutes, the programs your text landed in and a four week chart all come from the dictations kept on this computer. Nothing else is counted.",
     ),
   });
   historyFilters.hidden = !hasEntries;
@@ -6216,6 +6228,16 @@ function renderHistory() {
     setNote(historyNote, "");
     return;
   }
+  paintHistoryNote();
+}
+
+function paintHistoryNote() {
+  if (!historyEntries.length) {
+    setNote(historyNote, "");
+    return;
+  }
+  const shown = historyEntries.filter(matchesHistory);
+  const keptWord = shown.length === 1 ? "{count} dictation" : "{count} dictations";
   setNote(
     historyNote,
     shown.length === historyEntries.length
@@ -6226,10 +6248,11 @@ function renderHistory() {
           historyEntries.length === 1
             ? "{count} dictation kept on this computer."
             : "{count} dictations kept on this computer.",
-          "",
           { count: historyEntries.length },
         )
-      : t("text.{count} dictation", "", { count: shown.length }) + " / " + historyEntries.length,
+      : t("text." + keptWord, keptWord, { count: shown.length }) +
+        " / " +
+        historyEntries.length,
   );
 }
 
@@ -6635,8 +6658,7 @@ routeNow();
 checkLocalUpdate();
 loadModels();
 loadSettings().then(showNameGateIfNeeded);
-applyLocale();
-loadEverything();
+applyLocale().finally(loadEverything);
 
 const voiceForm = document.getElementById("voice-form");
 const voiceList = document.getElementById("voice-list");

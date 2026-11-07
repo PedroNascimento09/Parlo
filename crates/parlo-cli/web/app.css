@@ -3791,15 +3791,15 @@ input[type="checkbox"]:focus-visible,
 }
 
 @media (max-width: 900px) {
-  .tabs,
-  .studio-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
+  .tabs {
+    gap: 4px 16px;
   }
 
-  .tabs::-webkit-scrollbar,
-  .studio-tabs::-webkit-scrollbar {
-    display: none;
+  .studio-tabs {
+    gap: 0;
+  }
+
+  .studio-tab {
+    padding: 10px;
   }
 }
