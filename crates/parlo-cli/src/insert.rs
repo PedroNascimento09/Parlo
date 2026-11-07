@@ -110,6 +110,7 @@ mod win {
         pub fn GetForegroundWindow() -> Window;
         pub fn GetWindowThreadProcessId(window: Window, process: *mut u32) -> u32;
         pub fn SendInput(count: u32, inputs: *const Input, size: i32) -> u32;
+        pub fn SetForegroundWindow(window: Window) -> i32;
     }
 
     #[link(name = "kernel32")]
@@ -197,10 +198,27 @@ pub fn foreground() -> Result<(usize, String), String> {
 }
 
 #[cfg(windows)]
+fn focus(window: win::Window) -> Result<(), ()> {
+    use win::*;
+    if unsafe { GetForegroundWindow() } == window {
+        return Ok(());
+    }
+    unsafe {
+        SetForegroundWindow(window);
+    }
+    std::thread::sleep(std::time::Duration::from_millis(60));
+    if unsafe { GetForegroundWindow() } == window {
+        Ok(())
+    } else {
+        Err(())
+    }
+}
+
+#[cfg(windows)]
 pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     use win::*;
     let window = target as Window;
-    if unsafe { GetForegroundWindow() } != window {
+    if focus(window).is_err() {
         return Err("the window you were writing in is not in front any more".to_string());
     }
     let mut batch: Vec<Input> = Vec::new();

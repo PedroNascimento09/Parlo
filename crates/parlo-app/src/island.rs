@@ -141,11 +141,23 @@ pub fn listen(handle: AppHandle) {
         }
     }
 
+    #[cfg(windows)]
+    fn remember_target(handle: &AppHandle) {
+        let address = handle
+            .try_state::<crate::Address>()
+            .and_then(|address| address.0.lock().ok().and_then(|slot| slot.clone()));
+        if let Some((port, token)) = address {
+            let _ = crate::post(port, &token, "/dictate/begin");
+        }
+    }
+
+    #[cfg(windows)]
     fn armed() {
         if let Ok(mut slot) = PRESSED_AT.lock() {
             *slot = Some(Instant::now());
         }
         with_app(|handle| {
+            remember_target(handle);
             show(handle);
             tell(handle, "window.parloArm && window.parloArm()");
         });
@@ -166,6 +178,7 @@ pub fn listen(handle: AppHandle) {
 
     fn hands_free() {
         with_app(|handle| {
+            remember_target(handle);
             show(handle);
             tell(handle, "window.parloHandsFree && window.parloHandsFree()");
         });
@@ -365,5 +378,32 @@ mod bridge_tests {
                 "the overlay never exposes {call}"
             );
         }
+    }
+
+    #[test]
+    fn the_hook_remembers_the_target_before_the_island_takes_the_focus() {
+        let hook = include_str!("island.rs");
+        let start = hook.find("fn armed()").expect("there is no armed hook");
+        let end = hook.find("fn key_up()").expect("there is no key up hook");
+        let body = &hook[start..end];
+        let remembered = body
+            .find("remember_target(handle);")
+            .expect("the arm hook never remembers the target");
+        let shown = body
+            .find("show(handle);")
+            .expect("the arm hook never shows the island");
+        assert!(
+            remembered < shown,
+            "the island is shown before the window you were typing in is remembered, so the text would land in Parlo"
+        );
+    }
+
+    #[test]
+    fn the_island_can_be_dragged_from_the_page_the_engine_serves() {
+        let page = include_str!("../../parlo-cli/web/island.html");
+        assert!(
+            page.contains("startDragging") && page.contains("pointerdown"),
+            "the island has no way to be moved"
+        );
     }
 }

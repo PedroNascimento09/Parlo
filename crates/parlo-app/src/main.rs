@@ -17,8 +17,8 @@ mod island;
 mod presence;
 
 const READY_TIMEOUT: Duration = Duration::from_secs(240);
-const ISLAND_WIDTH: f64 = 560.0;
-const ISLAND_HEIGHT: f64 = 96.0;
+const ISLAND_WIDTH: f64 = 640.0;
+const ISLAND_HEIGHT: f64 = 132.0;
 const ISLAND_MARGIN: f64 = 64.0;
 
 struct Engine(Mutex<Option<Child>>);

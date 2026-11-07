@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "island-drag",
+  "description": "The dictation island can be moved with the mouse, and the pages the engine serves on loopback can ask for it.",
+  "windows": ["island"],
+  "remote": {
+    "urls": ["http://127.0.0.1:*", "http://localhost:*"]
+  },
+  "permissions": ["core:window:default", "core:window:allow-start-dragging"]
+}
