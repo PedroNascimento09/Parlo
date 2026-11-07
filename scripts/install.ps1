@@ -25,6 +25,32 @@ if ($Archive -ne "") {
     }
 }
 
+if ($Archive -eq "") {
+    $sums = Join-Path $env:TEMP "parlo-SHA256SUMS.txt"
+    try {
+        Invoke-WebRequest -Uri "https://github.com/PedroNascimento09/Parlo/releases/latest/download/SHA256SUMS.txt" -OutFile $sums
+    } catch {
+        Remove-Item $zip -Force -ErrorAction SilentlyContinue
+        throw "The published hashes could not be downloaded, so nothing was verified or installed."
+    }
+    $expected = $null
+    foreach ($line in Get-Content $sums) {
+        if ($line -match '^\s*([0-9a-fA-F]{64})\s+\*?(.+)$' -and $Matches[2].Trim() -eq "parlo-windows-x86_64.zip") {
+            $expected = $Matches[1].ToLower()
+        }
+    }
+    Remove-Item $sums -Force
+    if (-not $expected) {
+        Remove-Item $zip -Force
+        throw "The release publishes no hash for parlo-windows-x86_64.zip, so nothing was installed."
+    }
+    $actual = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLower()
+    if ($actual -ne $expected) {
+        Remove-Item $zip -Force
+        throw "The download does not match the published hash. Nothing was installed; run this again."
+    }
+}
+
 if (Test-Path $Dest) {
     Remove-Item $Dest -Recurse -Force
 }
