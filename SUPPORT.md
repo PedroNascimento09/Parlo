@@ -30,3 +30,5 @@ Known limits are documented: no GPU is required but slower machines run a smalle
 Only the latest release and `main` receive fixes. An older release is answered with "please update" unless the problem is a security issue.
 
 If a bug report is missing the basics above, it is not ignored on purpose; it is just harder to act on. Say what you did, what happened, and what you expected, and the issue is already most of the way there.
+
+If Windows or an antivirus blocks the download, that is usually a false positive on an unsigned build rather than a bug in Parlo. The project keeps the file hash and build provenance next to the release, and it has a submission path for that: see [Security software false positives](docs/SECURITY_FALSE_POSITIVE.md).

@@ -52,6 +52,12 @@ Out of scope:
 - Issues in third-party models, which belong to their maintainers.
 - Social engineering.
 
+## The one support path Windows users hit most often
+
+If Parlo-Setup.exe is blocked by SmartScreen or by another antivirus, that is usually a false positive on an unsigned, freshly built release, not evidence that the file is malware. The release keeps the exact file hash and the build provenance next to the download, and the project has a submission path for that case: [Security software false positives](docs/SECURITY_FALSE_POSITIVE.md).
+
+If you want to check the file before running it, compare its SHA-256 with the one in the release’s `SHA256SUMS.txt`, or use `gh attestation verify` if you have the GitHub CLI authenticated.
+
 ## Design commitments
 
 - No audio leaves the machine in local mode.

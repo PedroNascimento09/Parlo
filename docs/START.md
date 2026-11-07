@@ -4,7 +4,7 @@ Five minutes from a computer that has never run Parlo to a sentence you dictated
 
 ## 1. Install Parlo
 
-**Windows.** [Download Parlo-Setup.exe](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) and double click it. The build is unsigned, so SmartScreen asks once: choose **More info**, then **Run anyway**. Parlo installs for your user and the window opens when it finishes.
+**Windows.** [Download Parlo-Setup.exe](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) and double-click it. The build is unsigned, so SmartScreen asks once: choose **More info**, then **Run anyway**. Parlo installs for your user and the window opens when it finishes.
 
 **macOS and Linux.**
 

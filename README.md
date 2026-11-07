@@ -3,210 +3,190 @@
 </p>
 
 <p align="center">
-  <b>Fala para dentro. Texto para fora. No teu computador, em português e inglês.</b><br>
-  Ditar, texto ao vivo, legendas, reuniões e dublagem partilham a mesma engine.<br>
-  Windows primeiro, macOS e Linux a compilar. Sem conta, sem telemetria, sem envio de áudio.
+  <b>Parlo turns speech into text on your computer. Speak, and the words appear where you were already typing.</b><br>
+  Dictation, live translation, captions, meetings and file dubbing share one local engine.<br>
+  Windows first. macOS and Linux build. No account, no telemetry, no audio sent.
 </p>
 
 <p align="center">
-  <a href="https://github.com/PedroNascimento09/Parlo/releases/latest"><img alt="Última release" src="https://img.shields.io/github/v/release/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
+  <a href="https://github.com/PedroNascimento09/Parlo/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
   <a href="https://github.com/PedroNascimento09/Parlo/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/PedroNascimento09/Parlo/ci.yml?style=flat-square"></a>
-  <a href="LICENSE"><img alt="Licença" src="https://img.shields.io/badge/licença-Apache--2.0-1e4f4a?style=flat-square"></a>
-  <a href="https://github.com/PedroNascimento09/Parlo/stargazers"><img alt="Estrelas" src="https://img.shields.io/github/stars/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-1e4f4a?style=flat-square"></a>
+  <a href="https://github.com/PedroNascimento09/Parlo/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
 </p>
+
+Parlo is a desktop program that turns speech into text without sending anything out. Press a shortcut, speak, and the phrase appears in the field you were already typing in, cleaned up and, if you ask, translated into another language. Everything stays on your computer. No account, no telemetry, no audio sent.
+
+If you want the shortest path into it, use the installer below. If you want to support the project, the short version is at the bottom, in two lines.
 
 O Parlo é um programa de computador que transforma a fala em escrita sem enviar nada para fora. Pressionas um atalho, falas, e a frase aparece no campo onde já estavas a escrever, limpa, e traduzida se pedires outra língua. Tudo acontece no teu computador. Nenhuma conta, nenhuma telemetria, nenhum áudio enviado.
 
-Se o que tu querias era uma forma simples de instalar, este é o lugar: abre o instalador, abre o Parlo, e em cinqüenta minutos ou menos tens o reconhecedor pronto e a tua primeira frase dita. Se o que tu querias era apoiar o projecto, a parte de baixo diz como, em duas linhas.
+Se o que tu querias era uma forma simples de instalar, este é o lugar: abre o instalador, abre o Parlo, e em cinco minutos ou menos tens o reconhecedor pronto e a tua primeira frase dita. Se o que tu querias era apoiar o projecto, a parte de baixo diz como, em duas linhas.
 
-## Instalação
+## Install
 
-**Windows.** [Descarrega a versão mais recente](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) e dá duplo clique. O instalador instala para o teu utilizador, adiciona uma entrada no Menu Iniciar e abre o Parlo quando termina. É aquilo que faz: descarregas uma vez, abres uma vez, e a app já está ali.
+**Windows, easiest first.**
 
-**O que o aviso do Windows significa nesta instalação.** O instalador não está assinado, por isso o SmartScreen pode aparecer uma vez na primeira descarga. Isso é o comportamento esperado para um instalador novo sem assinatura no Windows, e não é uma afirmação de que o ficheiro é malicioso. Se aparece, escolhe **Mais informações** e depois **Executar mesmo assim**.
+1. [Download the latest release](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe).
+2. Double-click `Parlo-Setup.exe`.
+3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
+4. Parlo installs for your user, adds itself to the Start menu, and opens when it finishes.
 
-Se não queres andar a lidar com avisos, esta app ainda não tem newsletter arrumada para isso; o documento real é [Realidade da assinatura no Windows](docs/WINDOWS_SIGNING_REALITY.md).
-
-**Verifica o ficheiro que descarregaste.** Cada release traz um `SHA256SUMS.txt` com a hash de cada ficheiro e um registo de proveniência de build que nombra o fluxo de trabalho, o commit e o repositório que o produziu. No Windows:
-
-```bat
-certutil -hashfile Parlo-Setup.exe SHA256
-```
-
-Compara essa linha com a do instalador no `SHA256SUMS.txt`. Com o GitHub CLI autenticado, isto verifica de onde veio o ficheiro em vez de confiar só na página:
-
-```bash
-gh attestation verify Parlo-Setup.exe --repo PedroNascimento09/Parlo
-```
-
-Nenhum dos dois substitui uma assinatura de código: o Windows continua a tratar o instalador como não assinado, e o SmartScreen continua a pedir uma vez.
-
-**Se preferes instalar por terminal no Windows:**
+**Windows, from the terminal:**
 
 ```powershell
 irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex
 ```
 
-Esse script descarrega o mesmo conteúdo do release mais recente, descompacta em `%LOCALAPPDATA%\Programs\Parlo`, adiciona a entrada no Menu Iniciar e abre o Parlo logo de seguida. É a mesma app, a mesma experiência de primeiro uso, só que sem abrir o instalador primeiro. O aviso do Windows confia no conteúdo e no não-assinado, não no método de instalação, por isso o script não torna o aviso desaparecer por si só.
+That script downloads the same archive from the latest release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. It is the same app, not a different one.
 
-**macOS e Linux**, em qualquer terminal:
+**macOS and Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
 ```
 
-**Gestores de pacotes.** winget, Homebrew, AUR, Snap, um pacote Debian, um AppImage e Nix têm cada um uma manifestação em [packaging](packaging/README.md) com o comando que instala. São receitas, não uma instalação testada: nenhum canal foi corrido de ponta a ponta da máquina que os escreveu, por isso cada um lá está marcado como parcial com o que ainda falta. Um Dockerfile na mesma pasta inicia o servidor de um recipiente, também parcial por nenhuma imagem ter sido construída aqui.
+**Package managers.** winget, Homebrew, AUR, Snap, a DEB package, an AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the install command. Those are recipes, not fully tested installs: none of those channels has been run end to end by the machine that wrote them, so each one is marked partial there with what is still missing. A Dockerfile in the same folder starts the server in a container, also partial because no image has been built here.
 
-O instalador é leve porque separa o programa de parte pesada. O programa instala numa fracção de segundo; a engine pesada é um descarregamento à parte, e o primeiro uso dentro da app oferece o reconhecedor, cerca de 640 MB, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas, e cada uma nombra o modelo e o seu tamanho antes de qualquer coisa se mover. Depois disso a máquina pode ficar desconectada. `parlo install` e `parlo uninstall` fazem o mesmo a partir de um terminal, e a desinstalação mantém os teus modelos a menos que adicionares `--purge`.
+The installer is light because it keeps the program separate from the heavy part. The program installs in a fraction of a second; the recogniser is a separate download of about 640 MB, offered the first time you use the app, and nothing else is downloaded until you press its button. Translation, read-aloud and captions are separate keys, and each one names the model and its size before anything moves. After that, the machine can be offline. `parlo install` and `parlo uninstall` do the same thing from a terminal, and uninstall keeps your models unless you add `--purge`.
 
----
+## Verify what you downloaded
 
-Se a app faz sentido para ti, a forma mais direta de apoiá-la é [dar uma estrela ao repositório](https://github.com/PedroNascimento09/Parlo). É isso. Não precisa de mensagem, não precisa de conta, e é o que mais ajuda o projecto a ser visto por quem ainda não o conhece.
+Each release carries a `SHA256SUMS.txt` with the hash of every file and a build provenance record that names the workflow, commit and repository that produced it.
 
-Se também queres deixar o telemóvel de perto, o telemóvel é o repositório, não a minha caixa de mensagens.
-
-**Dita em qualquer programa.** `Ctrl+Alt+D` abre uma pequena barra em cima da tela, no monitor onde está o cursor. Fala, e a frase é escrita na janela que tinha o foco, na língua que estás a escrever. `Ctrl+Alt+Shift+D` mantém a escuta aberta enquanto precisares. Quando um programa não aceita texto escrito, a frase vai para a área de transferência, e `Escape` descarta-a.
-
-**Lê o que dizes enquanto falas.** O texto ao vivo abre uma janela com duas colunas: o microfone à esquerda e a tradução à direita, em janelas de cerca de 2,5 segundos. As legendas colocam o mesmo fluxo numa faixa fina sobre uma chamada ou um vídeo, com um botão que muda o tamanho. `Ctrl+Alt+C` abre legendas de qualquer lugar, e `Escape` para qualquer uma delas.
-
-**Guarda uma reunião.** Grava a sala e recebe uma transcrição com hora e falante em cada linha. Renomeias um falante uma vez e todas as linhas seguem, importas uma transcrição que já tens, pesquisas a reunião inteira, perguntas ao que foi decidido e recebes a linha, o falante e a hora por trás da resposta, e copias tudo como Markdown.
-
-**Dublagem de um ficheiro.** Arrasta um vídeo ou áudio e recebesh o mesmo conteúdo na outra língua, com legendas sincronizadas ao original e o fundo sonoro original por baixo da nova voz, se quiseres.
-
-**Ouve a tradução.** A frase traduzida é lida em voz alta em uma voz europeia portuguesa, na mesma janela, sem sair para outro serviço.
-
-**Ajusta as palavras que o reconhecedor não consegue.** Um vocabulário local corrige os nomes que o reconhecedor continua a errar, palavra por palavra, antes de qualquer modelo ler a frase. O histórico guarda o que foi dito, o que foi escrito e o programa onde aí chegou, e um clique devolve uma linha à área de transferência.
-
-## Um programa, seis sítios
-
-A janela serve para configurar e rever. O trabalho acontece pelo atalho e pela bandeija.
-
-- **Página inicial** diz se está pronto, qual a engine e o perfil da máquina que encontrou, e as três últimas entradas com o programa onde cada uma aí chegou.
-- **Biblioteca** guarda o histórico, os modelos e o vocabulário.
-- **Reuniões** guarda gravações, transcrições e falantes.
-- **Voz** grava uma amostra, a selra com a tua conta Windows se pedires, reproduz e exporta marcada como sintética. Clonar uma voz a partir dessa amostra ainda não está no build.
-- **Estatísticas** conta palavras, minutos e programas por trás das ditas, e as últimas quatro semanas, a partir do que fica neste computador.
-- **Definições** têm cinco grupos de campos reais: Tu, Ditar, Línguas, Atalhos e Avançadas, que guarda limpeza, provedor, privacidade e sobre. Cada campo guarda onde está, e o par de línguas tem o seu próprio Aplicar.
-
-A bandeija lista os três modos acima de um separador e os cinco destinos abaixo dele; um clique esquerdo abre a barra. A primeira vez são cinco passos: o teu nome, o par de línguas, o microfone com o local exato do Windows para o permitir, o estilo de escrita e o atalho com o que o `Escape` faz. Só o nome é obrigatório; tudo o resto pode ser ignorado, e o passo inicial não volta uma vez feito.
-
-## Atalhos
-
-| Teclas | O que acontece |
-|---|---|
-| `Ctrl+Alt+D` | Abre a barra e dita para a janela que tinha o foco |
-| `Ctrl+Alt+Shift+D` | Mantém a escuta sem precisar de manter qualquer tecla |
-| `Ctrl+Alt+C` | Abre ou fecha as legendas |
-| `Escape` | Descarta a frase, ou para o texto ao vivo, legendas ou uma reunião em curso |
-| Um clique na bandeija | A barra, a qualquer momento |
-
-Cada tecla muda em Definições, é validada ao guardar, recusada quando se repete outra das três, e recusada com motivo quando o Windows diz que outro programa já a tem.
-
-## O que há dentro
-
-| | |
-|---|---|
-| **Um gestor de modelos que diz a verdade** | Uma linha por modelo: tamanho em disco, `Instalado · não carregado`, `Carregado`, `A usar` ou `Não instalado`, um número medido de qualidade ou o honesto “nenhum número medido”. Cada linha tem `Carregar`, `Descarregar agora` e `Remover`, e o seu atraso antes de ser libertado, de 10 minutos a 4 horas ou `Manter carregado`. Downloads podem ser parados, e a pasta de modelos toda pode mover-se para outro disco com comparação byte a byte antes de apagar a cópia antiga. |
-| **Dois reconhecedores, escolhidos por máquina** | Parakeet TDT 0.6B v3 int8 é o padrão; Whisper `tiny` a `large-v3` fica selecionável aonde 640 MB é demasiado. A lista nombra os núcleos, a memória e se AVX2 está presente, e por que razão essa máquina recebeu a recomendação que recebeu. |
-| **Tradução com porta** | Português e inglês, em ambas as direções. 100 frases originais são verificadas para números, relógios, negações, nomes e completude antes de uma release ser chamada boa. PT→DE corre através do inglês e é publicado como não validado por um falante nativo. |
-| **Limpeza que respeita o que disseste** | Três níveis: o que o reconhecedor ouviu, a frase que querias com auto-correções e hesitações removidas, e uma versão mais arrumada com espaçamentos e maiúsculas. A frase ouvida fica sempre ao lado. |
-| **Palavras que o Parlo deve aprender** | Um vocabulário local corrige os nomes que o reconhecedor continua a errar, palavra por palavra, antes de qualquer modelo ler a frase. |
-| **Um histórico que podes usar de novo** | Cada dita guarda o que foi dito, o que foi escrito e o programa onde aí chegou, e um clique devolve uma linha à área de transferência. |
-| **Um painel de voz com uma amostra real** | De 10 a 30 segundos são gravados na janela ou recusados com o comprimento medido; uma gravação silenciosa também é recusada; a amostra pode ser selrada como cifra DPAPI, ouvida de volta, exportada como um ficheiro marcado como sintético, ou apagada com o perfil. |
-| **Um provedor só quando pedides** | O modelo na nuvem fica atrás de uma chave, a tua própria chave e uma frase de teste que prova que responde. Com a chave desligada, nada sai da máquina, e a secção de Privacidade diz isso numa frase. |
-| **Atualizações dentro do app** | A última versão chega com as suas notas e um botão, e substitui a cópia em execução em vez de pedires desinstalar. Mantém `parlo.previous` ao lado do binário, e uma versão sem build para o teu sistema oferece as notas em vez de um botão morto. |
-| **Uma interface feita para ler** | Cada par de textos passa 4.5:1 medido nas cores reais, os dois temas são desenhados a partir dos mesmos quinze tokens, um anel de foco atinge tudo o que aceita teclado, e nenhuma fonte, script ou imagem vem de uma CDN. |
-
-## Instalação
-
-**Pressa?** [Começa aqui](docs/START.md) vai de um computador limpo a uma frase dita em cinco minutos.
-
-**Windows.** [Descarrega Parlo-Setup.exe](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) e dá-lhe duplo clique. Instala para o teu utilizador, adiciona uma entrada no Menu Iniciar e abre o Parlo quando termina, por isso um único descarregamento é a instalação toda. O build não está assinado, por isso o SmartScreen pede uma vez: **Mais informações**, depois **Executar mesmo assim**.
-
-**Verifica o descarregamento.** Cada release leva um `SHA256SUMS.txt` com a hash de cada ficheiro e um registo de proveniência de build que nombra o fluxo de trabalho, o commit e o repositório que o produziu. No Windows:
+Windows:
 
 ```bat
 certutil -hashfile Parlo-Setup.exe SHA256
 ```
 
-Compara essa linha com a do instalador no `SHA256SUMS.txt`. Com o GitHub CLI autenticado, isto verifica de onde veio o ficheiro em vez de confiar na página:
+Compare that line with the one for the installer in `SHA256SUMS.txt`. With the GitHub CLI authenticated, this also checks where the file came from:
 
 ```bash
 gh attestation verify Parlo-Setup.exe --repo PedroNascimento09/Parlo
 ```
 
-Nenhum dos dois substitui uma assinatura de código: o Windows continua a tratar o instalador como não assinado, e o SmartScreen continua a pedir uma vez.
+Neither of those replaces code signing. Windows still treats the installer as unsigned, and SmartScreen may still ask once.
 
-**Gestores de pacotes.** winget, Homebrew, AUR, Snap, um pacote Debian, um AppImage e Nix têm cada um uma manifestação em [packaging](packaging/README.md) com o comando que instala. São receitas, não uma instalação testada: nenhum canal foi corrido de ponta a ponta da máquina que os escreveu, por isso cada um lá está marcado como parcial com o que ainda falta. Um Dockerfile na mesma pasta inicia o servidor de um recipiente, também parcial por nenhuma imagem ter sido construída aqui.
+## The first run
 
-**Aviso do Windows.** O instalador Windows não está assinado. Pode aparecer o aviso do SmartScreen na primeira descarga; isso é esperado para um instalador novo e não assinado, e não é uma afirmação de que o ficheiro é malicioso. Podes verificar o ficheiro que descarregaste com o SHA-256 do release e, se quiseres, consultar [Realidade da assinatura no Windows](docs/WINDOWS_SIGNING_REALITY.md).
+The installer carries the programs, not the models. Open Parlo, and the Models panel lists what is missing. Press **Download models** once, and about 800 MB lands in your user data folder. After that, Parlo works with the network switched off.
 
-**macOS e Linux**, em qualquer terminal:
+The first start can take around twenty seconds while the engine loads. The window says so instead of looking stuck.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
-```
+---
 
-**A partir do código**, com Rust 1.85 ou mais recente e Python 3.12 para a engine:
+If the app makes sense to you, the simplest way to support it is to [star the repository](https://github.com/PedroNascimento09/Parlo). That is it. No message, no account, and it is the thing that most helps the project be seen by people who have not found it yet.
 
-```bash
-cargo build --release -p parlo-cli -p parlo-app
-target/release/parlo-app
-```
+If you also want to leave a message, the message is the repository, not my inbox.
 
-O instalador é leve porque separa o programa de parte pesada. O programa instala numa fracção de segundo; a engine pesada é um descarregamento à parte, e o primeiro uso dentro da app oferece o reconhecedor, cerca de 640 MB, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas, e cada uma nombra o modelo e o seu tamanho antes de qualquer coisa se mover. Depois disso a máquina pode ficar desconectada. `parlo install` e `parlo uninstall` fazem o mesmo a partir de um terminal, e a desinstalação mantém os teus modelos a menos que adicionares `--purge`.
+**Dictate into any program.** `Ctrl+Alt+D` opens a small bar at the top of the screen, on the monitor where the cursor is. Speak, and the sentence is written into the window that had the focus, in the language you were writing in. `Ctrl+Alt+Shift+D` keeps listening open while you need it. When a program cannot accept typed text, the sentence goes to the clipboard, and `Escape` discards it.
 
-## A partir do terminal
+**Read what you say while you say it.** Live text opens a window with two columns: the microphone on the left and the translation on the right, in windows of about 2.5 seconds. Captions put the same stream in a thin bar over a call or a video, with a button that changes the size. `Ctrl+Alt+C` opens captions from anywhere, and `Escape` stops any of them.
 
-A janela não é a única porta. A mesma engine responde na linha de comando, para scripts e para uma máquina sem ambiente gráfico:
+**Keep a meeting.** It records the room and gives you a transcript with a time and a speaker on every line. Rename one speaker once and every line follows. Import a transcript you already have, search the whole meeting, ask what was decided, and get back the line, the speaker and the time behind the answer. Copy it all as Markdown.
 
-```bash
-parlo dictate                 # uma frase para a área de transferência
-parlo stream in.wav           # texto parcial, estável e final à medida que chega
-parlo listen --play --speaker 3   # traduz o microfone para outra saída
-parlo dub talk.mp4 --srt talk.srt # um ficheiro dublado e as suasLegendas
-parlo serve                   # a api local autenticada, só em loopback
-parlo profile                 # o que esta máquina pode fazer, e o que carregar
-parlo doctor                  # se a captura e a engine estão saudáveis
-```
+**Dub a file.** Drag in a video or audio file and you get the same content in the other language, with subtitles synced to the original and the original background audio under the new voice if you want it.
 
-Cada iniciação do programa deixa um registo em `sessions.jsonl` na pasta de dados: o momento em que começou, o momento em que um fim limpo o terminou, ou a mensagem e o ficheiro e linha de um pânico, mantidos os mais recentes 400. `parlo doctor` lê esse ficheiro de volta e imprime as sessões registadas, quantas foram limpas, quantas caíram, quando a última terminou e a taxa sem queda, e diz numa linha quando ainda não tem nada registado.
+**Hear the translation.** The translated sentence is read aloud in a European Portuguese voice, in the same window, without leaving for another service.
 
-## Medido
+**Fix the words the recogniser keeps missing.** A local vocabulary corrects the names the recogniser keeps getting wrong, one word at a time, before any model reads the sentence. The history keeps what was said, what was written and the program it arrived in, and one click puts a line back on the clipboard.
 
-Portátil Windows 11, sem GPU, 4 threads. Condições e cada linha bruta estão em [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+## One program, six places
 
-| O que | Resultado |
+The window is for setting up and for reviewing. The work happens through the shortcut and the tray.
+
+- **Home** says whether it is ready, which engine it found, the profile of the machine it found, and the last three entries with the program each one arrived in.
+- **Library** keeps the history, the models and the vocabulary.
+- **Meetings** keeps recordings, transcripts and speakers.
+- **Voice** records a sample, seals it with your Windows account if you ask, plays it back and exports it marked as synthetic. Cloning a voice from that sample is not in the build yet.
+- **Stats** counts words, minutes and programs behind the things dictated, and the last four weeks, from what stays on this computer.
+- **Settings** has five real groups of fields: You, Dictation, Languages, Shortcuts and Advanced, which store cleanup, provider, privacy and about. Each field remembers where it lives, and the language pair has its own Apply.
+
+The tray lists the three modes above a separator and the five destinations below it; a left click opens the bar. The first time is five steps: your name, the language pair, the microphone with the exact Windows place to allow it, the writing style and the shortcut with what `Escape` does. Only the name is required; everything else can be skipped, and the first step does not come back once it is done.
+
+## Shortcuts
+
+| Keys | What happens |
 |---|---|
-| Regras de limpeza, 10 frases × 1 000 correes | **61,9 µs** em média |
-| Um segmento pela cascata, reconhecimento incluído | **420,7 ms** em média, 485 ms p95 |
-| Fator em tempo real, Parakeet v3 int8 | **0,11** |
-| Legendas, fala para ecrã numa janela de 1,2 s | **cerca de 1,6 s** |
-| Fluxo, primeiro parcial a frase concluída | **849 ms** a **3 355 ms** |
-| Reconhecedor, 20 frases de português europeu | **0,24** taxa de erro de palavra |
-| Início a frio, engine incluída | **18,1 s** |
+| `Ctrl+Alt+D` | Opens the bar and dictates into the window that had the focus |
+| `Ctrl+Alt+Shift+D` | Keeps listening without holding any key |
+| `Ctrl+Alt+C` | Opens or closes captions |
+| `Escape` | Discards the phrase, or stops live text, captions or a meeting in progress |
+| One click on the tray | The bar, at any time |
 
-Nada aqui descreve uma máquina que ninguém correu, e nenhuma latência ou preço de provedor é alegado: nenhum pedido a um provedor na nuvem foi feito com uma chave real.
+Each key changes in Settings, is validated when you save it, is refused when it repeats one of the other three, and is refused with a reason when Windows says another program already owns it.
 
-## Privacidade
+## What is inside
 
-O modo local não faz nenhuma chamada de rede. O áudio nunca é escrito em disco a menos que passares um caminho de saída. A api local escuta em loopback com um token que a janela gera em cada iniciação, e a verificação de atualizações é a única chamada externa, levando nenhum áudio e nenhum identificador. Um provedor só é atingido quando o permites, guardas a tua própria chave e escolhes, por HTTPS ou loopback, diretamente da tua máquina. Histórico, reuniões e vocabulário ficam na tua pasta de dados de utilizador e cada um pode ser apagado da interface, uma amostra de voz pode ser selrada com a tua conta Windows, e [docs/PRIVACY.md](docs/PRIVACY.md) mostra como verificar tudo isto.
+| | |
+|---|---|
+| **A model manager that tells the truth** | One line per model: size on disk, `Installed · not loaded`, `Loaded`, `In use` or `Not installed`, a measured quality number or the honest “no measured number”. Each line has `Load`, `Download now` and `Remove`, and its delay before being released, from 10 minutes to 4 hours or `Keep loaded`. Downloads can be stopped, and the whole models folder can move to another disk with a byte-by-byte comparison before the old copy is deleted. |
+| **Two recognisers, chosen by machine** | Parakeet TDT 0.6B v3 int8 is the default; Whisper `tiny` to `large-v3` is selectable where 640 MB is too much. The list names the cores, the memory and whether AVX2 is present, and why this machine got the recommendation it got. |
+| **Translation with a pivot** | Portuguese and English, in both directions. 100 original sentences are checked for numbers, clocks, negations, names and completeness before a release is called good. PT→DE runs through English and is published as not validated by a native speaker. |
+| **Cleanup that respects what you said** | Three levels: what the recogniser heard, the phrase you wanted with auto-corrections and hesitations removed, and a neater version with spacing and capitals. The heard phrase always stays beside it. |
+| **Words Parlo should learn** | A local vocabulary corrects the names the recogniser keeps getting wrong, one word at a time, before any model reads the sentence. |
+| **A history you can reuse** | Each dictation keeps what was said, what was written and the program it arrived in, and one click puts a line back on the clipboard. |
+| **A voice panel with a real sample** | 10 to 30 seconds are recorded in the window or refused with the measured length; a silent recording is also refused; the sample can be sealed as DPAPI encryption, played back, exported as a file marked synthetic, or deleted with the profile. |
+| **A provider only when you ask** | The cloud model sits behind a key, your own key and a test phrase that proves it answers. With the key off, nothing leaves the machine, and the Privacy section says that in one sentence. |
+| **Updates inside the app** | The latest version arrives with its notes and a button, and replaces the copy that is running instead of asking you to uninstall. It keeps `parlo.previous` beside the binary, and a version without a build for your system offers the notes instead of a dead button. |
+| **An interface built to be read** | Each pair of texts passes 4.5:1 measured on the real colours, both themes are drawn from the same fifteen tokens, a focus ring reaches everything that accepts keyboard, and no font, script or image comes from a CDN. |
 
-## O que ainda não está aqui
+## From the terminal
 
-- O atalho de ditação é só em Windows. Em macOS e Linux o texto vai para a área de transferência.
-- Windows está validado de ponta a ponta, janela incluída. macOS e Linux são compilados e testados pelo CI, mas a janela não foi aberta ali.
-- Português e inglês são o único par. PT→DE corre através do inglês e é publicado como **não validado por um falante nativo**.
-- A ditação é testada, ainda não validada com gravações de pessoas diferentes do autor.
-- O build não está assinado, e não há `.msi`, `.dmg` ou `.deb` assinado.
-- As reuniões gravam o microfone em vez do som de outro aplicativo, ainda não há resumo de reunião, e os falantes são etiquetados pelo reconhecedor em vez de separados por um modelo treinado para isso.
-- Legendas e texto ao vivo leem o microfone, não o áudio do sistema, e atingir um aplicativo de chamada ainda precisa de um cabo virtual hoje.
-- A leitura em voz alta usa uma voz europeia portuguesa neutra que nenhum grupo de ouvintes julgou, e nenhuma voz é clonada a partir de uma gravação.
+The window is not the only door. The same engine answers on the command line, for scripts and for a machine without a graphical environment:
 
-## Documentos
+```bash
+parlo dictate                 # one phrase to the clipboard
+parlo stream in.wav           # partial, stable and final text as it arrives
+parlo listen --play --speaker 3   # translates the microphone into another output
+parlo dub talk.mp4 --srt talk.srt # a dubbed file and its subtitles
+parlo serve                   # the local authenticated API, loopback only
+parlo profile                 # what this machine can do, and what to load
+parlo doctor                  # whether capture and engine are healthy
+```
+
+Every program start leaves one record in `sessions.jsonl` in the data folder: the moment it began, the moment a clean finish ended it, or the message and file and line of a panic, keeping the most recent 400. `parlo doctor` reads that file back and prints the recorded sessions, how many were clean, how many failed, when the last one ended and the failure-free rate, and says in one line when it still has nothing recorded.
+
+## Measured
+
+Windows 11 laptop, no GPU, 4 threads. Conditions and each raw line are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+
+| What | Result |
+|---|---|
+| Cleanup rules, 10 sentences × 1,000 corrections | **61.9 µs** on average |
+| One cascade segment, recognition included | **420.7 ms** on average, 485 ms p95 |
+| Real-time factor, Parakeet v3 int8 | **0.11** |
+| Captions, speech to screen in a 1.2 s window | **about 1.6 s** |
+| Stream, first partial to finished sentence | **849 ms** to **3,355 ms** |
+| Recogniser, 20 European Portuguese sentences | **0.24** word error rate |
+| Cold start, engine included | **18.1 s** |
+
+Nothing here describes a machine nobody ran, and no latency or provider price is claimed: no request to a cloud provider was made with a real key.
+
+## Privacy
+
+Local mode makes no network calls. Audio is never written to disk unless you pass an output path. The local API listens on loopback with a token the window generates on each start, and the update check is the only external call, carrying no audio and no identifier. A provider is only reached when you allow it, keep your own key and choose, by HTTPS or loopback, directly from your machine. History, meetings and vocabulary stay in your per-user data folder, and each one can be deleted from the interface, a voice sample can be sealed with your Windows account, and [docs/PRIVACY.md](docs/PRIVACY.md) shows how to verify all of that.
+
+## What is not here yet
+
+- The dictation shortcut is only on Windows. On macOS and Linux the text goes to the clipboard.
+- Windows is validated end to end, window included. macOS and Linux are compiled and tested by CI, but the window has not been opened there.
+- Portuguese and English are the only pair. PT→DE runs through English and is published as **not validated by a native speaker**.
+- Dictation is tested, not yet validated with recordings from people other than the author.
+- The build is unsigned, and there is no signed `.msi`, `.dmg` or `.deb`.
+- Meetings record the microphone instead of another app’s audio, there is no meeting summary yet, and speakers are labelled by the recogniser instead of by a model trained to do that.
+- Captions and live text read the microphone, not system audio, and reaching a calling app still needs a virtual cable today.
+- Read-aloud uses a neutral European Portuguese voice that no listener panel has judged, and no voice is cloned from a recording.
+
+## The honest state of the download on Windows
+
+The Windows build is unsigned. SmartScreen may ask once on first download. That is the expected behaviour for a new, unsigned installer on Windows, and it is not a claim that the file is malicious. You can verify the file you downloaded with the release SHA-256, and if you want the longer version, see [Windows code-signing reality](docs/WINDOWS_SIGNING_REALITY.md).
+
+## Documents
 
 [Start here](docs/START.md) · [App guide](docs/APP.md) · [Interface](docs/UX.md) · [Architecture](docs/ARCHITECTURE.md) · [Engines](docs/ENGINES.md) · [Models](docs/MODEL_MANAGER.md) · [Model policy](docs/MODEL_POLICY.md) · [Plugins](docs/PLUGIN_DEVELOPMENT.md) · [Dubbing](docs/DUB.md) · [Benchmarks](docs/BENCHMARKS.md) · [Install](docs/INSTALL.md) · [Privacy](docs/PRIVACY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Changelog](CHANGELOG.md) · [Contributing](CONTRIBUTING.md)
 
-## Licença
+## License
 
-O código é **Apache-2.0**. Os pesos dos modelos mantêm os termos dos respetivos editores: Parakeet é CC-BY-4.0, os pacotes OPUS-MT são CC BY 4.0, e o adaptador Piper opcional é GPL-3.0-or-later, instalado separadamente e nunca embarcado num arquivo. [LICENSES.md](LICENSES.md) é o índice e [NOTICES_DE_TERCEIROS.md](THIRD_PARTY_NOTICES.md) carrega os avisos.
+The code is **Apache-2.0**. Model weights keep the terms of their own publishers: Parakeet is CC-BY-4.0, the OPUS-MT packages are CC BY 4.0, and the optional Piper adapter is GPL-3.0-or-later, installed separately and never embedded in an archive. [LICENSES.md](LICENSES.md) is the index and [NOTICES_DE_TERCEIROS.md](THIRD_PARTY_NOTICES.md) carries the notices.
