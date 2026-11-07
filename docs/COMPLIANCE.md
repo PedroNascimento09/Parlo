@@ -64,7 +64,7 @@ Transparency duties apply from 2 August 2026. The project documents them and doe
 |---|---|---|---|
 | Installer without weights | Model files never inside release archives | `release.yml`, plan section 45 | verified |
 | Release hashes | SHA-256 published per artefact | release workflow | verified |
-| Windows signing | Authenticode not available | documented limitation | pending: no certificate |
+| Windows signing | Authenticode not available | documented limitation | pending: no certificate; see [Windows code-signing reality](WINDOWS_SIGNING_REALITY.md), [Code signing policy](CODE_SIGNING_POLICY.md) and [Microsoft Store / MSIX path](MSIX_STORE_PATH.md) |
 | Manifest signing | Ed25519, public key in the application | plan section 53 | pending: not implemented |
 | Downloads | Explicit consent, provenance and integrity checked | plan section 46 | verified as rule, pending as code |
 

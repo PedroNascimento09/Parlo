@@ -61,6 +61,8 @@ Submitting a false positive can get Microsoft’s detection cleared, and that fi
 
 This project currently avoids the paid path on purpose. The honest state is written next to the download: the installer is unsigned, SmartScreen may warn once, and the checksum plus build provenance are how you verify the file you got is the file the project built.
 
+If you want to know why this happens, what is free, what is only possible with conditions, and what is not free, see [Windows code-signing reality](WINDOWS_SIGNING_REALITY.md), [Code signing policy](CODE_SIGNING_POLICY.md), and [Microsoft Store / MSIX path](MSIX_STORE_PATH.md). Those documents explain the real shape of the problem and the real shape of the free options, without promising a fix that does not exist.
+
 ## For maintainers
 
 When a new release gets flagged:

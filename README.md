@@ -15,9 +15,55 @@
   <a href="https://github.com/PedroNascimento09/Parlo/stargazers"><img alt="Estrelas" src="https://img.shields.io/github/stars/PedroNascimento09/Parlo?style=flat-square&color=b03c1e"></a>
 </p>
 
-O Parlo é um programa de computador que transforma a fala em escrita sem enviar nada para fora. Pressiona um atalho, fala, e a frase aparece no campo onde já estava a escrever, limpa, e traduzida se pedires outra língua. A mesma engine serve tudo: a janela serve para configurar, o atalho e a bandeija são como se usa.
+O Parlo é um programa de computador que transforma a fala em escrita sem enviar nada para fora. Pressionas um atalho, falas, e a frase aparece no campo onde já estavas a escrever, limpa, e traduzida se pedires outra língua. Tudo acontece no teu computador. Nenhuma conta, nenhuma telemetria, nenhum áudio enviado.
 
-## O que o Parlo faz agora
+Se o que tu querias era uma forma simples de instalar, este é o lugar: abre o instalador, abre o Parlo, e em cinqüenta minutos ou menos tens o reconhecedor pronto e a tua primeira frase dita. Se o que tu querias era apoiar o projecto, a parte de baixo diz como, em duas linhas.
+
+## Instalação
+
+**Windows.** [Descarrega a versão mais recente](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe) e dá duplo clique. O instalador instala para o teu utilizador, adiciona uma entrada no Menu Iniciar e abre o Parlo quando termina. É aquilo que faz: descarregas uma vez, abres uma vez, e a app já está ali.
+
+**O que o aviso do Windows significa nesta instalação.** O instalador não está assinado, por isso o SmartScreen pode aparecer uma vez na primeira descarga. Isso é o comportamento esperado para um instalador novo sem assinatura no Windows, e não é uma afirmação de que o ficheiro é malicioso. Se aparece, escolhe **Mais informações** e depois **Executar mesmo assim**.
+
+Se não queres andar a lidar com avisos, esta app ainda não tem newsletter arrumada para isso; o documento real é [Realidade da assinatura no Windows](docs/WINDOWS_SIGNING_REALITY.md).
+
+**Verifica o ficheiro que descarregaste.** Cada release traz um `SHA256SUMS.txt` com a hash de cada ficheiro e um registo de proveniência de build que nombra o fluxo de trabalho, o commit e o repositório que o produziu. No Windows:
+
+```bat
+certutil -hashfile Parlo-Setup.exe SHA256
+```
+
+Compara essa linha com a do instalador no `SHA256SUMS.txt`. Com o GitHub CLI autenticado, isto verifica de onde veio o ficheiro em vez de confiar só na página:
+
+```bash
+gh attestation verify Parlo-Setup.exe --repo PedroNascimento09/Parlo
+```
+
+Nenhum dos dois substitui uma assinatura de código: o Windows continua a tratar o instalador como não assinado, e o SmartScreen continua a pedir uma vez.
+
+**Se preferes instalar por terminal no Windows:**
+
+```powershell
+irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex
+```
+
+Esse script descarrega o mesmo conteúdo do release mais recente, descompacta em `%LOCALAPPDATA%\Programs\Parlo`, adiciona a entrada no Menu Iniciar e abre o Parlo logo de seguida. É a mesma app, a mesma experiência de primeiro uso, só que sem abrir o instalador primeiro. O aviso do Windows confia no conteúdo e no não-assinado, não no método de instalação, por isso o script não torna o aviso desaparecer por si só.
+
+**macOS e Linux**, em qualquer terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
+```
+
+**Gestores de pacotes.** winget, Homebrew, AUR, Snap, um pacote Debian, um AppImage e Nix têm cada um uma manifestação em [packaging](packaging/README.md) com o comando que instala. São receitas, não uma instalação testada: nenhum canal foi corrido de ponta a ponta da máquina que os escreveu, por isso cada um lá está marcado como parcial com o que ainda falta. Um Dockerfile na mesma pasta inicia o servidor de um recipiente, também parcial por nenhuma imagem ter sido construída aqui.
+
+O instalador é leve porque separa o programa de parte pesada. O programa instala numa fracção de segundo; a engine pesada é um descarregamento à parte, e o primeiro uso dentro da app oferece o reconhecedor, cerca de 640 MB, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas, e cada uma nombra o modelo e o seu tamanho antes de qualquer coisa se mover. Depois disso a máquina pode ficar desconectada. `parlo install` e `parlo uninstall` fazem o mesmo a partir de um terminal, e a desinstalação mantém os teus modelos a menos que adicionares `--purge`.
+
+---
+
+Se a app faz sentido para ti, a forma mais direta de apoiá-la é [dar uma estrela ao repositório](https://github.com/PedroNascimento09/Parlo). É isso. Não precisa de mensagem, não precisa de conta, e é o que mais ajuda o projecto a ser visto por quem ainda não o conhece.
+
+Se também queres deixar o telemóvel de perto, o telemóvel é o repositório, não a minha caixa de mensagens.
 
 **Dita em qualquer programa.** `Ctrl+Alt+D` abre uma pequena barra em cima da tela, no monitor onde está o cursor. Fala, e a frase é escrita na janela que tinha o foco, na língua que estás a escrever. `Ctrl+Alt+Shift+D` mantém a escuta aberta enquanto precisares. Quando um programa não aceita texto escrito, a frase vai para a área de transferência, e `Escape` descarta-a.
 
