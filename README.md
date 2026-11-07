@@ -25,32 +25,34 @@ Se o que tu querias era uma forma simples de instalar, este é o lugar: abre o i
 
 ## Install
 
-**Windows, easiest first.**
-
-1. [Download the latest release](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe).
-2. Double-click `Parlo-Setup.exe`.
-3. If Windows says *Windows protected your PC*, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
-4. Parlo installs for your user, adds itself to the Start menu, and opens when it finishes.
-
 **Windows, from the terminal:**
 
 ```powershell
 irm https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.ps1 | iex
 ```
 
-That script downloads the same archive from the latest release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. It is the same app, not a different one.
+That downloads the same content as the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. Same app, one command.
 
-**macOS and Linux:**
+Se o Windows disser *Windows protected your PC*, escolhe **More info**, depois **Run anyway**. O ficheiro não está assinado, por isso isso pode aparecer uma vez.
+
+**macOS e Linux:**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/PedroNascimento09/Parlo/main/scripts/install.sh | bash
 ```
 
-**Package managers.** winget, Homebrew, AUR, Snap, a DEB package, an AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the install command. Those are recipes, not fully tested installs: none of those channels has been run end to end by the machine that wrote them, so each one is marked partial there with what is still missing. A Dockerfile in the same folder starts the server in a container, also partial because no image has been built here.
+**Download pelo navegador, se preferires:**
 
-The installer is light because it keeps the program separate from the heavy part. The program installs in a fraction of a second; the recogniser is a separate download of about 640 MB, offered the first time you use the app, and nothing else is downloaded until you press its button. Translation, read-aloud and captions are separate keys, and each one names the model and its size before anything moves. After that, the machine can be offline. `parlo install` and `parlo uninstall` do the same thing from a terminal, and uninstall keeps your models unless you add `--purge`.
+1. [Download the latest release](https://github.com/PedroNascimento09/Parlo/releases/latest/download/Parlo-Setup.exe).
+2. Duplica-clique em `Parlo-Setup.exe`.
+3. Se o Windows disser *Windows protected your PC*, escolhe **More info**, depois **Run anyway**.
 
-## Verify what you downloaded
+**Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage e Nix têm cada um um manifest em [packaging](packaging/README.md) com o comando de install. Esses são receitas, não installs testados: nenhuma canal foi corrido de ponta a ponta pela máquina que escreveu os manifests, e cada um está marcado como parcial com o que falta.
+
+O instalador é pequeno porque separa o programa do peso. O programa instala num fraction de segundo; o reconhecedor é um download separado de cerca de 640 MB, oferecido à primeira vez que usas a app, e nada mais é descarregado até pressionares o seu botão. Tradução, leitura em voz alta e legendas são chaves separadas e cada uma mostra o modelo e o tamanho antes de mais nada se mover. Depois, a máquina pode estar offline. `parlo install` e `parlo uninstall` fazem o mesmo do terminal, e o uninstall mantém os teus modelos a menos que adicionares `--purge`.
+
+A primeira execução pode levar uns 20 segundos a carregar o motor. A janela diz isso em vez de parecer presa.
+
 
 Each release carries a `SHA256SUMS.txt` with the hash of every file and a build provenance record that names the workflow, commit and repository that produced it.
 
