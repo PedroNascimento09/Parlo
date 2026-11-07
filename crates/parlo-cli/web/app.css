@@ -99,11 +99,11 @@ h3 {
 }
 
 h1 {
-  font-size: 36px;
+  font-size: 28px;
 }
 
 h2 {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 h3 {
@@ -150,11 +150,6 @@ svg {
 
 ::selection {
   background: color-mix(in srgb, var(--accent) 26%, transparent);
-}
-
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 3px;
 }
 
 .shell {
@@ -302,16 +297,6 @@ footer p + p {
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
-.install {
-  padding: 12px 20px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-
 .install:hover {
   background: var(--accent-deep);
   border-color: var(--accent-deep);
@@ -341,8 +326,9 @@ footer p + p {
 }
 
 .swap {
-  padding: 12px 16px;
+  padding: 11px 16px;
   border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--ink-soft);
   font-size: 13px;
@@ -406,27 +392,8 @@ textarea.field-input {
   min-height: 96px;
 }
 
-select.field-input {
-  appearance: none;
-  padding-right: 32px;
-  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
-  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-}
-
 .field-wide {
   grid-column: 1 / -1;
-}
-
-.check {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 8px 0;
-  color: var(--ink-soft);
-  font-size: 14px;
-  cursor: pointer;
 }
 
 .check input {
@@ -816,13 +783,6 @@ select.field-input {
   color: var(--ink);
 }
 
-
-.stage {
-  display: grid;
-  gap: 18px;
-  padding: 28px 32px 32px;
-}
-
 .page-kicker {
   color: var(--muted);
   font-family: var(--font-label);
@@ -831,14 +791,9 @@ select.field-input {
   text-transform: uppercase;
 }
 
-
 .stage-sep {
   color: var(--line-strong);
 }
-
-
-
-
 
 .last {
   display: grid;
@@ -967,7 +922,6 @@ select.field-input {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
 }
 
 .page-head,
@@ -1468,7 +1422,6 @@ select.field-input {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
 }
 
 .model-card-head {
@@ -1673,14 +1626,6 @@ select.field-input {
   grid-column: 1 / -1;
 }
 
-.voice-submit {
-  display: flex;
-  grid-column: 1 / -1;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-}
-
 .voice-item {
   display: grid;
   gap: 6px;
@@ -1766,11 +1711,6 @@ select.field-input {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
-}
-
-.dub-actions {
-  align-items: center;
-  margin-top: 16px;
 }
 
 .dub-language {
@@ -1983,9 +1923,10 @@ select.field-input {
 }
 
 .dub-actions {
+  align-items: center;
+  margin-top: 6px;
   display: flex;
   gap: 8px;
-  margin-top: 6px;
 }
 
 .dub-actions .swap {
@@ -2149,42 +2090,6 @@ select.field-input {
   font-size: 13px;
 }
 
-.gate {
-  display: grid;
-  place-items: start center;
-  width: 100%;
-}
-
-.gate-card {
-  display: grid;
-  gap: 16px;
-  width: 100%;
-  max-width: 720px;
-  padding: 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.gate-step {
-  display: grid;
-  gap: 14px;
-}
-
-.gate-kicker {
-  color: var(--muted);
-  font-family: var(--font-label);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.gate-note {
-  color: var(--muted);
-  font-size: 13px;
-}
-
 .gate-progress {
   position: relative;
   z-index: 1;
@@ -2218,7 +2123,6 @@ select.field-input {
   flex-wrap: wrap;
   gap: 10px;
 }
-
 
 .style-card {
   display: grid;
@@ -2258,14 +2162,6 @@ select.field-input {
 .style-sub {
   color: var(--muted);
   font-size: 13px;
-}
-
-.style-sample {
-  grid-column: 1 / -1;
-  color: var(--ink-soft);
-  font-family: var(--font-display);
-  font-size: 15px;
-  line-height: 1.4;
 }
 
 .style-mark {
@@ -2393,7 +2289,7 @@ select.field-input {
 
 .sheet-title {
   font-family: var(--font-display);
-  font-size: 26px;
+  font-size: 22px;
   letter-spacing: -0.02em;
 }
 
@@ -2414,7 +2310,9 @@ select.field-input {
 }
 
 .style-sample {
+  grid-column: 1 / -1;
   color: var(--ink-soft);
+  font-family: var(--font-display);
   font-size: 13px;
   line-height: 1.45;
 }
@@ -2472,14 +2370,6 @@ select.field-input {
   color: var(--muted);
   font-size: 12px;
 }
-
-
-
-
-
-
-
-
 
 .first-run .welcome {
   display: grid;
@@ -2561,7 +2451,6 @@ select.field-input {
     font-size: 20px;
   }
 
-
   .insights-numbers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2582,11 +2471,9 @@ select.field-input {
     padding: 20px var(--page-pad) 40px;
   }
 
-
   .insights-numbers {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
 
   .catalog-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2916,39 +2803,48 @@ body.gating main {
 }
 
 .gate {
+  display: grid;
+  place-items: start center;
+  width: 100%;
   padding: 40px 24px;
 }
 
 .gate-card {
-  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
-  align-items: center;
+  width: 100%;
   max-width: 560px;
   padding: 40px 44px;
   border: 1px solid var(--line);
   border-radius: 24px;
   background: var(--surface);
-  box-shadow: 0 40px 80px -60px rgba(28, 26, 22, 0.6);
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
 }
 
 .gate-step {
+  display: grid;
+  gap: 16px;
   position: relative;
   z-index: 1;
-  gap: 16px;
 }
 
 .gate-step h1 {
-  font-size: 40px;
+  font-size: 28px;
 }
 
 .gate-kicker {
-  letter-spacing: 0.18em;
+  color: var(--muted);
+  font-family: var(--font-label);
   font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .gate-note {
+  color: var(--muted);
+  font-size: 13px;
   max-width: 42ch;
 }
 
@@ -2990,21 +2886,30 @@ body.gating main {
 }
 
 select.field-input {
-  padding-right: 32px;
   appearance: none;
+  padding-right: 32px;
   background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
     linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position: calc(100% - 18px) calc(50% + 1px), calc(100% - 13px) calc(50% + 1px);
-  background-repeat: no-repeat;
   background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
 }
 
 .install {
-  border-radius: 999px;
+  padding: 11px 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 14px;
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .stage {
+  display: grid;
+  gap: 18px;
+  padding: 28px 32px 32px;
   max-width: 920px;
   margin: 0 auto;
 }
@@ -3031,17 +2936,14 @@ select.field-input {
     padding: 10px var(--page-pad);
   }
 
-  .rail {
-    order: 3;
-    width: 100%;
-    margin-left: 0;
-    flex-wrap: wrap;
-    overflow: visible;
-  }
-
-  .rail {
-    gap: 2px;
-  }
+.rail {
+  order: 3;
+  width: 100%;
+  margin-left: 0;
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 2px;
+}
 
   .rail a {
     padding: 5px 9px;
@@ -3104,7 +3006,13 @@ input[type="checkbox"]:focus-visible,
 }
 
 .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 6px 8px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  cursor: pointer;
   margin: -6px -8px;
   border-radius: 10px;
   transition: background 120ms ease;
@@ -3119,18 +3027,7 @@ input[type="checkbox"]:focus-visible,
   justify-self: stretch;
   max-width: 62ch;
   margin-top: 2px;
-}
-
-.settings-note {
   display: block;
-}
-
-
-.studio {
-  display: grid;
-  gap: 32px;
-  padding: 40px 40px 32px;
-  background: var(--surface);
 }
 
 .studio-head {
@@ -3145,11 +3042,6 @@ input[type="checkbox"]:focus-visible,
   display: grid;
   gap: 10px;
   max-width: 62ch;
-}
-
-.studio-intro h1 {
-  font-size: clamp(40px, 5.2vw, 58px);
-  letter-spacing: -0.045em;
 }
 
 .studio-lede {
@@ -3170,33 +3062,6 @@ input[type="checkbox"]:focus-visible,
   color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
-}
-
-.studio-compose {
-  display: grid;
-  gap: 16px;
-  padding: 24px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
-  border-radius: 22px;
-  background: color-mix(in srgb, var(--surface-sunken) 45%, var(--surface));
-  box-shadow: 0 26px 54px -48px rgba(28, 26, 22, 0.55);
-}
-
-.studio-text {
-  min-height: 148px;
-  padding: 16px 18px;
-  border-color: var(--line);
-  background: var(--surface);
-  font-family: var(--font-display);
-  font-size: 20px;
-  line-height: 1.55;
-}
-
-.studio-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 12px;
 }
 
 .studio-voice-field {
@@ -3299,21 +3164,17 @@ input[type="checkbox"]:focus-visible,
 .studio-card {
   display: grid;
   align-content: start;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
-  padding: 24px;
+  padding: 22px;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
 .studio-card-head {
   display: grid;
   gap: 6px;
-}
-
-.studio-card-head h2 {
-  font-size: 24px;
 }
 
 .studio-card-note {
@@ -3464,8 +3325,8 @@ input[type="checkbox"]:focus-visible,
 }
 
 .home-greeting {
-  font-size: clamp(26px, 3vw, 34px);
-  line-height: 1.12;
+  font-size: 28px;
+  line-height: 1.15;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
 }
@@ -3652,19 +3513,27 @@ input[type="checkbox"]:focus-visible,
 }
 
 .studio {
-  gap: 24px;
+  display: grid;
+  gap: 22px;
   padding: 32px 32px 28px;
-  border-radius: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
 .studio-intro h1 {
-  font-size: clamp(34px, 4.4vw, 50px);
+  font-size: 28px;
+  letter-spacing: -0.02em;
 }
 
 .studio-compose {
+  display: grid;
   gap: 12px;
-  padding: 24px;
-  border-radius: 18px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--surface-sunken);
 }
 
 .studio-compose-head {
@@ -3682,14 +3551,20 @@ input[type="checkbox"]:focus-visible,
 
 .studio-text {
   min-height: 150px;
+  padding: 16px 18px;
+  border-color: var(--line);
+  background: var(--surface);
+  font-family: var(--font-display);
   font-size: 18px;
+  line-height: 1.55;
 }
 
 .studio-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  flex-wrap: wrap;
   align-items: end;
   gap: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .studio-controls-actions {
@@ -3703,7 +3578,11 @@ input[type="checkbox"]:focus-visible,
 }
 
 .voice-submit {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-wrap: wrap;
   align-items: flex-start;
+  gap: 14px;
 }
 
 .voice-submit .install {
