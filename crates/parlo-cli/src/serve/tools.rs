@@ -11,6 +11,8 @@ struct Job {
     state: String,
     result: String,
     error: String,
+    started_ms: u128,
+    timeout_ms: u128,
 }
 
 fn jobs() -> &'static Mutex<HashMap<String, Job>> {
@@ -175,6 +177,8 @@ fn start_record_job(seconds: u64) -> Result<String, String> {
                 state: "running".to_string(),
                 result: String::new(),
                 error: String::new(),
+                started_ms: millis(),
+                timeout_ms: 180_000,
             },
         );
     let key = id.clone();
@@ -216,6 +220,13 @@ fn start_job(kind: &str, seconds: u64) -> Result<String, String> {
         other => return Err(format!("{other} is not a job this window runs")),
     }
     let id = format!("{kind}-{}", millis());
+    let timeout_ms = match kind {
+        "bench" => 1_800_000u128,
+        "soak" => ((seconds as u128) * 1_000)
+            .saturating_add(300_000)
+            .max(600_000),
+        _ => 600_000u128,
+    };
     jobs()
         .lock()
         .map_err(|_| "jobs are unavailable".to_string())?
@@ -225,6 +236,8 @@ fn start_job(kind: &str, seconds: u64) -> Result<String, String> {
                 state: "running".to_string(),
                 result: String::new(),
                 error: String::new(),
+                started_ms: millis(),
+                timeout_ms,
             },
         );
     let key = id.clone();
@@ -273,19 +286,30 @@ fn job_body(query: &str) -> String {
         .find(|(key, _)| *key == "id")
         .map(|(_, value)| value.to_string())
         .unwrap_or_default();
-    let store = match jobs().lock() {
+    let mut store = match jobs().lock() {
         Ok(store) => store,
         Err(_) => return "{\"error\":\"jobs are unavailable\"}".to_string(),
     };
-    match store.get(&id) {
-        Some(job) => serde_json::json!({
+    let now = millis();
+    if let Some(job) = store.get_mut(&id) {
+        if job.state == "running"
+            && job.timeout_ms > 0
+            && now.saturating_sub(job.started_ms) > job.timeout_ms
+        {
+            job.state = "done".to_string();
+            if job.error.is_empty() {
+                job.error = "the run stopped responding".to_string();
+            }
+        }
+        serde_json::json!({
             "id": id,
             "state": job.state,
             "result": job.result,
             "error": job.error,
         })
-        .to_string(),
-        None => "{\"state\":\"unknown\"}".to_string(),
+        .to_string()
+    } else {
+        "{\"state\":\"unknown\"}".to_string()
     }
 }
 
@@ -371,5 +395,24 @@ mod tests {
     fn a_missing_token_is_refused() {
         let outcome = handle("GET", "/tools/snapshot", "", b"", false).unwrap();
         assert_eq!(outcome.0, "401 Unauthorized");
+    }
+
+    #[test]
+    fn a_stale_running_job_is_reported_as_stopped() {
+        let id = format!("stale-test-{}", millis());
+        jobs().lock().unwrap().insert(
+            id.clone(),
+            Job {
+                state: "running".to_string(),
+                result: String::new(),
+                error: String::new(),
+                started_ms: 1,
+                timeout_ms: 1,
+            },
+        );
+        let body = job_body(&format!("id={id}"));
+        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(value["state"], "done");
+        assert_eq!(value["error"], "the run stopped responding");
     }
 }

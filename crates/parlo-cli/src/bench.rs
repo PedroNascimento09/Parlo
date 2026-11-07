@@ -178,12 +178,32 @@ fn cascade(engine_dir: &Path, run: &Runner<'_>) -> Result<(f64, f64, u64), Strin
 
 fn report(stdout: &str) -> Result<serde_json::Value, String> {
     let normalized = stdout.replace('\r', "\n");
+    for line in normalized.lines().rev() {
+        let trimmed = line.trim();
+        if !trimmed.starts_with('{') {
+            continue;
+        }
+        let mut stream =
+            serde_json::Deserializer::from_str(trimmed).into_iter::<serde_json::Value>();
+        if let Some(Ok(value)) = stream.next() {
+            if value.get("rtf").is_some() {
+                return Ok(value);
+            }
+        }
+    }
     let starts: Vec<usize> = normalized
         .match_indices('{')
         .map(|(index, _)| index)
         .collect();
     for start in starts.into_iter().rev() {
-        let Ok(value) = serde_json::from_str::<serde_json::Value>(normalized[start..].trim())
+        let slice = normalized[start..].trim();
+        let mut stream = serde_json::Deserializer::from_str(slice).into_iter::<serde_json::Value>();
+        let Ok(value) = stream
+            .next()
+            .unwrap_or(Err(serde_json::Error::io(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "empty",
+            ))))
         else {
             continue;
         };
@@ -191,7 +211,7 @@ fn report(stdout: &str) -> Result<serde_json::Value, String> {
             return Ok(value);
         }
     }
-    let last = stdout.lines().rev().take(6).collect::<Vec<_>>().join("\n");
+    let last = stdout.lines().rev().take(8).collect::<Vec<_>>().join("\n");
     Err(format!(
         "the benchmark printed a report this app cannot read:\n{last}"
     ))
@@ -492,6 +512,17 @@ mod tests {
                 assert!(rtf > 0.0, "{}", reading.engine);
             }
         }
+    }
+
+    #[test]
+    fn report_reads_json_mixed_with_warmup_warnings() {
+        let stdout = "warmup deferred for recognition: bad allocation
+
+{\"model\":\"small\",\"rtf\":2.02,\"wall_seconds\":5.67,\"segments\":1}
+";
+        let value = report(stdout).expect("report");
+        assert_eq!(value["rtf"].as_f64(), Some(2.02));
+        assert_eq!(value["segments"].as_u64(), Some(1));
     }
 
     #[test]
