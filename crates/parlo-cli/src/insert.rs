@@ -460,27 +460,8 @@ fn applescript_for(text: &str) -> String {
 const NO_FIELD: &str =
     "this platform has no way to type into another window yet; the text goes to the clipboard";
 
-#[cfg(target_os = "linux")]
-pub fn capture_target() -> Result<usize, String> {
-    x11::active_window()
-}
-
 #[cfg(target_os = "macos")]
 static CAPTURED_APP: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
-
-#[cfg(target_os = "macos")]
-pub fn capture_target() -> Result<usize, String> {
-    let app = mac::frontmost()?;
-    *CAPTURED_APP
-        .lock()
-        .map_err(|_| "the program in front could not be remembered".to_string())? = Some(app);
-    Ok(0)
-}
-
-#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
-pub fn capture_target() -> Result<usize, String> {
-    Err(NO_FIELD.to_string())
-}
 
 #[cfg(target_os = "linux")]
 pub fn type_text(target: usize, text: &str) -> Result<(), String> {
