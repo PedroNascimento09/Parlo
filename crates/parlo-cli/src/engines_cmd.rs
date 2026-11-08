@@ -115,6 +115,9 @@ pub(crate) fn print_profile() -> Result<(), String> {
 }
 
 pub(crate) fn bench(args: &[String]) -> Result<(), String> {
+    if args.first().map(String::as_str) == Some("dictate") {
+        return bench::dictate(&args[1..]);
+    }
     if args.iter().any(|argument| argument == "--json") {
         println!("{}", bench::as_json());
     } else {

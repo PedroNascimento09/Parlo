@@ -148,6 +148,7 @@ fn print_help() {
     println!("  undo                               take back what the last dictation wrote");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  bench [--json]                     measure every engine on this machine");
+    println!("  bench dictate [--runs N] [--json]  measure end of audio to text, with the stages");
     println!("  app [--from X --to Y] [--stt NAME] open the Parlo window");
     println!("  translate <in.wav> <out.wav>       translate a mono pcm16 wave file");
     println!("            [--engine echo|sidecar|cascade]  pick the engine, default echo");

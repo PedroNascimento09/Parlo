@@ -38,6 +38,30 @@ impl Reading {
     }
 }
 
+pub fn dictate(args: &[String]) -> Result<(), String> {
+    let engine_dir = engine_dir()
+        .canonicalize()
+        .map_err(|error| format!("{:?}: {error}", engine_dir()))?;
+    let script = engine_dir.join("scripts").join("bench_dictate.py");
+    if !script.is_file() {
+        return Err(format!("cannot find {}", script.display()));
+    }
+    let python = crate::sidecar::python_for(&engine_dir);
+    let status = Command::new(&python)
+        .arg(&script)
+        .args(args)
+        .current_dir(&engine_dir)
+        .env("PYTHONPATH", &engine_dir)
+        .env("PARLO_MODELS_DIR", crate::models::models_root())
+        .status()
+        .map_err(|error| format!("cannot start {python}: {error}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err("the dictation ruler did not finish".to_string())
+    }
+}
+
 pub fn readings() -> Vec<Reading> {
     let cores = crate::engines::detect_cores();
     let gpu = crate::engines::detect_gpu_memory_mb();

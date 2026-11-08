@@ -1,0 +1,13 @@
+{
+  "clip_seconds": 5.0,
+  "lead_seconds": 1.0,
+  "tail_seconds": 1.4,
+  "threads": 4,
+  "runs": 5,
+  "decode_ms": 567.1,
+  "post_ms": 0.0,
+  "total_ms": 567.1,
+  "machine": "Windows AMD64, 12 threads",
+  "commit": "dee047d",
+  "recorded_at": "2026-11-08T21:20:08Z"
+}
