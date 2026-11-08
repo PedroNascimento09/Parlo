@@ -12,13 +12,13 @@ Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine:
 
 | Stage, speech clip | Trimming off | Trimming on |
 |---|---|---|
-| Load, cold recogniser, once per process | 2701.2 ms | 2701.2 ms |
-| Warm-up, first write, not counted | 371.8 ms | 371.8 ms |
-| Decode | 558.2 ms | 360.9 ms |
-| Post-processing | 1.8 ms | 1.0 ms |
-| **Audio end to text** | **561.6 ms** | **361.9 ms** |
+| Load, cold recogniser, once per process | 2604.7 ms | 2604.7 ms |
+| Warm-up, first write, not counted | 374.8 ms | 374.8 ms |
+| Decode | 567.0 ms | 373.9 ms |
+| Post-processing | 0.8 ms | 0.9 ms |
+| **Audio end to text** | **569.9 ms** | **375.0 ms** |
 
-The two columns come from one process, five runs each, recorded in `docs/benchmarks/dictate-speech.json` at commit b051a11 with the machine. Load and warm-up are paid once and are not part of the per-dictation total. Two further sessions measured 366.2 ms and 384.0 ms against controls of 545.3 ms and 546.7 ms, so the three sessions were 35.6%, 32.8% and 29.8% faster with trimming (median 32.8%). The baseline session recorded 361.9 ms.
+The two columns come from one process, five runs each, recorded in `docs/benchmarks/dictate-speech.json` at commit 669ddf7 with the machine. Load and warm-up are paid once and are not part of the per-dictation total. Two further sessions measured 349.5 ms and 361.9 ms against controls of 528.6 ms and 561.6 ms, so the three sessions were 34.2%, 33.9% and 35.6% faster with trimming (median 34.2%). The recorded baseline is 375.0 ms.
 
 What changed: the engine trims leading and trailing silence before the encoder, at a -50 dBFS floor relative to the clip peak, with a 0.25 s margin and 20 ms frames. A clip where no frame clears the floor is left alone, so a quiet recording is not mistaken for silence. Threads were already at their best value: on the synthetic clip 2 threads cost 715 ms, 4 cost 555 ms, 8 cost 743 ms and 12 cost 1518 ms, which says the decode is CPU bound and 4 is the knee.
 
