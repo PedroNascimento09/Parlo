@@ -12,6 +12,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- With cleanup on, the island shows the waveform while you speak and the cleaned sentence when you stop, instead of running a live draft that held the recogniser: on a six second clip the text lands in about 1.0 s instead of 2.8 s after the key is released.
 - Dictation trims the silence before the recogniser, so the same sentence reaches the text field about a third sooner: 375 ms instead of 570 ms from the end of the audio on the reference machine, with the cleaning stage measured at 0.9 ms.
 - The island is a compact bar now: a live waveform, the sentence as it is spoken, and only the controls the current state needs.
 - The server loads the dictation model when it starts, so the first dictation no longer waits for it.

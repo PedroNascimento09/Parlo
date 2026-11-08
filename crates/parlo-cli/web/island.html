@@ -940,7 +940,7 @@ function endStream() {
 }
 
 async function sendPartial() {
-  if (!stream || !context || busy || paused || partialRunning) {
+  if (!stream || !context || busy || paused || partialRunning || tidy) {
     return;
   }
   const batch = chunks.slice(sentChunks);
