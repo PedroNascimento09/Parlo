@@ -59,15 +59,17 @@ def main() -> int:
     for line in sys.stdin:
         if not line.strip():
             continue
-        if warmed:
-            with busy:
-                response = answer(line, engine)
-        else:
+        first = not warmed
+        if first:
             response = answer(line, engine)
             warmed = True
-            threading.Thread(target=background_warmup, daemon=True).start()
+        else:
+            with busy:
+                response = answer(line, engine)
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
+        if first:
+            threading.Thread(target=background_warmup, daemon=True).start()
     return 0
 
 
