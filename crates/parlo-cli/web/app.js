@@ -6141,6 +6141,9 @@ function renderHistory() {
     if (entry.seconds > 0) {
       when.push(entry.seconds.toFixed(1) + " s");
     }
+    if (entry.latency_ms > 0) {
+      when.push(entry.latency_ms + " ms");
+    }
     const program = (entry.app || "").trim();
     if (program && program !== "unknown") {
       when.push(program);
