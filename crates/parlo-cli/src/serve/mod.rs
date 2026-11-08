@@ -1268,38 +1268,8 @@ fn handle(
         return answer;
     }
 
-    if method == "GET" && path == "/meetings" {
-        if !authorised(&headers, token) {
-            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
-                .map(|()| Flow::Serve);
-        }
-        let meetings: Vec<serde_json::Value> = crate::meeting::list()
-            .into_iter()
-            .map(meeting_json)
-            .collect();
-        return respond_json(stream, "200 OK", &serde_json::json!(meetings).to_string())
-            .map(|()| Flow::Serve);
-    }
-
-    if method == "GET" && path.starts_with("/meetings/") && path.ends_with("/markdown") {
-        if !authorised(&headers, token) {
-            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
-                .map(|()| Flow::Serve);
-        }
-        let id = path
-            .trim_start_matches("/meetings/")
-            .trim_end_matches("/markdown")
-            .trim_end_matches('/');
-        let meeting = match crate::meeting::load(id) {
-            Ok(meeting) => meeting,
-            Err(error) => {
-                let body = serde_json::json!({ "error": error }).to_string();
-                return respond_json(stream, "404 Not Found", &body).map(|()| Flow::Serve);
-            }
-        };
-        let name = crate::notes::file_name(&meeting);
-        let body = crate::notes::markdown(&meeting);
-        return respond_named(stream, &name, body.as_bytes()).map(|()| Flow::Serve);
+    if let Some(answer) = routes::meetings::route(method, path, stream, &headers, token) {
+        return answer;
     }
 
     if method == "POST" && path == "/meeting/window" {

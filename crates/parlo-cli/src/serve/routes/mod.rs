@@ -9,3 +9,4 @@ pub(super) mod openai;
 pub(super) mod story;
 pub(super) mod watch;
 pub(super) mod retention;
+pub(super) mod meetings;
