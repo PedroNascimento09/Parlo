@@ -3,15 +3,14 @@ import contextlib
 import hashlib
 import json
 import math
-import shutil
-import subprocess
 import sys
 import tempfile
-import threading
 
 import exports
 import separation
 import timing
+from dub_media import extract_audio, has_video, load_cues, require
+from dub_voice import cue_pieces, select_voice, warm_voice
 from dub_render import DUCKING_FLOOR, ducking, inspect, rebuild, write_report
 from dub_audio import (
     FRAME_SECONDS,
@@ -46,11 +45,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from parlo_cascade import CascadeEngine
 from parlo_cascade.engine import (
     MODEL_DIR,
-    VOICES,
     float_to_pcm16,
     pcm16_to_float,
 )
-from parlo_cascade.tts import VoiceUnavailable
 
 __all__ = [
     "FRAME_SECONDS",
@@ -85,174 +82,12 @@ VIDEO_SUFFIXES = {".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v"}
 
 
 
-def require(tool: str) -> str:
-    path = shutil.which(tool)
-    if path is None:
-        raise SystemExit(f"{tool} is not installed; install ffmpeg and add it to PATH")
-    return path
-
-
-def load_cues(path: Path) -> list[Cue]:
-    try:
-        document = json.loads(path.read_text(encoding="utf-8"))
-    except OSError as error:
-        raise SystemExit(f"cannot read imported subtitles: {error}") from error
-    except json.JSONDecodeError as error:
-        raise SystemExit(f"the imported subtitles are not valid JSON: {error}") from error
-    items = document.get("cues") if isinstance(document, dict) else None
-    if not isinstance(items, list) or not items:
-        raise SystemExit("the imported subtitles have no cues")
-    cues: list[Cue] = []
-    for number, item in enumerate(items, start=1):
-        if not isinstance(item, dict):
-            raise SystemExit(f"cue {number} is not an object")
-        identifier = item.get("id")
-        start = item.get("start_ms")
-        end = item.get("end_ms")
-        source = item.get("source")
-        if not isinstance(identifier, str) or not identifier:
-            raise SystemExit(f"cue {number} has no id")
-        if (
-            not isinstance(start, (int, float))
-            or isinstance(start, bool)
-            or not math.isfinite(start)
-            or start < 0
-        ):
-            raise SystemExit(f"cue {number} has no valid start")
-        if (
-            not isinstance(end, (int, float))
-            or isinstance(end, bool)
-            or not math.isfinite(end)
-            or end <= start
-        ):
-            raise SystemExit(f"cue {number} has no valid end")
-        if not isinstance(source, str) or not source.strip():
-            raise SystemExit(f"cue {number} has no text")
-        voice = item.get("voice")
-        if voice is not None and (not isinstance(voice, str) or not voice.strip()):
-            raise SystemExit(f"cue {number} has an invalid voice")
-        pace = item.get("pace", 1.0)
-        if (
-            not isinstance(pace, (int, float))
-            or isinstance(pace, bool)
-            or not math.isfinite(pace)
-            or not 0.8 <= pace <= 1.25
-        ):
-            raise SystemExit(f"cue {number} has an invalid pace")
-        cues.append(Cue(identifier, start / 1000.0, end / 1000.0, source, voice, float(pace)))
-    cues.sort(key=lambda cue: cue.start)
-    identifiers = [cue.id for cue in cues]
-    duplicate = next((name for name in identifiers if identifiers.count(name) > 1), None)
-    if duplicate is not None:
-        raise SystemExit(f"the imported subtitles repeat the cue id {duplicate}")
-    return cues
-
-
-def extract_audio(ffmpeg: str, source: Path, target: Path) -> None:
-    result = subprocess.run(
-        [
-            ffmpeg,
-            "-nostdin",
-            "-y",
-            "-v",
-            "error",
-            "-i",
-            str(source),
-            "-vn",
-            "-ac",
-            "1",
-            "-ar",
-            str(SAMPLE_RATE),
-            "-c:a",
-            "pcm_s16le",
-            str(target),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        raise SystemExit(f"ffmpeg could not read {source.name}: {result.stderr.strip()}")
-
-
-def has_video(ffprobe: str, source: Path) -> bool:
-    result = subprocess.run(
-        [
-            ffprobe,
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-show_entries",
-            "stream=codec_type",
-            "-of",
-            "csv=p=0",
-            str(source),
-        ],
-        capture_output=True,
-        text=True,
-    )
-    return result.returncode == 0 and "video" in result.stdout
-
-
 def speak(engine: CascadeEngine, text: str, pace: float = 1.0) -> np.ndarray:
     if pace == 1.0:
         audio = engine._synthesize(text)
     else:
         audio = engine._synthesize(text, length_scale=1.0 / pace)
     return np.asarray(pcm16_to_float(audio), dtype=np.float32)
-
-
-def warm_voice(engine: CascadeEngine) -> threading.Thread | None:
-    load = getattr(engine, "_load_voice", None)
-    voice = getattr(engine, "voice_path", None)
-    if load is None or voice is None or not Path(voice).is_file():
-        return None
-
-    def boot() -> None:
-        try:
-            load().start()
-        except VoiceUnavailable:
-            pass
-
-    thread = threading.Thread(target=boot, daemon=True)
-    thread.start()
-    return thread
-
-
-def select_voice(
-    engine: CascadeEngine, voice: str | None, default: Path | None
-) -> Path | None:
-    if not voice:
-        if default is None:
-            return None
-        path = default
-    else:
-        name = VOICES.get(voice.removeprefix("voice-"))
-        if name is None and (MODEL_DIR / voice).is_file():
-            name = voice
-        if name is None and (MODEL_DIR / f"{voice}.onnx").is_file():
-            name = f"{voice}.onnx"
-        if name is None:
-            raise ValueError(f"{voice} is not a voice this engine installs")
-        path = MODEL_DIR / name
-        if not path.is_file():
-            raise ValueError(f"the voice {path.name} is not installed")
-    if Path(engine.voice_path) != path:
-        engine._release_voice()
-        engine.voice_path = path
-    return path
-
-
-def cue_pieces(cues: list[Cue], length: int) -> list[tuple[Segment, Cue]]:
-    pieces = []
-    for cue in cues:
-        start = max(int(round(cue.start * SAMPLE_RATE)), 0)
-        end = min(int(round(cue.end * SAMPLE_RATE)), length)
-        if end > start:
-            pieces.append((Segment(start, end), cue))
-    if not pieces:
-        raise SystemExit("none of the imported cues fall inside the audio")
-    return pieces
 
 
 def build(
@@ -278,8 +113,6 @@ def build(
     else:
         pieces = cue_pieces(cues, len(samples))
 
-    engine_voice = getattr(engine, "voice_path", None)
-    default_voice = Path(engine_voice) if engine_voice else None
     warming = warm_voice(engine)
     track = np.zeros(len(samples), dtype=np.float32)
     lines: list[Line] = []
