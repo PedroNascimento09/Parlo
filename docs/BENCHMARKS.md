@@ -6,6 +6,24 @@ Published numbers are the difference between a project people trust and a demo p
 
 Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: Parakeet TDT 0.6B v3 int8 via sherpa-onnx, the OPUS-MT Portuguese to English package, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
 
+### Dictation hot path, audio end to text
+
+`parlo bench dictate` decodes a fixed 5.00 s clip five times, four threads, and prints the median of each stage. The clip is 1.00 s of silence, 2.60 s of a voice-like tone and 1.40 s of silence; it is not speech, so the encoder cost is what it measures and post-processing stays at 0 ms.
+
+| Stage | Before (dee047d) | After |
+|---|---|---|
+| Load, cold recogniser, once per process | 3348.7 ms | 3490.6 ms |
+| Warm-up, first write, not counted | 543.5 ms | 489.1 ms |
+| Decode | 567.1 ms | 406.2 ms |
+| Post-processing | 0.0 ms | 0.0 ms |
+| **Audio end to text** | **567.1 ms** | **406.3 ms** |
+
+The after column is a median of five runs; single runs ranged from 372 ms to 426 ms. Run with trimming off in the same process, the clip cost 585.3 ms, so the change is worth 30.6%, and the recorded baseline puts the result 28.4% lower.
+
+What changed: the engine trims leading and trailing silence before the encoder, at a -50 dBFS floor relative to the clip peak, with a 0.25 s margin and 20 ms frames. A clip where no frame clears the floor is left alone, so a quiet recording is not mistaken for silence. Threads were already at their best value: on the same clip 2 threads cost 715 ms, 4 cost 555 ms, 8 cost 743 ms and 12 cost 1518 ms, which says the decode is CPU bound and 4 is the knee.
+
+A machine under load stretches every run in a session, which is why the ruler also times the same clip with trimming off. The control and the measured run share the conditions, so the percentage survives a busy laptop even when the absolute number does not. Load and warm-up move with the disk cache and are paid once per process, not per dictation.
+
 ### Recogniser choice on modest hardware
 
 To approximate an ordinary laptop, the recogniser was limited to 4 threads on the same 12 core machine. 4.95 s of Portuguese audio, 2.5 s segment window, five runs each, mean reported.
