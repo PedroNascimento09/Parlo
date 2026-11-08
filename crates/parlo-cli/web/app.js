@@ -1603,6 +1603,7 @@ const settingsUndo = document.getElementById("settings-undo");
 const settingsUndoSave = document.getElementById("settings-undo-save");
 const meetingTitle = document.getElementById("meeting-title");
 const meetingText = document.getElementById("meeting-text");
+const meetingImportTitle = document.getElementById("meeting-import-title");
 const meetingImport = document.getElementById("meeting-import");
 const meetingList = document.getElementById("meeting-list");
 const meetingNote = document.getElementById("meetings-note");
@@ -4815,13 +4816,14 @@ async function importMeeting() {
     const response = await fetch("/meeting/import", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ title: meetingTitle.value, text }),
+      body: JSON.stringify({ title: (meetingImportTitle && meetingImportTitle.value) || meetingTitle.value, text }),
     });
     const detail = await response.json().catch(() => ({}));
     if (!response.ok) {
       throw new Error(detail.error || "The transcript was refused.");
     }
     meetingText.value = "";
+    if (meetingImportTitle) meetingImportTitle.value = "";
     await loadMeetings();
   } catch (failure) {
     setNote(meetingNote, failure.message || "The transcript could not be imported.", "error");
@@ -6476,6 +6478,37 @@ const ROUTES = {
     "about",
   ],
 };
+
+const subnavLinks = [...document.querySelectorAll("[data-subnav]")];
+for (const link of subnavLinks) {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById(link.dataset.subnav)?.scrollIntoView({ behavior: "smooth" });
+  });
+}
+if (subnavLinks.length && "IntersectionObserver" in window) {
+  const sections = new Map(
+    subnavLinks
+      .map((link) => [document.getElementById(link.dataset.subnav), link])
+      .filter(([target]) => Boolean(target)),
+  );
+  document.querySelectorAll("[data-subnav]").forEach((link) => {
+    if (!sections.has(document.getElementById(link.dataset.subnav))) link.remove();
+  });
+  const spy = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const link = sections.get(entry.target);
+        if (link && entry.isIntersecting) {
+          for (const other of sections.values()) other.removeAttribute("aria-current");
+          link.setAttribute("aria-current", "location");
+        }
+      }
+    },
+    { rootMargin: "-30% 0px -60% 0px" },
+  );
+  for (const target of sections.keys()) spy.observe(target);
+}
 
 let currentRoute = "home";
 

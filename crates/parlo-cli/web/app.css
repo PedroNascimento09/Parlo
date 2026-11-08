@@ -419,21 +419,18 @@ textarea.field-input {
   padding-top: 12px;
 }
 
-.more summary,
-.meeting-import summary {
+.more summary {
   cursor: pointer;
   color: var(--ink-soft);
   font-size: 13px;
   font-weight: 500;
 }
 
-.more summary:hover,
-.meeting-import summary:hover {
+.more summary:hover {
   color: var(--ink);
 }
 
-.more > *:not(summary),
-.meeting-import > *:not(summary) {
+.more > *:not(summary) {
   margin-top: 14px;
 }
 
@@ -441,6 +438,43 @@ textarea.field-input {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
+}
+
+
+.subnav {
+  position: sticky;
+  top: var(--masthead-height, 64px);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 10px 0;
+  margin: 0;
+  background: color-mix(in srgb, var(--canvas) 92%, transparent);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+
+.subnav a {
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.subnav a:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.subnav a[aria-current="location"] {
+  background: var(--ink);
+  color: var(--canvas);
+}
+
+.section {
+  scroll-margin-top: calc(var(--masthead-height, 64px) + 56px);
 }
 
 .library-tabs {

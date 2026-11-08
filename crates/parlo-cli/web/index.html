@@ -822,6 +822,12 @@ try {
       <h2 id="meetings-title" data-i18n="text.Meetings">Meetings</h2>
       <p class="settings-note" id="meetings-note" aria-live="polite"></p>
     </div>
+    <nav class="subnav" aria-label="Meeting sections">
+      <a href="#meeting-record" data-subnav="meeting-record" data-i18n="text.Record a meeting">Record a meeting</a>
+      <a href="#meeting-import-label" data-subnav="meeting-import-label" data-i18n="text.Import a transcript instead">Import a transcript instead</a>
+      <a href="#meeting-find-section" data-subnav="meeting-find-section" data-i18n="text.Find it again">Find it again</a>
+      <a href="#meeting-list-section" data-subnav="meeting-list-section" data-i18n="text.Transcripts">Transcripts</a>
+    </nav>
     <div class="call-banner" id="call-banner" hidden>
       <p class="call-text" id="call-text" aria-live="polite"></p>
       <div class="meeting-actions">
@@ -829,7 +835,7 @@ try {
         <button id="call-dismiss" class="swap" type="button" data-i18n="text.Not now">Not now</button>
       </div>
     </div>
-    <h3 class="meeting-group" data-i18n="text.Record a meeting">Record a meeting</h3>
+    <h3 class="meeting-group section" id="meeting-record" data-i18n="text.Record a meeting">Record a meeting</h3>
     <div class="settings-row meeting-compose">
       <label class="field" for="meeting-title">
         <span class="field-label" data-i18n="text.Title">Title</span>
@@ -850,7 +856,7 @@ try {
       </label>
       <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite" data-i18n="text.Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.">Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.</p>
     </div>
-    <h3 class="meeting-group" data-i18n="text.Find it again">Find it again</h3>
+    <h3 class="meeting-group section" id="meeting-find-section" data-i18n="text.Find it again">Find it again</h3>
     <div class="settings-row">
       <label class="field field-wide" for="meeting-search">
         <span class="field-label" data-i18n="text.Search every transcript">Search every transcript</span>
@@ -859,7 +865,7 @@ try {
     </div>
     <div class="status" id="meeting-matches" aria-live="polite"></div>
     <p class="settings-note" id="meeting-summary-text" aria-live="polite"></p>
-    <details class="more">
+    <details class="more section" id="meeting-ask-section">
       <summary data-i18n="text.Ask these transcripts">Ask these transcripts</summary>
       <div class="settings-row">
         <label class="field field-wide" for="meeting-question">
@@ -874,9 +880,14 @@ try {
       <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
       <dl class="status" id="meeting-citations"></dl>
     </details>
-    <details class="meeting-import">
-      <summary data-i18n="text.Import a transcript instead">Import a transcript instead</summary>
+
+    <h3 class="meeting-group section" id="meeting-import-label" data-i18n="text.Import a transcript instead">Import a transcript instead</h3>
+    <section class="meeting-import section" aria-labelledby="meeting-import-title">
       <div class="settings-row meeting-compose">
+        <label class="field field-wide" for="meeting-import-title">
+          <span class="field-label" data-i18n="text.Title">Title</span>
+          <input id="meeting-import-title" class="field-input" type="text" maxlength="60" autocomplete="off" placeholder="Name this transcript">
+        </label>
         <label class="field field-wide" for="meeting-text">
           <span class="field-label" data-i18n="text.Transcript">Transcript</span>
           <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: we ship it on Friday&#10;Speaker 2: I will write the notes."></textarea>
@@ -887,7 +898,7 @@ try {
           <button id="meeting-summary" class="swap" type="button" data-i18n="text.Summarise the latest">Summarise the latest</button>
         </div>
       </div>
-    </details>
+    </section>
     <div class="settings-row" id="meeting-notes-row" hidden>
       <label class="field field-wide" for="meeting-notes">
         <span class="field-label" data-i18n="text.Note">Note</span>
@@ -895,8 +906,8 @@ try {
       </label>
       <button id="meeting-note-add" class="install" type="button" data-i18n="text.Add note">Add note</button>
     </div>
-    <h3 class="meeting-group" data-i18n="text.Transcripts">Transcripts</h3>
-    <div class="media-list" id="meeting-list"></div>
+    <h3 class="meeting-group section" id="meeting-list-section" data-i18n="text.Transcripts">Transcripts</h3>
+    <div class="media-list section" id="meeting-list"></div>
     
 
 <section class="settings settings-nested" id="retention" aria-labelledby="retention-title">
