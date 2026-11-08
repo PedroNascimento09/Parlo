@@ -261,31 +261,6 @@ footer p + p {
   font-size: 12px;
 }
 
-.licences {
-  margin-top: 8px;
-  border-top: 1px solid var(--line);
-  padding-top: 16px;
-  color: var(--muted);
-  font-size: var(--size-small);
-}
-
-.licences summary {
-  cursor: pointer;
-  color: var(--ink-soft);
-  font-size: 13px;
-}
-
-.licences ul {
-  margin: 12px 0 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 6px;
-}
-
-.licences p {
-  margin-top: 10px;
-}
-
 .install,
 .swap,
 .talk,
@@ -2684,7 +2659,6 @@ textarea.field-input {
 /* Interface refinement */
 
 body.gating .masthead,
-body.gating .licences,
 body.gating footer,
 body.gating main > :not(#name-gate) {
   display: none !important;

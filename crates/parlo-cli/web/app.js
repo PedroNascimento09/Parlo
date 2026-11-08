@@ -6474,7 +6474,6 @@ const ROUTES = {
     "provider",
     "privacy",
     "about",
-    "licences",
   ],
 };
 
