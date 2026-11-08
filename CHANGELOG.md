@@ -17,7 +17,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - A dictation no longer falls back to the clipboard and a manual Ctrl+V; the island restores the target and writes there.
 - The sentence stays visible while you speak instead of being hidden until the dictation ends.
-- The island closes at any time from its close button or Escape.
+- Escape closes the island even when the field you are dictating into keeps the keyboard focus; the close button still works.
+- The hands-free shortcut toggles the session instead of starting a second one.
+- Releasing the dictation key while the island is opening no longer leaves a recording running.
 - The spoken-language menu now grows the island window instead of being cut off at the bottom.
 - Right-clicking the island no longer opens the browser menu.
 

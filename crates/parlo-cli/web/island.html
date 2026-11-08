@@ -494,7 +494,7 @@
   <div class="island" id="island">
     <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <div class="readout">
-      <span class="state" id="state"></span>
+      <span class="state" id="state" role="status" aria-live="polite" aria-atomic="true"></span>
       <span class="line pending" id="line"></span>
     </div>
     <div class="actions">
@@ -595,6 +595,9 @@ let liveRunning = false;
 let liveWaiters = [];
 let partialTicket = 0;
 let partialRunning = false;
+let starting = false;
+let session = 0;
+let armed = false;
 
 function tauriWindow() {
   const api = window.__TAURI__;
@@ -863,36 +866,49 @@ async function openMicrophone() {
 }
 
 async function begin() {
-  if (busy) {
+  if (busy || starting) {
     return;
   }
-  keepIsland();
-  partialTicket += 1;
-  partialRunning = false;
-  liveInserted = "";
-  liveDesired = "";
-  liveBase = "";
-  liveConfirmed = "";
-  liveGuess = "";
-  openWriteMenu(false);
-  document.body.classList.remove("ready");
-  setState(t("island.listening", "Listening"), "", true);
-  if (!stream && !(await capture())) {
-    return;
+  const ticket = ++session;
+  starting = true;
+  armed = false;
+  try {
+    keepIsland();
+    partialTicket += 1;
+    partialRunning = false;
+    lastText = "";
+    liveInserted = "";
+    liveDesired = "";
+    liveBase = "";
+    liveConfirmed = "";
+    liveGuess = "";
+    openWriteMenu(false);
+    document.body.classList.remove("ready");
+    setState(t("island.listening", "Listening"), "", true);
+    if (!stream && !(await capture())) {
+      return;
+    }
+    if (ticket !== session || busy) {
+      return;
+    }
+    if (context && context.state === "suspended") {
+      await context.resume().catch(() => {});
+    }
+    if (ticket !== session || busy) {
+      return;
+    }
+    promoted = true;
+    clearInterval(partials);
+    partials = setInterval(sendPartial, PARTIAL_MS);
+    paintPause();
+    document.body.classList.remove("ready", "paused");
+    document.body.classList.add("listening");
+    report("listening");
+  } finally {
+    if (ticket === session) {
+      starting = false;
+    }
   }
-  if (busy) {
-    return;
-  }
-  if (context && context.state === "suspended") {
-    await context.resume().catch(() => {});
-  }
-  promoted = true;
-  clearInterval(partials);
-  partials = setInterval(sendPartial, PARTIAL_MS);
-  paintPause();
-  document.body.classList.remove("ready", "paused");
-  document.body.classList.add("listening");
-  report("listening");
 }
 
 function endStream() {
@@ -1036,6 +1052,9 @@ function teardown() {
 
 function discard() {
   attempt += 1;
+  session += 1;
+  starting = false;
+  armed = false;
   partialTicket += 1;
   partialRunning = false;
   clearInterval(ticker);
@@ -1290,7 +1309,17 @@ async function dismissIsland() {
 }
 
 async function stop() {
-  if (!stream || busy) {
+  if (busy) {
+    return;
+  }
+  if (!promoted) {
+    if (starting || armed) {
+      discard();
+      ready();
+    }
+    return;
+  }
+  if (!stream) {
     return;
   }
   busy = true;
@@ -1392,13 +1421,34 @@ function tap() {
 }
 
 function handsFree() {
+  if (starting) {
+    if (busy) {
+      return;
+    }
+    discard();
+    ready();
+    return;
+  }
+  if (promoted && stream) {
+    stop();
+    return;
+  }
+  begin();
+}
+
+function beginFromHold() {
+  if (!armed) {
+    return;
+  }
+  armed = false;
   begin();
 }
 
 function arm() {
-  if (busy) {
+  if (busy || (promoted && stream)) {
     return;
   }
+  armed = true;
   keepIsland();
   openWriteMenu(false);
   document.body.classList.add("ready");
@@ -1408,7 +1458,7 @@ function arm() {
 }
 
 function ready() {
-  if (busy) {
+  if (busy || (promoted && stream)) {
     return;
   }
   discard();
@@ -1607,23 +1657,28 @@ paintWrite();
 
 window.parloArm = arm;
 window.parloReady = ready;
-window.parloBegin = begin;
+window.parloBegin = beginFromHold;
 window.parloStop = stop;
 window.parloCancel = cancel;
 window.parloTap = tap;
 window.parloHandsFree = handsFree;
+window.parloEscape = escapeIsland;
 
 pauseEl.addEventListener("click", togglePause);
+
+function escapeIsland() {
+  if (!writeMenu.hidden) {
+    openWriteMenu(false);
+    writeEl.focus();
+    return;
+  }
+  dismissIsland();
+}
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
-    if (!writeMenu.hidden) {
-      openWriteMenu(false);
-      writeEl.focus();
-      return;
-    }
-    dismissIsland();
+    escapeIsland();
   }
   if (event.key === " " && stream && !(event.target instanceof HTMLButtonElement)) {
     event.preventDefault();
@@ -1634,6 +1689,15 @@ window.addEventListener("keydown", (event) => {
 loadLocale();
 loadVersion();
 Promise.all([loadSettings(), loadLanguages()]).then(loadCoverage);
+
+try {
+  const channel = new BroadcastChannel("parlo-locale");
+  channel.onmessage = () => {
+    loadLocale();
+    loadSettings().then(paintWrite).then(paintTidy);
+    loadLanguages().then(buildWriteMenu);
+  };
+} catch {}
 </script>
 </body>
 </html>

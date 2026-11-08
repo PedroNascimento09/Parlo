@@ -55,6 +55,7 @@ pub fn listen(handle: AppHandle) {
     const VK_CONTROL: i32 = 0x11;
     const VK_MENU: i32 = 0x12;
     const VK_LWIN: i32 = 0x5B;
+    const VK_ESCAPE: u32 = 0x1B;
     const MOD_ALT: u32 = 0x0001;
     const MOD_CONTROL: u32 = 0x0002;
     const MOD_SHIFT: u32 = 0x0004;
@@ -72,6 +73,7 @@ pub fn listen(handle: AppHandle) {
     static UNDO_MODS: AtomicU32 = AtomicU32::new(0);
     static HELD: AtomicBool = AtomicBool::new(false);
     static RECORDING: AtomicBool = AtomicBool::new(false);
+    static ESCAPE_LATCH: AtomicBool = AtomicBool::new(false);
     static FREE_LATCH: AtomicBool = AtomicBool::new(false);
     static CAPTIONS_LATCH: AtomicBool = AtomicBool::new(false);
     static UNDO_LATCH: AtomicBool = AtomicBool::new(false);
@@ -143,6 +145,24 @@ pub fn listen(handle: AppHandle) {
         }
     }
 
+    fn island_visible(handle: &AppHandle) -> bool {
+        handle
+            .get_webview_window(ISLAND)
+            .and_then(|window| window.is_visible().ok())
+            .unwrap_or(false)
+    }
+
+    fn dismiss_overlay() -> bool {
+        let Some(handle) = APP.lock().ok().and_then(|slot| slot.clone()) else {
+            return false;
+        };
+        if !island_visible(&handle) {
+            return false;
+        }
+        tell(&handle, "window.parloEscape && window.parloEscape()");
+        true
+    }
+
     #[cfg(windows)]
     fn remember_target(handle: &AppHandle) {
         let address = handle
@@ -163,35 +183,74 @@ pub fn listen(handle: AppHandle) {
     }
 
     #[cfg(windows)]
+    fn hold(handle: &AppHandle, press: u32) {
+        let handle = handle.clone();
+        std::thread::spawn(move || {
+            let current = || PRESS.load(Ordering::Relaxed) == press;
+            let still_down = || {
+                current()
+                    && PRESSED_AT
+                        .lock()
+                        .map(|slot| slot.is_some())
+                        .unwrap_or(false)
+            };
+            if !current() {
+                return;
+            }
+            remember_target(&handle);
+            if !current() {
+                return;
+            }
+            show(&handle);
+            tell(&handle, "window.parloArm && window.parloArm()");
+            let elapsed = PRESSED_AT
+                .lock()
+                .ok()
+                .and_then(|slot| *slot)
+                .map(|start| start.elapsed().as_millis())
+                .unwrap_or(HOLD_MS);
+            if elapsed < HOLD_MS {
+                std::thread::sleep(Duration::from_millis((HOLD_MS - elapsed) as u64));
+            }
+            if !still_down() {
+                if current() {
+                    tell(&handle, "window.parloReady && window.parloReady()");
+                }
+                return;
+            }
+            if !current() || RECORDING.swap(true, Ordering::Relaxed) {
+                return;
+            }
+            if !still_down() {
+                RECORDING.store(false, Ordering::Relaxed);
+                if current() {
+                    tell(&handle, "window.parloReady && window.parloReady()");
+                }
+                return;
+            }
+            tell(&handle, "window.parloBegin && window.parloBegin()");
+            if !still_down() {
+                RECORDING.store(false, Ordering::Relaxed);
+            }
+        });
+    }
+
+    #[cfg(windows)]
     fn armed() {
         let press = PRESS.fetch_add(1, Ordering::Relaxed) + 1;
         if let Ok(mut slot) = PRESSED_AT.lock() {
             *slot = Some(Instant::now());
         }
-        with_app(|handle| {
-            open(handle, "window.parloArm && window.parloArm()");
-        });
-        std::thread::spawn(move || {
-            std::thread::sleep(std::time::Duration::from_millis(HOLD_MS as u64));
-            let still_down = PRESSED_AT
-                .lock()
-                .map(|slot| slot.is_some())
-                .unwrap_or(false);
-            if !still_down
-                || PRESS.load(Ordering::Relaxed) != press
-                || RECORDING.swap(true, Ordering::Relaxed)
-            {
-                return;
-            }
-            with_app(|handle| {
-                tell(handle, "window.parloBegin && window.parloBegin()");
-            });
-        });
+        with_app(|handle| hold(handle, press));
     }
 
     fn hands_free() {
         with_app(|handle| {
-            open(handle, "window.parloHandsFree && window.parloHandsFree()");
+            if island_visible(handle) {
+                tell(handle, "window.parloHandsFree && window.parloHandsFree()");
+            } else {
+                open(handle, "window.parloHandsFree && window.parloHandsFree()");
+            }
         });
     }
 
@@ -213,6 +272,19 @@ pub fn listen(handle: AppHandle) {
             let entry = &*(l_param as *const Key);
             let pressed = w_param == WM_KEYDOWN || w_param == WM_SYSKEYDOWN;
             let released = w_param == WM_KEYUP || w_param == WM_SYSKEYUP;
+            if entry.vk == VK_ESCAPE {
+                if pressed {
+                    if ESCAPE_LATCH.load(Ordering::Relaxed) {
+                        return 1;
+                    }
+                    if dismiss_overlay() {
+                        ESCAPE_LATCH.store(true, Ordering::Relaxed);
+                        return 1;
+                    }
+                } else if released && ESCAPE_LATCH.swap(false, Ordering::Relaxed) {
+                    return 1;
+                }
+            }
             if pressed || released {
                 let held = modifiers_held();
                 let matches = |key: u32, modifiers: u32| {
@@ -379,7 +451,13 @@ mod bridge_tests {
     fn the_hook_drives_the_overlay_through_its_bridge() {
         let hook = include_str!("island.rs");
         let page = include_str!("../../parlo-cli/web/island.html");
-        for call in ["parloArm", "parloBegin", "parloStop", "parloReady"] {
+        for call in [
+            "parloArm",
+            "parloBegin",
+            "parloStop",
+            "parloReady",
+            "parloEscape",
+        ] {
             assert!(
                 hook.contains(&format!("window.{call} && window.{call}()")),
                 "the hook never fires {call}"
@@ -412,6 +490,24 @@ mod bridge_tests {
     }
 
     #[test]
+    fn the_hold_thread_arms_the_island_before_it_begins() {
+        let hook = include_str!("island.rs");
+        let start = hook.find("fn hold(").expect("there is no hold thread");
+        let end = hook.find("fn armed()").expect("there is no armed handler");
+        let body = &hook[start..end];
+        let armed = body
+            .find("window.parloArm && window.parloArm()")
+            .expect("the hold thread never arms the island");
+        let begin = body
+            .find("window.parloBegin && window.parloBegin()")
+            .expect("the hold thread never begins a dictation");
+        assert!(
+            armed < begin,
+            "the begin signal overtakes the arm signal, so a slow first show drops the dictation"
+        );
+    }
+
+    #[test]
     fn the_recording_key_starts_without_a_visible_wait() {
         let hook = include_str!("island.rs");
         let line = hook
@@ -437,6 +533,19 @@ mod bridge_tests {
             .find("window.show()")
             .expect("show never shows the island");
         assert!(placed < shown, "the island is shown before it is placed");
+    }
+
+    #[test]
+    fn escape_dismisses_the_overlay_from_the_keyboard_hook() {
+        let hook = include_str!("island.rs");
+        let start = hook.find("VK_ESCAPE").expect("escape has no key code");
+        let call = hook
+            .find("window.parloEscape && window.parloEscape()")
+            .expect("the hook never dismisses the overlay");
+        assert!(
+            start < call,
+            "escape is read after the hook has already returned"
+        );
     }
 
     #[test]
