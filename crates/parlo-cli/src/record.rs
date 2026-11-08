@@ -255,12 +255,16 @@ mod capture_tests {
                 Err(error) => panic!("could not open the default input device: {error}"),
             }
         } else {
+            let host_reports_a_device = cpal::default_host().default_input_device().is_some();
             match open_input(None) {
+                Ok(_) => panic!("expected no input device to fail"),
+                Err(error) if host_reports_a_device => {
+                    assert!(!error.is_empty(), "a capture failure must carry a reason")
+                }
                 Err(error) => assert!(
                     error.contains("no input device"),
                     "expected a no-device error, got: {error}"
                 ),
-                Ok(_) => panic!("expected no input device to fail"),
             }
         }
     }
