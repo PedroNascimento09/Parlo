@@ -240,17 +240,6 @@ try {
       <p class="home-privacy"><span class="home-dot" aria-hidden="true"></span><span data-i18n="home.stays">Stays on this computer</span></p>
     </div>
 
-    <section class="home-style" aria-labelledby="home-style-title">
-      <h2 class="home-label" id="home-style-title" data-i18n="style.title">Writing style</h2>
-      <button class="style-choice" id="style-open" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="style-sheet">
-        <span class="style-choice-text">
-          <span class="style-choice-name" id="style-open-name" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</span>
-          <span class="style-choice-sub" id="style-open-sub" hidden></span>
-        </span>
-        <span class="style-choice-action" data-i18n="text.Change">Change</span>
-      </button>
-    </section>
-
     <div class="home-grid">
       <figure class="last home-last" id="home-last" hidden>
         <figcaption class="last-label" id="home-last-label" data-i18n="home.last">Last thing you said</figcaption>
@@ -271,17 +260,7 @@ try {
       </section>
     </div>
 
-    <nav class="home-tools" aria-label="Every part of Parlo" data-i18n-aria-label="home.tools">
-      <button id="home-live" type="button" data-i18n="home.live">Live</button>
-      <button id="home-captions" type="button" data-i18n="home.captions">Captions</button>
-      <a href="#library/meetings" data-i18n="nav.meetings">Meetings</a>
-      <a href="#library/files" data-i18n="library.tabs.files">Files</a>
-      <a href="#library/batch" data-i18n="library.tabs.batch">Batch</a>
-      <a href="#library/stories" data-i18n="library.tabs.stories">Stories</a>
-      <a href="#library/history" data-i18n="library.tabs.history">History</a>
-      <a href="#voice" data-i18n="text.Voice Studio">Voice Studio</a>
-      <a href="#insights" data-i18n="nav.insights">Insights</a>
-    </nav>
+
   </section>
 
   <section class="page" id="insights" aria-labelledby="insights-title">
@@ -1408,43 +1387,6 @@ try {
 
 </div>
 </div>
-<div class="sheet" id="style-sheet" hidden>
-  <div class="sheet-scrim" data-sheet-close></div>
-  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="style-sheet-title">
-    <div class="sheet-head">
-      <h2 class="sheet-title" id="style-sheet-title" data-i18n="gate.style.title">How do you write?</h2>
-      <button class="sheet-close swap" id="style-sheet-close" type="button" data-i18n="text.Close">Close</button>
-    </div>
-    <p class="sheet-note" data-i18n="style.note">Shapes the punctuation everywhere you dictate.</p>
-    <div class="sheet-options">
-      <button class="style-card" data-style="formal" type="button" aria-pressed="false">
-        <span class="style-card-main">
-          <span class="style-title" data-i18n="home.formal">Formal</span>
-          <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
-        </span>
-        <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
-        <span class="style-mark" aria-hidden="true"></span>
-      </button>
-      <button class="style-card" data-style="casual" type="button" aria-pressed="false">
-        <span class="style-card-main">
-          <span class="style-title" data-i18n="home.casual">Casual</span>
-          <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
-        </span>
-        <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
-        <span class="style-mark" aria-hidden="true"></span>
-      </button>
-      <button class="style-card" data-style="excited" type="button" aria-pressed="false">
-        <span class="style-card-main">
-          <span class="style-title" data-i18n="home.excited">Excited</span>
-          <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
-        </span>
-        <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
-        <span class="style-mark" aria-hidden="true"></span>
-      </button>
-    </div>
-  </div>
-</div>
-
 <script src="/languages.js"></script>
 <script src="/routes.js"></script>
 <script src="/app.js"></script>

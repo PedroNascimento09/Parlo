@@ -7482,20 +7482,6 @@ for (const input of [featureTranslation, featureVoice, featureCaptions]) {
 }
 loadFeatures();
 
-const homeCaptions = document.getElementById("home-captions");
-if (homeCaptions) {
-  homeCaptions.addEventListener("click", () => {
-    window.open("/captions?t=" + encodeURIComponent(token), "_blank", "noopener");
-  });
-}
-
-const homeLive = document.getElementById("home-live");
-if (homeLive) {
-  homeLive.addEventListener("click", () => {
-    window.open("/live?t=" + encodeURIComponent(token), "_blank", "noopener");
-  });
-}
-
 const nameGate = document.getElementById("name-gate");
 const nameInput = document.getElementById("name-input");
 const nameSave = document.getElementById("name-save");
@@ -7517,15 +7503,6 @@ const styleControls = [
   ...document.querySelectorAll(".style-card"),
   ...document.querySelectorAll(".style-chip"),
 ];
-const styleOpen = document.getElementById("style-open");
-const styleSheet = document.getElementById("style-sheet");
-const styleOpenName = document.getElementById("style-open-name");
-const styleOpenSub = document.getElementById("style-open-sub");
-const STYLE_TEXT = {
-  formal: ["home.formal", "style.formalSub"],
-  casual: ["home.casual", "style.casualSub"],
-  excited: ["home.excited", "style.excitedSub"],
-};
 const STYLES = ["formal", "casual", "excited"];
 const THEMES = ["system", "light", "dark"];
 const themeChoices = [...document.querySelectorAll("[data-theme-choice]")];
@@ -7588,48 +7565,6 @@ function paintStyleControls() {
   for (const control of styleControls) {
     control.setAttribute("aria-pressed", String(control.dataset.style === chosen));
   }
-  paintStyleTrigger(chosen);
-}
-
-function paintStyleTrigger(chosen) {
-  if (!styleOpenName || !styleOpenSub) {
-    return;
-  }
-  if (!chosen) {
-    styleOpenName.textContent = t(
-      "style.note",
-      "Shapes the punctuation everywhere you dictate.",
-    );
-    styleOpenSub.textContent = "";
-    styleOpenSub.hidden = true;
-    return;
-  }
-  const [nameKey, subKey] = STYLE_TEXT[chosen];
-  styleOpenName.textContent = t(nameKey, "");
-  styleOpenSub.textContent = t(subKey, "");
-  styleOpenSub.hidden = false;
-}
-
-function openStyleSheet() {
-  if (!styleSheet || !styleOpen) {
-    return;
-  }
-  styleSheet.hidden = false;
-  styleOpen.setAttribute("aria-expanded", "true");
-  const chosen = styleSheet.querySelector('.style-card[aria-pressed="true"]');
-  const first = chosen || styleSheet.querySelector(".style-card");
-  if (first) {
-    first.focus();
-  }
-}
-
-function closeStyleSheet() {
-  if (!styleSheet || !styleOpen) {
-    return;
-  }
-  styleSheet.hidden = true;
-  styleOpen.setAttribute("aria-expanded", "false");
-  styleOpen.focus();
 }
 
 function chooseStyle(style) {
@@ -7706,32 +7641,6 @@ nameInput.addEventListener("keydown", (event) => {
 for (const control of styleControls) {
   control.addEventListener("click", () => {
     chooseStyle(control.dataset.style);
-    if (control.closest("#style-sheet")) {
-      closeStyleSheet();
-    }
-  });
-}
-
-if (styleOpen) {
-  styleOpen.addEventListener("click", openStyleSheet);
-}
-
-const styleSheetClose = document.getElementById("style-sheet-close");
-if (styleSheetClose) {
-  styleSheetClose.addEventListener("click", closeStyleSheet);
-}
-
-if (styleSheet) {
-  styleSheet.addEventListener("click", (event) => {
-    if (event.target.dataset.sheetClose !== undefined) {
-      closeStyleSheet();
-    }
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !styleSheet.hidden) {
-      event.preventDefault();
-      closeStyleSheet();
-    }
   });
 }
 
@@ -8498,10 +8407,7 @@ if (document.getElementById("tools-mic-check")) {
 
 if (document.getElementById("tools-listen")) {
   document.getElementById("tools-listen").addEventListener("click", () => {
-    const live = document.getElementById("home-live");
-    if (live) {
-      live.click();
-    }
+    window.open("/live?t=" + encodeURIComponent(token), "_blank", "noopener");
   });
 }
 
