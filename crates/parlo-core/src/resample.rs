@@ -95,4 +95,20 @@ mod tests {
         assert!(Resampler::new(16_000, 16_000).is_passthrough());
         assert!(!Resampler::new(48_000, 16_000).is_passthrough());
     }
+
+    #[test]
+    fn upsamples_by_ratio() {
+        let mut resampler = Resampler::new(16_000, 48_000);
+        let mut out = Vec::new();
+        resampler.process(&vec![0.0; 160], &mut out);
+        assert_eq!(out.len(), 480);
+    }
+
+    #[test]
+    fn zero_input_produces_no_output() {
+        let mut resampler = Resampler::new(48_000, 16_000);
+        let mut out = Vec::new();
+        resampler.process(&[], &mut out);
+        assert!(out.is_empty());
+    }
 }

@@ -8,6 +8,7 @@ pub fn rms(samples: &[f32]) -> f32 {
 
 #[derive(Debug, Clone)]
 pub struct VoiceGate {
+    floor: f32,
     threshold: f32,
     hangover: u32,
     remaining: u32,
@@ -16,6 +17,7 @@ pub struct VoiceGate {
 impl VoiceGate {
     pub fn new(threshold_db: f32, hangover_frames: u32) -> Self {
         Self {
+            floor: 0.0,
             threshold: 10f32.powf(threshold_db / 20.0),
             hangover: hangover_frames,
             remaining: 0,
@@ -32,15 +34,24 @@ impl VoiceGate {
 
     pub fn reset(&mut self) {
         self.remaining = 0;
+        self.floor = 0.0;
     }
 
     pub fn process(&mut self, samples: &[f32]) -> bool {
-        if rms(samples) >= self.threshold {
-            self.remaining = self.hangover.saturating_add(1);
+        let level = rms(samples);
+        if self.floor == 0.0 {
+            self.floor = level;
+        } else {
+            self.floor = self.floor * 0.98 + level * 0.02;
         }
-        let open = self.remaining > 0;
-        self.remaining = self.remaining.saturating_sub(1);
-        open
+        let adaptive = self.floor.max(self.threshold);
+        let open = level >= adaptive;
+        if open {
+            self.remaining = self.hangover.saturating_add(1);
+        } else if self.remaining > 0 {
+            self.remaining = self.remaining.saturating_sub(1);
+        }
+        self.remaining > 0
     }
 }
 
@@ -75,5 +86,15 @@ mod tests {
     fn ignores_quiet_noise() {
         let mut gate = VoiceGate::new(-45.0, 3);
         assert!(!gate.process(&[0.0001; 160]));
+    }
+
+    #[test]
+    fn floor_adapts_to_background_so_speech_still_opens() {
+        let mut gate = VoiceGate::new(-45.0, 3);
+        for _ in 0..50 {
+            gate.process(&[0.01; 160]);
+        }
+        assert!(gate.process(&[0.3; 160]));
+        assert!(gate.is_open());
     }
 }

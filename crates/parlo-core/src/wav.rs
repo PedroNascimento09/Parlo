@@ -136,6 +136,30 @@ mod tests {
     }
 
     #[test]
+    fn roundtrips_stereo_audio() {
+        let format = AudioFormat::new(48_000, 2).unwrap();
+        let wav = Wav {
+            format,
+            samples: vec![0.25, -0.25, 0.5, -0.5],
+        };
+        let decoded = read_pcm16(&write_pcm16(&wav)).unwrap();
+        assert_eq!(decoded.format, format);
+        assert_eq!(decoded.samples.len(), 4);
+        assert!((decoded.samples[2] - 0.5).abs() < 1e-3);
+    }
+
+    #[test]
+    fn empty_audio_writes_and_reads_back() {
+        let format = AudioFormat::mono(16_000).unwrap();
+        let wav = Wav {
+            format,
+            samples: vec![],
+        };
+        let decoded = read_pcm16(&write_pcm16(&wav)).unwrap();
+        assert_eq!(decoded.samples.len(), 0);
+    }
+
+    #[test]
     fn rejects_non_wave_bytes() {
         assert_eq!(read_pcm16(b"nope"), Err(WavError::NotWave));
     }
