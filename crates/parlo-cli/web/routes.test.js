@@ -19,21 +19,26 @@ test("a deep settings link keeps its tab", () => {
   assert.equal(route.canonical, "settings/languages");
 });
 
-test("a bare library link falls back to meetings", () => {
-  assert.equal(parseHash("#library").canonical, "library/meetings");
+test("a bare library link falls back to files", () => {
+  assert.equal(parseHash("#library").canonical, "library/files");
 });
 
 test("an unknown library tab falls back without touching settings", () => {
   const route = parseHash("#library/elsewhere");
-  assert.equal(route.libraryTab, "meetings");
-  assert.equal(route.canonical, "library/meetings");
+  assert.equal(route.libraryTab, "files");
+  assert.equal(route.canonical, "library/files");
 });
 
-test("the old meetings link opens the media workspace", () => {
+test("meetings is its own section", () => {
   const route = parseHash("#meetings");
-  assert.equal(route.route, "library");
-  assert.equal(route.libraryTab, "meetings");
-  assert.equal(route.canonical, "library/meetings");
+  assert.equal(route.route, "meetings");
+  assert.equal(route.canonical, "meetings");
+});
+
+test("the old meetings link under library still opens meetings", () => {
+  const route = parseHash("#library/meetings");
+  assert.equal(route.route, "meetings");
+  assert.equal(route.canonical, "meetings");
 });
 
 test("a bare settings link falls back to dictation", () => {
@@ -43,7 +48,7 @@ test("a bare settings link falls back to dictation", () => {
 test("the models tab is a settings link", () => {
   const route = parseHash("#settings/models");
   assert.equal(route.settingsTab, "models");
-  assert.equal(route.libraryTab, "meetings");
+  assert.equal(route.libraryTab, "files");
   assert.equal(route.canonical, "settings/models");
 });
 
@@ -59,7 +64,7 @@ test("an empty hash is home", () => {
 
 test("the library no longer offers a models or words tab", () => {
   for (const tab of ["models", "vocabulary", "language"]) {
-    assert.equal(parseHash("#library/" + tab).libraryTab, "meetings");
+    assert.equal(parseHash("#library/" + tab).libraryTab, "files");
   }
 });
 

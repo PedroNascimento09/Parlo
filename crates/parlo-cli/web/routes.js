@@ -5,8 +5,8 @@
     root.ParloRoutes = factory();
   }
 })(typeof globalThis === "object" ? globalThis : this, function () {
-  const ROUTES = ["home", "library", "voice", "insights", "settings"];
-  const LIBRARY_TABS = ["meetings", "files", "batch", "stories", "history"];
+  const ROUTES = ["home", "meetings", "library", "voice", "insights", "settings"];
+  const LIBRARY_TABS = ["files", "batch", "stories", "history"];
   const SETTINGS_TABS = [
     "you",
     "languages",
@@ -16,7 +16,7 @@
     "shortcuts",
     "advanced",
   ];
-  const ALIASES = { meetings: "library/meetings" };
+  const ALIASES = { "library/meetings": "meetings" };
 
   function parseHash(hash) {
     let raw = String(hash || "#home").replace(/^#/, "");
@@ -26,7 +26,7 @@
     const tab = slash === -1 ? "" : raw.slice(slash + 1);
     const route = ROUTES.includes(name) ? name : "home";
     const libraryTab =
-      route === "library" && LIBRARY_TABS.includes(tab) ? tab : "meetings";
+      route === "library" && LIBRARY_TABS.includes(tab) ? tab : "files";
     const settingsTab =
       route === "settings" && SETTINGS_TABS.includes(tab) ? tab : "dictation";
     const canonical =
