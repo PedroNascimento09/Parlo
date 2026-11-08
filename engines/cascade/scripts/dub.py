@@ -8,12 +8,34 @@ import subprocess
 import sys
 import tempfile
 import threading
-import wave
 
 import exports
 import separation
 import timing
-from dub_model import Cue, Line, Segment, line_document, line_from_document, timestamp, write_srt
+from dub_render import DUCKING_FLOOR, ducking, inspect, rebuild, write_report
+from dub_audio import (
+    FRAME_SECONDS,
+    PAUSE_SECONDS,
+    MAX_SEGMENT_SECONDS,
+    MIN_SEGMENT_SECONDS,
+    VOICED_RMS,
+    mux,
+    read_wav,
+    segment,
+    split_long,
+    voiced_frames,
+    write_wav,
+)
+from dub_model import (
+    SAMPLE_RATE,
+    Cue,
+    Line,
+    Segment,
+    line_document,
+    line_from_document,
+    timestamp,
+    write_srt,
+)
 from dataclasses import replace
 from pathlib import Path
 
@@ -24,22 +46,41 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from parlo_cascade import CascadeEngine
 from parlo_cascade.engine import (
     MODEL_DIR,
-    SAMPLE_RATE,
     VOICES,
     float_to_pcm16,
     pcm16_to_float,
 )
 from parlo_cascade.tts import VoiceUnavailable
 
-__all__ = ["Cue", "Line", "Segment", "line_document", "line_from_document", "timestamp", "write_srt"]
+__all__ = [
+    "FRAME_SECONDS",
+    "MAX_SEGMENT_SECONDS",
+    "MIN_SEGMENT_SECONDS",
+    "PAUSE_SECONDS",
+    "VOICED_RMS",
+    "Cue",
+    "Line",
+    "SAMPLE_RATE",
+    "DUCKING_FLOOR",
+    "Segment",
+    "ducking",
+    "float_to_pcm16",
+    "inspect",
+    "rebuild",
+    "line_document",
+    "line_from_document",
+    "mux",
+    "read_wav",
+    "segment",
+    "split_long",
+    "timestamp",
+    "voiced_frames",
+    "write_report",
+    "write_srt",
+    "write_wav",
+]
 
-FRAME_SECONDS = 0.02
-MIN_SEGMENT_SECONDS = 0.8
-MAX_SEGMENT_SECONDS = 15.0
-PAUSE_SECONDS = 0.28
-VOICED_RMS = 0.008
 BACKGROUND_GAIN = 0.55
-DUCKING_FLOOR = 0.18
 VIDEO_SUFFIXES = {".mp4", ".mkv", ".mov", ".webm", ".avi", ".m4v"}
 
 
@@ -151,88 +192,6 @@ def has_video(ffprobe: str, source: Path) -> bool:
         text=True,
     )
     return result.returncode == 0 and "video" in result.stdout
-
-
-def read_wav(path: Path) -> np.ndarray:
-    with wave.open(str(path), "rb") as wav:
-        if wav.getsampwidth() != 2 or wav.getnchannels() != 1:
-            raise SystemExit("ffmpeg produced audio that is not mono pcm16")
-        if wav.getframerate() != SAMPLE_RATE:
-            raise SystemExit(f"ffmpeg produced {wav.getframerate()} Hz audio, expected {SAMPLE_RATE}")
-        return np.asarray(pcm16_to_float(wav.readframes(wav.getnframes())), dtype=np.float32)
-
-
-def voiced_frames(samples: np.ndarray) -> np.ndarray:
-    size = max(int(FRAME_SECONDS * SAMPLE_RATE), 1)
-    usable = samples[: len(samples) - (len(samples) % size)]
-    if usable.size == 0:
-        return np.zeros(0, dtype=bool)
-    frames = usable.reshape(-1, size)
-    energy = np.sqrt(np.mean(frames * frames, axis=1))
-    return energy >= VOICED_RMS
-
-
-def split_long(samples: np.ndarray, start: int, end: int) -> list[Segment]:
-    limit = int(MAX_SEGMENT_SECONDS * SAMPLE_RATE)
-    pieces = []
-    cursor = start
-    while end - cursor > limit:
-        window = samples[cursor + int(limit * 0.6) : cursor + limit]
-        if window.size == 0:
-            break
-        size = max(int(FRAME_SECONDS * SAMPLE_RATE), 1)
-        count = window.size // size
-        if count == 0:
-            break
-        energy = np.sqrt(np.mean(window[: count * size].reshape(-1, size) ** 2, axis=1))
-        offset = int(np.argmin(energy) * size + limit * 0.6)
-        cut = cursor + offset
-        pieces.append(Segment(cursor, cut))
-        cursor = cut
-    pieces.append(Segment(cursor, end))
-    return pieces
-
-
-def segment(samples: np.ndarray) -> list[Segment]:
-    voiced = voiced_frames(samples)
-    if voiced.size == 0:
-        return []
-    size = max(int(FRAME_SECONDS * SAMPLE_RATE), 1)
-    pause = int(PAUSE_SECONDS / FRAME_SECONDS)
-    minimum = int(MIN_SEGMENT_SECONDS * SAMPLE_RATE)
-
-    runs = []
-    index = 0
-    while index < voiced.size:
-        if not voiced[index]:
-            index += 1
-            continue
-        begin = index
-        silence = 0
-        while index < voiced.size:
-            if voiced[index]:
-                silence = 0
-            else:
-                silence += 1
-                if silence >= pause:
-                    break
-            index += 1
-        end = index - silence
-        runs.append((max(begin * size, 0), min(end * size, len(samples))))
-
-    merged = []
-    for start, end in runs:
-        if merged and start - merged[-1][1] < minimum:
-            merged[-1] = (merged[-1][0], end)
-        else:
-            merged.append((start, end))
-
-    segments = []
-    for start, end in merged:
-        if end - start < minimum:
-            continue
-        segments.extend(split_long(samples, start, end))
-    return segments
 
 
 def speak(engine: CascadeEngine, text: str, pace: float = 1.0) -> np.ndarray:
@@ -472,105 +431,6 @@ def render_line(
             file=name,
         ),
         audio,
-    )
-
-
-def inspect(line: Line, media: float) -> Line:
-    if line.failed:
-        return replace(line, issues=("failed", "unverified"))
-    if line.skipped:
-        return replace(line, issues=("skipped", "unverified"))
-    issues = []
-    slot = line.slot_end if line.slot_end is not None else line.end
-    if line.end > slot + 0.02:
-        issues.append("overlong")
-    if line.end > media + 0.02:
-        issues.append("clipped")
-    return replace(line, issues=tuple(issues))
-
-
-def rebuild(lines: list[Line], length: int, directory: Path) -> np.ndarray:
-    track = np.zeros(length, dtype=np.float32)
-    for line in lines:
-        if line.failed or line.skipped or not line.file:
-            continue
-        path = directory / line.file
-        if not path.is_file():
-            label = line.id or f"{line.start:.2f}s"
-            raise SystemExit(f"the audio for line {label} is missing; dub the file again")
-        audio = read_wav(path)
-        start = max(int(round(line.start * SAMPLE_RATE)), 0)
-        end = min(start + len(audio), length)
-        if end > start:
-            track[start:end] += audio[: end - start]
-    return np.clip(track, -1.0, 1.0)
-
-
-def ducking(length: int, lines: list[Line], fade_seconds: float = 0.15) -> np.ndarray:
-    envelope = np.ones(length, dtype=np.float32)
-    fade = max(int(fade_seconds * SAMPLE_RATE), 1)
-    for line in lines:
-        start = max(int(line.start * SAMPLE_RATE) - fade, 0)
-        end = min(int(line.end * SAMPLE_RATE) + fade, length)
-        if end > start:
-            envelope[start:end] = DUCKING_FLOOR
-    kernel = np.ones(fade * 2 + 1, dtype=np.float32) / (fade * 2 + 1)
-    smoothed = np.convolve(envelope, kernel, mode="same")
-    return np.clip(smoothed, DUCKING_FLOOR, 1.0).astype(np.float32)
-
-
-def write_wav(path: Path, samples: np.ndarray) -> None:
-    with wave.open(str(path), "wb") as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(SAMPLE_RATE)
-        wav.writeframes(float_to_pcm16(samples))
-
-
-def mux(ffmpeg: str, source: Path, track: Path, target: Path, video: bool) -> None:
-    command = [ffmpeg, "-nostdin", "-y", "-v", "error", "-i", str(source), "-i", str(track)]
-    if video:
-        command += ["-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k"]
-    else:
-        command += ["-map", "1:a:0", "-c:a", "aac", "-b:a", "192k"]
-    command += ["-shortest", str(target)]
-    result = subprocess.run(command, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise SystemExit(f"ffmpeg could not write {target.name}: {result.stderr.strip()}")
-
-
-def write_report(
-    path: Path,
-    args,
-    out: Path,
-    srt: Path,
-    samples: np.ndarray,
-    lines: list[Line],
-    written: list[dict],
-    separation_mode: str,
-    separation_note: str | None,
-) -> None:
-    path.write_text(
-        json.dumps(
-            {
-                "source": str(args.source),
-                "out": str(out),
-                "srt": str(srt),
-                "from": args.source_language,
-                "to": args.to,
-                "timing": args.timing,
-                "fastest": args.fastest,
-                "slowest": args.slowest,
-                "seconds": round(len(samples) / SAMPLE_RATE, 2),
-                "lines": [line_document(line) for line in lines],
-                "exports": written,
-                "separation": separation_mode,
-                "separation_note": separation_note,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
     )
 
 
