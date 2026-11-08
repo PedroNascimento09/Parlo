@@ -17,11 +17,11 @@
 Parlo is a desktop program that turns speech into text. Press a shortcut, speak, and the phrase appears in the window you were typing in, cleaned up and optionally translated. Recognition runs on your computer, with no account and no telemetry.
 
 <p align="center">
-  <img src="docs/demo.gif" width="760" alt="The Parlo bar while it writes a translated sentence">
+  <img src="docs/demo.gif" width="760" alt="The Parlo window: the home screen, the history with a Portuguese sentence and its English translation, and the counters for what was dictated">
 </p>
 
 <p align="center">
-  <sub>The bar on this machine while it writes a translated sentence. Spanish needs its own translation pack; the shipped pairs are listed in <a href="docs/LANGUAGES.md">languages</a>.</sub>
+  <sub>The window after two Portuguese sentences were dictated and translated into English on this machine: home, the history with both sentences beside their translation, and the counters. Portuguese and English are the shipped pair; the translation packs are listed in <a href="docs/LANGUAGES.md">languages</a>.</sub>
 </p>
 
 ## Install
