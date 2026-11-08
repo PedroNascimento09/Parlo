@@ -36,6 +36,27 @@ fn spoken_language(request: &SpeechRequest) -> Option<&'static str> {
         })
 }
 
+pub(crate) fn route(
+    method: &str,
+    path: &str,
+    stream: &mut dyn Stream,
+    headers: &[(String, String)],
+    token: &str,
+    body: &[u8],
+    session: &Session,
+) -> Option<Result<Flow, String>> {
+    if method == "POST" && path == "/v1/audio/transcriptions" {
+        return Some(transcriptions(stream, headers, token, body, session));
+    }
+    if method == "POST" && path == "/v1/audio/translations" {
+        return Some(translations(stream, headers, token, body, session));
+    }
+    if method == "POST" && path == "/v1/audio/speech" {
+        return Some(speech(stream, headers, token, body, session));
+    }
+    None
+}
+
 pub(crate) fn transcriptions(
     stream: &mut dyn Stream,
     headers: &[(String, String)],

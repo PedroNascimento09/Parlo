@@ -598,6 +598,7 @@ let partialRunning = false;
 let starting = false;
 let session = 0;
 let armed = false;
+let autoListening = false;
 
 function tauriWindow() {
   const api = window.__TAURI__;
@@ -828,6 +829,8 @@ async function openMicrophone() {
     quietGain = 1;
     quietPeak = 0;
     quietBlocks = 0;
+    let voiceFrames = 0;
+    const voiceThreshold = 0.015;
     processor.onaudioprocess = (event) => {
       if (paused) {
         return;
@@ -836,8 +839,23 @@ async function openMicrophone() {
       paintLevel(block);
       const copy = new Float32Array(block.length);
       measureQuiet(block);
+      let sum = 0;
       for (let index = 0; index < block.length; index += 1) {
-        copy[index] = Math.max(-1, Math.min(1, block[index] * quietGain));
+        const sample = Math.max(-1, Math.min(1, block[index] * quietGain));
+        copy[index] = sample;
+        sum += sample * sample;
+      }
+      const rms = Math.sqrt(sum / block.length);
+      if (armed && !promoted && !starting && !busy) {
+        if (rms > voiceThreshold) {
+          voiceFrames += 1;
+          if (voiceFrames >= 3) {
+            autoListening = true;
+            begin();
+          }
+        } else {
+          voiceFrames = 0;
+        }
       }
       chunks.push(copy);
       if (promoted && chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {

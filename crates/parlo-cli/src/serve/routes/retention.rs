@@ -34,8 +34,12 @@ pub(crate) fn route(
                     .to_string();
                     respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
                 }
-                Err(error) => respond_json(stream, "400 Bad Request", &format!("{{\"error\":\"{}\"}}", json_string(&error)))
-                    .map(|()| Flow::Serve),
+                Err(error) => respond_json(
+                    stream,
+                    "400 Bad Request",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve),
             })
         }
         "POST" => Some(apply_retention(stream, body)),
@@ -50,16 +54,24 @@ fn apply_retention(stream: &mut dyn Stream, body: &[u8]) -> Result<Flow, String>
     let (rows, stale) = match stale_retention(days) {
         Ok(result) => result,
         Err(error) => {
-            return respond_json(stream, "400 Bad Request", &format!("{{\"error\":\"{}\"}}", json_string(&error)))
-                .map(|()| Flow::Serve)
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+            )
+            .map(|()| Flow::Serve)
         }
     };
     let mut removed = 0;
     if apply {
         for id in &stale {
             if let Err(error) = crate::meeting::delete(id) {
-                return respond_json(stream, "500 Internal Server Error", &format!("{{\"error\":\"{}\"}}", json_string(&error)))
-                    .map(|()| Flow::Serve);
+                return respond_json(
+                    stream,
+                    "500 Internal Server Error",
+                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                )
+                .map(|()| Flow::Serve);
             }
             removed += 1;
         }

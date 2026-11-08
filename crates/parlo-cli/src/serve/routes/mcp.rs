@@ -5,11 +5,15 @@ use crate::serve::http::Stream;
 
 pub(crate) fn route(
     method: &str,
+    path: &str,
     stream: &mut dyn Stream,
     headers: &[(String, String)],
     token: &str,
     body: &[u8],
 ) -> Option<Result<Flow, String>> {
+    if path != "/mcp" {
+        return None;
+    }
     if method != "POST" {
         return Some(
             respond_json(

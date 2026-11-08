@@ -450,7 +450,7 @@ pub const MODELS: &[ModelSpec] = &[
     },
 ];
 
-pub const ENGINE_VOICES: [&str; 4] = ["pt", "en", "de", "fr"];
+pub const ENGINE_VOICES: [&str; 7] = ["pt", "en", "es", "fr", "de", "it", "nl"];
 
 pub fn model(id: &str) -> Option<&'static ModelSpec> {
     MODELS.iter().find(|spec| spec.id == id)

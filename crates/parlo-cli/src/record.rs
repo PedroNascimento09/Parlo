@@ -219,3 +219,107 @@ where
         )
         .map_err(|error| format!("cannot open the input stream: {error}"))
 }
+
+#[cfg(test)]
+mod capture_tests {
+    use super::*;
+
+    fn default_device_and_config() -> Option<(cpal::Device, cpal::SupportedStreamConfig)> {
+        let host = cpal::default_host();
+        let device = host.default_input_device()?;
+        let supported = device.default_input_config().ok()?;
+        Some((device, supported))
+    }
+
+    #[test]
+    fn devices_lists_what_the_system_has() {
+        let devices = devices().unwrap_or_default();
+        for name in devices {
+            assert!(!name.is_empty(), "a device name must not be blank");
+        }
+    }
+
+    #[test]
+    fn default_input_can_be_opened_when_present() {
+        if let Some((device, _supported)) = default_device_and_config() {
+            let index = device_index_of(&device);
+            let result = if let Some(index) = index {
+                open_input(Some(index))
+            } else {
+                open_input(None)
+            };
+            match result {
+                Ok((_device, format)) => {
+                    assert!(format.sample_rate() > 0);
+                }
+                Err(error) => panic!("could not open the default input device: {error}"),
+            }
+        } else {
+            match open_input(None) {
+                Err(error) => assert!(
+                    error.contains("no input device"),
+                    "expected a no-device error, got: {error}"
+                ),
+                Ok(_) => panic!("expected no input device to fail"),
+            }
+        }
+    }
+
+    #[test]
+    fn short_capture_does_not_hang() {
+        if let Some((device, _supported)) = default_device_and_config() {
+            let index = device_index_of(&device);
+            let result = capture(0.5, index);
+            match result {
+                Ok(recording) => {
+                    assert!(recording.format.sample_rate() > 0);
+                }
+                Err(error) => {
+                    assert!(!error.is_empty(), "a capture failure must carry a reason");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn chunks_deliver_blocks_while_stream_is_open() {
+        if let Some((device, _supported)) = default_device_and_config() {
+            let mut received = 0;
+            let result = chunks(device, 0.5, |block| {
+                received += 1;
+                !block.is_empty()
+            });
+            match result {
+                Ok(()) => assert!(received > 0, "chunks stream delivered nothing"),
+                Err(error) => {
+                    assert!(!error.is_empty(), "a chunks failure must carry a reason");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn capture_with_zero_seconds_returns_quickly() {
+        if let Some((device, _supported)) = default_device_and_config() {
+            let index = device_index_of(&device);
+            let result = capture(0.0, index);
+            match result {
+                Ok(recording) => {
+                    assert!(recording.format.sample_rate() > 0);
+                }
+                Err(_) => {}
+            }
+        }
+    }
+
+    fn device_index_of(device: &cpal::Device) -> Option<usize> {
+        let host = cpal::default_host();
+        let target = device.name().unwrap_or_else(|_| String::new());
+        for (index, candidate) in host.input_devices().ok()?.enumerate() {
+            if candidate.name().unwrap_or_else(|_| String::new()) == target {
+                return Some(index);
+            }
+        }
+        None
+    }
+}

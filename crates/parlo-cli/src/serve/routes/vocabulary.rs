@@ -15,7 +15,10 @@ pub(crate) fn route(
     let known = matches!(
         (method, path),
         ("GET", "/vocabulary" | "/vocabulary/export")
-            | ("POST", "/vocabulary" | "/vocabulary/delete" | "/vocabulary/accept" | "/vocabulary/import")
+            | (
+                "POST",
+                "/vocabulary" | "/vocabulary/delete" | "/vocabulary/accept" | "/vocabulary/import"
+            )
     );
     if !known {
         return None;

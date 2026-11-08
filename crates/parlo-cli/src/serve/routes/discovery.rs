@@ -1,14 +1,21 @@
 use crate::registry::PIPELINES;
 
+use std::time::Instant;
+
 use super::super::http::respond_json;
-use super::super::{Flow, MAX_AUDIO_BODY, MAX_BODY, MAX_DUB_BODY, VERSION};
+use super::super::{json_string, Flow, Session, MAX_AUDIO_BODY, MAX_BODY, MAX_DUB_BODY, VERSION};
 use crate::serve::http::Stream;
 
 pub(crate) fn route(
     method: &str,
     path: &str,
     stream: &mut dyn Stream,
+    session: &Session,
+    started: Instant,
 ) -> Option<Result<Flow, String>> {
+    if path == "/health" {
+        return Some(health(stream, session, started));
+    }
     if method != "GET" || path != "/.well-known/parlo" {
         return None;
     }
@@ -45,4 +52,17 @@ pub(crate) fn route(
     })
     .to_string();
     Some(respond_json(stream, "200 OK", &body).map(|()| Flow::Serve))
+}
+
+fn health(stream: &mut dyn Stream, session: &Session, started: Instant) -> Result<Flow, String> {
+    let uptime = started.elapsed().as_secs();
+    let chosen = session.chosen();
+    let engine = chosen.engine.clone();
+    let body = format!(
+        "{{\"status\":\"ok\",\"uptime_s\":{uptime},\"engine\":\"{engine}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\"}}",
+        json_string(&chosen.stt),
+        json_string(&chosen.from),
+        json_string(&chosen.to)
+    );
+    respond_json(stream, "200 OK", &body).map(|()| Flow::Serve)
 }

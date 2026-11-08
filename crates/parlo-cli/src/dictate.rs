@@ -86,14 +86,14 @@ mod tests {
 
     #[test]
     fn segments_are_joined_with_one_space() {
-        let text = join(&parts(&["bom dia", "tudo bem"]));
-        assert_eq!(text, "Bom dia tudo bem.");
+        let text = join(&parts(&["good morning", "how are you"]));
+        assert_eq!(text, "Good morning how are you.");
     }
 
     #[test]
     fn an_empty_segment_is_skipped() {
-        let text = join(&parts(&["bom dia", "  ", "obrigado"]));
-        assert_eq!(text, "Bom dia obrigado.");
+        let text = join(&parts(&["good morning", "  ", "thank you"]));
+        assert_eq!(text, "Good morning thank you.");
     }
 
     #[test]
@@ -103,17 +103,17 @@ mod tests {
 
     #[test]
     fn an_existing_full_stop_is_kept() {
-        assert_eq!(sentence("está feito.".to_string()), "Está feito.");
+        assert_eq!(sentence("it is done.".to_string()), "It is done.");
     }
 
     #[test]
     fn a_question_mark_is_kept() {
-        assert_eq!(sentence("está feito?".to_string()), "Está feito?");
+        assert_eq!(sentence("it is done?".to_string()), "It is done?");
     }
 
     #[test]
     fn the_first_letter_is_capitalised() {
-        assert_eq!(sentence("reunião às nove".to_string()), "Reunião às nove.");
+        assert_eq!(sentence("meeting at nine".to_string()), "Meeting at nine.");
     }
 
     #[test]

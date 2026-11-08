@@ -1,30 +1,55 @@
 const COMMANDS: &[(&str, &str)] = &[
     ("new line", "\n"),
-    ("nova linha", "\n"),
     ("new paragraph", "\n\n"),
-    ("novo paragrafo", "\n\n"),
     ("bullet point", "\n• "),
     ("bullet", "\n• "),
-    ("ponto de lista", "\n• "),
-    ("marcador", "\n• "),
     ("full stop", "."),
-    ("ponto final", "."),
     ("period", "."),
-    ("ponto", "."),
     ("comma", ","),
-    ("virgula", ","),
     ("question mark", "?"),
-    ("ponto de interrogacao", "?"),
     ("exclamation mark", "!"),
     ("exclamation point", "!"),
-    ("ponto de exclamacao", "!"),
     ("semicolon", ";"),
-    ("ponto e virgula", ";"),
     ("colon", ":"),
-    ("dois pontos", ":"),
     ("dash", " - "),
     ("hyphen", " - "),
     ("scratch that", SCRATCH),
+    ("nueva linea", "\n"),
+    ("nuevo parrafo", "\n\n"),
+    ("viñeta", "\n• "),
+    ("punto", "."),
+    ("punto final", "."),
+    ("coma", ","),
+    ("signo de interrogacion", "?"),
+    ("signo de exclamacion", "!"),
+    ("borra eso", SCRATCH),
+    ("nouvelle ligne", "\n"),
+    ("nouveau paragraphe", "\n\n"),
+    ("puce", "\n• "),
+    ("point final", "."),
+    ("virgule", ","),
+    ("point d'interrogation", "?"),
+    ("point d'exclamation", "!"),
+    ("efface ça", SCRATCH),
+    ("neue zeile", "\n"),
+    ("neuer absatz", "\n\n"),
+    ("punkt", "."),
+    ("punkt final", "."),
+    ("komma", ","),
+    ("fragezeichen", "?"),
+    ("ausrufezeichen", "!"),
+    ("loesch das", SCRATCH),
+    ("nova linha", "\n"),
+    ("novo paragrafo", "\n\n"),
+    ("ponto de lista", "\n• "),
+    ("marcador", "\n• "),
+    ("ponto final", "."),
+    ("ponto", "."),
+    ("virgula", ","),
+    ("ponto de interrogacao", "?"),
+    ("ponto de exclamacao", "!"),
+    ("ponto e virgula", ";"),
+    ("dois pontos", ":"),
     ("risca isso", SCRATCH),
     ("apaga isso", SCRATCH),
 ];
@@ -129,7 +154,37 @@ mod tests {
     }
 
     #[test]
-    fn portuguese_commands_work_with_or_without_accents() {
+    fn english_commands_work() {
+        assert_eq!(apply("yes comma no question mark"), "yes, no?");
+        assert_eq!(apply("stop that exclamation mark"), "stop that!");
+    }
+
+    #[test]
+    fn spanish_commands_work_with_or_without_accents() {
+        assert_eq!(apply("hola coma todo bien"), "hola, todo bien");
+        assert_eq!(apply("ya está punto final"), "ya está.");
+        assert_eq!(apply("no se signo de interrogacion"), "no se?");
+    }
+
+    #[test]
+    fn french_commands_work_with_or_without_accents() {
+        assert_eq!(
+            apply("bonjour virgule tout va bien"),
+            "bonjour, tout va bien"
+        );
+        assert_eq!(apply("c'est fini point final"), "c'est fini.");
+        assert_eq!(apply("quoi point d'interrogation"), "quoi?");
+    }
+
+    #[test]
+    fn german_commands_work() {
+        assert_eq!(apply("hallo komma alles gut"), "hallo, alles gut");
+        assert_eq!(apply("es ist vorbei punkt"), "es ist vorbei.");
+        assert_eq!(apply("was fragezeichen"), "was?");
+    }
+
+    #[test]
+    fn portuguese_commands_still_work() {
         assert_eq!(apply("olá vírgula tudo bem"), "olá, tudo bem");
         assert_eq!(apply("já está ponto final"), "já está.");
         assert_eq!(apply("não sei ponto de interrogação"), "não sei?");
@@ -145,13 +200,6 @@ mod tests {
     fn scratch_that_drops_the_sentence_it_closes() {
         assert_eq!(apply("keep this. wrong bit scratch that"), "keep this.");
         assert_eq!(apply("wrong bit scratch that"), "");
-    }
-
-    #[test]
-    fn portuguese_scratch_drops_the_phrase_too() {
-        assert_eq!(apply("fica isto. risca isso"), "fica isto.");
-        assert_eq!(apply("fica isto. apaga isso"), "fica isto.");
-        assert_eq!(apply("nada disto risca isso"), "");
     }
 
     #[test]

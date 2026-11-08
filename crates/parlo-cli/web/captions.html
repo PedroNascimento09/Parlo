@@ -428,6 +428,13 @@ sizeButton.addEventListener("click", () => {
 
 loadLocale();
 start();
+
+try {
+  const channel = new BroadcastChannel("parlo-locale");
+  channel.onmessage = () => {
+    loadLocale();
+  };
+} catch {}
 </script>
 </body>
 </html>

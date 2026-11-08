@@ -12,6 +12,29 @@ struct JobRequest {
     kind: String,
 }
 
+pub(crate) fn route(
+    method: &str,
+    path: &str,
+    stream: &mut dyn Stream,
+    headers: &[(String, String)],
+    token: &str,
+    body: &[u8],
+) -> Option<Result<Flow, String>> {
+    if method == "POST" && path == "/v1/jobs" {
+        return Some(create(stream, headers, token, body));
+    }
+    if method == "GET" && path == "/v1/jobs" {
+        return Some(list(stream, headers, token));
+    }
+    if method == "GET" && path.starts_with("/v1/jobs/") {
+        return Some(read(stream, headers, token, path));
+    }
+    if method == "POST" && path.starts_with("/v1/jobs/") && path.ends_with("/cancel") {
+        return Some(cancel(stream, headers, token, path));
+    }
+    None
+}
+
 pub(crate) fn create(
     stream: &mut dyn Stream,
     headers: &[(String, String)],
