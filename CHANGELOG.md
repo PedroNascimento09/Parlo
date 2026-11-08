@@ -7,12 +7,15 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Changed
 
 - The island is a compact bar now: a live waveform, the sentence as it is spoken, and only the controls the current state needs.
+- Dictation writes each recognised phrase into the focused field while you speak; Polish waits and writes the cleaned sentence when you stop.
+- The insertion target stays available for the whole dictation, so the final sentence replaces the live text without a second target capture.
 - The dictation timer is gone.
 - The microphone opens with automatic gain and noise suppression, and the island resumes its audio context before capturing.
 - The language menu opens to the left of its button and the island uses a solid surface instead of a blurred backdrop.
 
 ### Fixed
 
+- A dictation no longer falls back to the clipboard and a manual Ctrl+V; the island restores the target and writes there.
 - The sentence stays visible while you speak instead of being hidden until the dictation ends.
 - The island closes at any time from its close button or Escape.
 - The spoken-language menu now grows the island window instead of being cut off at the bottom.

@@ -9,6 +9,7 @@ mod win {
     const KEYEVENTF_UNICODE: u32 = 0x0004;
     const VK_RETURN: u16 = 0x0D;
     const VK_BACK: u16 = 0x08;
+    pub const SW_RESTORE: i32 = 9;
     pub const VK_CONTROL: u16 = 0x11;
     pub const VK_V: u16 = 0x56;
 
@@ -128,6 +129,9 @@ mod win {
         pub fn GetWindowThreadProcessId(window: Window, process: *mut u32) -> u32;
         pub fn SendInput(count: u32, inputs: *const Input, size: i32) -> u32;
         pub fn SetForegroundWindow(window: Window) -> i32;
+        pub fn ShowWindow(window: Window, command: i32) -> i32;
+        pub fn IsIconic(window: Window) -> i32;
+        pub fn BringWindowToTop(window: Window) -> i32;
         pub fn AttachThreadInput(mine: u32, theirs: u32, attach: i32) -> i32;
     }
 
@@ -168,6 +172,14 @@ mod win {
                 .filter(|name| !name.is_empty())
         }
     }
+}
+
+pub fn common_prefix(previous: &str, next: &str) -> usize {
+    previous
+        .chars()
+        .zip(next.chars())
+        .take_while(|(before, after)| before == after)
+        .count()
 }
 
 #[cfg(windows)]
@@ -219,25 +231,32 @@ pub fn foreground() -> Result<(usize, String), String> {
 #[cfg(windows)]
 fn focus(window: win::Window) -> Result<(), ()> {
     use win::*;
-    if unsafe { GetForegroundWindow() } == window {
-        return Ok(());
-    }
-    unsafe {
-        let in_front = GetForegroundWindow();
-        let mine = GetCurrentThreadId();
-        let theirs = GetWindowThreadProcessId(in_front, std::ptr::null_mut());
-        let attached = theirs != 0 && mine != theirs && AttachThreadInput(mine, theirs, 1) != 0;
-        SetForegroundWindow(window);
-        if attached {
-            AttachThreadInput(mine, theirs, 0);
+    if unsafe { IsIconic(window) } != 0 {
+        unsafe {
+            ShowWindow(window, SW_RESTORE);
         }
     }
-    std::thread::sleep(std::time::Duration::from_millis(60));
-    if unsafe { GetForegroundWindow() } == window {
-        Ok(())
-    } else {
-        Err(())
+    for _ in 0..3 {
+        if unsafe { GetForegroundWindow() } == window {
+            return Ok(());
+        }
+        unsafe {
+            let in_front = GetForegroundWindow();
+            let mine = GetCurrentThreadId();
+            let theirs = GetWindowThreadProcessId(in_front, std::ptr::null_mut());
+            let attached = theirs != 0 && mine != theirs && AttachThreadInput(mine, theirs, 1) != 0;
+            BringWindowToTop(window);
+            SetForegroundWindow(window);
+            if attached {
+                AttachThreadInput(mine, theirs, 0);
+            }
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        if unsafe { GetForegroundWindow() } == window {
+            return Ok(());
+        }
     }
+    Err(())
 }
 
 #[cfg(windows)]
@@ -295,13 +314,53 @@ pub fn paste(target: usize, text: &str) -> Result<(), String> {
 pub fn erase(target: usize, characters: usize) -> Result<(), String> {
     use win::*;
     let window = target as Window;
-    if unsafe { GetForegroundWindow() } != window {
+    if focus(window).is_err() {
         return Err("the window you were writing in is not in front any more".to_string());
     }
     let mut batch: Vec<Input> = Vec::new();
     for _ in 0..characters {
         batch.push(Input::backspace(false));
         batch.push(Input::backspace(true));
+        if batch.len() >= 256 {
+            send(&batch)?;
+            batch.clear();
+        }
+    }
+    if !batch.is_empty() {
+        send(&batch)?;
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+pub fn rewrite(target: usize, previous: &str, next: &str) -> Result<(), String> {
+    use win::*;
+    let window = target as Window;
+    if focus(window).is_err() {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    let common = common_prefix(previous, next);
+    let remove = previous.chars().count() - common;
+    let mut batch: Vec<Input> = Vec::new();
+    for _ in 0..remove {
+        batch.push(Input::backspace(false));
+        batch.push(Input::backspace(true));
+        if batch.len() >= 256 {
+            send(&batch)?;
+            batch.clear();
+        }
+    }
+    for character in next.chars().skip(common) {
+        if character == '\n' {
+            batch.push(Input::enter(false));
+            batch.push(Input::enter(true));
+        } else {
+            let mut units = [0u16; 2];
+            for unit in character.encode_utf16(&mut units) {
+                batch.push(Input::unicode(*unit, false));
+                batch.push(Input::unicode(*unit, true));
+            }
+        }
         if batch.len() >= 256 {
             send(&batch)?;
             batch.clear();
@@ -559,6 +618,20 @@ pub fn type_text(_target: usize, _text: &str) -> Result<(), String> {
     Err(NO_FIELD.to_string())
 }
 
+#[cfg(not(windows))]
+pub fn rewrite(target: usize, previous: &str, next: &str) -> Result<(), String> {
+    let common = common_prefix(previous, next);
+    let remove = previous.chars().count() - common;
+    if remove > 0 {
+        erase(target, remove)?;
+    }
+    let rest: String = next.chars().skip(common).collect();
+    if !rest.is_empty() {
+        type_text(target, &rest)?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -636,6 +709,13 @@ mod tests {
         let script = erase_script(3);
         assert!(script.contains("repeat 3 times"));
         assert!(script.contains("key code 51"));
+    }
+
+    #[test]
+    fn the_common_prefix_keeps_the_words_that_did_not_change() {
+        assert_eq!(common_prefix("bom dia", "bom dia tudo"), 7);
+        assert_eq!(common_prefix("bom dia", "boa tarde"), 2);
+        assert_eq!(common_prefix("", "bom dia"), 0);
     }
 
     #[test]

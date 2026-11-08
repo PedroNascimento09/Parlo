@@ -127,6 +127,7 @@ struct Chosen {
     undo: String,
 }
 
+#[derive(Clone)]
 struct Target {
     window: usize,
     app: String,
@@ -324,19 +325,35 @@ impl Session {
             .and_then(|slot| slot.as_ref().map(|target| target.app.clone()))
     }
 
-    fn insert_text(&self, text: &str) -> Result<(), String> {
-        let target = self
-            .target
+    fn target(&self) -> Result<Target, String> {
+        self.target
             .lock()
             .unwrap_or_else(|error| error.into_inner())
-            .take()
-            .ok_or_else(|| "Parlo does not know which field to write into".to_string())?;
-        if let Err(paste) = insert::paste(target.window, text) {
-            insert::type_text(target.window, text)
-                .map_err(|typing| format!("{paste}; typing also failed: {typing}"))?;
+            .clone()
+            .ok_or_else(|| "Parlo does not know which field to write into".to_string())
+    }
+
+    fn insert_text(&self, text: &str, replace: &str) -> Result<(), String> {
+        let target = self.target()?;
+        let common = insert::common_prefix(replace, text);
+        let remove = replace.chars().count() - common;
+        if remove > 0 {
+            insert::erase(target.window, remove)?;
+        }
+        let rest: String = text.chars().skip(common).collect();
+        if !rest.is_empty() {
+            if let Err(paste) = insert::paste(target.window, &rest) {
+                insert::type_text(target.window, &rest)
+                    .map_err(|typing| format!("{paste}; typing also failed: {typing}"))?;
+            }
         }
         undo::remember(target.window, text);
         Ok(())
+    }
+
+    fn live_text(&self, text: &str, replace: &str) -> Result<(), String> {
+        let target = self.target()?;
+        insert::rewrite(target.window, replace, text)
     }
 
     fn dictate(&self, pcm16: &[u8]) -> Result<String, String> {
@@ -4938,7 +4955,7 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        if request.text.trim().is_empty() {
+        if request.text.trim().is_empty() && (!request.live || request.replace.is_empty()) {
             return respond_json(
                 stream,
                 "400 Bad Request",
@@ -4946,7 +4963,12 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        return match session.insert_text(&request.text) {
+        let outcome = if request.live {
+            session.live_text(&request.text, &request.replace)
+        } else {
+            session.insert_text(&request.text, &request.replace)
+        };
+        return match outcome {
             Ok(()) => respond_json(stream, "200 OK", "{\"inserted\":true}").map(|()| Flow::Serve),
             Err(error) => respond_json(
                 stream,
@@ -5221,6 +5243,10 @@ fn answer_with(
 #[derive(serde::Deserialize)]
 struct InsertRequest {
     text: String,
+    #[serde(default)]
+    replace: String,
+    #[serde(default)]
+    live: bool,
 }
 
 #[derive(serde::Deserialize)]

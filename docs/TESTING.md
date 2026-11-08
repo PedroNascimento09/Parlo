@@ -27,6 +27,8 @@ release.
 - `Ctrl+Alt+Shift+D` keeps listening until it is pressed again.
 - The island shows no timer. The sentence stays visible while you speak, so you
   see it before you stop.
+- With Polish off, the sentence appears in the field while you speak; with Polish
+  on, it lands only when you stop. Neither path asks for Ctrl+V.
 - Speaking quietly still produces text: the first second of audio is measured
   and lifted when the room is silent.
 - "new line", "bullet point", "comma", "period" and "scratch that" change what

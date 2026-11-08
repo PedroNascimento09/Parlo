@@ -12,9 +12,9 @@ Facts, read from the repository, not remembered.
 | --- | --- | --- |
 | Main window | `crates/parlo-cli/web/index.html`, 370 lines | One scrolling page: hero with a hold-to-speak button, a Live row, a Dictate row, four status lines, then languages, cleanup, vocabulary, meetings, model library, history, voice, models, dubbing, licences |
 | Global shortcut | `crates/parlo-app/src/island.rs` | `RegisterHotKey` on the configured combination, then toggles the island window visible or hidden |
-| Island | `crates/parlo-cli/web/island.html`, 1,499 lines | Separate window, opens the microphone on the shortcut, streams live words while you speak, posts the final WAV to `/dictate`, posts the text to `/insert`, copies to the clipboard when insertion fails |
+| Island | `crates/parlo-cli/web/island.html` | Separate window, opens the microphone on the shortcut, writes the live words into the target while you speak, and with Polish on waits and writes the final sentence when you stop; posts the WAV to `/dictate` and the text to `/insert` |
 | Tray | `crates/parlo-app/src/presence.rs` | Dictate, Live and Captions above a separator, Home, Library, Meetings, Voice and Settings below it, Quit last; a left click toggles the island |
-| Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` types the text into the focused field on Windows |
+| Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` writes the live words and the final sentence into the retained target on Windows; paste is the fallback for the final sentence |
 | History | `crates/parlo-cli/src/history.rs` | Append-only JSONL, 200 entries, fields `at`, `text`, `translation`, `from`, `to` |
 
 ### What is wrong with it
@@ -24,7 +24,7 @@ Facts, read from the repository, not remembered.
 3. **Escape inserts instead of cancelling.** In `island.html`, `Escape` calls `finish()`, which transcribes and inserts. The one key a person presses to abandon something is the key that commits it.
 4. **Losing focus ends the dictation.** `visibilitychange` calls `finish()`, so clicking into the target application — the normal thing to do — submits a partial sentence.
 5. **Nothing is remembered about where the text went.** History stores the sentence but not the application, the mode, or the duration, so it cannot answer "what did I dictate into Slack".
-6. **The island does not know whether it can insert.** It only discovers that after the fact, by getting a failure back and falling back to the clipboard.
+6. **The island learns whether a field accepts text only when it writes.** A refusal is reported with the reason instead of copied to the clipboard.
 7. **Configuration lives on the daily surface.** Model library, licences and dubbing share the page with the thing a person does twenty times a day.
 8. **No cancellation state exists anywhere.** There is Ready, Listening, Writing, Inserted, Copied, Failed. "Stop" and "cancel" are the same code path.
 9. **The overlay only knows the primary monitor.** `place()` uses `primary_monitor()`, so on a second screen it appears on the wrong one.
@@ -105,7 +105,7 @@ Every surface reads its state from one place, so they cannot disagree. The state
 
 1. Cursor is in a field, in any application.
 2. Shortcut down: microphone opens, island appears at the bottom of the screen holding the cursor, first audio is captured in under 100 ms.
-3. Speak. The island shows a level meter and the words as they arrive; the target application keeps focus.
+3. Speak. The island shows a level meter and the words as they arrive, and writes them into the field; the target application keeps focus.
 4. Shortcut up: capture stops, island shows "Processing".
 5. Transcription, cleanup, insertion into the remembered field.
 6. Island shows "Inserted" for 1.6 s, then returns to Ready. Focus never moved.
@@ -152,7 +152,7 @@ One machine, shared by island, tray and window.
 | --- | --- | --- | --- |
 | `IDLE` | start, finish, cancel, error timeout | `ARMED` on shortcut down | dot quiet, "Parlo ready" |
 | `ARMED` | shortcut down | `LISTENING` when the first audio block arrives (≤100 ms), `IDLE` on immediate failure | "Opening the microphone" |
-| `LISTENING` | audio flowing | `PROCESSING` on stop or timeout, `IDLE` on cancel | level meter, live words, mode |
+| `LISTENING` | audio flowing | `PROCESSING` on stop or timeout, `IDLE` on cancel | level meter, live words in the field, mode |
 | `PROCESSING` | stop | `INSERTING` on text, `ERROR` on failure, `IDLE` on cancel | "Processing", one sentence |
 | `INSERTING` | text ready | `SUCCESS` on acceptance, `ERROR` on refusal | "Inserting" |
 | `SUCCESS` | insertion accepted | `IDLE` after 1.6 s | the text, briefly |
@@ -192,7 +192,7 @@ Geometry: one row, 560 × 54 logical pixels, centred horizontally on the monitor
 | State | Dot | Line one | Line two | Duration |
 | --- | --- | --- | --- | --- |
 | Ready | outline | Parlo ready | Ctrl+Alt+D | while idle, dims to 55% after 3 s |
-| Listening | accent, pulsing | Listening · dictating | live words, level meter | until stop |
+| Listening | accent, pulsing | Listening · dictating | live words in the field, level meter | until stop |
 | Processing | accent, spinning | Processing | one sentence | until text |
 | Inserting | accent, solid | Inserting | — | until accepted |
 | Inserted | green | Inserted | first 48 characters | 1.6 s |
@@ -222,7 +222,7 @@ One sentence, plain, and the next action.
 | Too short | That was too short to write down. | Try again |
 | Transcription failed | The words could not be recognised. | Retry, keep audio |
 | Model missing | The dictation model is not downloaded. | Download it, with the size |
-| Insertion refused | The field did not accept the text. It is on the clipboard. | Paste by hand |
+| Insertion refused | The field did not accept the text, with the reason. | Bring the field back and try again |
 | Engine down | The engine stopped answering. | Restart Parlo |
 | Cloud refused | The cloud provider refused the request. | Check the key |
 
@@ -260,7 +260,7 @@ Ordered so each step ships something a person can feel, smallest first.
 1. **Escape cancels, losing focus does not submit.** Island only. Small, and it removes a way to lose a sentence.
 2. **Push to talk on key up.** Handle the hotkey release, distinguish tap from hold. This is the change that makes the product what it claims.
 3. **One state machine in the engine**, read by island, tray and window. Ends the three surfaces disagreeing.
-4. **Island knows the insertion target before it speaks** and reports readiness to insert; clipboard becomes the documented fallback.
+4. **Island keeps the insertion target for the whole session**, so the live words and the final sentence both go into the field that was in front when dictation started.
 5. **Home becomes status**, the recorder moves to onboarding, sections stop sharing one scroll.
 6. **Library**: History gains application, mode and duration; Models and Vocabulary move beside it.
 7. **Tray**: modes and destinations, no duplicates, state in the tooltip.

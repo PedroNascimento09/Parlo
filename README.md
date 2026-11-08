@@ -76,7 +76,7 @@ The first start can take around twenty seconds while the engine loads. The windo
 
 ## What you can do
 
-**Dictate into any program.** `Ctrl+Alt+D` opens a small bar at the top of the screen, on the monitor where the cursor is. Speak, and the sentence is written into the window that had the focus, in the language you were writing in. `Ctrl+Alt+Shift+D` keeps listening open while you need it. When a program cannot accept typed text, the sentence goes to the clipboard, and `Escape` discards it.
+**Dictate into any program.** `Ctrl+Alt+D` opens a small bar at the top of the screen, on the monitor where the cursor is. Speak, and the sentence is written into the window that had the focus as it is recognised, in the language you were writing in. With Polish on, it waits and writes the cleaned sentence when you stop, so there is no Ctrl+V. `Ctrl+Alt+Shift+D` keeps listening open while you need it, and `Escape` discards it.
 
 **Read what you say while you say it.** Live text opens a window with two columns: the microphone on the left and the translation on the right, in windows of about 2.5 seconds. Captions put the same stream in a thin bar over a call or a video, with a button that changes the size. `Ctrl+Alt+C` opens captions from anywhere, and `Escape` stops any of them.
 

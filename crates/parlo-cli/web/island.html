@@ -507,9 +507,9 @@
         <div class="write-menu" id="write-menu" role="listbox" aria-label="Dictation writes" data-i18n-aria-label="island.dictationWrites" hidden></div>
       </div>
       <div class="tidy">
-        <span class="switch-label" id="tidy-label" data-i18n="island.cleanup">Clean up</span>
+        <span class="switch-label" id="tidy-label" data-i18n="island.cleanup">Polish</span>
         <span class="tidy-hint sr-only" id="tidy-hint" data-i18n="island.drops">Drops filler and repeats</span>
-        <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
+        <button type="button" class="switch" id="tidy" role="switch" aria-checked="false" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
           <span class="knob"></span>
         </button>
       </div>
@@ -585,7 +585,16 @@ let quietGain = 1;
 let quietPeak = 0;
 let quietBlocks = 0;
 let partials = null;
-let tidy = localStorage.getItem("parlo-tidy") !== "off";
+let tidy = localStorage.getItem("parlo-tidy") === "on";
+let liveInserted = "";
+let liveDesired = "";
+let liveBase = "";
+let liveConfirmed = "";
+let liveGuess = "";
+let liveRunning = false;
+let liveWaiters = [];
+let partialTicket = 0;
+let partialRunning = false;
 
 function tauriWindow() {
   const api = window.__TAURI__;
@@ -858,6 +867,13 @@ async function begin() {
     return;
   }
   keepIsland();
+  partialTicket += 1;
+  partialRunning = false;
+  liveInserted = "";
+  liveDesired = "";
+  liveBase = "";
+  liveConfirmed = "";
+  liveGuess = "";
   openWriteMenu(false);
   document.body.classList.remove("ready");
   setState(t("island.listening", "Listening"), "", true);
@@ -890,7 +906,7 @@ function endStream() {
 }
 
 async function sendPartial() {
-  if (!stream || !context || busy || paused) {
+  if (!stream || !context || busy || paused || partialRunning) {
     return;
   }
   const batch = chunks.slice(sentChunks);
@@ -898,34 +914,44 @@ async function sendPartial() {
     return;
   }
   sentChunks = chunks.length;
-  const total = batch.reduce((sum, chunk) => sum + chunk.length, 0);
-  const merged = new Float32Array(total);
-  let offset = 0;
-  for (const chunk of batch) {
-    merged.set(chunk, offset);
-    offset += chunk.length;
-  }
+  const ticket = partialTicket;
+  partialRunning = true;
   try {
+    const total = batch.reduce((sum, chunk) => sum + chunk.length, 0);
+    const merged = new Float32Array(total);
+    let offset = 0;
+    for (const chunk of batch) {
+      merged.set(chunk, offset);
+      offset += chunk.length;
+    }
     const response = await fetch("/listen/stream", {
       method: "POST",
       headers: {
-      "Content-Type": "audio/wav",
-      Authorization: "Bearer " + token,
-      "x-parlo-style": localStorage.getItem("parlo.style") || "",
-    },
+        "Content-Type": "audio/wav",
+        Authorization: "Bearer " + token,
+        "x-parlo-style": localStorage.getItem("parlo.style") || "",
+      },
       body: encodeWav(downsample(merged, context.sampleRate, TARGET_RATE), TARGET_RATE),
     });
-    if (!response.ok || busy) {
+    if (ticket !== partialTicket || !response.ok || busy || paused) {
       return;
     }
     const pieces = await response.json();
-    const last = pieces.filter((piece) => piece.text).pop();
-    if (last && !busy) {
-      lastText = last.text;
+    const next = readLive(liveBase, liveConfirmed, liveGuess, pieces);
+    liveBase = next.base;
+    liveConfirmed = next.confirmed;
+    liveGuess = next.guess;
+    if (next.text && next.text !== lastText && !busy) {
+      lastText = next.text;
       setState(t("island.listening", "Listening"), lastText, true);
+      writeLive(lastText);
     }
   } catch (failure) {
     return;
+  } finally {
+    if (ticket === partialTicket) {
+      partialRunning = false;
+    }
   }
 }
 
@@ -940,6 +966,8 @@ function pause() {
     return;
   }
   paused = true;
+  partialTicket += 1;
+  partialRunning = false;
   clearInterval(partials);
   partials = null;
   bars.forEach((bar) => {
@@ -1008,6 +1036,8 @@ function teardown() {
 
 function discard() {
   attempt += 1;
+  partialTicket += 1;
+  partialRunning = false;
   clearInterval(ticker);
   ticker = null;
   teardown();
@@ -1095,12 +1125,62 @@ async function loadVersion() {
   }
 }
 
-async function writeIntoField(text, signal) {
+function combineWords(left, right) {
+  const before = left.trim();
+  const after = right.trim();
+  return before && after ? before + " " + after : before || after;
+}
+
+function wordsOf(text) {
+  const value = text.trim();
+  return value ? value.split(/\s+/) : [];
+}
+
+function readLive(base, confirmed, guess, pieces) {
+  let settled = base.trim();
+  let stable = wordsOf(confirmed);
+  let hypothesis = wordsOf(guess);
+  let fresh = [];
+  let closing = "";
+  for (const piece of pieces) {
+    const text = (piece.text || "").trim();
+    if (!text) {
+      continue;
+    }
+    if (piece.state === "partial") {
+      hypothesis = wordsOf(text);
+    } else if (piece.state === "stable") {
+      fresh = fresh.concat(wordsOf(text));
+    } else if (piece.state === "final" || piece.state === "corrected") {
+      closing = text;
+    }
+  }
+  if (closing) {
+    settled = combineWords(settled, closing);
+    return { base: settled, confirmed: "", guess: "", text: settled };
+  }
+  if (fresh.length) {
+    stable = stable.concat(fresh);
+  }
+  let current = stable;
+  if (hypothesis.length && stable.every((word, index) => hypothesis[index] === word)) {
+    current = hypothesis;
+  }
+  const windowText = current.join(" ");
+  return {
+    base: settled,
+    confirmed: stable.join(" "),
+    guess: windowText,
+    text: combineWords(settled, windowText),
+  };
+}
+
+async function writeIntoField(text, signal, replace) {
   try {
     const response = await fetch("/insert", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ text: text }),
+      body: JSON.stringify({ text: text, replace: replace }),
       signal,
     });
     if (response.ok) {
@@ -1113,9 +1193,79 @@ async function writeIntoField(text, signal) {
   }
 }
 
-function cancel() {
-  attempt += 1;
+function liveSettled() {
+  if (!liveRunning) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => liveWaiters.push(resolve));
+}
+
+async function pumpLive() {
+  if (liveRunning || tidy) {
+    return;
+  }
+  liveRunning = true;
+  try {
+    while (!tidy && !busy && !paused && liveDesired && liveDesired !== liveInserted) {
+      const previous = liveInserted;
+      const next = liveDesired;
+      let response = null;
+      try {
+        response = await fetch("/insert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ text: next, replace: previous, live: true }),
+        });
+      } catch (failure) {
+        break;
+      }
+      if (!response.ok) {
+        break;
+      }
+      liveInserted = next;
+    }
+  } finally {
+    liveRunning = false;
+    const waiting = liveWaiters;
+    liveWaiters = [];
+    for (const resolve of waiting) {
+      resolve();
+    }
+  }
+}
+
+function writeLive(text) {
+  if (tidy || !text || text === liveInserted) {
+    return;
+  }
+  liveDesired = text;
+  pumpLive();
+}
+
+async function clearLive() {
+  if (!liveInserted) {
+    return;
+  }
+  const previous = liveInserted;
+  liveInserted = "";
+  await fetch("/insert", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+    body: JSON.stringify({ text: "", replace: previous, live: true }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+async function cancel() {
   const hadSomething = Boolean(stream) || busy;
+  busy = true;
+  liveDesired = "";
+  await liveSettled();
+  await clearLive();
+  liveBase = "";
+  liveConfirmed = "";
+  liveGuess = "";
+  attempt += 1;
   if (controller) {
     controller.abort();
     controller = null;
@@ -1132,10 +1282,10 @@ function cancel() {
   report("cancelled");
 }
 
-function dismissIsland() {
+async function dismissIsland() {
   keepIsland();
   openWriteMenu(false);
-  cancel();
+  await cancel();
   hideIsland();
 }
 
@@ -1145,6 +1295,12 @@ async function stop() {
   }
   busy = true;
   let failed = false;
+  partialTicket += 1;
+  partialRunning = false;
+  clearInterval(partials);
+  partials = null;
+  liveDesired = "";
+  await liveSettled();
   const captured = release();
   if (!captured) {
     busy = false;
@@ -1192,38 +1348,22 @@ async function stop() {
     }
     lastText = text;
     report("inserting");
-    const inserted = await writeIntoField(text, signal);
-    setState(inserted.written ? t("island.written", "Written") : t("island.copied", "Copied"), text, false);
-    hideAfterDelay(4000);
-    if (!inserted.written) {
-      try {
-        const response = await fetch("/clipboard", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-          body: JSON.stringify({ text, keep: true }),
-          signal,
-        });
-        if (!response.ok) {
-          throw new Error("the server clipboard refused the text");
-        }
-        setState(
-          t("island.copied", "Copied"),
-          t("island.copiedPress", "Press Ctrl+V where you want it."),
-          false,
-        );
-      } catch (failure) {
-        if (!signal.aborted) {
-          try {
-            await navigator.clipboard.writeText(text);
-          } catch (copyFailure) {
-            setState(
-              t("island.copied", "Copied"),
-              t("island.clipboardRefused", "The clipboard refused the text, select it here and copy by hand."),
-              true,
-            );
-          }
-        }
-      }
+    const inserted = await writeIntoField(text, signal, liveInserted);
+    if (inserted.written) {
+      liveInserted = "";
+      liveBase = "";
+      liveConfirmed = "";
+      liveGuess = "";
+      setState(t("island.written", "Written"), text, false);
+      hideAfterDelay(4000);
+    } else {
+      document.body.classList.remove("ready");
+      setState(
+        t("island.failed", "Failed"),
+        inserted.reason || t("island.dictationFailed", "The dictation failed."),
+        true,
+      );
+      failed = true;
     }
   } catch (failure) {
     document.body.classList.remove("ready");
