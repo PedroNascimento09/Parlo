@@ -17,6 +17,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Writing into another application failed when Windows refused to raise its window; the foreground handoff now attaches to the target thread first.
 - The language menu was clipped by the island window and is now fully readable and scrollable.
 - The island stays until the text is written and then hides itself.
+- The dictation key records from the moment it is pressed instead of one second later, so a short phrase is no longer dropped and the first word of a longer one is kept.
+- Dictation writes into the window it was opened from again: showing the island no longer makes Parlo refuse its own captured target.
+- The dictation state walks through insertion, so the tray stops being stuck on processing and a second dictation is accepted.
+- The island sits at the bottom of the monitor under the cursor instead of the middle of another screen.
 
 ## [0.2.6] - 7 November 2026
 

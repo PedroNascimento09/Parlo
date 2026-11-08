@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use tauri::webview::{PermissionKind, PermissionResponse};
-use tauri::{LogicalPosition, Manager, RunEvent, Url, WebviewWindow};
+use tauri::{Manager, PhysicalPosition, PhysicalSize, RunEvent, Url, WebviewWindow};
 
 mod island;
 mod presence;
@@ -246,26 +246,27 @@ Connection: close
 }
 
 fn place(window: &WebviewWindow) {
-    let under_cursor = window
+    let monitor = window
         .cursor_position()
         .ok()
-        .and_then(|cursor| window.monitor_from_point(cursor.x, cursor.y).ok().flatten());
-    let monitor = match under_cursor.or_else(|| window.primary_monitor().ok().flatten()) {
-        Some(monitor) => monitor,
-        None => {
-            note("no monitor was reported, the dictation island keeps its default place");
-            return;
-        }
+        .and_then(|cursor| window.monitor_from_point(cursor.x, cursor.y).ok().flatten())
+        .or_else(|| window.current_monitor().ok().flatten())
+        .or_else(|| window.primary_monitor().ok().flatten());
+    let Some(monitor) = monitor else {
+        note("no monitor was reported, the dictation island keeps its default place");
+        return;
     };
     let scale = monitor.scale_factor();
     let origin = monitor.position();
-    let left = origin.x as f64 / scale;
-    let top = origin.y as f64 / scale;
-    let width = monitor.size().width as f64 / scale;
-    let height = monitor.size().height as f64 / scale;
-    let x = left + (width - ISLAND_WIDTH) / 2.0;
-    let y = top + height - ISLAND_HEIGHT - ISLAND_MARGIN;
-    let _ = window.set_position(LogicalPosition::new(x.max(left), y.max(top)));
+    let screen = monitor.size();
+    let size = window.outer_size().unwrap_or(PhysicalSize::new(
+        (ISLAND_WIDTH * scale) as u32,
+        (ISLAND_HEIGHT * scale) as u32,
+    ));
+    let margin = (ISLAND_MARGIN * scale) as i32;
+    let x = origin.x + (screen.width as i32 - size.width as i32) / 2;
+    let y = origin.y + screen.height as i32 - size.height as i32 - margin;
+    let _ = window.set_position(PhysicalPosition::new(x.max(origin.x), y.max(origin.y)));
 }
 
 fn launch() -> Result<(Child, u16, String), String> {

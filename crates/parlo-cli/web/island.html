@@ -459,7 +459,7 @@ let pausedAt = 0;
 let pausedTotal = 0;
 let busy = false;
 let lastText = "";
-let target = false;
+let promoted = false;
 let writeTarget = "";
 let writeSource = "";
 let writePairs = [];
@@ -514,11 +514,10 @@ async function setIslandHeight(height) {
     const scale = await win.scaleFactor();
     const size = await win.outerSize();
     const position = await win.outerPosition();
-    const before = size.height / scale;
-    await win.setSize(new dpi.LogicalSize(size.width / scale, height));
-    await win.setPosition(
-      new dpi.LogicalPosition(position.x / scale, position.y / scale + before - height),
-    );
+    const next = Math.round(height * scale);
+    const bottom = position.y + size.height;
+    await win.setSize(new dpi.PhysicalSize(size.width, next));
+    await win.setPosition(new dpi.PhysicalPosition(position.x, bottom - next));
   } catch (failure) {
     return;
   }
@@ -654,38 +653,42 @@ function paintLevel(block) {
 }
 
 let attempt = 0;
+let opening = null;
 
-async function begin() {
-  if (busy || stream) {
-    return;
+function capture() {
+  if (stream) {
+    return Promise.resolve(true);
   }
-  keepIsland();
+  if (opening) {
+    return opening;
+  }
+  opening = openMicrophone();
+  return opening.finally(() => {
+    opening = null;
+  });
+}
+
+async function openMicrophone() {
   const ticket = ++attempt;
-  document.body.classList.remove("ready");
-  setState(t("island.listening", "Listening"), "", true);
-  const app = await beginTarget();
-  if (ticket !== attempt) {
-    return;
-  }
-  target = Boolean(app);
+  let opened = null;
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
+    opened = await navigator.mediaDevices.getUserMedia({
       audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
     });
   } catch (failure) {
     if (ticket !== attempt) {
-      return;
+      return false;
     }
     document.body.classList.remove("ready");
     setState(t("island.micBlocked", "Microphone blocked"), describeMicrophone(failure), true);
     report("error");
-    return;
+    return false;
   }
   if (ticket !== attempt) {
-    stream.getTracks().forEach((track) => track.stop());
-    stream = null;
-    return;
+    opened.getTracks().forEach((track) => track.stop());
+    return false;
   }
+  stream = opened;
   context = new (window.AudioContext || window.webkitAudioContext)();
   source = context.createMediaStreamSource(stream);
   processor = context.createScriptProcessor(2048, 1, 1);
@@ -696,8 +699,6 @@ async function begin() {
   quietGain = 1;
   quietPeak = 0;
   quietBlocks = 0;
-  clearInterval(partials);
-  partials = setInterval(sendPartial, 800);
   processor.onaudioprocess = (event) => {
     if (paused) {
       return;
@@ -710,7 +711,7 @@ async function begin() {
       copy[index] = Math.max(-1, Math.min(1, block[index] * quietGain));
     }
     chunks.push(copy);
-    if (chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
+    if (promoted && chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
       stop();
     }
   };
@@ -721,6 +722,25 @@ async function begin() {
   paused = false;
   pausedAt = 0;
   pausedTotal = 0;
+  return true;
+}
+
+async function begin() {
+  if (busy) {
+    return;
+  }
+  keepIsland();
+  document.body.classList.remove("ready");
+  setState(t("island.listening", "Listening"), "", true);
+  if (!stream && !(await capture())) {
+    return;
+  }
+  if (busy) {
+    return;
+  }
+  promoted = true;
+  clearInterval(partials);
+  partials = setInterval(sendPartial, 800);
   clearInterval(clockTimer);
   clockTimer = setInterval(paintClock, 250);
   paintClock();
@@ -835,16 +855,16 @@ function togglePause() {
   }
 }
 
-function release() {
+function teardown() {
   clearInterval(clockTimer);
   clockTimer = null;
+  clearInterval(partials);
+  partials = null;
   paused = false;
   pausedAt = 0;
   pausedTotal = 0;
+  promoted = false;
   paintPause();
-  endStream();
-  clearInterval(ticker);
-  ticker = null;
   document.body.classList.remove("listening");
   bars.forEach((bar) => {
     bar.style.height = "3px";
@@ -873,6 +893,21 @@ function release() {
   sink = null;
   const collected = chunks;
   chunks = [];
+  return { collected, rate };
+}
+
+function discard() {
+  attempt += 1;
+  clearInterval(ticker);
+  ticker = null;
+  teardown();
+}
+
+function release() {
+  endStream();
+  clearInterval(ticker);
+  ticker = null;
+  const { collected, rate } = teardown();
   const length = collected.reduce((total, chunk) => total + chunk.length, 0);
   if (!length) {
     return null;
@@ -888,21 +923,6 @@ function release() {
     return null;
   }
   return { wav: encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE), seconds };
-}
-
-async function beginTarget() {
-  try {
-    const response = await fetch("/target", {
-      headers: { Authorization: "Bearer " + token },
-    });
-    if (!response.ok) {
-      return "";
-    }
-    const values = await response.json();
-    return values.insertable ? values.app || "" : "";
-  } catch (failure) {
-    return "";
-  }
 }
 
 async function loadLocale() {
@@ -966,9 +986,6 @@ async function loadVersion() {
 }
 
 async function writeIntoField(text, signal) {
-  if (!target) {
-    return false;
-  }
   try {
     const response = await fetch("/insert", {
       method: "POST",
@@ -976,9 +993,13 @@ async function writeIntoField(text, signal) {
       body: JSON.stringify({ text: text }),
       signal,
     });
-    return response.ok;
+    if (response.ok) {
+      return { written: true, reason: "" };
+    }
+    const detail = await response.json().catch(() => ({}));
+    return { written: false, reason: detail.error || "" };
   } catch (failure) {
-    return false;
+    return { written: false, reason: "" };
   }
 }
 
@@ -989,9 +1010,7 @@ function cancel() {
     controller.abort();
     controller = null;
   }
-  if (stream) {
-    release();
-  }
+  discard();
   busy = false;
   document.body.classList.remove("listening");
   if (hadSomething) {
@@ -1011,9 +1030,9 @@ async function stop() {
   let failed = false;
   const captured = release();
   if (!captured) {
-    ready();
     busy = false;
-    report("idle");
+    report("cancelled");
+    ready();
     return;
   }
   setState(t("island.cleaning", "Cleaning up"), t("island.polishing", "Polishing the sentence."), true);
@@ -1055,10 +1074,11 @@ async function stop() {
       return;
     }
     lastText = text;
+    report("inserting");
     const inserted = await writeIntoField(text, signal);
-    setState(inserted ? t("island.written", "Written") : t("island.copied", "Copied"), text, false);
+    setState(inserted.written ? t("island.written", "Written") : t("island.copied", "Copied"), text, false);
     hideAfterDelay(4000);
-    if (!inserted) {
+    if (!inserted.written) {
       try {
         const response = await fetch("/clipboard", {
           method: "POST",
@@ -1072,9 +1092,11 @@ async function stop() {
         const copied = await response.json();
         setState(
           t("island.copied", "Copied"),
-          t("island.clipboardReturns", "Copied. Your previous clipboard returns in {seconds} seconds.", {
-            seconds: copied.lease_seconds || 10,
-          }),
+          inserted.reason
+            ? t("island.copiedBecause", "Copied: {reason}", { reason: inserted.reason })
+            : t("island.clipboardReturns", "Copied. Your previous clipboard returns in {seconds} seconds.", {
+                seconds: copied.lease_seconds || 10,
+              }),
           false,
         );
       } catch (failure) {
@@ -1111,9 +1133,7 @@ function tap() {
     controller.abort();
     controller = null;
   }
-  if (stream) {
-    release();
-  }
+  discard();
   busy = false;
   document.body.classList.remove("listening");
   ready();
@@ -1124,16 +1144,21 @@ function handsFree() {
 }
 
 function arm() {
-  if (stream || busy) {
+  if (busy) {
     return;
   }
+  keepIsland();
+  document.body.classList.add("ready");
+  document.body.classList.remove("listening");
   report("armed");
+  capture();
 }
 
 function ready() {
-  if (stream || busy) {
+  if (busy) {
     return;
   }
+  discard();
   document.body.classList.add("ready");
   document.body.classList.remove("listening");
   setState("", "", true);

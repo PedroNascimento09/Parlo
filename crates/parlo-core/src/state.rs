@@ -51,7 +51,7 @@ impl State {
                 | (Paused, Listening | Processing | Error | Cancelled)
                 | (Processing, Inserting | Error | Cancelled)
                 | (Inserting, Success | Error | Cancelled)
-                | (Success | Error | Cancelled, Idle)
+                | (Success | Error | Cancelled, Idle | Armed)
         )
     }
 
@@ -172,6 +172,29 @@ mod tests {
         machine.enter(State::Cancelled).unwrap();
         assert!(machine.enter(State::Listening).is_err());
         assert_eq!(machine.enter(State::Idle), Ok(State::Cancelled));
+    }
+
+    #[test]
+    fn a_finished_state_can_start_another_dictation() {
+        let mut machine = Machine::new();
+        machine.enter(State::Armed).unwrap();
+        machine.enter(State::Cancelled).unwrap();
+        assert_eq!(machine.enter(State::Armed), Ok(State::Cancelled));
+    }
+
+    #[test]
+    fn a_second_dictation_follows_a_success() {
+        let mut machine = Machine::new();
+        for next in [
+            State::Armed,
+            State::Listening,
+            State::Processing,
+            State::Inserting,
+            State::Success,
+            State::Armed,
+        ] {
+            assert!(machine.enter(next).is_ok(), "{next:?} was refused");
+        }
     }
 
     #[test]

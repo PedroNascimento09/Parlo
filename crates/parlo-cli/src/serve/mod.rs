@@ -127,10 +127,15 @@ struct Chosen {
     undo: String,
 }
 
+struct Target {
+    window: usize,
+    app: String,
+}
+
 pub struct Session {
     pipeline: Mutex<Pipeline>,
     settings: RwLock<Chosen>,
-    target: Mutex<Option<usize>>,
+    target: Mutex<Option<Target>>,
     busy: AtomicBool,
     known: Mutex<Option<Vec<parlo_core::UnitState>>>,
 }
@@ -305,11 +310,18 @@ impl Session {
     }
 
     fn capture_target(&self) -> Result<(), String> {
-        let target = insert::capture_target()?;
+        let (window, app) = insert::foreground()?;
         if let Ok(mut stored) = self.target.lock() {
-            *stored = Some(target);
+            *stored = Some(Target { window, app });
         }
         Ok(())
+    }
+
+    fn target_app(&self) -> Option<String> {
+        self.target
+            .lock()
+            .ok()
+            .and_then(|slot| slot.as_ref().map(|target| target.app.clone()))
     }
 
     fn insert_text(&self, text: &str) -> Result<(), String> {
@@ -319,8 +331,8 @@ impl Session {
             .unwrap_or_else(|error| error.into_inner())
             .take()
             .ok_or_else(|| "Parlo does not know which field to write into".to_string())?;
-        insert::type_text(target, text)?;
-        undo::remember(target, text);
+        insert::type_text(target.window, text)?;
+        undo::remember(target.window, text);
         Ok(())
     }
 
@@ -4672,11 +4684,11 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        let answer = match crate::insert::foreground() {
-            Ok((_, app)) => format!("{{\"insertable\":true,\"app\":\"{}\"}}", json_string(&app)),
-            Err(error) => format!(
+        let answer = match session.target_app() {
+            Some(app) => format!("{{\"insertable\":true,\"app\":\"{}\"}}", json_string(&app)),
+            None => format!(
                 "{{\"insertable\":false,\"reason\":\"{}\"}}",
-                json_string(&error)
+                json_string("Parlo does not know which field to write into")
             ),
         };
         return respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve);
@@ -5023,9 +5035,9 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
-        let app = crate::insert::foreground()
-            .map(|(_, name)| name)
-            .unwrap_or_else(|_| "unknown".to_string());
+        let app = session
+            .target_app()
+            .unwrap_or_else(|| "unknown".to_string());
         let profile = stored.profiles.get(&app.to_ascii_lowercase());
         let style = if !style_header.is_empty() {
             style_header

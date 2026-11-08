@@ -9,6 +9,7 @@ pub fn show(handle: &AppHandle) {
     let Some(window) = handle.get_webview_window(ISLAND) else {
         return;
     };
+    crate::place(&window);
     let _ = window.show();
 }
 
@@ -58,7 +59,7 @@ pub fn listen(handle: AppHandle) {
     const MOD_CONTROL: u32 = 0x0002;
     const MOD_SHIFT: u32 = 0x0004;
     const MOD_WIN: u32 = 0x0008;
-    const HOLD_MS: u128 = 1_000;
+    const HOLD_MS: u128 = 250;
 
     static APP: Mutex<Option<AppHandle>> = Mutex::new(None);
     static KEY: AtomicU32 = AtomicU32::new(0);
@@ -75,6 +76,7 @@ pub fn listen(handle: AppHandle) {
     static CAPTIONS_LATCH: AtomicBool = AtomicBool::new(false);
     static UNDO_LATCH: AtomicBool = AtomicBool::new(false);
     static PRESSED_AT: Mutex<Option<Instant>> = Mutex::new(None);
+    static PRESS: AtomicU32 = AtomicU32::new(0);
 
     #[repr(C)]
     struct Key {
@@ -153,6 +155,7 @@ pub fn listen(handle: AppHandle) {
 
     #[cfg(windows)]
     fn armed() {
+        let press = PRESS.fetch_add(1, Ordering::Relaxed) + 1;
         if let Ok(mut slot) = PRESSED_AT.lock() {
             *slot = Some(Instant::now());
         }
@@ -161,13 +164,16 @@ pub fn listen(handle: AppHandle) {
             show(handle);
             tell(handle, "window.parloArm && window.parloArm()");
         });
-        std::thread::spawn(|| {
+        std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(HOLD_MS as u64));
             let still_down = PRESSED_AT
                 .lock()
                 .map(|slot| slot.is_some())
                 .unwrap_or(false);
-            if !still_down || RECORDING.swap(true, Ordering::Relaxed) {
+            if !still_down
+                || PRESS.load(Ordering::Relaxed) != press
+                || RECORDING.swap(true, Ordering::Relaxed)
+            {
                 return;
             }
             with_app(|handle| {
@@ -396,6 +402,34 @@ mod bridge_tests {
             remembered < shown,
             "the island is shown before the window you were typing in is remembered, so the text would land in Parlo"
         );
+    }
+
+    #[test]
+    fn the_recording_key_starts_without_a_visible_wait() {
+        let hook = include_str!("island.rs");
+        let line = hook
+            .lines()
+            .find(|line| line.contains("const HOLD_MS"))
+            .expect("the hold threshold moved");
+        assert!(
+            line.contains("250"),
+            "a tap and a hold are told apart after too long: {line}"
+        );
+    }
+
+    #[test]
+    fn the_island_is_placed_before_it_is_shown() {
+        let hook = include_str!("island.rs");
+        let start = hook.find("pub fn show(").expect("there is no show");
+        let end = hook.find("pub fn hide(").expect("there is no hide");
+        let body = &hook[start..end];
+        let placed = body
+            .find("crate::place(&window);")
+            .expect("show never places the island");
+        let shown = body
+            .find("window.show()")
+            .expect("show never shows the island");
+        assert!(placed < shown, "the island is shown before it is placed");
     }
 
     #[test]
