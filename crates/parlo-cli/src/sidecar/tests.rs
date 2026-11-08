@@ -1,3 +1,4 @@
+use super::discovery::find_venv_python;
 use super::*;
 
 #[test]
