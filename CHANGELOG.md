@@ -4,9 +4,16 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+
+- Numbered lists: "numbered list" starts one and "next number" counts up, in English, Portuguese, Spanish, French and German.
+- Correcting a dictation in the history keeps those word pairs in the vocabulary by itself, so the next dictation writes them that way.
+
 ### Changed
 
 - The island is a compact bar now: a live waveform, the sentence as it is spoken, and only the controls the current state needs.
+- The server loads the dictation model when it starts, so the first dictation no longer waits for it.
+- Every dictation records how long it took from the key release to the text landing in the field, in the log and beside the history entry.
 - Dictation writes each recognised phrase into the focused field while you speak; Polish waits and writes the cleaned sentence when you stop.
 - The insertion target stays available for the whole dictation, so the final sentence replaces the live text without a second target capture.
 - The dictation timer is gone.
