@@ -2251,6 +2251,11 @@ if (settingsLocaleSave) {
       if (!response.ok) {
         throw new Error(detail.error || t("settings.languageError", "That language cannot be used."));
       }
+      try {
+        const channel = new BroadcastChannel("parlo-locale");
+        channel.postMessage({ locale: settingsLocale.value });
+        channel.close();
+      } catch {}
       location.reload();
     } catch (failure) {
       showError(failure.message);

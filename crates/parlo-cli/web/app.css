@@ -3113,7 +3113,24 @@ input[type="checkbox"]:focus-visible,
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+.studio-import {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
 
+.meetings-page > section:first-of-type,
+.meetings-page > section:first-of-type + .meeting-import {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.meetings-page > section:first-of-type .settings-row {
+  margin-top: 0;
+}
+
+.meetings-page > section:first-of-type + .meeting-import {
+  padding-top: 12px;
+}
 .studio-links {
   display: flex;
   flex-wrap: wrap;
