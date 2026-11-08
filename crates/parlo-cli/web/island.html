@@ -8,39 +8,54 @@
 <title>Parlo Dictate</title>
 <style>
   :root {
-    --shell: rgba(255, 253, 248, 0.94);
-    --ink: #191512;
-    --muted: #6f6559;
-    --line: rgba(25, 21, 18, 0.12);
+    --surface: rgba(255, 253, 248, 0.98);
+    --ink: #1b1712;
+    --muted: #6b6257;
+    --line: rgba(27, 23, 18, 0.12);
+    --line-strong: rgba(27, 23, 18, 0.2);
     --accent: #2f6b4f;
     --accent-ink: #fbf9f2;
-    --track: rgba(25, 21, 18, 0.1);
+    --track: #f3ecdf;
     --menu: #fffdf8;
+    --shadow: 0 18px 40px rgba(24, 18, 12, 0.16);
+    --shadow-menu: 0 18px 40px rgba(24, 18, 12, 0.18);
     color-scheme: light dark;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --shell: rgba(19, 17, 14, 0.94);
+      --surface: rgba(25, 22, 18, 0.98);
       --ink: #f4efe4;
-      --muted: #9c9284;
+      --muted: #a49a8c;
       --line: rgba(244, 239, 228, 0.14);
+      --line-strong: rgba(244, 239, 228, 0.24);
       --accent: #9ed9b4;
       --accent-ink: #10201a;
-      --track: rgba(244, 239, 228, 0.12);
-      --menu: #1a1713;
+      --track: #2a251f;
+      --menu: #1d1915;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+      --shadow-menu: 0 18px 40px rgba(0, 0, 0, 0.58);
     }
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    overflow: hidden;
+  }
   body {
     display: grid;
     align-items: center;
     justify-items: center;
-    padding: 8px;
-    font: 13px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    padding: 10px 8px;
+    font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
     user-select: none;
+  }
+  body.menu {
+    align-items: end;
+    padding-bottom: 14px;
   }
   .island {
     position: relative;
@@ -48,39 +63,28 @@
     align-items: center;
     gap: 12px;
     width: max-content;
-    max-width: 100%;
-    padding: 10px 16px;
+    max-width: calc(100vw - 16px);
+    min-height: 54px;
+    padding: 10px 12px 10px 16px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: var(--shell);
-    box-shadow: 0 14px 34px rgba(24, 18, 12, 0.16);
-    backdrop-filter: blur(20px) saturate(140%);
-    animation: settle 160ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   }
-  body.ready .island { gap: 18px; padding: 12px 14px 12px 18px; }
-  body.menu { align-items: end; padding-bottom: 12px; }
-  @media (max-width: 520px) {
-    .island,
-    body.ready .island {
-      width: auto;
-      max-width: calc(100vw - 16px);
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 22px;
-    }
-    .actions {
-      flex-wrap: wrap;
-      min-width: 0;
-    }
+  body.listening .island {
+    gap: 14px;
+    padding-right: 10px;
   }
   .wave {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 3px;
+    width: 24px;
     height: 20px;
-    width: 26px;
-    transition: width 160ms ease;
+    transition: width 160ms ease, gap 160ms ease;
   }
   .wave i {
     display: block;
@@ -88,154 +92,173 @@
     height: 4px;
     border-radius: 2px;
     background: var(--muted);
-    transition: height 90ms linear, background 160ms ease;
+    transform-origin: center;
+    transition: height 80ms linear, background 160ms ease, opacity 160ms ease;
   }
-  body.listening .wave { width: 52px; gap: 4px; }
-  body.listening .wave i { background: var(--accent); }
-  .clock {
-    display: none;
-    min-width: 34px;
-    font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.06em;
-    text-align: right;
-    color: var(--muted);
+  body.ready .wave i {
+    animation: breathe 2.6s ease-in-out infinite;
   }
-  body.listening .clock { display: block; }
-  body.paused .clock { color: var(--accent); }
-  .pause {
-    display: none;
-    font: inherit;
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
+  body.ready .wave i:nth-child(2) { animation-delay: 120ms; }
+  body.ready .wave i:nth-child(3) { animation-delay: 240ms; }
+  body.ready .wave i:nth-child(4) { animation-delay: 360ms; }
+  body.ready .wave i:nth-child(5) { animation-delay: 480ms; }
+  body.ready .wave i:nth-child(6) { animation-delay: 600ms; }
+  body.ready .wave i:nth-child(7) { animation-delay: 720ms; }
+  body.listening .wave {
+    width: 46px;
+    gap: 4px;
   }
-  body.listening .pause { display: block; }
-  .pause:hover { background: var(--line); color: var(--ink); }
-  .pause:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .stop {
-    display: none;
-    font: inherit;
-    font-size: 11.5px;
-    font-weight: 600;
-    padding: 5px 14px;
-    border: 1px solid var(--accent);
-    border-radius: 999px;
+  body.listening .wave i,
+  body.paused .wave i {
     background: var(--accent);
-    color: var(--accent-ink);
-    cursor: pointer;
-    transition: filter 140ms ease;
+    animation: none;
   }
-  body.listening .stop { display: block; }
-  .stop:hover { filter: brightness(0.94); }
-  .stop:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-  .dismiss {
-    position: absolute;
-    top: -12px;
-    right: 0;
-    z-index: 2;
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: 1px solid var(--line);
-    border-radius: 50%;
-    background: var(--menu);
-    box-shadow: 0 4px 12px rgba(24, 18, 12, 0.18);
-    color: var(--muted);
-    font: inherit;
-    font-size: 15px;
-    line-height: 1;
-    cursor: pointer;
-  }
-  .dismiss:hover { color: var(--ink); background: var(--shell); }
-  .dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  body.paused .wave i { opacity: 0.55; }
   .readout {
+    flex: 1 1 auto;
     display: grid;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
     max-width: 520px;
   }
-  body.ready .readout,
-  body.listening .readout,
-  body.listening .actions { display: none; }
+  body.ready .readout { display: none; }
   .state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 12px;
     font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 600;
-    letter-spacing: 0.16em;
+    letter-spacing: 0.14em;
+    line-height: 1;
     text-transform: uppercase;
     color: var(--muted);
+    transition: color 160ms ease;
+  }
+  .state::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+  body.listening .state { color: var(--accent); }
+  body.listening .state::before {
+    opacity: 1;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  body.paused .state::before {
+    animation: none;
+    opacity: 0.7;
   }
   .line {
-    font-family: "Sitka Text", "Sitka Heading", "Iowan Old Style", Georgia, serif;
-    font-size: 15px;
-    line-height: 1.3;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     overflow: hidden;
     overflow-wrap: anywhere;
+    font-family: "Sitka Text", "Sitka Heading", "Iowan Old Style", Georgia, serif;
+    font-size: 15px;
+    line-height: 1.3;
+    color: var(--ink);
+    transition: color 160ms ease;
   }
   .line.pending {
     font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     font-size: 13px;
+    line-height: 1.35;
     color: var(--muted);
   }
   .actions {
+    flex: 0 0 auto;
     display: none;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
   }
-  body.ready .actions { display: flex; }
-  .write {
-    position: relative;
+  body.ready .actions,
+  body.listening .actions {
     display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 2px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--track);
   }
-  .write-label {
-    padding: 0 8px 0 7px;
-    font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-    font-size: 9px;
+  .pause,
+  .stop {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    padding: 0 11px;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease, border-color 140ms ease, transform 120ms ease;
+  }
+  body.listening .pause,
+  body.listening .stop {
+    display: inline-flex;
+  }
+  .pause {
+    border: 1px solid var(--line);
+    background: transparent;
     color: var(--muted);
   }
+  .pause:hover {
+    background: var(--track);
+    color: var(--ink);
+  }
+  .stop {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .stop:hover { filter: brightness(0.95); }
+  .pause:active,
+  .stop:active,
+  .record:active,
+  .write-btn:active,
+  .dismiss:active {
+    transform: scale(0.97);
+  }
+  .write {
+    position: relative;
+    display: none;
+    align-items: center;
+  }
+  body.ready .write { display: flex; }
   .write-btn {
-    font: inherit;
-    font-size: 11.5px;
-    font-weight: 600;
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    padding: 5px 9px 5px 10px;
-    border: 0;
+    max-width: 132px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
     border-radius: 999px;
     background: transparent;
     color: var(--ink);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 140ms ease;
+    transition: background 140ms ease, border-color 140ms ease, transform 120ms ease;
   }
   .write-btn:hover,
   .write-btn[aria-expanded="true"] {
-    background: var(--line);
+    background: var(--track);
+    border-color: var(--line-strong);
+  }
+  .write-btn span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .write-btn::after {
     content: "";
+    flex: 0 0 auto;
     width: 5px;
     height: 5px;
     border-right: 1.5px solid var(--muted);
@@ -246,93 +269,85 @@
   .write-btn[aria-expanded="true"]::after {
     transform: rotate(225deg) translate(-1px, -1px);
   }
-  .write-btn:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
   .write-menu {
     position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    min-width: 190px;
+    right: 0;
+    bottom: calc(100% + 10px);
+    z-index: 20;
+    display: grid;
+    gap: 2px;
+    min-width: 220px;
+    max-height: 252px;
     padding: 6px;
+    overflow-y: auto;
     border: 1px solid var(--line);
     border-radius: 14px;
     background: var(--menu);
-    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.45);
-    display: grid;
-    gap: 2px;
-    z-index: 5;
-    max-height: 240px;
-    overflow-y: auto;
-    animation: menuIn 130ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    box-shadow: var(--shadow-menu);
+    transform-origin: bottom right;
+    animation: menuIn 140ms cubic-bezier(0.2, 0.9, 0.3, 1);
   }
-  .write-menu[hidden] {
-    display: none;
-  }
+  .write-menu[hidden] { display: none; }
   .write-option {
-    font: inherit;
-    font-size: 12.5px;
-    text-align: left;
-    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
     border: 0;
     border-radius: 9px;
     background: transparent;
     color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    text-align: left;
     cursor: pointer;
     transition: background 120ms ease, color 120ms ease;
   }
-  .write-option:hover,
-  .write-option:focus-visible {
-    background: var(--line);
-    color: var(--ink);
-    outline: none;
+  .write-option::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 12px;
+    color: var(--accent);
   }
   .write-option[aria-selected="true"] {
     color: var(--accent);
   }
-  .write-option.needs-download {
-    color: var(--muted);
+  .write-option[aria-selected="true"]::before {
+    content: "✓";
+  }
+  .write-option:hover,
+  .write-option:focus-visible {
+    background: var(--track);
+    color: var(--ink);
+    outline: none;
   }
   .write-option.needs-download::after {
-    content: " · download";
+    content: "download";
+    margin-left: auto;
     color: var(--accent);
-    font-size: 11px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
-  @keyframes menuIn {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: none; }
+  .tidy {
+    display: none;
+    align-items: center;
+    gap: 7px;
   }
+  body.ready .tidy { display: flex; }
   .switch-label {
     font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
     font-size: 9px;
     font-weight: 600;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
-  }
-  .tidy {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    align-items: flex-start;
-  }
-  .tidy-hint {
-    font-size: 9px;
-    line-height: 1.1;
-    color: var(--muted);
-    opacity: 0.72;
-    transition: opacity 140ms ease;
-  }
-  .rule {
-    width: 1px;
-    height: 18px;
-    background: var(--line);
+    white-space: nowrap;
   }
   .switch {
     position: relative;
-    width: 40px;
-    height: 22px;
+    width: 34px;
+    height: 20px;
     padding: 0;
     border: 1px solid var(--line);
     border-radius: 999px;
@@ -341,75 +356,163 @@
     transition: background 160ms ease, border-color 160ms ease;
   }
   .switch[aria-checked="true"] {
-    background: var(--accent);
     border-color: var(--accent);
+    background: var(--accent);
   }
   .switch .knob {
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: var(--ink);
     transition: transform 160ms cubic-bezier(0.2, 0.9, 0.3, 1), background 160ms ease;
   }
   .switch[aria-checked="true"] .knob {
-    transform: translateX(18px);
+    transform: translateX(14px);
     background: var(--accent-ink);
   }
-  .switch:focus-visible,
-  .record:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
   .record {
-    font: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    padding: 7px 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    padding: 0 13px;
     border: 1px solid var(--accent);
     border-radius: 999px;
     background: var(--accent);
     color: var(--accent-ink);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
     cursor: pointer;
+    transition: filter 140ms ease, transform 120ms ease;
   }
-  @keyframes settle {
-    from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  body.ready .record { display: inline-flex; }
+  .record:hover { filter: brightness(0.95); }
+  .dismiss {
+    position: absolute;
+    top: -12px;
+    right: 0;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--menu);
+    box-shadow: 0 4px 12px rgba(24, 18, 12, 0.16);
+    color: var(--muted);
+    font: inherit;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease, transform 120ms ease;
+  }
+  .dismiss:hover {
+    background: var(--track);
+    color: var(--ink);
+  }
+  .write-btn:focus-visible,
+  .pause:focus-visible,
+  .stop:focus-visible,
+  .switch:focus-visible,
+  .record:focus-visible,
+  .dismiss:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  @keyframes breathe {
+    0%, 100% { transform: scaleY(1); opacity: 0.55; }
+    50% { transform: scaleY(1.8); opacity: 0.9; }
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.45); opacity: 0.55; }
+  }
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(4px) scale(0.985); }
     to { opacity: 1; transform: none; }
   }
+  @media (max-width: 540px) {
+    .island {
+      width: auto;
+      max-width: calc(100vw - 16px);
+      flex-wrap: wrap;
+      gap: 9px;
+      padding: 10px 12px;
+      border-radius: 22px;
+    }
+    .readout {
+      flex-basis: 100%;
+      order: 2;
+    }
+    .actions {
+      order: 3;
+      flex-wrap: wrap;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .island, .switch, .switch .knob, .wave, .wave i, .write-menu, .write-btn, .write-option, .stop, .tidy-hint { animation: none; transition: none; }
+    .island,
+    .wave,
+    .wave i,
+    .readout,
+    .state,
+    .state::before,
+    .line,
+    .pause,
+    .stop,
+    .write-btn,
+    .write-menu,
+    .write-option,
+    .tidy,
+    .switch,
+    .switch .knob,
+    .record,
+    .dismiss {
+      animation: none;
+      transition: none;
+    }
   }
 </style>
 </head>
 <body class="ready">
   <div class="island" id="island">
     <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-    <span class="clock" id="clock" aria-hidden="true">0:00</span>
-    <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
-    <button type="button" class="pause" id="cancel" data-i18n="island.cancel">Cancel</button>
-    <button type="button" class="stop" id="stop" data-i18n="island.stop">Stop</button>
     <div class="readout">
       <span class="state" id="state"></span>
       <span class="line pending" id="line"></span>
     </div>
     <div class="actions">
+      <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
+      <button type="button" class="stop" id="stop" data-i18n="island.stop">Stop</button>
       <div class="write" role="group" aria-label="Write in" data-i18n-aria-label="island.writeIn">
-        <span class="write-label" data-i18n="island.write">Write</span>
         <button type="button" class="write-btn" id="write" aria-haspopup="listbox" aria-expanded="false" aria-label="Dictation writes" data-i18n-aria-label="island.dictationWrites">
           <span id="write-name" data-i18n="island.spokenLanguage">Spoken language</span>
         </button>
         <div class="write-menu" id="write-menu" role="listbox" aria-label="Dictation writes" data-i18n-aria-label="island.dictationWrites" hidden></div>
       </div>
-      <span class="rule" aria-hidden="true"></span>
       <div class="tidy">
         <span class="switch-label" id="tidy-label" data-i18n="island.cleanup">Clean up</span>
-        <span class="tidy-hint" id="tidy-hint" data-i18n="island.drops">Drops filler and repeats</span>
+        <span class="tidy-hint sr-only" id="tidy-hint" data-i18n="island.drops">Drops filler and repeats</span>
+        <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
+          <span class="knob"></span>
+        </button>
       </div>
-      <button type="button" class="switch" id="tidy" role="switch" aria-checked="true" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
-        <span class="knob"></span>
-      </button>
       <button type="button" class="record" id="record" data-i18n="island.record">Record</button>
     </div>
     <button type="button" class="dismiss" id="dismiss" aria-label="Close" data-i18n-aria-label="island.close">×</button>
@@ -442,6 +545,7 @@ const TARGET_RATE = 16000;
 const ISLAND_HEIGHT = 132;
 const ISLAND_OPEN_HEIGHT = 372;
 const MAX_SECONDS = 60;
+const PARTIAL_MS = 600;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
 const stateEl = document.getElementById("state");
@@ -450,7 +554,6 @@ const tidyEl = document.getElementById("tidy");
 const tidyHint = document.getElementById("tidy-hint");
 const recordEl = document.getElementById("record");
 const bars = [...document.querySelectorAll(".wave i")];
-const clockEl = document.getElementById("clock");
 const pauseEl = document.getElementById("pause");
 const version = document.querySelector('meta[name="parlo-version"]').content;
 
@@ -460,12 +563,8 @@ let source = null;
 let processor = null;
 let sink = null;
 let chunks = [];
-let started = 0;
 let ticker = null;
-let clockTimer = null;
 let paused = false;
-let pausedAt = 0;
-let pausedTotal = 0;
 let busy = false;
 let lastText = "";
 let promoted = false;
@@ -685,7 +784,12 @@ async function openMicrophone() {
   let opened = null;
   try {
     opened = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
     });
   } catch (failure) {
     if (ticket !== attempt) {
@@ -700,41 +804,53 @@ async function openMicrophone() {
     opened.getTracks().forEach((track) => track.stop());
     return false;
   }
-  stream = opened;
-  context = new (window.AudioContext || window.webkitAudioContext)();
-  source = context.createMediaStreamSource(stream);
-  processor = context.createScriptProcessor(2048, 1, 1);
-  sink = context.createGain();
-  sink.gain.value = 0;
-  chunks = [];
-  sentChunks = 0;
-  quietGain = 1;
-  quietPeak = 0;
-  quietBlocks = 0;
-  processor.onaudioprocess = (event) => {
-    if (paused) {
-      return;
+  try {
+    stream = opened;
+    context = new (window.AudioContext || window.webkitAudioContext)();
+    source = context.createMediaStreamSource(stream);
+    processor = context.createScriptProcessor(2048, 1, 1);
+    sink = context.createGain();
+    sink.gain.value = 0;
+    chunks = [];
+    sentChunks = 0;
+    quietGain = 1;
+    quietPeak = 0;
+    quietBlocks = 0;
+    processor.onaudioprocess = (event) => {
+      if (paused) {
+        return;
+      }
+      const block = event.inputBuffer.getChannelData(0);
+      paintLevel(block);
+      const copy = new Float32Array(block.length);
+      measureQuiet(block);
+      for (let index = 0; index < block.length; index += 1) {
+        copy[index] = Math.max(-1, Math.min(1, block[index] * quietGain));
+      }
+      chunks.push(copy);
+      if (promoted && chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
+        stop();
+      }
+    };
+    source.connect(processor);
+    processor.connect(sink);
+    sink.connect(context.destination);
+    if (context.state === "suspended") {
+      await context.resume();
     }
-    const block = event.inputBuffer.getChannelData(0);
-    paintLevel(block);
-    const copy = new Float32Array(block.length);
-    measureQuiet(block);
-    for (let index = 0; index < block.length; index += 1) {
-      copy[index] = Math.max(-1, Math.min(1, block[index] * quietGain));
+    if (ticket !== attempt) {
+      discard();
+      return false;
     }
-    chunks.push(copy);
-    if (promoted && chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
-      stop();
-    }
-  };
-  source.connect(processor);
-  processor.connect(sink);
-  sink.connect(context.destination);
-  started = performance.now();
-  paused = false;
-  pausedAt = 0;
-  pausedTotal = 0;
-  return true;
+    paused = false;
+    return true;
+  } catch (failure) {
+    discard();
+    document.body.classList.remove("ready");
+    setState(t("island.micFailed", "The microphone did not open. Check that another program is not using it."), describeMicrophone(failure), true);
+    report("error");
+    return false;
+  }
 }
 
 async function begin() {
@@ -751,12 +867,12 @@ async function begin() {
   if (busy) {
     return;
   }
+  if (context && context.state === "suspended") {
+    await context.resume().catch(() => {});
+  }
   promoted = true;
   clearInterval(partials);
-  partials = setInterval(sendPartial, 800);
-  clearInterval(clockTimer);
-  clockTimer = setInterval(paintClock, 250);
-  paintClock();
+  partials = setInterval(sendPartial, PARTIAL_MS);
   paintPause();
   document.body.classList.remove("ready", "paused");
   document.body.classList.add("listening");
@@ -813,16 +929,6 @@ async function sendPartial() {
   }
 }
 
-function elapsedSeconds() {
-  const now = paused ? pausedAt : performance.now();
-  return Math.max(0, (now - started - pausedTotal) / 1000);
-}
-
-function paintClock() {
-  const whole = Math.floor(elapsedSeconds());
-  clockEl.textContent = Math.floor(whole / 60) + ":" + String(whole % 60).padStart(2, "0");
-}
-
 function paintPause() {
   pauseEl.textContent = paused ? t("island.resume", "Resume") : t("island.pause", "Pause");
   pauseEl.setAttribute("aria-pressed", String(paused));
@@ -834,13 +940,11 @@ function pause() {
     return;
   }
   paused = true;
-  pausedAt = performance.now();
   clearInterval(partials);
   partials = null;
   bars.forEach((bar) => {
     bar.style.height = "3px";
   });
-  paintClock();
   paintPause();
   report("paused");
 }
@@ -849,14 +953,11 @@ function resume() {
   if (!paused) {
     return;
   }
-  pausedTotal += performance.now() - pausedAt;
-  pausedAt = 0;
   paused = false;
   if (stream && !partials) {
-    partials = setInterval(sendPartial, 800);
+    partials = setInterval(sendPartial, PARTIAL_MS);
   }
   paintPause();
-  paintClock();
   report("listening");
 }
 
@@ -869,13 +970,9 @@ function togglePause() {
 }
 
 function teardown() {
-  clearInterval(clockTimer);
-  clockTimer = null;
   clearInterval(partials);
   partials = null;
   paused = false;
-  pausedAt = 0;
-  pausedTotal = 0;
   promoted = false;
   paintPause();
   document.body.classList.remove("listening");
@@ -1363,7 +1460,6 @@ document.getElementById("stop").addEventListener("click", () => {
   stop();
 });
 
-document.getElementById("cancel").addEventListener("click", cancel);
 document.getElementById("dismiss").addEventListener("click", dismissIsland);
 
 paintTidy();

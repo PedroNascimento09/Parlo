@@ -12,7 +12,7 @@ Facts, read from the repository, not remembered.
 | --- | --- | --- |
 | Main window | `crates/parlo-cli/web/index.html`, 370 lines | One scrolling page: hero with a hold-to-speak button, a Live row, a Dictate row, four status lines, then languages, cleanup, vocabulary, meetings, model library, history, voice, models, dubbing, licences |
 | Global shortcut | `crates/parlo-app/src/island.rs` | `RegisterHotKey` on the configured combination, then toggles the island window visible or hidden |
-| Island | `crates/parlo-cli/web/island.html`, 444 lines | Separate window, opens the microphone itself on focus, records on a timer, posts the WAV to `/dictate`, posts the text to `/insert`, copies to the clipboard when insertion fails |
+| Island | `crates/parlo-cli/web/island.html`, 1,499 lines | Separate window, opens the microphone on the shortcut, streams live words while you speak, posts the final WAV to `/dictate`, posts the text to `/insert`, copies to the clipboard when insertion fails |
 | Tray | `crates/parlo-app/src/presence.rs` | Dictate, Live and Captions above a separator, Home, Library, Meetings, Voice and Settings below it, Quit last; a left click toggles the island |
 | Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` types the text into the focused field on Windows |
 | History | `crates/parlo-cli/src/history.rs` | Append-only JSONL, 200 entries, fields `at`, `text`, `translation`, `from`, `to` |
@@ -105,7 +105,7 @@ Every surface reads its state from one place, so they cannot disagree. The state
 
 1. Cursor is in a field, in any application.
 2. Shortcut down: microphone opens, island appears at the bottom of the screen holding the cursor, first audio is captured in under 100 ms.
-3. Speak. The island shows a level meter and a clock; the target application keeps focus.
+3. Speak. The island shows a level meter and the words as they arrive; the target application keeps focus.
 4. Shortcut up: capture stops, island shows "Processing".
 5. Transcription, cleanup, insertion into the remembered field.
 6. Island shows "Inserted" for 1.6 s, then returns to Ready. Focus never moved.
@@ -152,8 +152,8 @@ One machine, shared by island, tray and window.
 | --- | --- | --- | --- |
 | `IDLE` | start, finish, cancel, error timeout | `ARMED` on shortcut down | dot quiet, "Parlo ready" |
 | `ARMED` | shortcut down | `LISTENING` when the first audio block arrives (≤100 ms), `IDLE` on immediate failure | "Opening the microphone" |
-| `LISTENING` | audio flowing | `PROCESSING` on stop or timeout, `IDLE` on cancel | level meter, clock, mode |
-| `PROCESSING` | stop | `INSERTING` on text, `ERROR` on failure, `IDLE` on cancel | "Processing", elapsed ms |
+| `LISTENING` | audio flowing | `PROCESSING` on stop or timeout, `IDLE` on cancel | level meter, live words, mode |
+| `PROCESSING` | stop | `INSERTING` on text, `ERROR` on failure, `IDLE` on cancel | "Processing", one sentence |
 | `INSERTING` | text ready | `SUCCESS` on acceptance, `ERROR` on refusal | "Inserting" |
 | `SUCCESS` | insertion accepted | `IDLE` after 1.6 s | the text, briefly |
 | `ERROR` | any failure | `IDLE` on dismiss, retry, or 8 s | one sentence and one action |
@@ -187,19 +187,19 @@ Eight sections, each with a title, one sentence of purpose, fields, and Apply on
 
 ## G. Overlay specification
 
-Geometry: one row, 560 × 56 logical pixels, centred horizontally on the monitor holding the cursor, 72 px above the bottom edge, above normal windows, never focusable, never in the taskbar, none of it in screen recordings unless the user enables that.
+Geometry: one row, 560 × 54 logical pixels, centred horizontally on the monitor holding the cursor, 72 px above the bottom edge, above normal windows, never focusable, never in the taskbar, none of it in screen recordings unless the user enables that.
 
 | State | Dot | Line one | Line two | Duration |
 | --- | --- | --- | --- | --- |
 | Ready | outline | Parlo ready | Ctrl+Alt+D | while idle, dims to 55% after 3 s |
-| Listening | accent, pulsing | Listening · dictating | 0.0 s, level meter | until stop |
-| Processing | accent, spinning | Processing | elapsed ms after 600 ms | until text |
+| Listening | accent, pulsing | Listening · dictating | live words, level meter | until stop |
+| Processing | accent, spinning | Processing | one sentence | until text |
 | Inserting | accent, solid | Inserting | — | until accepted |
 | Inserted | green | Inserted | first 48 characters | 1.6 s |
 | Error | amber | one sentence | one action, e.g. Retry | 8 s, then Ready |
 | Cancelled | none | — | — | closes immediately |
 
-Motion: 180 ms settle on appearance, 120 ms state cross-fade, 240 ms exit. Reduced motion: no pulse, no settle, cross-fade only. No shadow blur above 40 px, because it costs a frame on integrated graphics.
+Motion: 140 ms menu open, 160 ms state and switch transitions, a slow breathing waveform while ready. Reduced motion: no pulse, no breathing, no menu animation. No shadow blur above 40 px, because it costs a frame on integrated graphics.
 
 Multi-monitor: follow the cursor, not the primary. Fullscreen and games: if the foreground window is exclusive fullscreen, the island stays hidden and state is reported in the tray tooltip; during presentations, an option pins it to the presenting display or keeps it out of the captured output entirely.
 

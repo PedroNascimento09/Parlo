@@ -25,8 +25,8 @@ release.
 - The island hides about four seconds after the text is written.
 - `Ctrl+Alt+Z` removes the last dictation.
 - `Ctrl+Alt+Shift+D` keeps listening until it is pressed again.
-- The island echoes your words while you speak, so you see the sentence before
-  you stop.
+- The island shows no timer. The sentence stays visible while you speak, so you
+  see it before you stop.
 - Speaking quietly still produces text: the first second of audio is measured
   and lifted when the room is silent.
 - "new line", "bullet point", "comma", "period" and "scratch that" change what

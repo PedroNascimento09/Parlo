@@ -4,8 +4,16 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Changed
+
+- The island is a compact bar now: a live waveform, the sentence as it is spoken, and only the controls the current state needs.
+- The dictation timer is gone.
+- The microphone opens with automatic gain and noise suppression, and the island resumes its audio context before capturing.
+- The language menu opens to the left of its button and the island uses a solid surface instead of a blurred backdrop.
+
 ### Fixed
 
+- The sentence stays visible while you speak instead of being hidden until the dictation ends.
 - The island closes at any time from its close button or Escape.
 - The spoken-language menu now grows the island window instead of being cut off at the bottom.
 - Right-clicking the island no longer opens the browser menu.
