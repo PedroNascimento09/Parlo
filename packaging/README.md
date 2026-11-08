@@ -6,7 +6,7 @@ Each channel is **Partial**: the manifest is complete and checked against the re
 
 | Channel | Manifest | Install | What is missing |
 | --- | --- | --- | --- |
-| winget | `packaging/winget/PedroNascimento09.Parlo.installer.yaml` | `winget install PedroNascimento09.Parlo` | Nothing is submitted to the winget repository, so the command fails until it is accepted |
+| winget | `packaging/winget/PedroNascimento09.Parlo.installer.yaml` | `winget install Parlo` | The manifest is in review at [microsoft/winget-pkgs#474924](https://github.com/microsoft/winget-pkgs/pull/474924), so the command resolves when it is accepted |
 | Homebrew | `packaging/homebrew/parlo.rb` | `brew install --formula ./packaging/homebrew/parlo.rb` | The formula unpacks the macOS archive instead of building, and `brew audit` and a real install are untried |
 | AUR | `packaging/aur/PKGBUILD` | `makepkg -si` inside `packaging/aur` | `parlo-bin` is not uploaded to the AUR, and `makepkg` has not run here |
 | Snap | `packaging/snap/snapcraft.yaml` | `snapcraft pack packaging/snap` | Strict confinement is declared but never tried, and no store revision exists |
