@@ -31,7 +31,7 @@
     }
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; background: transparent; }
+  html, body { height: 100%; margin: 0; background: transparent; overflow: hidden; }
   body {
     display: grid;
     align-items: center;
@@ -43,6 +43,7 @@
     user-select: none;
   }
   .island {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -136,19 +137,26 @@
   .stop:hover { filter: brightness(0.94); }
   .stop:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
   .dismiss {
-    display: none;
-    margin-left: auto;
-    font: inherit;
-    font-size: 16px;
-    line-height: 1;
-    padding: 2px 8px;
-    border: 0;
-    background: transparent;
+    position: absolute;
+    top: -12px;
+    right: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--menu);
+    box-shadow: 0 4px 12px rgba(24, 18, 12, 0.18);
     color: var(--muted);
+    font: inherit;
+    font-size: 15px;
+    line-height: 1;
     cursor: pointer;
   }
-  body:not(.ready):not(.listening) .dismiss { display: block; }
-  .dismiss:hover { color: var(--ink); }
+  .dismiss:hover { color: var(--ink); background: var(--shell); }
   .dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .readout {
     display: grid;
@@ -382,7 +390,6 @@
     <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
     <button type="button" class="pause" id="cancel" data-i18n="island.cancel">Cancel</button>
     <button type="button" class="stop" id="stop" data-i18n="island.stop">Stop</button>
-    <button type="button" class="dismiss" id="dismiss" aria-label="Close" data-i18n-aria-label="island.close">×</button>
     <div class="readout">
       <span class="state" id="state"></span>
       <span class="line pending" id="line"></span>
@@ -405,10 +412,12 @@
       </button>
       <button type="button" class="record" id="record" data-i18n="island.record">Record</button>
     </div>
+    <button type="button" class="dismiss" id="dismiss" aria-label="Close" data-i18n-aria-label="island.close">×</button>
   </div>
 <script src="languages.js"></script>
 <script>
 const token = new URLSearchParams(location.search).get("t") || "";
+document.addEventListener("contextmenu", (event) => event.preventDefault());
 let strings = {};
 
 function t(key, fallback, values = {}) {
@@ -494,14 +503,17 @@ function keepIsland() {
   hideTimer = null;
 }
 
+function hideIsland() {
+  const win = tauriWindow();
+  if (win && win.hide) {
+    win.hide().catch(() => {});
+  }
+}
+
 function hideAfterDelay(milliseconds) {
   keepIsland();
-  hideTimer = setTimeout(() => {
-    const win = tauriWindow();
-    if (win && win.hide) {
-      win.hide().catch(() => {});
-    }
-  }, milliseconds);
+  openWriteMenu(false);
+  hideTimer = setTimeout(hideIsland, milliseconds);
 }
 
 async function setIslandHeight(height) {
@@ -730,6 +742,7 @@ async function begin() {
     return;
   }
   keepIsland();
+  openWriteMenu(false);
   document.body.classList.remove("ready");
   setState(t("island.listening", "Listening"), "", true);
   if (!stream && !(await capture())) {
@@ -1022,6 +1035,13 @@ function cancel() {
   report("cancelled");
 }
 
+function dismissIsland() {
+  keepIsland();
+  openWriteMenu(false);
+  cancel();
+  hideIsland();
+}
+
 async function stop() {
   if (!stream || busy) {
     return;
@@ -1143,6 +1163,7 @@ function arm() {
     return;
   }
   keepIsland();
+  openWriteMenu(false);
   document.body.classList.add("ready");
   document.body.classList.remove("listening");
   report("armed");
@@ -1202,17 +1223,18 @@ function paintWrite() {
   }
 }
 
-function openWriteMenu(open) {
+async function openWriteMenu(open) {
   writeMenu.hidden = !open;
   writeEl.setAttribute("aria-expanded", String(open));
   document.body.classList.toggle("menu", open);
-  setIslandHeight(open ? ISLAND_OPEN_HEIGHT : ISLAND_HEIGHT);
   if (!open) {
+    await setIslandHeight(ISLAND_HEIGHT);
     return;
   }
   keepIsland();
   const active = writeMenu.querySelector('[aria-selected="true"]') || writeMenu.firstElementChild;
-  if (active) {
+  await setIslandHeight(ISLAND_OPEN_HEIGHT);
+  if (!writeMenu.hidden && active) {
     active.focus();
   }
 }
@@ -1307,6 +1329,7 @@ writeMenu.addEventListener("keydown", (event) => {
   const at = items.indexOf(document.activeElement);
   if (event.key === "Escape") {
     event.preventDefault();
+    event.stopPropagation();
     openWriteMenu(false);
     writeEl.focus();
     return;
@@ -1341,7 +1364,7 @@ document.getElementById("stop").addEventListener("click", () => {
 });
 
 document.getElementById("cancel").addEventListener("click", cancel);
-document.getElementById("dismiss").addEventListener("click", cancel);
+document.getElementById("dismiss").addEventListener("click", dismissIsland);
 
 paintTidy();
 paintWrite();
@@ -1359,7 +1382,12 @@ pauseEl.addEventListener("click", togglePause);
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     event.preventDefault();
-    cancel();
+    if (!writeMenu.hidden) {
+      openWriteMenu(false);
+      writeEl.focus();
+      return;
+    }
+    dismissIsland();
   }
   if (event.key === " " && stream && !(event.target instanceof HTMLButtonElement)) {
     event.preventDefault();

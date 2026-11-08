@@ -4,6 +4,12 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Fixed
+
+- The island closes at any time from its close button or Escape.
+- The spoken-language menu now grows the island window instead of being cut off at the bottom.
+- Right-clicking the island no longer opens the browser menu.
+
 ## [0.2.7] - 8 November 2026
 
 ### Added

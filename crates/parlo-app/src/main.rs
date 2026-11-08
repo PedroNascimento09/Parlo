@@ -259,10 +259,13 @@ fn place(window: &WebviewWindow) {
     let scale = monitor.scale_factor();
     let origin = monitor.position();
     let screen = monitor.size();
-    let size = window.outer_size().unwrap_or(PhysicalSize::new(
-        (ISLAND_WIDTH * scale) as u32,
-        (ISLAND_HEIGHT * scale) as u32,
-    ));
+    let width = window
+        .outer_size()
+        .map(|size| size.width)
+        .unwrap_or((ISLAND_WIDTH * scale) as u32);
+    let base = PhysicalSize::new(width, (ISLAND_HEIGHT * scale) as u32);
+    let _ = window.set_size(base);
+    let size = window.outer_size().unwrap_or(base);
     let margin = (ISLAND_MARGIN * scale) as i32;
     let x = origin.x + (screen.width as i32 - size.width as i32) / 2;
     let y = origin.y + screen.height as i32 - size.height as i32 - margin;
