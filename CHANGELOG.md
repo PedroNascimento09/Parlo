@@ -6,13 +6,13 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
-- `parlo bench dictate` measures the dictation path end to end, stage by stage, and compares the median with the recorded baseline.
+- `parlo bench dictate` measures the dictation path end to end on a fixed speech clip, with the synthetic tone kept for comparison, and compares the median with the recorded baseline.
 - Numbered lists: "numbered list" starts one and "next number" counts up, in English, Portuguese, Spanish, French and German.
 - Correcting a dictation in the history keeps those word pairs in the vocabulary by itself, so the next dictation writes them that way.
 
 ### Changed
 
-- Dictation trims the silence before the recogniser, so the same sentence reaches the text field about a third sooner: 406 ms instead of 567 ms from the end of the audio on the reference machine.
+- Dictation trims the silence before the recogniser, so the same sentence reaches the text field about a third sooner: 379 ms instead of 569 ms from the end of the audio on the reference machine, with the cleaning stage measured at 1.4 ms.
 - The island is a compact bar now: a live waveform, the sentence as it is spoken, and only the controls the current state needs.
 - The server loads the dictation model when it starts, so the first dictation no longer waits for it.
 - Every dictation records how long it took from the key release to the text landing in the field, in the log and beside the history entry.

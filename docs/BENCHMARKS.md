@@ -8,21 +8,23 @@ Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine:
 
 ### Dictation hot path, audio end to text
 
-`parlo bench dictate` decodes a fixed 5.00 s clip five times, four threads, and prints the median of each stage. The clip is 1.00 s of silence, 2.60 s of a voice-like tone and 1.40 s of silence; it is not speech, so the encoder cost is what it measures and post-processing stays at 0 ms.
+`parlo bench dictate` decodes a fixed 5.00 s clip five times on four threads and prints the median of each stage. The default clip is speech: 1.10 s of silence, 2.81 s of recorded Portuguese from `engines/cascade/tests/fixtures/timing/source.wav`, and 1.09 s of silence. It decodes to words ("Bom dia, uma prova dos modos de tempo do Dói."), so post-processing cleans a real sentence and is measured instead of skipped.
 
-| Stage | Before (dee047d) | After |
+| Stage, speech clip | Trimming off | Trimming on |
 |---|---|---|
-| Load, cold recogniser, once per process | 3348.7 ms | 3490.6 ms |
-| Warm-up, first write, not counted | 543.5 ms | 489.1 ms |
-| Decode | 567.1 ms | 406.2 ms |
-| Post-processing | 0.0 ms | 0.0 ms |
-| **Audio end to text** | **567.1 ms** | **406.3 ms** |
+| Load, cold recogniser, once per process | 2477.5 ms | 2477.5 ms |
+| Warm-up, first write, not counted | 378.4 ms | 378.4 ms |
+| Decode | 566.0 ms | 378.0 ms |
+| Post-processing | 0.9 ms | 1.4 ms |
+| **Audio end to text** | **569.1 ms** | **378.8 ms** |
 
-The after column is a median of five runs; single runs ranged from 372 ms to 426 ms. Run with trimming off in the same process, the clip cost 585.3 ms, so the change is worth 30.6%, and the recorded baseline puts the result 28.4% lower.
+The two columns come from one process, five runs each, and are recorded in `docs/benchmarks/dictate-speech.json` with the commit and the machine. Load and warm-up are paid once and are not part of the per-dictation total. Three further sessions measured 349.7 ms, 394.4 ms and 379.3 ms against controls of 520.8 ms, 686.8 ms and 520.6 ms, so trimming was worth 32.9%, 42.6% and 27.1% (median 33.4%). The baseline session recorded 378.8 ms.
 
-What changed: the engine trims leading and trailing silence before the encoder, at a -50 dBFS floor relative to the clip peak, with a 0.25 s margin and 20 ms frames. A clip where no frame clears the floor is left alone, so a quiet recording is not mistaken for silence. Threads were already at their best value: on the same clip 2 threads cost 715 ms, 4 cost 555 ms, 8 cost 743 ms and 12 cost 1518 ms, which says the decode is CPU bound and 4 is the knee.
+What changed: the engine trims leading and trailing silence before the encoder, at a -50 dBFS floor relative to the clip peak, with a 0.25 s margin and 20 ms frames. A clip where no frame clears the floor is left alone, so a quiet recording is not mistaken for silence. Threads were already at their best value: on the synthetic clip 2 threads cost 715 ms, 4 cost 555 ms, 8 cost 743 ms and 12 cost 1518 ms, which says the decode is CPU bound and 4 is the knee.
 
-A machine under load stretches every run in a session, which is why the ruler also times the same clip with trimming off. The control and the measured run share the conditions, so the percentage survives a busy laptop even when the absolute number does not. Load and warm-up move with the disk cache and are paid once per process, not per dictation.
+A machine under load stretches every run in a session, which is why the ruler also times the clip with trimming off. The control and the measured run share the conditions, so the percentage survives a busy laptop even when the absolute number does not.
+
+The synthetic tone is still there with `--clip tone`, with its own baseline in `docs/benchmarks/dictate.json`: 304.3 ms in a later session against the recorded 567.1 ms, and a post stage of 0 ms because the tone decodes to no words.
 
 ### Recogniser choice on modest hardware
 
