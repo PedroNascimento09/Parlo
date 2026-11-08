@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <b>Parlo turns speech into text on your computer. Speak, and the words appear where you were already typing.</b><br>
+  <b>Speech to text on your computer. Speak, and the words appear where you were typing.</b><br>
   Dictation, live translation, captions, meetings and file dubbing share one local engine.<br>
   Windows first. macOS and Linux build. No account, no telemetry, no audio sent.
 </p>
@@ -14,14 +14,14 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-1e4f4a?style=flat-square"></a>
 </p>
 
-Parlo is a desktop program that turns speech into text without sending anything out. Press a shortcut, speak, and the phrase appears in the field you were already typing in, cleaned up and, if you ask, translated into another language. Everything stays on your computer. No account, no telemetry, no audio sent.
+Parlo is a desktop program that turns speech into text. Press a shortcut, speak, and the phrase appears in the window you were typing in, cleaned up and optionally translated. Recognition runs on your computer, with no account and no telemetry.
 
 <p align="center">
   <img src="docs/demo.gif" width="760" alt="The Parlo bar while it writes a translated sentence">
 </p>
 
 <p align="center">
-  <sub>This machine's bar, captured while it wrote a translated sentence. Spanish needs its own translation pack; the pairs the build ships are in <a href="docs/LANGUAGES.md">languages</a>.</sub>
+  <sub>The bar on this machine while it writes a translated sentence. Spanish needs its own translation pack; the shipped pairs are listed in <a href="docs/LANGUAGES.md">languages</a>.</sub>
 </p>
 
 ## Install
@@ -32,7 +32,7 @@ Parlo is a desktop program that turns speech into text without sending anything 
 irm https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.ps1|iex
 ```
 
-That downloads the same content as the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds the Start menu entry, and opens Parlo when it finishes. Same app, one command.
+It downloads the release, unpacks it into `%LOCALAPPDATA%\Programs\Parlo`, adds a Start menu entry and opens Parlo.
 
 If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**. The installer is unsigned, so this may appear once.
 
@@ -48,49 +48,49 @@ curl -fsSL https://github.com/PedroNascimento09/Parlo/raw/main/scripts/install.s
 2. Double-click `Parlo-Setup.exe`.
 3. If Windows says **Windows protected your PC**, choose **More info**, then **Run anyway**.
 
-**Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage and Nix each have a manifest in [packaging](packaging/README.md) with the install command. Those are recipes, not fully tested installs: no channel has been run end to end by the machine that wrote the manifests, and each one is marked partial there with what is still missing.
+**Package managers.** winget, Homebrew, AUR, Snap, DEB, AppImage and Nix have manifests in [packaging](packaging/README.md). They are recipes, not tested installs: none has been run end to end, and each is marked partial there with what is missing.
 
-The installer is light because it keeps the program separate from the heavy part. The program installs in a fraction of a second; the recogniser is a separate download of about 640 MB, offered the first time you use the app, and nothing else is downloaded until you press its button. Translation, read-aloud and captions are separate keys, and each one names the model and its size before anything moves. After that, the machine can be offline. `parlo install` and `parlo uninstall` do the same thing from a terminal, and uninstall keeps your models unless you add `--purge`.
+The installer is small because the models are separate. The program installs in a fraction of a second. The recogniser is a download of about 640 MB, offered the first time you open the app. Translation, read-aloud and captions each name their model and size before anything moves. After that, Parlo works offline. `parlo install` and `parlo uninstall` do the same from a terminal; uninstall keeps your models unless you pass `--purge`.
 
-Each release carries a `SHA256SUMS.txt` with the hash of every file and a build provenance record that names the workflow, commit and repository that produced it.
+Each release includes a `SHA256SUMS.txt` and a build provenance record that names the workflow, commit and repository that built it.
 
-Windows:
+To check the installer on Windows:
 
 ```bat
 certutil -hashfile Parlo-Setup.exe SHA256
 ```
 
-Compare that line with the one for the installer in `SHA256SUMS.txt`. With the GitHub CLI authenticated, this also checks where the file came from:
+Compare the result with the `Parlo-Setup.exe` line in `SHA256SUMS.txt`. With the GitHub CLI logged in, this also checks where the file came from:
 
 ```bash
 gh attestation verify Parlo-Setup.exe --repo PedroNascimento09/Parlo
 ```
 
-Neither of those replaces code signing. Windows still treats the installer as unsigned, and SmartScreen may still ask once.
+Neither check replaces code signing. Windows still treats the installer as unsigned, and SmartScreen may ask once.
 
-## The first run
+## First run
 
-The installer carries the programs, not the models. Open Parlo, and the Models panel lists what is missing, with the size of each one, before anything moves. Press **Download models** once and it fetches those; after that Parlo works with the network switched off.
+The installer carries the programs, not the models. Open Parlo and the Models panel lists what is missing, with the size of each item. Press **Download models** once; after that Parlo works with the network off.
 
-The first start can take around twenty seconds while the engine loads. The window says so instead of looking stuck.
+The first start can take about twenty seconds while the engine loads. The window says so.
 
 ## What you can do
 
-**Dictate into any program.** `Ctrl+Alt+D` opens a small bar at the top of the screen, on the monitor where the cursor is. Speak, and the sentence is written into the window that had the focus as it is recognised, in the language you were writing in. With Polish on, it waits and writes the cleaned sentence when you stop, so there is no Ctrl+V. `Ctrl+Alt+Shift+D` keeps listening open while you need it, and `Escape` discards it.
+**Dictate into any program.** `Ctrl+Alt+D` opens a small bar at the top of the screen, on the monitor with the cursor. Speak, and the sentence is typed into the window that had focus as it is recognised, in the language you were writing. With Polish on, Parlo waits and types the cleaned sentence when you stop. `Ctrl+Alt+Shift+D` keeps listening without holding a key, and `Escape` discards the phrase.
 
-**Read what you say while you say it.** Live text opens a window with two columns: the microphone on the left and the translation on the right, in windows of about 2.5 seconds. Captions put the same stream in a thin bar over a call or a video, with a button that changes the size. `Ctrl+Alt+C` opens captions from anywhere, and `Escape` stops any of them.
+**Read what you say while you say it.** Live text opens two columns: your speech on the left and the translation on the right, in windows of about 2.5 seconds. Captions show the same stream in a thin bar over a call or a video. `Ctrl+Alt+C` opens captions from anywhere, and `Escape` stops them.
 
-**Keep a meeting.** It records the room and gives you a transcript with a time and a speaker on every line. Rename one speaker once and every line follows. Import a transcript you already have, search the whole meeting, ask what was decided, and get back the line, the speaker and the time behind the answer. Copy it all as Markdown.
+**Keep a meeting.** Parlo records the room and writes a transcript with a time and a speaker on each line. Rename a speaker once and every line follows. You can import an existing transcript, search the meeting, ask what was decided, and jump from each answer to the line, speaker and time behind it. Copy everything as Markdown.
 
-**Dub a file.** Drag in a video or audio file and you get the same content in the other language, with subtitles synced to the original and the original background audio under the new voice if you want it.
+**Dub a file.** Drop in a video or audio file to get the same content in the other language, with subtitles synced to the original. You can keep the original background audio under the new voice.
 
-**Hear the translation.** The translated sentence is read aloud in a European Portuguese voice, in the same window, without leaving for another service.
+**Hear the translation.** The translated sentence is read aloud in a European Portuguese voice, in the same window.
 
-**Fix the words the recogniser keeps missing.** A local vocabulary corrects the names the recogniser keeps getting wrong, one word at a time, before any model reads the sentence. The history keeps what was said, what was written and the program it arrived in, and one click puts a line back on the clipboard.
+**Fix the words the recogniser keeps missing.** A local vocabulary corrects names one word at a time, before any model reads the sentence. The history keeps what was said, what was written and the program it arrived in. One click copies any line back to the clipboard.
 
 ## One program, six places
 
-The window is for setting up and for reviewing. The work happens through the shortcut and the tray.
+The window is for setup and review. Daily use happens through the shortcut and the tray.
 
 - **Home** says whether it is ready, which engine it found, the profile of the machine it found, and the last three entries with the program each one arrived in.
 - **Library** keeps the history, the models and the vocabulary.
@@ -99,7 +99,7 @@ The window is for setting up and for reviewing. The work happens through the sho
 - **Stats** counts words, minutes and programs behind the things dictated, and the last four weeks, from what stays on this computer.
 - **Settings** has five real groups of fields: You, Dictation, Languages, Shortcuts and Advanced, which store cleanup, provider, privacy and about. Each field remembers where it lives, and the language pair has its own Apply.
 
-The tray lists the three modes above a separator and the five destinations below it; a left click opens the bar. The first time is five steps: your name, the language pair, the microphone with the exact Windows place to allow it, the writing style and the shortcut with what `Escape` does. Only the name is required; everything else can be skipped, and the first step does not come back once it is done.
+The tray lists the three modes above a separator and the five destinations below it. A left click opens the bar. First-run setup has five steps: your name, the language pair, the microphone (with the Windows setting to allow it), the writing style, and the shortcut. Only the name is required. The other steps can be skipped, and setup does not return once finished.
 
 ## Shortcuts
 
@@ -111,7 +111,7 @@ The tray lists the three modes above a separator and the five destinations below
 | `Escape` | Discards the phrase, or stops live text, captions or a meeting in progress |
 | One click on the tray | The bar, at any time |
 
-Each key changes in Settings, is validated when you save it, is refused when it repeats one of the other three, and is refused with a reason when Windows says another program already owns it.
+You can change each key in Settings. Parlo checks it on save, refuses a key that repeats another one, and gives the reason when Windows says another program already uses it.
 
 ## What is inside
 
@@ -158,11 +158,11 @@ Windows 11 laptop, no GPU, 4 threads. Conditions and each raw line are in [docs/
 | Recogniser, 20 European Portuguese sentences | **0.24** word error rate |
 | Cold start, engine included | **18.1 s** |
 
-Nothing here describes a machine nobody ran, and no latency or provider price is claimed: no request to a cloud provider was made with a real key.
+These numbers come from the one machine above. No request to a cloud provider was made with a real key, so no provider latency or price is claimed.
 
 ## Privacy
 
-Local mode makes no network calls. Audio is never written to disk unless you pass an output path. The local API listens on loopback with a token the window generates on each start, and the update check is the only external call, carrying no audio and no identifier. A provider is only reached when you allow it, keep your own key and choose, by HTTPS or loopback, directly from your machine. History, meetings and vocabulary stay in your per-user data folder, and each one can be deleted from the interface, a voice sample can be sealed with your Windows account, and [docs/PRIVACY.md](docs/PRIVACY.md) shows how to verify all of that.
+Local mode makes no network calls. Audio is not written to disk unless you pass an output path. The local API listens on loopback and uses a token the window generates at each start. The update check is the only external call, and it sends no audio and no identifier. A cloud provider is contacted only when you enable it, with your own key, over HTTPS or loopback. History, meetings and vocabulary stay in your per-user data folder and can be deleted from the interface. A voice sample can be sealed with your Windows account. [docs/PRIVACY.md](docs/PRIVACY.md) explains how to verify this.
 
 ## What is not here yet
 
@@ -175,11 +175,11 @@ Local mode makes no network calls. Audio is never written to disk unless you pas
 - Captions and live text read the microphone, not system audio, and reaching a calling app still needs a virtual cable today.
 - Read-aloud uses a neutral European Portuguese voice that no listener panel has judged, and no voice is cloned from a recording.
 
-## The honest state of the download on Windows
+## About the Windows warning
 
-The Windows build is unsigned. SmartScreen may ask once on first download. That is the expected behaviour for a new, unsigned installer on Windows, and it is not a claim that the file is malicious. You can verify the file you downloaded with the release SHA-256, and if you want the longer version, see [Windows code-signing reality](docs/WINDOWS_SIGNING_REALITY.md).
+The Windows build is unsigned, so SmartScreen may warn once on first download. This is expected for a new unsigned installer. It does not mean the file is malicious. Check the SHA-256 against the release, and read [Windows code-signing reality](docs/WINDOWS_SIGNING_REALITY.md) for the full explanation.
 
-If the app makes sense to you, the simplest way to support it is to [star the repository](https://github.com/PedroNascimento09/Parlo). That is it: no message, no account, and it is what helps the most.
+If Parlo is useful to you, a [star on the repository](https://github.com/PedroNascimento09/Parlo) helps others find it.
 
 ## Where to read next
 
