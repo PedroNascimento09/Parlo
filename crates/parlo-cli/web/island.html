@@ -1212,12 +1212,12 @@ function readLive(base, confirmed, guess, pieces) {
   };
 }
 
-async function writeIntoField(text, signal, replace) {
+async function writeIntoField(text, signal, replace, latency) {
   try {
     const response = await fetch("/insert", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ text: text, replace: replace }),
+      body: JSON.stringify({ text: text, replace: replace, latency_ms: latency || 0 }),
       signal,
     });
     if (response.ok) {
@@ -1341,6 +1341,7 @@ async function stop() {
     return;
   }
   busy = true;
+  const releasedAt = performance.now();
   let failed = false;
   partialTicket += 1;
   partialRunning = false;
@@ -1395,7 +1396,8 @@ async function stop() {
     }
     lastText = text;
     report("inserting");
-    const inserted = await writeIntoField(text, signal, liveInserted);
+    const landed = Math.round(performance.now() - releasedAt);
+    const inserted = await writeIntoField(text, signal, liveInserted, landed);
     if (inserted.written) {
       liveInserted = "";
       liveBase = "";

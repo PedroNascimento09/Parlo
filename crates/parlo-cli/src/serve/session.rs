@@ -233,7 +233,12 @@ impl Session {
             .ok_or_else(|| "Parlo does not know which field to write into".to_string())
     }
 
-    pub(super) fn insert_text(&self, text: &str, replace: &str) -> Result<(), String> {
+    pub(super) fn insert_text(
+        &self,
+        text: &str,
+        replace: &str,
+        latency_ms: u64,
+    ) -> Result<(), String> {
         let target = if self
             .target
             .lock()
@@ -259,6 +264,12 @@ impl Session {
             }
         }
         undo::remember(target.window, text);
+        if latency_ms > 0 {
+            println!("the dictation landed in {latency_ms} ms after the key was released");
+            if let Err(error) = crate::history::stamp_latency(latency_ms) {
+                println!("could not keep the dictation timing: {error}");
+            }
+        }
         Ok(())
     }
 

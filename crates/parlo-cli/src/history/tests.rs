@@ -35,6 +35,15 @@ fn kept(path: &Path, text: &str) {
 }
 
 #[test]
+fn the_last_dictation_keeps_how_long_it_took_to_land() {
+    let path = scratch("latency");
+    kept(&path, "bom dia");
+    stamp_latency_at(&path, 940).unwrap();
+    assert_eq!(recent_at(&path, 10)[0].latency_ms, 940);
+    tidy(&path);
+}
+
+#[test]
 fn keeps_the_newest_first() {
     let path = scratch("order");
     kept(&path, "bom dia");

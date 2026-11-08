@@ -27,6 +27,8 @@ pub struct Entry {
     pub favourite: bool,
     #[serde(default)]
     pub seconds: f64,
+    #[serde(default)]
+    pub latency_ms: u64,
 }
 
 impl Entry {
@@ -45,6 +47,7 @@ impl Entry {
             id: String::new(),
             favourite: false,
             seconds: 0.0,
+            latency_ms: 0,
         }
     }
 }
@@ -244,6 +247,26 @@ pub fn remove(id: &str) -> Result<(), String> {
     write_entries(&path, &entries)
 }
 
+pub fn stamp_latency(ms: u64) -> Result<(), String> {
+    if ms == 0 {
+        return Ok(());
+    }
+    stamp_latency_at(&path(), ms)
+}
+
+fn stamp_latency_at(path: &Path, ms: u64) -> Result<(), String> {
+    let mut entries = entries_at(path);
+    let Some(last) = entries
+        .iter_mut()
+        .rev()
+        .find(|entry| entry.mode == "dictate")
+    else {
+        return Ok(());
+    };
+    last.latency_ms = ms;
+    write_entries(path, &entries)
+}
+
 pub fn search(query: &str, limit: usize) -> Vec<Entry> {
     let wanted = fold(query);
     if wanted.is_empty() {
@@ -313,6 +336,7 @@ pub fn entry_json(entry: &Entry) -> String {
         "mode": entry.mode,
         "favourite": entry.favourite,
         "seconds": entry.seconds,
+        "latency_ms": entry.latency_ms,
     })
     .to_string()
 }

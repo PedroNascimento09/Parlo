@@ -16,6 +16,8 @@ struct InsertRequest {
     replace: String,
     #[serde(default)]
     live: bool,
+    #[serde(default)]
+    latency_ms: u64,
 }
 
 pub(crate) fn route(
@@ -115,10 +117,11 @@ fn handle(
             )
             .map(|()| Flow::Serve);
         }
+        let latency = request.latency_ms.min(60_000);
         let outcome = if request.live {
             session.live_text(&request.text, &request.replace)
         } else {
-            session.insert_text(&request.text, &request.replace)
+            session.insert_text(&request.text, &request.replace, latency)
         };
         return match outcome {
             Ok(()) => respond_json(stream, "200 OK", "{\"inserted\":true}").map(|()| Flow::Serve),

@@ -28,6 +28,7 @@ fn legacy_folder() -> PathBuf {
         id: "h1".to_string(),
         favourite: false,
         seconds: 1.5,
+        latency_ms: 0,
     };
     let second = Entry {
         id: String::new(),
