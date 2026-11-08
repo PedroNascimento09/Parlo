@@ -1569,6 +1569,7 @@ fn dictate_command(args: &[String]) -> Result<(), String> {
     let mut device = stored.device;
     let mut from = stored.from.clone();
     let mut copy_text = true;
+    let mut insert_text = false;
     let mut index = 0;
 
     while index < args.len() {
@@ -1611,6 +1612,7 @@ fn dictate_command(args: &[String]) -> Result<(), String> {
                 );
             }
             "--no-copy" => copy_text = false,
+            "--insert" => insert_text = true,
             other => return Err(format!("unknown option: {other}")),
         }
         index += 1;
@@ -1667,7 +1669,13 @@ fn dictate_command(args: &[String]) -> Result<(), String> {
     println!("{text}");
     eprintln!("  listened   {:>5.1} s", started.elapsed().as_secs_f32());
     eprintln!("  segments   {:>5}", segments.len());
-    if copy_text {
+    if insert_text {
+        let (target, _app) = insert::foreground()?;
+        match insert::type_text(target, &text) {
+            Ok(()) => eprintln!("  inserted   typed into the focused window"),
+            Err(error) => eprintln!("  inserted   not typed: {error}"),
+        }
+    } else if copy_text {
         match dictate::copy(&text) {
             Ok(tool) => eprintln!("  clipboard  copied with {tool}"),
             Err(error) => eprintln!("  clipboard  not copied: {error}"),
