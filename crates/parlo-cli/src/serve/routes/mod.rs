@@ -11,3 +11,4 @@ pub(super) mod watch;
 pub(super) mod retention;
 pub(super) mod meetings;
 pub(super) mod vocabulary;
+pub(super) mod meeting_live;
