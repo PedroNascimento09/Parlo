@@ -14,6 +14,10 @@ from .streaming import StreamingSession, TextEvent
 from .tts import PiperVoice, VoiceUnavailable
 
 SAMPLE_RATE = 16_000
+TRIM_FRAME = 320
+TRIM_FLOOR = 10 ** (-50 / 20)
+TRIM_RELATIVE = 10 ** (-30 / 20)
+TRIM_MARGIN_SECONDS = 0.25
 MIN_SEGMENT_SECONDS = 2.5
 SILENCE_RMS = 0.01
 SILENCE_HOLD_SECONDS = 0.45
@@ -119,6 +123,30 @@ def rms(samples) -> float:
     return float(np.sqrt(np.mean(values * values)))
 
 
+def trim_silence(samples):
+    import numpy as np
+
+    values = np.asarray(samples, dtype="float32")
+    count = values.size // TRIM_FRAME
+    if count < 8:
+        return values
+    frames = values[: count * TRIM_FRAME].reshape(count, TRIM_FRAME)
+    energy = np.sqrt(np.mean(frames * frames, axis=1))
+    peak = float(energy.max())
+    if peak <= 0.0:
+        return values
+    floor = max(TRIM_FLOOR, peak * TRIM_RELATIVE)
+    voiced = np.nonzero(energy > floor)[0]
+    if voiced.size == 0:
+        return values
+    margin = max(int(TRIM_MARGIN_SECONDS * SAMPLE_RATE / TRIM_FRAME), 1)
+    start = max(int(voiced[0]) - margin, 0) * TRIM_FRAME
+    end = min((int(voiced[-1]) + 1 + margin) * TRIM_FRAME, values.size)
+    if start == 0 and end >= values.size:
+        return values
+    return values[start:end]
+
+
 def load_glossary(path: Path) -> dict[str, str]:
     if not path.exists():
         return {}
@@ -173,12 +201,14 @@ class CascadeEngine:
         self.captions = os.environ.get("PARLO_CASCADE_CAPTIONS") == "1"
         self.dictate = os.environ.get("PARLO_CASCADE_DICTATE") == "1"
         self.clean_mode = os.environ.get("PARLO_CASCADE_CLEAN", "light").lower()
+        self.trim = os.environ.get("PARLO_CASCADE_TRIM", "1") != "0"
         if self.clean_mode not in CLEAN_MODES:
             raise ValueError(
                 f"unknown cleanup mode {self.clean_mode}, expected {CLEAN_MODES}"
             )
         self.last_original = ""
         self.last_engine = ""
+        self.last_timings: dict[str, float] = {}
         self.touched: dict[str, float] = {}
         self.intelligence = Intelligence(settings_from_config(self.clean_mode), source)
         self.glossary = load_glossary(GLOSSARY_FILE)
@@ -503,8 +533,14 @@ class CascadeEngine:
         self, pcm16: bytes, target: str | None = None, clean_mode: str | None = None
     ) -> tuple[str, str]:
         self.last_warning = ""
+        started = time.perf_counter()
         text = self.transcribe(pcm16)
+        decoded = time.perf_counter()
         if not text:
+            self.last_timings = {
+                "decode_ms": round((decoded - started) * 1000, 1),
+                "post_ms": 0.0,
+            }
             return "", ""
         mode = clean_mode if clean_mode in CLEAN_MODES else self.clean_mode
         if mode in CLEAN_MODES:
@@ -514,7 +550,15 @@ class CascadeEngine:
             self.last_engine = edit.engine
             text = edit.text
             if not text:
+                self.last_timings = {
+                    "decode_ms": round((decoded - started) * 1000, 1),
+                    "post_ms": round((time.perf_counter() - decoded) * 1000, 1),
+                }
                 return "", ""
+        self.last_timings = {
+            "decode_ms": round((decoded - started) * 1000, 1),
+            "post_ms": round((time.perf_counter() - decoded) * 1000, 1),
+        }
         language = (target or self.target).lower()
         if language == self.source:
             return text, text
@@ -588,9 +632,12 @@ class CascadeEngine:
 
         model = self._load_stt()
         self._touch("recognition")
+        samples = np.asarray(samples, dtype="float32")
+        if self.trim:
+            samples = trim_silence(samples)
         if self.stt == "parakeet":
             stream = model.create_stream()
-            stream.accept_waveform(SAMPLE_RATE, np.asarray(samples, dtype="float32"))
+            stream.accept_waveform(SAMPLE_RATE, samples)
             model.decode_stream(stream)
             text = stream.result.text.strip()
         else:

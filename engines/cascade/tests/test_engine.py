@@ -9,6 +9,7 @@ from parlo_cascade import (
     pcm16_to_float,
     resample,
     rms,
+    trim_silence,
 )
 
 HAS_NUMPY = importlib.util.find_spec("numpy") is not None
@@ -89,6 +90,32 @@ class HelpersTest(unittest.TestCase):
     def test_rms_detects_silence_and_level(self):
         self.assertEqual(rms([0.0] * 100), 0.0)
         self.assertAlmostEqual(rms([0.5] * 100), 0.5, places=5)
+
+
+@unittest.skipUnless(HAS_NUMPY, "numpy is required for the numeric helpers")
+class TrimTest(unittest.TestCase):
+    def test_a_long_silence_is_trimmed_down_to_the_speech(self):
+        silence = [0.0] * 16_000
+        speech = [0.2, -0.2] * 12_800
+
+        trimmed = trim_silence(silence + speech + silence)
+
+        self.assertLess(len(trimmed), 57_600)
+        self.assertGreaterEqual(len(trimmed), 25_600)
+        self.assertLessEqual(len(trimmed), 34_600)
+
+    def test_a_quiet_recording_is_left_alone(self):
+        quiet = [0.001, -0.001] * 40_000
+
+        self.assertEqual(len(trim_silence(quiet)), 80_000)
+
+    def test_speech_that_fills_the_clip_is_left_alone(self):
+        loud = [0.3, -0.3] * 40_000
+
+        self.assertEqual(len(trim_silence(loud)), 80_000)
+
+    def test_a_clip_shorter_than_the_frame_floor_is_left_alone(self):
+        self.assertEqual(len(trim_silence([0.0] * 500)), 500)
 
 
 class GlossaryTest(unittest.TestCase):
