@@ -198,7 +198,7 @@ class StreamingSessionTest(unittest.TestCase):
 
     def test_declares_reprocessing_and_the_policy(self):
         session = self.session(["bom dia"])
-        self.assertEqual(session.mode, "reprocess")
+        self.assertEqual(session.mode, "stream")
         self.assertEqual(session.policy, "local-agreement")
 
 

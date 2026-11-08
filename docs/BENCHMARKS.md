@@ -704,6 +704,36 @@ The Rust engine still starts faster and uses less memory with the recogniser loa
 .venv/Scripts/python.exe tools/benchmark_engines.py --wav .tmp-clip.wav --models .tmp-models --voice .tmp-models/pt_PT-tugão-medium.onnx --espeak-data .venv/Lib/site-packages/piper/espeak-ng-data --cascade-dir engines/cascade --rust crates/parlo-engine-rs/target/x86_64-pc-windows-msvc/release/parlo-engine.exe --from pt --to en --threads 4 --runs 3 --json .tmp-bench.json
 ```
 
+## Per-language recognition and translation
+
+The reference machine (12 core CPU, no GPU, Windows 11, Python 3.12, Parakeet TDT 0.6B v3 int8 on 4 threads, Piper medium) has been measured for Portuguese. The other first-class languages do not have installed models on this machine, so their numbers are blank on purpose until someone runs the command against real audio.
+
+| Language | Recogniser | RTF | First partial | Translation direction | Median | p95 |
+|---|---|---|---|---|---|---|
+| pt (PT-PT) | Parakeet v3 | 0.113 | 849 ms | pt→en | 114 ms | 131 ms |
+| en | Parakeet v3 | not measured yet | not measured yet | en→pt | 111 ms | 128 ms |
+| es | not installed | - | - | es→en | not installed | - |
+| fr | not installed | - | - | fr→en | not installed | - |
+| de | not installed | - | - | de→en | not installed | - |
+| it | not installed | - | - | it→en | not installed | - |
+| nl | not installed | - | - | nl→en | not installed | - |
+
+The numbers above are not promises: they come from a synthetic Piper voice on one machine, so a real speaker will read differently. To measure your own machine:
+
+```bash
+# Recognition battery on any language (replace xx):
+python engines/cascade/scripts/battery.py --stt parakeet --lang xx --out out/battery-xx.json
+
+# Translation gate on any installed pair:
+python engines/cascade/scripts/mt_gate.py --pack --direction xx-en
+python engines/cascade/scripts/mt_gate.py --pack --direction en-xx
+
+# Live stream bench:
+python engines/cascade/scripts/stream_bench.py --audio-dir out/voice/xx --segment 12 --out out/stream-xx.json
+```
+
+The first-class languages are en, es, fr, de, it and nl because each has a Piper voice and a recogniser path; pt is kept because it is the reference pair the gates were built on. None of the six is declared validated until a competent speaker reads the output and the corpus comes back clean.
+
 ## Kokoro against the Portuguese voice
 
 Kokoro 82M is the permissive synthesiser the project keeps considering, and it now has a measurement instead of an expectation. Both files read one sentence, `Hoje está um dia bonito em Lisboa e apetece passear à beira do rio.`, on the reference machine above: CPU only, Windows 11, Python 3.12, piper-tts 1.8.0 and kokoro-onnx 0.6.1 on onnxruntime 1.31.1. The recogniser is Parakeet TDT 0.6B v3 int8 on four threads, the same build the cascade uses.

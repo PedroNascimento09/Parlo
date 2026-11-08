@@ -28,8 +28,11 @@ PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", 
 VOICES = {
     "pt": "pt_PT-tugão-medium.onnx",
     "en": "en_US-lessac-medium.onnx",
-    "de": "de_DE-thorsten-medium.onnx",
+    "es": "es_ES-shar-medium.onnx",
     "fr": "fr_FR-siwis-medium.onnx",
+    "de": "de_DE-thorsten-medium.onnx",
+    "it": "it_IT-riccardo-medium.onnx",
+    "nl": "nl_NL-nathalie-medium.onnx",
 }
 GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"
 UNLOAD_DEFAULT_MINUTES = 30
@@ -531,15 +534,7 @@ class CascadeEngine:
         samples = pcm16_to_float(pcm16)
         if self._stream is None:
             self._stream = StreamingSession(self._transcribe)
-        events = self._stream.feed(samples)
-        if rms(samples) < SILENCE_RMS:
-            self._silent_seconds += len(samples) / SAMPLE_RATE
-            if self._silent_seconds >= SILENCE_HOLD_SECONDS:
-                events.extend(self._stream.close())
-                self._silent_seconds = 0.0
-        else:
-            self._silent_seconds = 0.0
-        return events
+        return self._stream.feed(samples)
 
     def close_stream(self) -> list[TextEvent]:
         if self._stream is None:

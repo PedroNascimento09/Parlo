@@ -5,6 +5,18 @@ SAMPLE_RATE = 16_000
 TEXT_STATES = ("partial", "stable", "final", "corrected")
 POLICY = "local-agreement"
 
+FRAME_MS = 20
+FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000
+
+
+def rms(samples) -> float:
+    if not samples:
+        return 0.0
+    total = 0.0
+    for value in samples:
+        total += value * value
+    return (total / len(samples)) ** 0.5
+
 
 def common_prefix(left, right) -> int:
     count = 0
@@ -92,16 +104,57 @@ class StabilityPolicy:
         return events
 
 
+class VoiceActivity:
+    """Deteta segmentos de fala por nível RMS com histerese."""
+
+    def __init__(
+        self,
+        sample_rate: int = SAMPLE_RATE,
+        threshold: float = 0.01,
+        hangover_seconds: float = 0.4,
+        pre_roll_seconds: float = 0.25,
+        silence_seconds: float = 0.45,
+    ):
+        self.sample_rate = sample_rate
+        self.threshold = threshold
+        self.hangover_frames = int(hangover_seconds * 1000 / FRAME_MS)
+        self.pre_roll_frames = int(pre_roll_seconds * 1000 / FRAME_MS)
+        self.silence_seconds = silence_seconds
+        self._ring: list[float] = []
+        self._remaining = 0
+        self._voiced = False
+
+    def feed(self, samples) -> tuple[bool, list[float]]:
+        """Devolve (is_voiced_now, pre_roll_samples) quando o segmento fecha."""
+        self._ring.extend(samples)
+        if len(self._ring) > FRAME_SAMPLES * (self.hangover_frames + self.pre_roll_frames):
+            self._ring = self._ring[-FRAME_SAMPLES * (self.hangover_frames + self.pre_roll_frames) :]
+
+        level = rms(samples)
+        is_voiced = level >= self.threshold
+
+        if is_voiced:
+            self._remaining = self.hangover_frames
+            self._voiced = True
+        elif self._remaining > 0:
+            self._remaining -= 1
+        else:
+            self._voiced = False
+
+        return self._voiced, list(self._ring[: self.pre_roll_frames * FRAME_SAMPLES])
+
+
 class StreamingSession:
-    mode = "reprocess"
+    mode = "stream"
 
     def __init__(
         self,
         transcribe,
         sample_rate: int = SAMPLE_RATE,
         decode_every: float = 0.4,
-        segment_seconds: float = 12.0,
-        min_audio_seconds: float = 0.6,
+        segment_seconds: float = 6.0,
+        min_audio_seconds: float = 0.4,
+        silence_seconds: float = 0.45,
         rounds: int = 2,
         clock=time.perf_counter,
     ):
@@ -117,7 +170,13 @@ class StreamingSession:
         self._policy = StabilityPolicy(rounds)
         self._samples: list[float] = []
         self._decoded_seconds = 0.0
+        self._silence_seconds = 0.0
+        self._last_decode_time = 0.0
         self._clock = clock
+        self._vad = VoiceActivity(
+            sample_rate=sample_rate,
+            silence_seconds=silence_seconds,
+        )
 
     @property
     def policy(self) -> str:
@@ -134,10 +193,8 @@ class StreamingSession:
     def feed(self, samples) -> list[TextEvent]:
         self._samples.extend(samples)
         events = []
-        if (
-            self.audio_seconds >= self.min_audio_seconds
-            and self.audio_seconds - self._decoded_seconds >= self.decode_every
-        ):
+
+        if self.audio_seconds - self._decoded_seconds >= self.decode_every:
             events.extend(self._decode())
         if self.audio_seconds >= self.segment_seconds:
             events.extend(self._finalize())
@@ -151,6 +208,7 @@ class StreamingSession:
     def reset(self) -> None:
         self._samples = []
         self._decoded_seconds = 0.0
+        self._silence_seconds = 0.0
         self._policy.reset()
 
     def _decode(self) -> list[TextEvent]:
