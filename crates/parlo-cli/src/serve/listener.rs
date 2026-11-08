@@ -28,6 +28,23 @@ impl Server {
     }
 }
 
+fn warm_dictation(session: &Arc<Session>) {
+    let session = Arc::clone(session);
+    std::thread::spawn(move || {
+        if session.is_working() {
+            return;
+        }
+        let stt = session.chosen().stt.clone();
+        let Some(unit) = crate::models::unit_of(&stt) else {
+            return;
+        };
+        match session.load_unit(unit) {
+            Ok(()) => println!("  warm       {stt} loaded, so the first dictation starts at once"),
+            Err(error) => println!("  warm       {stt} stays cold: {error}"),
+        }
+    });
+}
+
 pub fn start(
     port: u16,
     token: String,
@@ -54,6 +71,7 @@ pub fn start(
     println!("  input      16 kHz mono wav, POST /translate");
 
     crate::watch::start();
+    warm_dictation(&session);
     let address = format!("http://127.0.0.1:{port}");
     let accepting = Arc::new(AtomicBool::new(true));
     let share = match share_target(&crate::config::load()) {
