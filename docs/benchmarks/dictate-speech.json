@@ -1,0 +1,25 @@
+{
+  "clip_kind": "speech",
+  "clip": "5.00 s speech: 1.10 s silence, 2.81 s speech from engines\\cascade\\tests\\fixtures\\timing\\source.wav, 1.09 s silence",
+  "clip_seconds": 5.0,
+  "speech_lead_seconds": 1.1,
+  "threads": 4,
+  "runs": 5,
+  "load_ms": 2477.5,
+  "warmup_ms": 378.4,
+  "transcript": "Bom dia, uma prova dos modos de tempo do D\u00f3i.",
+  "decode_ms": 378.0,
+  "post_ms": 1.4,
+  "total_ms": 378.8,
+  "cpu_ms": 1703.1,
+  "control": {
+    "decode_ms": 566.0,
+    "post_ms": 0.9,
+    "total_ms": 569.1,
+    "cpu_ms": 2500.0
+  },
+  "trim_gain_percent": 33.4,
+  "machine": "Windows AMD64, 12 threads",
+  "commit": "f685f23",
+  "recorded_at": "2026-11-08T21:34:51Z"
+}
