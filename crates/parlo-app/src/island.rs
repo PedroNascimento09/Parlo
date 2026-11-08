@@ -197,12 +197,13 @@ pub fn listen(handle: AppHandle) {
             if !current() {
                 return;
             }
-            remember_target(&handle);
-            if !current() {
-                return;
-            }
+            let capture = {
+                let handle = handle.clone();
+                std::thread::spawn(move || remember_target(&handle))
+            };
             show(&handle);
             tell(&handle, "window.parloArm && window.parloArm()");
+            let _ = capture.join();
             let elapsed = PRESSED_AT
                 .lock()
                 .ok()
