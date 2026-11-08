@@ -12,7 +12,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
-- Dictation trims the silence before the recogniser, so the same sentence reaches the text field about a third sooner: 350 ms instead of 526 ms from the end of the audio on the reference machine, with the cleaning stage measured at 1.2 ms.
+- Dictation trims the silence before the recogniser, so the same sentence reaches the text field about a third sooner: 362 ms instead of 562 ms from the end of the audio on the reference machine, with the cleaning stage measured at 1.0 ms.
 - The island is a compact bar now: a live waveform, the sentence as it is spoken, and only the controls the current state needs.
 - The server loads the dictation model when it starts, so the first dictation no longer waits for it.
 - Every dictation records how long it took from the key release to the text landing in the field, in the log and beside the history entry.
