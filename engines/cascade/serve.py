@@ -34,10 +34,15 @@ def main() -> int:
         target=os.environ.get("PARLO_CASCADE_TARGET", "en"),
         voice=Path(voice) if voice else None,
     )
-    if os.environ.get("PARLO_CASCADE_WARMUP", "1") != "0":
-        with contextlib.redirect_stdout(sys.stderr):
-            engine.warmup()
     busy = threading.Lock()
+    warm = os.environ.get("PARLO_CASCADE_WARMUP", "1") != "0"
+    warmed = False
+
+    def background_warmup() -> None:
+        if warm:
+            with busy:
+                with contextlib.redirect_stdout(sys.stderr):
+                    engine.warmup()
 
     def watch_idle() -> None:
         while True:
@@ -54,8 +59,13 @@ def main() -> int:
     for line in sys.stdin:
         if not line.strip():
             continue
-        with busy:
+        if warmed:
+            with busy:
+                response = answer(line, engine)
+        else:
             response = answer(line, engine)
+            warmed = True
+            threading.Thread(target=background_warmup, daemon=True).start()
         sys.stdout.write(json.dumps(response) + "\n")
         sys.stdout.flush()
     return 0

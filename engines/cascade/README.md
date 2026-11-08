@@ -89,14 +89,14 @@ This is the "fast consecutive" mode from the plan, not simultaneous speech.
 
 ## Warm-up and glossary
 
-Models load at startup, so the first sentence is not the one that waits: startup takes 12 to 21 seconds and prints progress on stderr. `PARLO_CASCADE_WARMUP=0` disables it.
+The engine answers its handshake as soon as the process boots and the models warm up in the background behind the busy lock, so a dictation that arrives while it is still warming waits for the warm-up to finish; progress prints on stderr. `PARLO_CASCADE_WARMUP=0` disables it.
 
 `glossary.txt` maps names the recogniser gets wrong, one `wrong=right` per line, applied to the transcript before translation. The default already fixes `Palo` and `Paul's` into `Parlo`.
 
 ## Limits
 
 - One direction per process, set by `PARLO_CASCADE_SOURCE` and `PARLO_CASCADE_TARGET`: Portuguese to English by default, English to Portuguese when reversed.
-- The first request after start is slow because the models load lazily; warm-up lands in v0.2.
+- A request that arrives while the models are still warming up waits for the warm-up to finish, so the first sentence is not the one that waits once it is done.
 - The translated voice is neutral, not yours. Levels 2 to 4 are separate work.
 
 ## Reference battery
