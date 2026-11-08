@@ -219,6 +219,7 @@ fn handle(
         } else if path == "/history/edit" {
             let text = text_field(&request, "text");
             crate::history::edit_with_suggestions(&id, &text).map(|(entry, proposed)| {
+                learned(&proposed);
                 let mut value: serde_json::Value =
                     serde_json::from_str(&crate::history::entry_json(&entry)).unwrap_or_default();
                 value["suggestions"] = serde_json::json!(proposed
@@ -259,4 +260,24 @@ fn handle(
     }
 
     respond_json(stream, "404 Not Found", "{\"error\":\"not found\"}").map(|()| Flow::Serve)
+}
+
+fn learned(pairs: &[(String, String)]) {
+    if pairs.is_empty() {
+        return;
+    }
+    let pairs = pairs.to_vec();
+    std::thread::spawn(move || {
+        for (heard, written) in pairs.iter().take(5) {
+            let payload = serde_json::json!({
+                "action": "vocabulary/add",
+                "kind": "term",
+                "wrong": heard,
+                "right": written,
+            });
+            if let Err(error) = crate::intelligence::run(&payload) {
+                println!("the correction {heard} to {written} was not kept: {error}");
+            }
+        }
+    });
 }

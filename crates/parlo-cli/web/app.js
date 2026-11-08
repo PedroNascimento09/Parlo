@@ -6321,32 +6321,12 @@ function renderLearned(pairs) {
   for (const pair of pairs) {
     const line = document.createElement("p");
     line.textContent =
-      "Parlo heard “" + pair.heard + "” and you wrote “" + pair.written + "”. ";
-    const learn = document.createElement("button");
-    learn.type = "button";
-    learn.className = "swap";
-    learn.textContent = "Learn it";
-    learn.title = "Keep this pair in the vocabulary so the recogniser writes it next time";
-    learn.addEventListener("click", () => learnTerm(pair, line));
-    line.append(learn);
+      "Kept “" +
+      pair.heard +
+      "” as “" +
+      pair.written +
+      "”. Parlo writes it this way from now on.";
     historyLearn.append(line);
-  }
-}
-
-async function learnTerm(pair, line) {
-  try {
-    const response = await fetch("/vocabulary/accept", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ heard: pair.heard, written: pair.written }),
-    });
-    const detail = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(detail.error || "That pair could not be kept.");
-    }
-    line.textContent = "Kept: “" + pair.heard + "” now becomes “" + pair.written + "”.";
-  } catch (failure) {
-    line.textContent = failure.message;
   }
 }
 
