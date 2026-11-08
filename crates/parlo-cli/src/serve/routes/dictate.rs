@@ -10,6 +10,13 @@ use parlo_core::{AudioFormat, Wav};
 use std::time::{Duration, Instant};
 
 #[derive(serde::Deserialize)]
+struct StreamedRequest {
+    text: String,
+    #[serde(default)]
+    seconds: f64,
+}
+
+#[derive(serde::Deserialize)]
 struct InsertRequest {
     text: String,
     #[serde(default)]
@@ -139,39 +146,55 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        let wav = match read_pcm16(body) {
-            Ok(wav) => wav,
-            Err(error) => {
+        let streamed: Option<StreamedRequest> = serde_json::from_slice(body)
+            .ok()
+            .filter(|request: &StreamedRequest| !request.text.trim().is_empty());
+        let wav = if streamed.is_some() {
+            None
+        } else {
+            match read_pcm16(body) {
+                Ok(wav) => Some(wav),
+                Err(error) => {
+                    return respond_json(
+                        stream,
+                        "400 Bad Request",
+                        &format!("{{\"error\":\"bad wav: {error}\"}}"),
+                    )
+                    .map(|()| Flow::Serve);
+                }
+            }
+        };
+        if let Some(wav) = &wav {
+            if wav.format.channels() != 1 || wav.format.sample_rate() != 16_000 {
                 return respond_json(
                     stream,
                     "400 Bad Request",
-                    &format!("{{\"error\":\"bad wav: {error}\"}}"),
+                    "{\"error\":\"input must be 16 kHz mono pcm16\"}",
                 )
                 .map(|()| Flow::Serve);
             }
-        };
-        if wav.format.channels() != 1 || wav.format.sample_rate() != 16_000 {
-            return respond_json(
-                stream,
-                "400 Bad Request",
-                "{\"error\":\"input must be 16 kHz mono pcm16\"}",
-            )
-            .map(|()| Flow::Serve);
-        }
-        if wav.samples.is_empty() {
-            return respond_json(
-                stream,
-                "400 Bad Request",
-                "{\"error\":\"the file is empty\"}",
-            )
-            .map(|()| Flow::Serve);
+            if wav.samples.is_empty() {
+                return respond_json(
+                    stream,
+                    "400 Bad Request",
+                    "{\"error\":\"the file is empty\"}",
+                )
+                .map(|()| Flow::Serve);
+            }
         }
 
-        let seconds = wav.samples.len() as f32 / 16_000.0;
-        let mut pcm16 = Vec::with_capacity(wav.samples.len() * 2);
-        for sample in &wav.samples {
-            let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
-            pcm16.extend_from_slice(&value.to_le_bytes());
+        let seconds = match (&streamed, &wav) {
+            (Some(request), _) => request.seconds.clamp(0.0, 3_600.0) as f32,
+            (_, Some(wav)) => wav.samples.len() as f32 / 16_000.0,
+            (None, None) => 0.0,
+        };
+        let mut pcm16 = Vec::new();
+        if let Some(wav) = &wav {
+            pcm16.reserve(wav.samples.len() * 2);
+            for sample in &wav.samples {
+                let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+                pcm16.extend_from_slice(&value.to_le_bytes());
+            }
         }
         let write = header(headers, "x-parlo-write")
             .unwrap_or_default()
@@ -243,20 +266,20 @@ fn handle(
         let from = chosen.from.clone();
         let to = chosen.to.clone();
         let target = dictation_target(&write, &from, &to, stored.features.translation);
+        if streamed.is_some() && target != from {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"a text body can only be written in the language it was spoken\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
-        let first = session.write(&pcm16, &target, clean.as_deref());
-        let (text, translation, note, written) = match first {
-            Ok((text, translation)) => (text, translation, String::new(), target.clone()),
-            Err(error) if target != from && error.contains("no translation model") => {
-                match session.write(&pcm16, &from, clean.as_deref()) {
-                    Ok((text, translation)) => (
-                        text,
-                        translation,
-                        "The translation model is missing, so the sentence stayed in the language spoken."
-                            .to_string(),
-                        from.clone(),
-                    ),
+        let (text, translation, note, written) =
+            match streamed.as_ref().filter(|_| target == from) {
+                Some(request) => match session.clean_text(request.text.trim(), clean.as_deref()) {
+                    Ok(edited) => (edited, String::new(), String::new(), target.clone()),
                     Err(error) => {
                         return respond_json(
                             stream,
@@ -265,17 +288,38 @@ fn handle(
                         )
                         .map(|()| Flow::Serve);
                     }
-                }
-            }
-            Err(error) => {
-                return respond_json(
-                    stream,
-                    "500 Internal Server Error",
-                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
-                )
-                .map(|()| Flow::Serve);
-            }
-        };
+                },
+                None => match session.write(&pcm16, &target, clean.as_deref()) {
+                    Ok((text, translation)) => (text, translation, String::new(), target.clone()),
+                    Err(error) if target != from && error.contains("no translation model") => {
+                        match session.write(&pcm16, &from, clean.as_deref()) {
+                            Ok((text, translation)) => (
+                                text,
+                                translation,
+                                "The translation model is missing, so the sentence stayed in the language spoken."
+                                    .to_string(),
+                                from.clone(),
+                            ),
+                            Err(error) => {
+                                return respond_json(
+                                    stream,
+                                    "500 Internal Server Error",
+                                    &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                                )
+                                .map(|()| Flow::Serve);
+                            }
+                        }
+                    }
+                    Err(error) => {
+                        return respond_json(
+                            stream,
+                            "500 Internal Server Error",
+                            &format!("{{\"error\":\"{}\"}}", json_string(&error)),
+                        )
+                        .map(|()| Flow::Serve);
+                    }
+                },
+            };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
         let text = commands::apply(&text);
         let text = crate::snippets::apply(&text, &stored.snippets);

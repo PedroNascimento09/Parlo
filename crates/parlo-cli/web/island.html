@@ -567,6 +567,7 @@ let ticker = null;
 let paused = false;
 let busy = false;
 let lastText = "";
+let transcriptComplete = true;
 let promoted = false;
 let writeTarget = "";
 let writeSource = "";
@@ -892,9 +893,11 @@ async function begin() {
   armed = false;
   try {
     keepIsland();
+    endStream();
     partialTicket += 1;
     partialRunning = false;
     lastText = "";
+    transcriptComplete = true;
     liveInserted = "";
     liveDesired = "";
     liveBase = "";
@@ -939,8 +942,11 @@ function endStream() {
   }).catch(() => {});
 }
 
-async function sendPartial() {
-  if (!stream || !context || busy || paused || partialRunning || tidy) {
+async function sendPartial(force) {
+  if (!stream || !context || paused) {
+    return;
+  }
+  if (!force && (busy || partialRunning)) {
     return;
   }
   const batch = chunks.slice(sentChunks);
@@ -964,10 +970,15 @@ async function sendPartial() {
         "Content-Type": "audio/wav",
         Authorization: "Bearer " + token,
         "x-parlo-style": localStorage.getItem("parlo.style") || "",
+        ...(tidy ? { "x-parlo-window": "2" } : {}),
       },
       body: encodeWav(downsample(merged, context.sampleRate, TARGET_RATE), TARGET_RATE),
     });
-    if (ticket !== partialTicket || !response.ok || busy || paused) {
+    if (ticket !== partialTicket) {
+      return;
+    }
+    if (!response.ok || paused) {
+      transcriptComplete = false;
       return;
     }
     const pieces = await response.json();
@@ -975,12 +986,17 @@ async function sendPartial() {
     liveBase = next.base;
     liveConfirmed = next.confirmed;
     liveGuess = next.guess;
-    if (next.text && next.text !== lastText && !busy) {
+    if (next.text && next.text !== lastText) {
       lastText = next.text;
-      setState(t("island.listening", "Listening"), lastText, true);
-      writeLive(lastText);
+      if (!busy) {
+        setState(t("island.listening", "Listening"), lastText, true);
+        writeLive(lastText);
+      }
     }
   } catch (failure) {
+    if (ticket === partialTicket) {
+      transcriptComplete = false;
+    }
     return;
   } finally {
     if (ticket === partialTicket) {
@@ -1081,7 +1097,6 @@ function discard() {
 }
 
 function release() {
-  endStream();
   clearInterval(ticker);
   ticker = null;
   const { collected, rate } = teardown();
@@ -1230,6 +1245,25 @@ async function writeIntoField(text, signal, replace, latency) {
   }
 }
 
+function partialSettled(limitMs) {
+  if (!partialRunning) {
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    const started = performance.now();
+    const check = () => {
+      if (!partialRunning) {
+        resolve(true);
+      } else if (performance.now() - started > limitMs) {
+        resolve(false);
+      } else {
+        setTimeout(check, 15);
+      }
+    };
+    check();
+  });
+}
+
 function liveSettled() {
   if (!liveRunning) {
     return Promise.resolve();
@@ -1343,13 +1377,18 @@ async function stop() {
   busy = true;
   const releasedAt = performance.now();
   let failed = false;
-  partialTicket += 1;
-  partialRunning = false;
   clearInterval(partials);
   partials = null;
   liveDesired = "";
   await liveSettled();
+  let transcriptReady = !tidy;
+  if (tidy && (await partialSettled(2500))) {
+    await sendPartial(true);
+    transcriptReady = transcriptComplete;
+  }
   const captured = release();
+  partialTicket += 1;
+  partialRunning = false;
   if (!captured) {
     busy = false;
     report("cancelled");
@@ -1374,17 +1413,36 @@ async function stop() {
     } else if (write) {
       headers["x-parlo-write"] = write;
     }
-    const response = await fetch("/dictate", {
-      method: "POST",
-      headers,
-      body: captured.wav,
-      signal,
-    });
-    if (!response.ok) {
-      const detail = await response.json().catch(() => ({}));
-      throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
+    const plain = !write || write === "same" || write === writeSource;
+    let result = null;
+    if (tidy && plain && transcriptReady && lastText.trim()) {
+      const fast = await fetch("/dictate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+          "x-parlo-clean": "on",
+        },
+        body: JSON.stringify({ text: lastText, seconds: captured.seconds }),
+        signal,
+      }).catch(() => null);
+      if (fast && fast.ok) {
+        result = await fast.json().catch(() => null);
+      }
     }
-    const result = await response.json();
+    if (!result) {
+      const response = await fetch("/dictate", {
+        method: "POST",
+        headers,
+        body: captured.wav,
+        signal,
+      });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.error || "Parlo answered with status " + response.status + ".");
+      }
+      result = await response.json();
+    }
     const spoken = (result.text || "").trim();
     const text = (result.translation || "").trim() || spoken;
     if (!text) {

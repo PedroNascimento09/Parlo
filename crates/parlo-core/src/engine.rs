@@ -73,6 +73,14 @@ pub trait Engine: Send {
         ))
     }
 
+    fn stream_window(
+        &mut self,
+        samples: &[f32],
+        _segment: f32,
+    ) -> Result<Vec<StreamPiece>, EngineError> {
+        self.stream(samples)
+    }
+
     fn close_stream(&mut self) -> Result<Vec<StreamPiece>, EngineError> {
         Ok(Vec::new())
     }
@@ -99,6 +107,12 @@ pub trait Engine: Send {
     ) -> Result<(String, String), EngineError> {
         Err(EngineError::Rejected(
             "this engine cannot write in another language".to_string(),
+        ))
+    }
+
+    fn clean_text(&mut self, _text: &str, _clean: Option<&str>) -> Result<String, EngineError> {
+        Err(EngineError::Rejected(
+            "this engine cannot clean text".to_string(),
         ))
     }
 

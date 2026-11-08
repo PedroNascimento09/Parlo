@@ -506,6 +506,16 @@ class CascadeEngine:
             return ""
         return self._transcribe(samples)
 
+    def clean_text(self, text: str, mode: str | None = None) -> str:
+        spoken = text.strip()
+        if not spoken:
+            return ""
+        chosen = mode if mode in CLEAN_MODES else self.clean_mode
+        edit = Intelligence(settings_from_config(chosen), self.source).edit(spoken)
+        self.last_original = edit.original
+        self.last_engine = edit.engine
+        return edit.text
+
     def speak(self, text: str) -> bytes:
         if not self._ready:
             raise EngineUnavailable(
@@ -571,13 +581,23 @@ class CascadeEngine:
             return text, ""
 
     def stream(self, pcm16: bytes) -> list[TextEvent]:
+        return self._feed_stream(pcm16, 6.0)
+
+    def stream_window(self, pcm16: bytes, segment: float) -> list[TextEvent]:
+        return self._feed_stream(pcm16, segment)
+
+    def _feed_stream(self, pcm16: bytes, segment: float) -> list[TextEvent]:
         if not self._ready:
             raise EngineUnavailable(
                 "install the cascade requirements: pip install -r engines/cascade/requirements.txt"
             )
+        window = 6.0 if segment < 0.4 or segment > 30 else float(segment)
+        if getattr(self, "stream_segment", 6.0) != window:
+            self._stream = None
+            self.stream_segment = window
         samples = pcm16_to_float(pcm16)
         if self._stream is None:
-            self._stream = StreamingSession(self._transcribe)
+            self._stream = StreamingSession(self._transcribe, segment_seconds=window)
         return self._stream.feed(samples)
 
     def close_stream(self) -> list[TextEvent]:

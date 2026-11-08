@@ -39,6 +39,22 @@ struct PairRequest<'a> {
 }
 
 #[derive(Serialize)]
+struct WindowRequest {
+    op: &'static str,
+    seq: u64,
+    pcm16: String,
+    segment: f32,
+}
+
+#[derive(Serialize)]
+struct CleanRequest<'a> {
+    op: &'a str,
+    seq: u64,
+    text: &'a str,
+    clean: Option<&'a str>,
+}
+
+#[derive(Serialize)]
 struct SpeechRequest<'a> {
     op: &'a str,
     seq: u64,
@@ -268,6 +284,31 @@ impl SidecarEngine {
         self.exchange("stream", Some(encode_pcm16(samples)))
     }
 
+    pub fn stream_window(
+        &mut self,
+        samples: &[f32],
+        segment: f32,
+    ) -> Result<Vec<StreamEvent>, EngineError> {
+        self.seq += 1;
+        let response = self.request(&WindowRequest {
+            op: "stream",
+            seq: self.seq,
+            pcm16: encode_pcm16(samples),
+            segment,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+        if let Some(mode) = response.mode {
+            self.stream_mode = mode;
+        }
+        Ok(response.events)
+    }
+
     pub fn close_stream(&mut self) -> Result<Vec<StreamEvent>, EngineError> {
         self.seq += 1;
         self.exchange("stream_close", None)
@@ -316,6 +357,33 @@ impl SidecarEngine {
         let text = response.text.unwrap_or_default();
         let translation = response.translation.unwrap_or_else(|| text.clone());
         Ok((text, translation))
+    }
+
+    pub fn clean_text(&mut self, text: &str, clean: Option<&str>) -> Result<String, EngineError> {
+        if text.trim().is_empty() {
+            return Err(EngineError::Rejected("text must not be empty".to_string()));
+        }
+        self.seq += 1;
+        let response = self.request(&CleanRequest {
+            op: "clean",
+            seq: self.seq,
+            text,
+            clean,
+        })?;
+        if response.op == "error" {
+            return Err(EngineError::Unavailable(
+                response
+                    .error
+                    .unwrap_or_else(|| "sidecar reported an error".to_string()),
+            ));
+        }
+        let edited = response.text.unwrap_or_default();
+        if edited.trim().is_empty() {
+            return Err(EngineError::Rejected(
+                "the engine returned no text".to_string(),
+            ));
+        }
+        Ok(edited)
     }
 
     pub fn set_pair(&mut self, from: &str, to: &str) -> Result<(), EngineError> {
@@ -545,8 +613,20 @@ impl Engine for SidecarEngine {
         SidecarEngine::stream(self, samples).map(pieces)
     }
 
+    fn stream_window(
+        &mut self,
+        samples: &[f32],
+        segment: f32,
+    ) -> Result<Vec<parlo_core::engine::StreamPiece>, EngineError> {
+        SidecarEngine::stream_window(self, samples, segment).map(pieces)
+    }
+
     fn close_stream(&mut self) -> Result<Vec<parlo_core::engine::StreamPiece>, EngineError> {
         SidecarEngine::close_stream(self).map(pieces)
+    }
+
+    fn clean_text(&mut self, text: &str, clean: Option<&str>) -> Result<String, EngineError> {
+        SidecarEngine::clean_text(self, text, clean)
     }
 
     fn speak(&mut self, text: &str) -> Result<(Vec<u8>, u32), EngineError> {

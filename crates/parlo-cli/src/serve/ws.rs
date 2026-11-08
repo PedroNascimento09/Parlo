@@ -118,7 +118,7 @@ pub(crate) fn stream(
                     .map(|pair| i16::from_le_bytes([pair[0], pair[1]]) as f32 / 32_768.0)
                     .collect();
                 pending.drain(..usable);
-                match session.stream_window(&samples) {
+                match session.stream_window(&samples, None) {
                     Ok(pieces) => emit(&mut socket, &id, &pieces)?,
                     Err(error) => send_error(&mut socket, &id, &error)?,
                 }

@@ -289,6 +289,13 @@ impl Session {
         insert::rewrite(target.window, replace, text)
     }
 
+    pub(super) fn clean_text(&self, text: &str, clean: Option<&str>) -> Result<String, String> {
+        let _working = self.working();
+        self.pipeline()
+            .clean_text(text, clean)
+            .map_err(|error| error.to_string())
+    }
+
     pub(super) fn dictate(&self, pcm16: &[u8]) -> Result<String, String> {
         let _working = self.working();
         self.pipeline()
@@ -468,11 +475,15 @@ impl Session {
     pub(super) fn stream_window(
         &self,
         samples: &[f32],
+        segment: Option<f32>,
     ) -> Result<Vec<parlo_core::engine::StreamPiece>, String> {
         let _working = self.working();
-        self.pipeline()
-            .stream(samples)
-            .map_err(|error| error.to_string())
+        let mut pipeline = self.pipeline();
+        match segment {
+            Some(segment) => pipeline.stream_window(samples, segment),
+            None => pipeline.stream(samples),
+        }
+        .map_err(|error| error.to_string())
     }
 
     pub(super) fn finish_stream(&self) -> Result<Vec<parlo_core::engine::StreamPiece>, String> {

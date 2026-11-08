@@ -99,6 +99,8 @@ def handle_line(line: str, engine) -> dict:
         return dictate(request, engine)
     if op == "write":
         return write(request, engine)
+    if op == "clean":
+        return clean_text(request, engine)
     if op == "speak":
         return speak(request, engine)
     if op == "embed":
@@ -237,6 +239,24 @@ def write(request: dict, engine) -> dict:
     }
 
 
+def clean_text(request: dict, engine) -> dict:
+    seq = request.get("seq", 0)
+    text = request.get("text")
+    if not isinstance(text, str) or not text.strip():
+        return {"op": "error", "seq": seq, "error": "text must not be empty"}
+    method = getattr(engine, "clean_text", None)
+    if not callable(method):
+        return {"op": "error", "seq": seq, "error": "engine cannot clean text"}
+    mode = request.get("clean")
+    try:
+        edited = method(text, mode if isinstance(mode, str) else None)
+    except (EngineUnavailable, ValueError) as failure:
+        return {"op": "error", "seq": seq, "error": str(failure)}
+    if not edited.strip():
+        return {"op": "error", "seq": seq, "error": "the engine returned no text"}
+    return {"op": "cleaned", "seq": seq, "text": edited}
+
+
 def speak(request: dict, engine) -> dict:
     seq = request.get("seq", 0)
     text = request.get("text")
@@ -282,8 +302,13 @@ def stream(request: dict, engine) -> dict:
     pcm16, error = decode_audio(request)
     if error is not None:
         return error
+    segment = request.get("segment")
+    window = getattr(engine, "stream_window", None)
     try:
-        events = engine.stream(pcm16)
+        if isinstance(segment, (int, float)) and segment > 0 and callable(window):
+            events = window(pcm16, float(segment))
+        else:
+            events = engine.stream(pcm16)
     except EngineUnavailable as failure:
         return {"op": "error", "seq": seq, "error": str(failure)}
     return stream_response(engine, seq, events)

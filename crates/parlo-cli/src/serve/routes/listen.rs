@@ -1,7 +1,7 @@
 use super::super::http::{error_json, respond_json, Stream};
 use parlo_core::wav::read_pcm16;
 
-use super::super::{authorised, pieces_json, Flow, Session};
+use super::super::{authorised, header, pieces_json, Flow, Session};
 
 pub(crate) fn route(
     method: &str,
@@ -56,7 +56,26 @@ pub(crate) fn route(
         if wav.samples.is_empty() {
             return Some(respond_json(stream, "200 OK", "[]").map(|()| Flow::Serve));
         }
-        return Some(match session.stream_window(&wav.samples) {
+        let segment = match header(headers, "x-parlo-window") {
+            Some(raw) => {
+                let parsed = raw.trim().parse::<f32>();
+                match parsed {
+                    Ok(value) if (0.4..=10.0).contains(&value) => Some(value),
+                    _ => {
+                        return Some(
+                            respond_json(
+                                stream,
+                                "400 Bad Request",
+                                "{\"error\":\"x-parlo-window needs seconds between 0.4 and 10\"}",
+                            )
+                            .map(|()| Flow::Serve),
+                        );
+                    }
+                }
+            }
+            None => None,
+        };
+        return Some(match session.stream_window(&wav.samples, segment) {
             Ok(pieces) => {
                 respond_json(stream, "200 OK", &pieces_json(&pieces)).map(|()| Flow::Serve)
             }

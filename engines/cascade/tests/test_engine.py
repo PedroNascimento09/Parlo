@@ -15,6 +15,33 @@ from parlo_cascade import (
 HAS_NUMPY = importlib.util.find_spec("numpy") is not None
 
 
+class CleanTextTest(unittest.TestCase):
+    def engine(self):
+        engine = CascadeEngine.__new__(CascadeEngine)
+        engine.source = "pt"
+        engine.clean_mode = "light"
+        engine.last_original = ""
+        engine.last_engine = ""
+        return engine
+
+    def test_cleaning_keeps_the_sentence_words(self):
+        engine = self.engine()
+
+        self.assertEqual(engine.clean_text("   "), "")
+
+        cleaned = engine.clean_text("Bom dia, isto é uma prova.")
+
+        self.assertIn("prova", cleaned)
+        self.assertTrue(cleaned[0].isupper())
+
+    def test_cleaning_keeps_the_spoken_language_for_the_sentence(self):
+        engine = self.engine()
+
+        cleaned = engine.clean_text("Podemos começar amanhã.", "original")
+
+        self.assertEqual(cleaned.strip(), "Podemos começar amanhã.")
+
+
 class FlushTest(unittest.TestCase):
     def engine(self):
         engine = CascadeEngine.__new__(CascadeEngine)

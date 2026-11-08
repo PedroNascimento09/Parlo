@@ -141,6 +141,10 @@ impl Pipeline {
         self.engine.write(pcm16, target, clean)
     }
 
+    pub fn clean_text(&mut self, text: &str, clean: Option<&str>) -> Result<String, EngineError> {
+        self.engine.clean_text(text, clean)
+    }
+
     pub fn set_languages(&mut self, from: &str, to: &str) -> Result<(), EngineError> {
         self.engine.set_languages(from, to)
     }
@@ -167,6 +171,14 @@ impl Pipeline {
         samples: &[f32],
     ) -> Result<Vec<crate::engine::StreamPiece>, EngineError> {
         self.engine.stream(samples)
+    }
+
+    pub fn stream_window(
+        &mut self,
+        samples: &[f32],
+        segment: f32,
+    ) -> Result<Vec<crate::engine::StreamPiece>, EngineError> {
+        self.engine.stream_window(samples, segment)
     }
 
     pub fn close_stream(&mut self) -> Result<Vec<crate::engine::StreamPiece>, EngineError> {
