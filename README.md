@@ -125,7 +125,7 @@ Local mode makes no network call. Audio is not written to disk unless you pass a
 - Portuguese and English are the only pairs that install. The language list names others, and Parlo blocks them until their weights, licence and measured quality exist.
 - Dictation has been tested with the author's recordings, not with a panel of other speakers.
 - Meetings and captions read the microphone, not another app's audio, so routing the translation into a call still needs a virtual cable.
-- Read-aloud uses a neutral European Portuguese voice that no listener panel has judged, and no voice is cloned from a sample yet.
+- Read-aloud uses a neutral voice for each shipped language that no listener panel has judged, and no voice is cloned from a sample yet.
 
 ## Check the download
 
