@@ -1083,20 +1083,15 @@ async function stop() {
         const response = await fetch("/clipboard", {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({ text, keep: true }),
           signal,
         });
         if (!response.ok) {
           throw new Error("the server clipboard refused the text");
         }
-        const copied = await response.json();
         setState(
           t("island.copied", "Copied"),
-          inserted.reason
-            ? t("island.copiedBecause", "Copied: {reason}", { reason: inserted.reason })
-            : t("island.clipboardReturns", "Copied. Your previous clipboard returns in {seconds} seconds.", {
-                seconds: copied.lease_seconds || 10,
-              }),
+          t("island.copiedPress", "Press Ctrl+V where you want it."),
           false,
         );
       } catch (failure) {

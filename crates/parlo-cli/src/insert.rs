@@ -9,6 +9,8 @@ mod win {
     const KEYEVENTF_UNICODE: u32 = 0x0004;
     const VK_RETURN: u16 = 0x0D;
     const VK_BACK: u16 = 0x08;
+    pub const VK_CONTROL: u16 = 0x11;
+    pub const VK_V: u16 = 0x56;
 
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -67,6 +69,21 @@ mod win {
                         } else {
                             KEYEVENTF_UNICODE
                         },
+                        time: 0,
+                        extra: 0,
+                    },
+                },
+            }
+        }
+
+        pub fn key(vk: u16, released: bool) -> Self {
+            Self {
+                kind: INPUT_KEYBOARD,
+                union: Union {
+                    keyboard: KeyboardInput {
+                        vk,
+                        scan: 0,
+                        flags: if released { KEYEVENTF_KEYUP } else { 0 },
                         time: 0,
                         extra: 0,
                     },
@@ -249,6 +266,27 @@ pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     }
     if !batch.is_empty() {
         send(&batch)?;
+    }
+    Ok(())
+}
+
+#[cfg(windows)]
+pub fn paste(target: usize, text: &str) -> Result<(), String> {
+    use win::*;
+    let window = target as Window;
+    if focus(window).is_err() {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    crate::clipboard::copy_for(text, std::time::Duration::from_millis(1_500))?;
+    let batch = [
+        Input::key(VK_CONTROL, false),
+        Input::key(VK_V, false),
+        Input::key(VK_V, true),
+        Input::key(VK_CONTROL, true),
+    ];
+    if let Err(error) = send(&batch) {
+        let _ = crate::clipboard::keep(text);
+        return Err(error);
     }
     Ok(())
 }
@@ -466,6 +504,24 @@ pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
 }
 
 #[cfg(target_os = "linux")]
+pub fn paste(target: usize, text: &str) -> Result<(), String> {
+    use std::ffi::OsStr;
+    if x11::active_window()? != target {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    crate::clipboard::copy_for(text, std::time::Duration::from_millis(1_500))?;
+    x11::run(
+        "xdotool",
+        &[
+            OsStr::new("key"),
+            OsStr::new("--clearmodifiers"),
+            OsStr::new("ctrl+v"),
+        ],
+    )
+    .map(|_| ())
+}
+
+#[cfg(target_os = "linux")]
 pub fn erase(target: usize, characters: usize) -> Result<(), String> {
     if x11::active_window()? != target {
         return Err("the window you were writing in is not in front any more".to_string());
@@ -481,6 +537,20 @@ fn erase_script(characters: usize) -> String {
 }
 
 #[cfg(target_os = "macos")]
+pub fn paste(_target: usize, text: &str) -> Result<(), String> {
+    let app = mac::frontmost()?;
+    let held = CAPTURED_APP
+        .lock()
+        .map_err(|_| "the program in front could not be read".to_string())?
+        .clone();
+    if held.as_deref() != Some(app.as_str()) {
+        return Err("the program you were writing in is not in front any more".to_string());
+    }
+    crate::clipboard::copy_for(text, std::time::Duration::from_millis(1_500))?;
+    mac::run("tell application \"System Events\" to keystroke \"v\" using command down").map(|_| ())
+}
+
+#[cfg(target_os = "macos")]
 pub fn erase(_target: usize, characters: usize) -> Result<(), String> {
     let app = mac::frontmost()?;
     let held = CAPTURED_APP
@@ -491,6 +561,11 @@ pub fn erase(_target: usize, characters: usize) -> Result<(), String> {
         return Err("the program you were writing in is not in front any more".to_string());
     }
     mac::run(&erase_script(characters)).map(|_| ())
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+pub fn paste(_target: usize, _text: &str) -> Result<(), String> {
+    Err(NO_FIELD.to_string())
 }
 
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
@@ -550,6 +625,20 @@ mod tests {
         let script = applescript_for("Diz \"olá\" \\ adeus");
         assert!(script.starts_with("tell application \"System Events\""));
         assert!(script.contains("keystroke \"Diz \\\"olá\\\" \\\\ adeus\""));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn a_paste_is_control_then_v() {
+        let keys = [
+            win::Input::key(0x11, false),
+            win::Input::key(0x56, false),
+            win::Input::key(0x56, true),
+            win::Input::key(0x11, true),
+        ];
+        assert_eq!(unsafe { keys[0].union.keyboard.vk }, 0x11);
+        assert_eq!(unsafe { keys[1].union.keyboard.vk }, 0x56);
+        assert_eq!(unsafe { keys[3].union.keyboard.flags } & 0x0002, 0x0002);
     }
 
     #[cfg(windows)]

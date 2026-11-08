@@ -71,16 +71,20 @@ impl Backend for Clipboard {
 }
 
 pub fn copy(text: &str) -> Result<u64, String> {
+    copy_for(text, LEASE)
+}
+
+pub fn copy_for(text: &str, after: Duration) -> Result<u64, String> {
     let text = text.trim();
     if text.is_empty() {
         return Err("the clipboard cannot take an empty sentence".to_string());
     }
     let mut clipboard =
         Clipboard::new().map_err(|error| format!("the system clipboard did not open: {error}"))?;
-    let mut lease = state()
+    let mut stored = state()
         .lock()
         .map_err(|_| "the clipboard lease is unavailable".to_string())?;
-    let snapshot = match lease.as_ref() {
+    let snapshot = match stored.as_ref() {
         Some(active) => active.snapshot.clone(),
         None => capture(&mut clipboard),
     };
@@ -88,17 +92,33 @@ pub fn copy(text: &str) -> Result<u64, String> {
         .set_text(text)
         .map_err(|error| format!("the system clipboard refused the text: {error}"))?;
     let generation = NEXT.fetch_add(1, Ordering::Relaxed) + 1;
-    *lease = Some(Lease {
+    *stored = Some(Lease {
         generation,
         snapshot: snapshot.clone(),
     });
-    drop(lease);
+    drop(stored);
 
     let expected = text.to_string();
     let _ = thread::Builder::new()
         .name("parlo-clipboard".to_string())
-        .spawn(move || restore_after_lease(snapshot, generation, expected));
+        .spawn(move || restore_after(snapshot, generation, expected, after));
     Ok(generation)
+}
+
+pub fn keep(text: &str) -> Result<(), String> {
+    let text = text.trim();
+    if text.is_empty() {
+        return Err("the clipboard cannot take an empty sentence".to_string());
+    }
+    let mut clipboard =
+        Clipboard::new().map_err(|error| format!("the system clipboard did not open: {error}"))?;
+    clipboard
+        .set_text(text)
+        .map_err(|error| format!("the system clipboard refused the text: {error}"))?;
+    if let Ok(mut stored) = state().lock() {
+        *stored = None;
+    }
+    Ok(())
 }
 
 fn capture(backend: &mut dyn Backend) -> Snapshot {
@@ -118,8 +138,8 @@ fn restore(backend: &mut dyn Backend, snapshot: &Snapshot) -> Result<(), String>
     }
 }
 
-fn restore_after_lease(snapshot: Snapshot, generation: u64, expected: String) {
-    thread::sleep(LEASE);
+fn restore_after(snapshot: Snapshot, generation: u64, expected: String, after: Duration) {
+    thread::sleep(after);
     let mut lease = match state().lock() {
         Ok(lease) => lease,
         Err(error) => error.into_inner(),

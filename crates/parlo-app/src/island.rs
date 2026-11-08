@@ -153,6 +153,15 @@ pub fn listen(handle: AppHandle) {
         }
     }
 
+    fn open(handle: &AppHandle, script: &'static str) {
+        let handle = handle.clone();
+        std::thread::spawn(move || {
+            remember_target(&handle);
+            show(&handle);
+            tell(&handle, script);
+        });
+    }
+
     #[cfg(windows)]
     fn armed() {
         let press = PRESS.fetch_add(1, Ordering::Relaxed) + 1;
@@ -160,9 +169,7 @@ pub fn listen(handle: AppHandle) {
             *slot = Some(Instant::now());
         }
         with_app(|handle| {
-            remember_target(handle);
-            show(handle);
-            tell(handle, "window.parloArm && window.parloArm()");
+            open(handle, "window.parloArm && window.parloArm()");
         });
         std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_millis(HOLD_MS as u64));
@@ -184,9 +191,7 @@ pub fn listen(handle: AppHandle) {
 
     fn hands_free() {
         with_app(|handle| {
-            remember_target(handle);
-            show(handle);
-            tell(handle, "window.parloHandsFree && window.parloHandsFree()");
+            open(handle, "window.parloHandsFree && window.parloHandsFree()");
         });
     }
 
@@ -389,15 +394,17 @@ mod bridge_tests {
     #[test]
     fn the_hook_remembers_the_target_before_the_island_takes_the_focus() {
         let hook = include_str!("island.rs");
-        let start = hook.find("fn armed()").expect("there is no armed hook");
-        let end = hook.find("fn key_up()").expect("there is no key up hook");
+        let start = hook.find("fn open(").expect("there is no open hook");
+        let end = hook
+            .find("fn hands_free()")
+            .expect("there is no hands free hook");
         let body = &hook[start..end];
         let remembered = body
-            .find("remember_target(handle);")
-            .expect("the arm hook never remembers the target");
+            .find("remember_target(&handle);")
+            .expect("the open hook never remembers the target");
         let shown = body
-            .find("show(handle);")
-            .expect("the arm hook never shows the island");
+            .find("show(&handle);")
+            .expect("the open hook never shows the island");
         assert!(
             remembered < shown,
             "the island is shown before the window you were typing in is remembered, so the text would land in Parlo"

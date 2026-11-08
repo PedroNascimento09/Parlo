@@ -331,7 +331,10 @@ impl Session {
             .unwrap_or_else(|error| error.into_inner())
             .take()
             .ok_or_else(|| "Parlo does not know which field to write into".to_string())?;
-        insert::type_text(target.window, text)?;
+        if let Err(paste) = insert::paste(target.window, text) {
+            insert::type_text(target.window, text)
+                .map_err(|typing| format!("{paste}; typing also failed: {typing}"))?;
+        }
         undo::remember(target.window, text);
         Ok(())
     }

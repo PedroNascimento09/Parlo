@@ -21,6 +21,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Dictation writes into the window it was opened from again: showing the island no longer makes Parlo refuse its own captured target.
 - The dictation state walks through insertion, so the tray stops being stuck on processing and a second dictation is accepted.
 - The island sits at the bottom of the monitor under the cursor instead of the middle of another screen.
+- Dictation pastes the sentence instead of typing it character by character, so long text and Electron windows keep every letter; the clipboard you had comes back on its own after the paste.
+- A paste that cannot land leaves the sentence on the clipboard and says "Press Ctrl+V where you want it" instead of a clipboard lease countdown.
+- The keyboard hook no longer waits on the engine before showing the island, so a busy dictation cannot freeze typing system wide.
 
 ## [0.2.6] - 7 November 2026
 

@@ -6,6 +6,8 @@ use crate::serve::http::Stream;
 #[derive(serde::Deserialize)]
 struct CopyRequest {
     text: String,
+    #[serde(default)]
+    keep: bool,
 }
 
 pub(crate) fn route(
@@ -69,15 +71,20 @@ pub(crate) fn route(
             .map(|()| Flow::Serve),
         );
     }
-    match crate::clipboard::copy(text) {
-        Ok(generation) => {
-            let answer = serde_json::json!({
+    let copied = if request.keep {
+        crate::clipboard::keep(text).map(|()| serde_json::json!({"copied": true, "kept": true}))
+    } else {
+        crate::clipboard::copy(text).map(|generation| {
+            serde_json::json!({
                 "copied": true,
                 "generation": generation,
                 "lease_seconds": crate::clipboard::LEASE_SECONDS,
             })
-            .to_string();
-            Some(respond_json(stream, "200 OK", &answer).map(|()| Flow::Serve))
+        })
+    };
+    match copied {
+        Ok(answer) => {
+            Some(respond_json(stream, "200 OK", &answer.to_string()).map(|()| Flow::Serve))
         }
         Err(error) => Some(
             respond_json(stream, "503 Service Unavailable", &error_json(&error))
