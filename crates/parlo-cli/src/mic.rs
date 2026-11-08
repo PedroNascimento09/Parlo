@@ -93,6 +93,72 @@ pub fn windows_guidance(devices: &[String]) -> String {
 
 pub const WINDOWS_REMOVE: &str = "Parlo installed no driver on this computer: remove the virtual cable with its own uninstaller, and Parlo stops using it";
 
+fn require_linux() -> Result<(), String> {
+    if cfg!(target_os = "linux") {
+        Ok(())
+    } else {
+        Err(format!(
+            "virtual microphone automation is linux only for now, see docs/VIRTUAL_MIC.md for {}",
+            env::consts::OS
+        ))
+    }
+}
+
+pub(crate) fn command(args: &[String]) -> Result<(), String> {
+    match args.first().map(String::as_str) {
+        Some("setup") => setup(),
+        Some("status") => status(),
+        Some("remove") => remove(),
+        _ => Err("usage: parlo mic <setup|status|remove>".to_string()),
+    }
+}
+
+pub(crate) fn setup() -> Result<(), String> {
+    if cfg!(windows) {
+        let devices = playback::devices()?;
+        println!("{}", windows_guidance(&devices));
+        return Ok(());
+    }
+    require_linux()?;
+    let listing = list_command().run()?;
+    if let Some(id) = find_module(&listing) {
+        println!("Parlo microphone already loaded as module {id}");
+        return Ok(());
+    }
+    let module = setup_command().run()?;
+    println!("Parlo microphone ready (module {})", module.trim());
+    println!("select the Parlo monitor as the microphone in your calling app");
+    Ok(())
+}
+
+pub(crate) fn status() -> Result<(), String> {
+    if cfg!(windows) {
+        let devices = playback::devices()?;
+        println!("{}", windows_guidance(&devices));
+        return Ok(());
+    }
+    require_linux()?;
+    let listing = list_command().run()?;
+    match find_module(&listing) {
+        Some(id) => println!("Parlo microphone active (module {id})"),
+        None => println!("Parlo microphone not loaded, run: parlo mic setup"),
+    }
+    Ok(())
+}
+
+pub(crate) fn remove() -> Result<(), String> {
+    if cfg!(windows) {
+        println!("{}", WINDOWS_REMOVE);
+        return Ok(());
+    }
+    require_linux()?;
+    let listing = list_command().run()?;
+    let id = find_module(&listing).ok_or("Parlo microphone is not loaded")?;
+    remove_command(id).run()?;
+    println!("removed the Parlo microphone (module {id})");
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,70 +230,4 @@ mod tests {
             vec!["unload-module".to_string(), "13".to_string()]
         );
     }
-}
-
-fn require_linux() -> Result<(), String> {
-    if cfg!(target_os = "linux") {
-        Ok(())
-    } else {
-        Err(format!(
-            "virtual microphone automation is linux only for now, see docs/VIRTUAL_MIC.md for {}",
-            env::consts::OS
-        ))
-    }
-}
-
-pub(crate) fn command(args: &[String]) -> Result<(), String> {
-    match args.first().map(String::as_str) {
-        Some("setup") => setup(),
-        Some("status") => status(),
-        Some("remove") => remove(),
-        _ => Err("usage: parlo mic <setup|status|remove>".to_string()),
-    }
-}
-
-pub(crate) fn setup() -> Result<(), String> {
-    if cfg!(windows) {
-        let devices = playback::devices()?;
-        println!("{}", windows_guidance(&devices));
-        return Ok(());
-    }
-    require_linux()?;
-    let listing = list_command().run()?;
-    if let Some(id) = find_module(&listing) {
-        println!("Parlo microphone already loaded as module {id}");
-        return Ok(());
-    }
-    let module = setup_command().run()?;
-    println!("Parlo microphone ready (module {})", module.trim());
-    println!("select the Parlo monitor as the microphone in your calling app");
-    Ok(())
-}
-
-pub(crate) fn status() -> Result<(), String> {
-    if cfg!(windows) {
-        let devices = playback::devices()?;
-        println!("{}", windows_guidance(&devices));
-        return Ok(());
-    }
-    require_linux()?;
-    let listing = list_command().run()?;
-    match find_module(&listing) {
-        Some(id) => println!("Parlo microphone active (module {id})"),
-        None => println!("Parlo microphone not loaded, run: parlo mic setup"),
-    }
-    Ok(())
-}
-
-pub(crate) fn remove() -> Result<(), String> {
-    if cfg!(windows) {
-        println!("{}", WINDOWS_REMOVE);
-        return Ok(());
-    }
-    require_linux()?;
-    let listing = list_command().run()?;
-    let id = find_module(&listing).ok_or("Parlo microphone is not loaded")?;
-    remove_command(id).run()?;
-    println!("removed the Parlo microphone (module {id})");
-    Ok(())
 }

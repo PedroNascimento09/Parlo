@@ -303,11 +303,8 @@ mod capture_tests {
         if let Some((device, _supported)) = default_device_and_config() {
             let index = device_index_of(&device);
             let result = capture(0.0, index);
-            match result {
-                Ok(recording) => {
-                    assert!(recording.format.sample_rate() > 0);
-                }
-                Err(_) => {}
+            if let Ok(recording) = result {
+                assert!(recording.format.sample_rate() > 0);
             }
         }
     }
