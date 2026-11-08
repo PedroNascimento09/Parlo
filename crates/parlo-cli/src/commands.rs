@@ -1,6 +1,8 @@
 const COMMANDS: &[(&str, &str)] = &[
     ("new line", "\n"),
     ("new paragraph", "\n\n"),
+    ("numbered list", NUMBERED_LIST),
+    ("next number", NEXT_NUMBER),
     ("bullet point", "\n• "),
     ("bullet", "\n• "),
     ("full stop", "."),
@@ -52,18 +54,42 @@ const COMMANDS: &[(&str, &str)] = &[
     ("dois pontos", ":"),
     ("risca isso", SCRATCH),
     ("apaga isso", SCRATCH),
+    ("lista numerada", NUMBERED_LIST),
+    ("numero seguinte", NEXT_NUMBER),
+    ("numero siguiente", NEXT_NUMBER),
+    ("liste numerotee", NUMBERED_LIST),
+    ("numero suivant", NEXT_NUMBER),
+    ("nummerierte liste", NUMBERED_LIST),
+    ("nachste nummer", NEXT_NUMBER),
+    ("naechste nummer", NEXT_NUMBER),
 ];
 
+const NUMBERED_LIST: &str = "\u{1}";
+const NEXT_NUMBER: &str = "\u{2}";
 const SCRATCH: &str = "\u{8}";
 
 pub fn apply(text: &str) -> String {
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut out = String::with_capacity(text.len());
     let mut index = 0;
+    let mut number = 0u32;
     while index < words.len() {
         if let Some((taken, piece)) = match_at(&words, index) {
             if piece == SCRATCH {
                 scratch(&mut out);
+            } else if piece == NUMBERED_LIST || piece == NEXT_NUMBER {
+                number = if piece == NUMBERED_LIST {
+                    1
+                } else {
+                    number.saturating_add(1)
+                };
+                while out.ends_with([' ', '\n']) {
+                    out.pop();
+                }
+                if !out.is_empty() {
+                    out.push('\n');
+                }
+                out.push_str(&format!("{number}. "));
             } else if piece.starts_with('\n') {
                 while out.ends_with([' ', '\n']) {
                     out.pop();
@@ -215,6 +241,18 @@ mod tests {
             "shopping\n• milk\n• bread"
         );
         assert_eq!(apply("lista marcador pao"), "lista\n• pao");
+    }
+
+    #[test]
+    fn a_numbered_list_counts_up_on_its_own_lines() {
+        assert_eq!(
+            apply("plan numbered list milk next number bread"),
+            "plan\n1. milk\n2. bread"
+        );
+        assert_eq!(
+            apply("lista numerada pão numero seguinte leite"),
+            "1. pão\n2. leite"
+        );
     }
 
     #[test]
