@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.7] - 8 November 2026
+
 ### Added
 
 - Snippets: `parlo snippet add "my address" "12 Rua das Flores"` types the saved phrase whenever you say the cue on its own.

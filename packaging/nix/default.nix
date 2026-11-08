@@ -2,7 +2,7 @@
 
 stdenv.mkDerivation rec {
   pname = "parlo";
-  version = "0.2.6";
+  version = "0.2.7";
 
   src = fetchurl {
     url = "https://github.com/PedroNascimento09/Parlo/releases/download/v${version}/parlo-linux-x86_64.tar.gz";
