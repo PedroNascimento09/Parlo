@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>Speech becomes text on your own computer.</b><br>
-  Hold a key, speak, and the sentence is typed into the window you were already using, cleaned up and translated when you ask.<br>
+  Hold a key, speak, and the sentence lands in the window you were already using, cleaned up.<br>
   No account, no telemetry, no audio uploaded.
 </p>
 
