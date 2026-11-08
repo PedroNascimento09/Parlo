@@ -10,6 +10,7 @@
         --ink: #191512;
         --muted: #6f6559;
         --accent: #2f6b4f;
+        --track: #e4dccb;
         color-scheme: light dark;
       }
       @media (prefers-color-scheme: dark) {
@@ -18,6 +19,7 @@
           --ink: #f4efe4;
           --muted: #9c9284;
           --accent: #9ed9b4;
+          --track: #2e2821;
         }
       }
       * { box-sizing: border-box; }
@@ -30,37 +32,88 @@
         font: 16px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      main { text-align: center; max-width: 26rem; padding: 2rem; }
+      main {
+        text-align: center;
+        max-width: 26rem;
+        padding: 2rem;
+        animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+      }
+      .loader {
+        display: grid;
+        place-items: center;
+        width: 84px;
+        height: 84px;
+        margin: 0 auto 1.4rem;
+      }
       .mark {
-        width: 54px;
-        height: 54px;
-        margin: 0 auto 1.6rem;
+        width: 56px;
+        height: 56px;
         border-radius: 17px;
         background: var(--accent);
-        animation: breathe 1.9s ease-in-out infinite;
+      }
+      .ring {
+        position: absolute;
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        padding: 3px;
+        background: conic-gradient(from 0deg, transparent 65%, var(--accent));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        mask-composite: exclude;
+        animation: spin 1.2s linear infinite;
       }
       h1 {
         font-family: "Sitka Banner", "Sitka Heading", "Iowan Old Style", Georgia, serif;
         font-size: 1.9rem;
         font-weight: 400;
         letter-spacing: -0.02em;
-        margin: 0 0 0.6rem;
+        margin: 0 0 0.5rem;
       }
       p { margin: 0; color: var(--muted); font-size: 0.92rem; }
-      @keyframes breathe {
-        0%, 100% { opacity: 0.35; transform: scale(0.94); }
-        50% { opacity: 1; transform: scale(1); }
+      .bar {
+        width: 140px;
+        height: 3px;
+        margin: 1.5rem auto 0;
+        border-radius: 999px;
+        background: var(--track);
+        overflow: hidden;
+      }
+      .bar span {
+        display: block;
+        height: 100%;
+        width: 40%;
+        border-radius: 999px;
+        background: var(--accent);
+        animation: slide 1.6s ease-in-out infinite;
+      }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes slide {
+        0% { transform: translateX(-110%); }
+        60%, 100% { transform: translateX(260%); }
       }
       @media (prefers-reduced-motion: reduce) {
-        .mark { animation: none; opacity: 0.8; }
+        main, .ring, .bar span { animation: none; }
+        .bar span { width: 60%; }
       }
     </style>
   </head>
   <body>
-    <main>
-      <div class="mark"></div>
-      <h1>Starting Parlo</h1>
-      <p id="hint">Loading the engine. This can take a minute the first time.</p>
+    <main aria-busy="true">
+      <div class="loader">
+        <div class="mark" aria-hidden="true"></div>
+        <div class="ring" aria-hidden="true"></div>
+      </div>
+      <h1>Parlo</h1>
+      <p>Getting ready.</p>
+      <div class="bar" aria-hidden="true"><span></span></div>
     </main>
   </body>
 </html>
