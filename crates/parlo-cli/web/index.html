@@ -82,10 +82,11 @@ try {
   <span class="beta-badge" title="Beta build: dictation, translation and captions are tested on one machine and have not been validated by other people.">Beta</span>
   <nav class="rail" aria-label="Sections" data-i18n-aria-label="nav.sections">
     <a href="#home" data-route="home" aria-keyshortcuts="Alt+1" data-i18n="nav.home">Home</a>
-    <a href="#library" data-route="library" aria-keyshortcuts="Alt+2" data-i18n="nav.library">Library</a>
-    <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+3" data-i18n="nav.voice">Voice</a>
-    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+4" data-i18n="nav.insights">Insights</a>
-    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+5" data-i18n="nav.settings">Settings</a>
+    <a href="#meetings" data-route="meetings" aria-keyshortcuts="Alt+2" data-i18n="nav.meetings">Meetings</a>
+    <a href="#library" data-route="library" aria-keyshortcuts="Alt+3" data-i18n="nav.library">Library</a>
+    <a href="#voice" data-route="voice" aria-keyshortcuts="Alt+4" data-i18n="nav.voice">Voice</a>
+    <a href="#insights" data-route="insights" aria-keyshortcuts="Alt+5" data-i18n="nav.insights">Insights</a>
+    <a href="#settings" data-route="settings" aria-keyshortcuts="Alt+6" data-i18n="nav.settings">Settings</a>
   </nav>
   <span class="version" id="status-version"></span>
 </header>
@@ -303,6 +304,124 @@ try {
       <p class="settings-note" id="tools-job-note" aria-live="polite"></p>
       <div class="media-list" id="tools-job-list"></div>
     </details>
+  </section>
+
+<section class="settings library-panel meetings-page" id="meetings" aria-labelledby="meetings-title">
+    <div class="settings-head">
+      <h2 id="meetings-title" data-i18n="text.Meetings">Meetings</h2>
+      <p class="settings-note" id="meetings-note" aria-live="polite"></p>
+    </div>
+    <nav class="subnav" aria-label="Meeting sections">
+      <a href="#meeting-record" data-subnav="meeting-record" data-i18n="text.Record a meeting">Record a meeting</a>
+      <a href="#meeting-import-label" data-subnav="meeting-import-label" data-i18n="text.Import a transcript instead">Import a transcript instead</a>
+      <a href="#meeting-find-section" data-subnav="meeting-find-section" data-i18n="text.Find it again">Find it again</a>
+      <a href="#meeting-list-section" data-subnav="meeting-list-section" data-i18n="text.Transcripts">Transcripts</a>
+    </nav>
+    <div class="call-banner" id="call-banner" hidden>
+      <p class="call-text" id="call-text" aria-live="polite"></p>
+      <div class="meeting-actions">
+        <button id="call-record" class="install" type="button" data-i18n="text.Record this meeting">Record this meeting</button>
+        <button id="call-dismiss" class="swap" type="button" data-i18n="text.Not now">Not now</button>
+      </div>
+    </div>
+    <h3 class="meeting-group section" id="meeting-record" data-i18n="text.Record a meeting">Record a meeting</h3>
+    <div class="settings-row meeting-compose">
+      <label class="field" for="meeting-title">
+        <span class="field-label" data-i18n="text.Title">Title</span>
+        <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Name this meeting" autocomplete="off">
+      </label>
+      <label class="field" for="meeting-speakers">
+        <span class="field-label" data-i18n="text.Voices">Voices</span>
+        <input id="meeting-speakers" class="field-input" type="number" min="1" max="20" step="1" placeholder="Auto" autocomplete="off">
+      </label>
+      <button id="meeting-live" class="live" type="button" aria-pressed="false">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span data-i18n="text.Record a meeting">Record a meeting</span>
+      </button>
+      <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled data-i18n="text.Pause">Pause</button>
+      <label class="check field-wide" for="meeting-system" title="Share a tab or window with its audio. The sound is processed on this computer.">
+        <input id="meeting-system" type="checkbox">
+        Record the computer's sound, not the microphone
+      </label>
+      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite" data-i18n="text.Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.">Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.</p>
+    </div>
+    <h3 class="meeting-group section" id="meeting-find-section" data-i18n="text.Find it again">Find it again</h3>
+    <div class="settings-row">
+      <label class="field field-wide" for="meeting-search">
+        <span class="field-label" data-i18n="text.Search every transcript">Search every transcript</span>
+        <input id="meeting-search" class="field-input" type="search" autocomplete="off" spellcheck="false" placeholder="a word someone said">
+      </label>
+    </div>
+    <div class="status" id="meeting-matches" aria-live="polite"></div>
+    <p class="settings-note" id="meeting-summary-text" aria-live="polite"></p>
+    <details class="more section" id="meeting-ask-section">
+      <summary data-i18n="text.Ask these transcripts">Ask these transcripts</summary>
+      <div class="settings-row">
+        <label class="field field-wide" for="meeting-question">
+          <span class="field-label" data-i18n="text.Question">Question</span>
+          <input id="meeting-question" class="field-input" type="search" autocomplete="off" placeholder="What was decided about the launch?">
+        </label>
+        <div class="meeting-actions">
+          <button id="meeting-ask" class="install" type="button" data-i18n="text.Ask this meeting">Ask this meeting</button>
+          <button id="meeting-ask-all" class="swap" type="button" data-i18n="text.Ask every meeting">Ask every meeting</button>
+        </div>
+      </div>
+      <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
+      <dl class="status" id="meeting-citations"></dl>
+    </details>
+
+    <h3 class="meeting-group section" id="meeting-import-label" data-i18n="text.Import a transcript instead">Import a transcript instead</h3>
+    <section class="meeting-import section" aria-labelledby="meeting-import-title">
+      <div class="settings-row meeting-compose">
+        <label class="field field-wide" for="meeting-import-title">
+          <span class="field-label" data-i18n="text.Title">Title</span>
+          <input id="meeting-import-title" class="field-input" type="text" maxlength="60" autocomplete="off" placeholder="Name this transcript">
+        </label>
+        <label class="field field-wide" for="meeting-text">
+          <span class="field-label" data-i18n="text.Transcript">Transcript</span>
+          <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: we ship it on Friday&#10;Speaker 2: I will write the notes."></textarea>
+        </label>
+        <div class="meeting-actions">
+          <button id="meeting-import" class="install" type="button" data-i18n="text.Import transcript">Import transcript</button>
+          <button id="meeting-export" class="swap" type="button" data-i18n="text.Copy all as Markdown">Copy all as Markdown</button>
+          <button id="meeting-summary" class="swap" type="button" data-i18n="text.Summarise the latest">Summarise the latest</button>
+        </div>
+      </div>
+    </section>
+    <div class="settings-row" id="meeting-notes-row" hidden>
+      <label class="field field-wide" for="meeting-notes">
+        <span class="field-label" data-i18n="text.Note">Note</span>
+        <input id="meeting-notes" class="field-input" type="text" maxlength="280" autocomplete="off" spellcheck="false" placeholder="Something worth keeping beside the transcript">
+      </label>
+      <button id="meeting-note-add" class="install" type="button" data-i18n="text.Add note">Add note</button>
+    </div>
+    <h3 class="meeting-group section" id="meeting-list-section" data-i18n="text.Transcripts">Transcripts</h3>
+    <div class="media-list section" id="meeting-list"></div>
+    
+
+<section class="settings settings-nested" id="retention" aria-labelledby="retention-title">
+    <div class="settings-head">
+      <h2 id="retention-title" data-i18n="text.Meeting retention">Meeting retention</h2>
+      <p class="settings-note" data-i18n="text.Meetings older than the window can be removed. Preview first; nothing is deleted until you confirm.">Meetings older than the window can be removed. Preview first; nothing is deleted until you confirm.</p>
+    </div>
+    <div class="settings-row">
+      <label class="field" for="retention-days">
+        <span class="field-label" data-i18n="text.Older than">Older than</span>
+        <select id="retention-days" class="field-input">
+          <option value="30" data-i18n="text.30 days">30 days</option>
+          <option value="90" data-i18n="text.90 days">90 days</option>
+          <option value="180" data-i18n="text.6 months">6 months</option>
+          <option value="365" data-i18n="text.One year">One year</option>
+        </select>
+      </label>
+      <button id="retention-check" class="swap" type="button" data-i18n="text.Check older meetings">Check older meetings</button>
+      <p class="settings-note field-wide" id="retention-note" aria-live="polite"></p>
+    </div>
+    <div class="settings-row" id="retention-result" hidden>
+      <p class="settings-note field-wide" id="retention-count"></p>
+      <button id="retention-delete" class="install" type="button" hidden data-i18n="text.Delete these meetings permanently">Delete these meetings permanently</button>
+    </div>
+  </section>
   </section>
 
   <div class="settings-layout" id="settings-layout">
@@ -811,129 +930,11 @@ try {
       <h1 id="library-title" data-i18n="nav.library">Library</h1>
     </header>
     <nav class="tabs" id="library-tabs" role="tablist" aria-label="Library" data-i18n-aria-label="nav.libraryTabs">
-      <button type="button" class="tab" role="tab" aria-selected="false" data-tab="meetings" data-i18n="nav.meetings">Meetings</button>
       <button type="button" class="tab" role="tab" aria-selected="false" data-tab="files" data-i18n="library.tabs.files">Files</button>
       <button type="button" class="tab" role="tab" aria-selected="false" data-tab="batch" data-i18n="library.tabs.batch">Batch</button>
       <button type="button" class="tab" role="tab" aria-selected="false" data-tab="stories" data-i18n="library.tabs.stories">Stories</button>
       <button type="button" class="tab" role="tab" aria-selected="false" data-tab="history" data-i18n="library.tabs.history">History</button>
     </nav>
-<section class="settings library-panel" id="meetings" aria-labelledby="meetings-title">
-    <div class="settings-head">
-      <h2 id="meetings-title" data-i18n="text.Meetings">Meetings</h2>
-      <p class="settings-note" id="meetings-note" aria-live="polite"></p>
-    </div>
-    <nav class="subnav" aria-label="Meeting sections">
-      <a href="#meeting-record" data-subnav="meeting-record" data-i18n="text.Record a meeting">Record a meeting</a>
-      <a href="#meeting-import-label" data-subnav="meeting-import-label" data-i18n="text.Import a transcript instead">Import a transcript instead</a>
-      <a href="#meeting-find-section" data-subnav="meeting-find-section" data-i18n="text.Find it again">Find it again</a>
-      <a href="#meeting-list-section" data-subnav="meeting-list-section" data-i18n="text.Transcripts">Transcripts</a>
-    </nav>
-    <div class="call-banner" id="call-banner" hidden>
-      <p class="call-text" id="call-text" aria-live="polite"></p>
-      <div class="meeting-actions">
-        <button id="call-record" class="install" type="button" data-i18n="text.Record this meeting">Record this meeting</button>
-        <button id="call-dismiss" class="swap" type="button" data-i18n="text.Not now">Not now</button>
-      </div>
-    </div>
-    <h3 class="meeting-group section" id="meeting-record" data-i18n="text.Record a meeting">Record a meeting</h3>
-    <div class="settings-row meeting-compose">
-      <label class="field" for="meeting-title">
-        <span class="field-label" data-i18n="text.Title">Title</span>
-        <input id="meeting-title" class="field-input" type="text" maxlength="60" placeholder="Name this meeting" autocomplete="off">
-      </label>
-      <label class="field" for="meeting-speakers">
-        <span class="field-label" data-i18n="text.Voices">Voices</span>
-        <input id="meeting-speakers" class="field-input" type="number" min="1" max="20" step="1" placeholder="Auto" autocomplete="off">
-      </label>
-      <button id="meeting-live" class="live" type="button" aria-pressed="false">
-        <span class="live-dot" aria-hidden="true"></span>
-        <span data-i18n="text.Record a meeting">Record a meeting</span>
-      </button>
-      <button id="meeting-pause" class="swap" type="button" aria-pressed="false" disabled data-i18n="text.Pause">Pause</button>
-      <label class="check field-wide" for="meeting-system" title="Share a tab or window with its audio. The sound is processed on this computer.">
-        <input id="meeting-system" type="checkbox">
-        Record the computer's sound, not the microphone
-      </label>
-      <p class="settings-note field-wide" id="meeting-live-note" aria-live="polite" data-i18n="text.Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.">Records the microphone, or the computer's sound when that option is ticked, a few seconds behind. With Speaker separation installed, every line says who spoke.</p>
-    </div>
-    <h3 class="meeting-group section" id="meeting-find-section" data-i18n="text.Find it again">Find it again</h3>
-    <div class="settings-row">
-      <label class="field field-wide" for="meeting-search">
-        <span class="field-label" data-i18n="text.Search every transcript">Search every transcript</span>
-        <input id="meeting-search" class="field-input" type="search" autocomplete="off" spellcheck="false" placeholder="a word someone said">
-      </label>
-    </div>
-    <div class="status" id="meeting-matches" aria-live="polite"></div>
-    <p class="settings-note" id="meeting-summary-text" aria-live="polite"></p>
-    <details class="more section" id="meeting-ask-section">
-      <summary data-i18n="text.Ask these transcripts">Ask these transcripts</summary>
-      <div class="settings-row">
-        <label class="field field-wide" for="meeting-question">
-          <span class="field-label" data-i18n="text.Question">Question</span>
-          <input id="meeting-question" class="field-input" type="search" autocomplete="off" placeholder="What was decided about the launch?">
-        </label>
-        <div class="meeting-actions">
-          <button id="meeting-ask" class="install" type="button" data-i18n="text.Ask this meeting">Ask this meeting</button>
-          <button id="meeting-ask-all" class="swap" type="button" data-i18n="text.Ask every meeting">Ask every meeting</button>
-        </div>
-      </div>
-      <p class="settings-note" id="meeting-answer" aria-live="polite"></p>
-      <dl class="status" id="meeting-citations"></dl>
-    </details>
-
-    <h3 class="meeting-group section" id="meeting-import-label" data-i18n="text.Import a transcript instead">Import a transcript instead</h3>
-    <section class="meeting-import section" aria-labelledby="meeting-import-title">
-      <div class="settings-row meeting-compose">
-        <label class="field field-wide" for="meeting-import-title">
-          <span class="field-label" data-i18n="text.Title">Title</span>
-          <input id="meeting-import-title" class="field-input" type="text" maxlength="60" autocomplete="off" placeholder="Name this transcript">
-        </label>
-        <label class="field field-wide" for="meeting-text">
-          <span class="field-label" data-i18n="text.Transcript">Transcript</span>
-          <textarea id="meeting-text" class="field-input" rows="4" placeholder="Speaker 1: we ship it on Friday&#10;Speaker 2: I will write the notes."></textarea>
-        </label>
-        <div class="meeting-actions">
-          <button id="meeting-import" class="install" type="button" data-i18n="text.Import transcript">Import transcript</button>
-          <button id="meeting-export" class="swap" type="button" data-i18n="text.Copy all as Markdown">Copy all as Markdown</button>
-          <button id="meeting-summary" class="swap" type="button" data-i18n="text.Summarise the latest">Summarise the latest</button>
-        </div>
-      </div>
-    </section>
-    <div class="settings-row" id="meeting-notes-row" hidden>
-      <label class="field field-wide" for="meeting-notes">
-        <span class="field-label" data-i18n="text.Note">Note</span>
-        <input id="meeting-notes" class="field-input" type="text" maxlength="280" autocomplete="off" spellcheck="false" placeholder="Something worth keeping beside the transcript">
-      </label>
-      <button id="meeting-note-add" class="install" type="button" data-i18n="text.Add note">Add note</button>
-    </div>
-    <h3 class="meeting-group section" id="meeting-list-section" data-i18n="text.Transcripts">Transcripts</h3>
-    <div class="media-list section" id="meeting-list"></div>
-    
-
-<section class="settings settings-nested" id="retention" aria-labelledby="retention-title">
-    <div class="settings-head">
-      <h2 id="retention-title" data-i18n="text.Meeting retention">Meeting retention</h2>
-      <p class="settings-note" data-i18n="text.Meetings older than the window can be removed. Preview first; nothing is deleted until you confirm.">Meetings older than the window can be removed. Preview first; nothing is deleted until you confirm.</p>
-    </div>
-    <div class="settings-row">
-      <label class="field" for="retention-days">
-        <span class="field-label" data-i18n="text.Older than">Older than</span>
-        <select id="retention-days" class="field-input">
-          <option value="30" data-i18n="text.30 days">30 days</option>
-          <option value="90" data-i18n="text.90 days">90 days</option>
-          <option value="180" data-i18n="text.6 months">6 months</option>
-          <option value="365" data-i18n="text.One year">One year</option>
-        </select>
-      </label>
-      <button id="retention-check" class="swap" type="button" data-i18n="text.Check older meetings">Check older meetings</button>
-      <p class="settings-note field-wide" id="retention-note" aria-live="polite"></p>
-    </div>
-    <div class="settings-row" id="retention-result" hidden>
-      <p class="settings-note field-wide" id="retention-count"></p>
-      <button id="retention-delete" class="install" type="button" hidden data-i18n="text.Delete these meetings permanently">Delete these meetings permanently</button>
-    </div>
-  </section>
-  </section>
 <section class="dub library-panel" id="dub" aria-labelledby="dub-title">
     <div class="dub-head">
       <h2 id="dub-title" data-i18n="text.Dub a file">Dub a file</h2>

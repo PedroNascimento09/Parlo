@@ -6457,7 +6457,8 @@ const ROUTES = {
     "welcome",
     "status-list",
   ],
-  library: ["library", "library-tabs", "meetings", "dub", "batch", "stories", "history"],
+  meetings: ["meetings"],
+  library: ["library", "library-tabs", "dub", "batch", "stories", "history"],
   voice: ["voice"],
   insights: ["insights"],
   settings: [
@@ -6579,7 +6580,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 const LIBRARY_TABS = {
-  meetings: ["meetings"],
   files: ["dub"],
   batch: ["batch"],
   stories: ["stories"],
@@ -6587,14 +6587,13 @@ const LIBRARY_TABS = {
 };
 
 const LIBRARY_LOADERS = {
-  meetings: [loadMeetings],
   files: [loadDubProjects],
   batch: [loadBatches, loadWatch],
   stories: [loadStories],
   history: [loadHistory],
 };
 
-let libraryTab = "meetings";
+let libraryTab = "files";
 let batchBusy = false;
 let lastBatches = [];
 let batchRowsShown = 12;
@@ -6612,7 +6611,7 @@ function loadLibrary() {
 }
 
 function showLibraryTab(name) {
-  const chosen = LIBRARY_TABS[name] ? name : "meetings";
+  const chosen = LIBRARY_TABS[name] ? name : "files";
   libraryTab = chosen;
   for (const [key, ids] of Object.entries(LIBRARY_TABS)) {
     for (const id of ids) {
