@@ -133,6 +133,7 @@ mod win {
         pub fn IsIconic(window: Window) -> i32;
         pub fn BringWindowToTop(window: Window) -> i32;
         pub fn AttachThreadInput(mine: u32, theirs: u32, attach: i32) -> i32;
+        pub fn IsWindow(window: Window) -> i32;
     }
 
     #[link(name = "kernel32")]
@@ -183,7 +184,10 @@ pub fn common_prefix(previous: &str, next: &str) -> usize {
 }
 
 #[cfg(windows)]
-pub fn capture_target() -> Result<usize, String> {
+static LAST_TARGET: std::sync::Mutex<Option<usize>> = std::sync::Mutex::new(None);
+
+#[cfg(windows)]
+fn live_foreground() -> Result<usize, String> {
     use win::*;
     let window = unsafe { GetForegroundWindow() };
     if window.is_null() {
@@ -197,6 +201,26 @@ pub fn capture_target() -> Result<usize, String> {
         return Err("Parlo itself has the focus, so the text would land in Parlo".to_string());
     }
     Ok(window as usize)
+}
+
+#[cfg(windows)]
+pub fn capture_target() -> Result<usize, String> {
+    use win::*;
+    match live_foreground() {
+        Ok(window) => {
+            if let Ok(mut slot) = LAST_TARGET.lock() {
+                *slot = Some(window);
+            }
+            Ok(window)
+        }
+        Err(error) => {
+            let remembered = LAST_TARGET.lock().ok().and_then(|slot| *slot);
+            match remembered {
+                Some(window) if unsafe { IsWindow(window as Window) } != 0 => Ok(window),
+                _ => Err(error),
+            }
+        }
+    }
 }
 
 #[cfg(windows)]

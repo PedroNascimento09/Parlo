@@ -12,109 +12,19 @@ pub fn show(handle: &AppHandle) {
     crate::place(&window);
     #[cfg(windows)]
     {
-        let field = foreground_elsewhere();
-        if reveal(&window) {
-            if let Some(field) = field {
-                give_back(field);
+        let field = parlo_core::focus::foreground();
+        let raw = window.hwnd().ok().map(|handle| handle.0 as usize);
+        if let Some(raw) = raw {
+            if parlo_core::focus::reveal(raw) {
+                if let Some(field) = field {
+                    parlo_core::focus::give_back(field);
+                }
+                return;
             }
-            return;
         }
     }
     if window.show().is_err() {
         crate::note("the dictation island did not appear");
-    }
-}
-
-#[cfg(windows)]
-fn window_handle(window: &tauri::WebviewWindow) -> Option<*mut std::ffi::c_void> {
-    window.hwnd().ok().map(|handle| handle.0)
-}
-
-#[cfg(windows)]
-fn foreground_elsewhere() -> Option<*mut std::ffi::c_void> {
-    use std::ffi::c_void;
-    extern "system" {
-        fn GetForegroundWindow() -> *mut c_void;
-        fn GetWindowThreadProcessId(window: *mut c_void, process: *mut u32) -> u32;
-        fn GetCurrentProcessId() -> u32;
-    }
-    let window = unsafe { GetForegroundWindow() };
-    if window.is_null() {
-        return None;
-    }
-    let mut process = 0u32;
-    unsafe {
-        GetWindowThreadProcessId(window, &mut process);
-    }
-    if process == unsafe { GetCurrentProcessId() } {
-        None
-    } else {
-        Some(window)
-    }
-}
-
-#[cfg(windows)]
-fn reveal(window: &tauri::WebviewWindow) -> bool {
-    use std::ffi::c_void;
-    extern "system" {
-        fn ShowWindow(window: *mut c_void, command: i32) -> i32;
-        fn SetWindowPos(
-            window: *mut c_void,
-            insert: *mut c_void,
-            x: i32,
-            y: i32,
-            width: i32,
-            height: i32,
-            flags: u32,
-        ) -> i32;
-    }
-    const SW_SHOWNOACTIVATE: i32 = 4;
-    const SWP_NOSIZE: u32 = 0x0001;
-    const SWP_NOMOVE: u32 = 0x0002;
-    const SWP_NOACTIVATE: u32 = 0x0010;
-    let Some(raw) = window_handle(window) else {
-        return false;
-    };
-    unsafe {
-        ShowWindow(raw, SW_SHOWNOACTIVATE);
-        SetWindowPos(
-            raw,
-            -1isize as *mut c_void,
-            0,
-            0,
-            0,
-            0,
-            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE,
-        );
-    }
-    true
-}
-
-#[cfg(windows)]
-fn give_back(field: *mut std::ffi::c_void) {
-    extern "system" {
-        fn IsWindow(window: *mut std::ffi::c_void) -> i32;
-        fn SetForegroundWindow(window: *mut std::ffi::c_void) -> i32;
-        fn GetForegroundWindow() -> *mut std::ffi::c_void;
-        fn GetWindowThreadProcessId(window: *mut std::ffi::c_void, process: *mut u32) -> u32;
-        fn GetCurrentProcessId() -> u32;
-    }
-    if unsafe { IsWindow(field) } == 0 {
-        return;
-    }
-    let current = unsafe { GetForegroundWindow() };
-    if current.is_null() {
-        return;
-    }
-    let mut process = 0u32;
-    unsafe {
-        GetWindowThreadProcessId(current, &mut process);
-    }
-    if process != unsafe { GetCurrentProcessId() } {
-        return;
-    }
-    unsafe {
-        SetForegroundWindow(field);
     }
 }
 
@@ -141,26 +51,6 @@ fn tell(handle: &AppHandle, script: &str) {
     if let Some(window) = handle.get_webview_window(ISLAND) {
         let _ = window.eval(script);
     }
-}
-
-#[cfg(windows)]
-fn modifier_bit(key: u32) -> u32 {
-    const MOD_ALT: u32 = 0x0001;
-    const MOD_CONTROL: u32 = 0x0002;
-    const MOD_SHIFT: u32 = 0x0004;
-    const MOD_WIN: u32 = 0x0008;
-    match key {
-        0x10 | 0xA0 | 0xA1 => MOD_SHIFT,
-        0x11 | 0xA2 | 0xA3 => MOD_CONTROL,
-        0x12 | 0xA4 | 0xA5 => MOD_ALT,
-        0x5B | 0x5C => MOD_WIN,
-        _ => 0,
-    }
-}
-
-#[cfg(windows)]
-fn ends_hold(key: u32, trigger: u32, modifiers: u32) -> bool {
-    key == trigger || modifier_bit(key) & modifiers != 0
 }
 
 #[cfg(windows)]
@@ -414,7 +304,7 @@ pub fn listen(handle: AppHandle) {
                 };
                 if released
                     && HELD.load(Ordering::Relaxed)
-                    && ends_hold(
+                    && parlo_core::hotkey::ends_hold(
                         entry.vk,
                         KEY.load(Ordering::Relaxed),
                         MODS.load(Ordering::Relaxed),
@@ -687,28 +577,5 @@ mod bridge_tests {
             page.contains("startDragging") && page.contains("pointerdown"),
             "the island has no way to be moved"
         );
-    }
-}
-
-#[cfg(all(test, windows))]
-mod hold_tests {
-    use super::ends_hold;
-
-    #[test]
-    fn lifting_the_shortcut_key_ends_the_dictation() {
-        assert!(ends_hold(0x44, 0x44, 0x0002));
-    }
-
-    #[test]
-    fn lifting_a_modifier_of_the_shortcut_ends_the_dictation() {
-        assert!(ends_hold(0xA2, 0x44, 0x0002));
-        assert!(ends_hold(0x10, 0x44, 0x0004));
-        assert!(ends_hold(0x5B, 0x44, 0x0008));
-    }
-
-    #[test]
-    fn an_unrelated_key_leaves_the_dictation_running() {
-        assert!(!ends_hold(0x41, 0x44, 0x0002));
-        assert!(!ends_hold(0x10, 0x44, 0x0002));
     }
 }
