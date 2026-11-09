@@ -203,6 +203,21 @@ class StreamingSessionTest(unittest.TestCase):
         self.assertIn("final", [event.state for event in events])
         self.assertEqual(session.audio_seconds, 0.0)
 
+    def test_closing_on_silence_reuses_the_last_hypothesis(self):
+        session = self.session(["bom dia", "bom dia"], silence_seconds=0.2)
+        session.feed([0.3] * 500)
+        events = session.feed([0.0] * 500)
+        self.assertEqual([event.text for event in events if event.state == "final"], ["bom dia"])
+
+    def test_close_after_new_speech_listens_again(self):
+        session = self.session(["bom dia", "bom dia, tudo bem"], silence_seconds=0.9)
+        session.feed([0.3] * 500)
+        session.feed([0.3] * 100)
+        events = session.close()
+        self.assertEqual(
+            [event.text for event in events if event.state == "final"], ["bom dia, tudo bem"]
+        )
+
     def test_silence_before_any_speech_does_not_close_anything(self):
         session = self.session([], silence_seconds=0.2)
         self.assertEqual(session.feed([0.0] * 500), [])

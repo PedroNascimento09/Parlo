@@ -175,6 +175,8 @@ class StreamingSession:
         self._silence_seconds = 0.0
         self._tail: list[float] = []
         self._speech = False
+        self._fresh_speech = False
+        self._last_words: list[str] = []
         self._last_decode_time = 0.0
         self._clock = clock
         self._vad = VoiceActivity(
@@ -219,6 +221,7 @@ class StreamingSession:
             frame = self._tail[index * frame_samples : (index + 1) * frame_samples]
             if rms(frame) >= SILENCE_RMS:
                 self._speech = True
+                self._fresh_speech = True
                 self._silence_seconds = 0.0
             else:
                 self._silence_seconds += FRAME_MS / 1000
@@ -236,19 +239,28 @@ class StreamingSession:
         self._silence_seconds = 0.0
         self._tail = []
         self._speech = False
+        self._fresh_speech = False
+        self._last_words = []
         self._policy.reset()
 
     def _decode(self) -> list[TextEvent]:
+        words, latency = self._listen()
+        return self._policy.observe(words, self.audio_ms, latency)
+
+    def _finalize(self) -> list[TextEvent]:
+        if self._last_words and not self._fresh_speech:
+            events = self._policy.finalize(self._last_words, self.audio_ms, 0)
+        else:
+            words, latency = self._listen()
+            events = self._policy.finalize(words, self.audio_ms, latency)
+        self.reset()
+        return events
+
+    def _listen(self) -> tuple[list[str], int]:
         started = self._clock()
         words = self.transcribe(list(self._samples)).split()
         latency = int((self._clock() - started) * 1000)
         self._decoded_seconds = self.audio_seconds
-        return self._policy.observe(words, self.audio_ms, latency)
-
-    def _finalize(self) -> list[TextEvent]:
-        started = self._clock()
-        words = self.transcribe(list(self._samples)).split()
-        latency = int((self._clock() - started) * 1000)
-        events = self._policy.finalize(words, self.audio_ms, latency)
-        self.reset()
-        return events
+        self._fresh_speech = False
+        self._last_words = words
+        return words, latency
