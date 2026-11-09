@@ -2290,7 +2290,7 @@ textarea.field-input {
 
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .install,
@@ -3225,8 +3225,9 @@ input[type="checkbox"]:focus-visible,
   max-width: none;
   margin: 0;
   grid-template-columns: minmax(0, 1fr);
-  gap: 22px;
-  padding: 34px 36px 30px;
+  gap: 26px;
+  padding: clamp(24px, 3vw, 40px);
+  border: 1px solid var(--line);
   border-radius: 18px;
   background: var(--surface);
 }
@@ -3246,7 +3247,7 @@ input[type="checkbox"]:focus-visible,
 }
 
 .home-greeting {
-  font-size: 28px;
+  font-size: clamp(28px, 3vw, 36px);
   line-height: 1.15;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
@@ -3261,20 +3262,20 @@ input[type="checkbox"]:focus-visible,
 
 .home-primary {
   display: grid;
-  gap: 6px;
-  padding: 22px 24px 20px;
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
+  gap: 10px;
+  padding: clamp(20px, 2.5vw, 30px);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--line));
+  border-left: 4px solid var(--accent);
   border-radius: 0 16px 16px 0;
-  background: var(--surface-sunken);
+  background: var(--accent-wash);
 }
 
 .home-eyebrow {
-  color: var(--muted);
+  color: var(--accent-deep);
   font-family: var(--font-label);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 

@@ -12,6 +12,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- Home gives the dictation shortcut more room, and the island's language choices show a clear keyboard focus ring.
 - Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 2 ms with Polish off, against 362 ms on the audio path, measured on a 2.8 s clip through the app's own server.
 - Polish never holds the text: the raw sentence is written first and the cleaned one replaces it when it arrives, within a 400 ms grace. A model that answers in 150 ms fills in behind a 2 ms insertion; a model that takes 1.2 s is dropped and the raw text stands.
 - The cleanup stage is warmed when the server starts, so the first dictation of a session no longer pays the polish model's load.

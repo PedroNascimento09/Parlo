@@ -324,7 +324,10 @@
   .write-option:focus-visible {
     background: var(--track);
     color: var(--ink);
-    outline: none;
+  }
+  .write-option:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
   .write-option.needs-download::after {
     content: "download";
