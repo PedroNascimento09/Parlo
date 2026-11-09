@@ -31,21 +31,7 @@ impl Server {
 fn warm_dictation(session: &Arc<Session>) {
     let session = Arc::clone(session);
     std::thread::spawn(move || {
-        if session.is_working() {
-            return;
-        }
-        let stt = session.chosen().stt.clone();
-        let Some(unit) = crate::models::unit_of(&stt) else {
-            return;
-        };
-        match session.load_unit(unit) {
-            Ok(()) => println!("  warm       {stt} loaded, so the first dictation starts at once"),
-            Err(error) => println!("  warm       {stt} stays cold: {error}"),
-        }
-        match session.clean_text("Parlo", None) {
-            Ok(_) => println!("  warm       the cleanup stage is ready"),
-            Err(error) => println!("  warm       the cleanup stage stays cold: {error}"),
-        }
+        session.warm();
     });
 }
 

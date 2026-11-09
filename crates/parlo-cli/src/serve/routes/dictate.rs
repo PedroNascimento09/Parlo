@@ -31,6 +31,10 @@ struct InsertRequest {
 
 const POLISH_GRACE_MS: u64 = 400;
 
+pub(crate) fn within_grace(polish_ms: u64) -> bool {
+    polish_ms <= POLISH_GRACE_MS
+}
+
 pub(crate) fn route(
     method: &str,
     path: &str,
@@ -45,6 +49,7 @@ pub(crate) fn route(
         ("POST", "/dictate/begin")
             | ("POST", "/undo")
             | ("POST", "/insert")
+            | ("POST", "/warm")
             | ("POST", "/dictate")
             | ("POST", "/translate")
     ) {
@@ -104,6 +109,15 @@ fn handle(
         };
     }
 
+    if method == "POST" && path == "/warm" {
+        if !authorised(headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        session.warm();
+        return respond_json(stream, "200 OK", "{\"warm\":true}").map(|()| Flow::Serve);
+    }
+
     if method == "POST" && path == "/insert" {
         if !authorised(headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -143,7 +157,7 @@ fn handle(
                     if let Ok(cleaned) = session.clean_text(request.text.trim(), None) {
                         polish_ms = began.elapsed().as_millis() as u64;
                         let cleaned = cleaned.trim();
-                        if polish_ms <= POLISH_GRACE_MS
+                        if within_grace(polish_ms)
                             && !cleaned.is_empty()
                             && cleaned != request.text.trim()
                             && session.insert_text(cleaned, &request.text, 0).is_ok()
@@ -431,4 +445,18 @@ fn handle(
         samples,
     };
     respond_audio(stream, &write_pcm16(&translated), &transcript).map(|()| Flow::Serve)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::within_grace;
+
+    #[test]
+    fn the_polish_is_replaced_only_inside_its_grace() {
+        assert!(within_grace(0));
+        assert!(within_grace(150));
+        assert!(within_grace(400));
+        assert!(!within_grace(401));
+        assert!(!within_grace(1_200));
+    }
 }

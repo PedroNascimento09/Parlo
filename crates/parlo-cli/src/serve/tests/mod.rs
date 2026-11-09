@@ -458,6 +458,7 @@ const ROUTES: &[(&str, &str, bool)] = &[
     ("POST", "/dictate/begin", true),
     ("POST", "/undo", true),
     ("POST", "/insert", true),
+    ("POST", "/warm", true),
     ("POST", "/dictate", true),
 ];
 
