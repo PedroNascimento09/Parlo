@@ -546,6 +546,7 @@ const ISLAND_HEIGHT = 132;
 const ISLAND_OPEN_HEIGHT = 372;
 const MAX_SECONDS = 60;
 const PARTIAL_MS = 600;
+const WINDOW_SECONDS = 3;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
 const stateEl = document.getElementById("state");
@@ -970,7 +971,7 @@ async function sendPartial(force) {
         "Content-Type": "audio/wav",
         Authorization: "Bearer " + token,
         "x-parlo-style": localStorage.getItem("parlo.style") || "",
-        ...(tidy ? { "x-parlo-window": "2" } : {}),
+        "x-parlo-window": String(WINDOW_SECONDS),
       },
       body: encodeWav(downsample(merged, context.sampleRate, TARGET_RATE), TARGET_RATE),
     });
