@@ -1383,7 +1383,8 @@
       "settings.tabs.vocabulary": "المفردات",
       "vocabulary.hint": "يحوّل المقطع عبارة قصيرة إلى نص أطول، مثل توقيعك.",
       "vocabulary.empty": "لا شيء هنا بعد. أضف اسمًا يخطئ بارلو في كتابته، أو مقطعًا يمثل جملة أطول.",
-      "vocabulary.count": "{count} على هذا الكمبيوتر."
+      "vocabulary.count": "{count} على هذا الكمبيوتر.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "cs": {
       "about.after": ". Nová verze se instaluje z krabice v horní části domovské stránky a nikdy sama.",
@@ -2722,7 +2723,8 @@
       "settings.tabs.vocabulary": "Slovník",
       "vocabulary.hint": "Úryvek promění krátkou frázi v delší text, třeba váš podpis.",
       "vocabulary.empty": "Zatím tu nic není. Přidejte jméno, které Parlo pořád píše špatně, nebo úryvek za delší větu.",
-      "vocabulary.count": "{count} na tomto počítači."
+      "vocabulary.count": "{count} na tomto počítači.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "da": {
       "about.after": ". En ny version installeres fra boksen øverst i Home, og aldrig alene.",
@@ -4061,7 +4063,8 @@
       "settings.tabs.vocabulary": "Ordliste",
       "vocabulary.hint": "Et uddrag gør en kort sætning til en længere tekst, som din afslutning.",
       "vocabulary.empty": "Intet her endnu. Tilføj et navn, Parlo stadig skriver forkert, eller et uddrag for en længere sætning.",
-      "vocabulary.count": "{count} på denne computer."
+      "vocabulary.count": "{count} på denne computer.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "de": {
       "about.after": ". Eine neue Version wird aus der Box oben in Home installiert und niemals alleine.",
@@ -5400,7 +5403,8 @@
       "settings.tabs.vocabulary": "Vokabular",
       "vocabulary.hint": "Ein Schnipsel macht aus einem kurzen Satz einen längeren Text, etwa Ihre Grußformel.",
       "vocabulary.empty": "Noch nichts hier. Fügen Sie einen Namen hinzu, den Parlo noch falsch schreibt, oder einen Schnipsel für einen längeren Satz.",
-      "vocabulary.count": "{count} auf diesem Computer."
+      "vocabulary.count": "{count} auf diesem Computer.",
+      "island.firstLoad": "Das erste Diktat nach dem Start lädt die Engine und kann ein paar Sekunden länger dauern."
     },
     "en": {
       "about.after": ". A new version installs from the box at the top of Home, and never on its own.",
@@ -6739,7 +6743,8 @@
       "settings.tabs.vocabulary": "Vocabulary",
       "vocabulary.hint": "A snippet turns a short phrase into a longer piece of text, like your sign off.",
       "vocabulary.empty": "Nothing here yet. Add a name Parlo keeps getting wrong, or a snippet that stands for a longer line.",
-      "vocabulary.count": "{count} on this computer."
+      "vocabulary.count": "{count} on this computer.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "es": {
       "about.after": ". Una nueva versión se instala desde el cuadro en la parte superior de Inicio, y nunca sola.",
@@ -8078,7 +8083,8 @@
       "settings.tabs.vocabulary": "Vocabulario",
       "vocabulary.hint": "Un fragmento convierte una frase corta en un texto más largo, como tu despedida.",
       "vocabulary.empty": "Todavía nada aquí. Añade un nombre que Parlo sigue confundiendo o un fragmento que valga por una frase más larga.",
-      "vocabulary.count": "{count} en este ordenador."
+      "vocabulary.count": "{count} en este ordenador.",
+      "island.firstLoad": "El primer dictado tras el arranque carga el motor, así que puede tardar unos segundos más."
     },
     "fi": {
       "about.after": ". Uusi versio asennetaan etusivun yläreunassa olevasta laatikosta, ei koskaan itsestään.",
@@ -9417,7 +9423,8 @@
       "settings.tabs.vocabulary": "Sanasto",
       "vocabulary.hint": "Katkelma muuttaa lyhyen lauseen pidemmäksi tekstiksi, kuten allekirjoituksesi.",
       "vocabulary.empty": "Ei vielä mitään. Lisää nimi, jonka Parlo kirjoittaa yhä väärin, tai katkelma pidemmälle lauseelle.",
-      "vocabulary.count": "{count} tällä tietokoneella."
+      "vocabulary.count": "{count} tällä tietokoneella.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "fr": {
       "about.after": ". Une nouvelle version s'installe depuis la boîte en haut de l'Accueil, et jamais seule.",
@@ -10756,7 +10763,8 @@
       "settings.tabs.vocabulary": "Vocabulaire",
       "vocabulary.hint": "Un extrait transforme une phrase courte en un texte plus long, comme votre formule de politesse.",
       "vocabulary.empty": "Rien ici pour l'instant. Ajoutez un nom que Parlo se trompe encore à écrire, ou un extrait qui vaut une phrase plus longue.",
-      "vocabulary.count": "{count} sur cet ordinateur."
+      "vocabulary.count": "{count} sur cet ordinateur.",
+      "island.firstLoad": "La première dictée après le démarrage charge le moteur, elle peut donc prendre quelques secondes de plus."
     },
     "it": {
       "about.after": ". Una nuova versione viene installata dalla casella nella parte superiore della Home e mai da sola.\n@@10:30@@\nRimuovere __PARLO_PH_0__ e le relative esportazioni da questo computer?",
@@ -12095,7 +12103,8 @@
       "settings.tabs.vocabulary": "Vocabolario",
       "vocabulary.hint": "Uno snippet trasforma una frase breve in un testo più lungo, come la tua chiusura.",
       "vocabulary.empty": "Ancora niente qui. Aggiungi un nome che Parlo sbaglia ancora, o uno snippet che vale una frase più lunga.",
-      "vocabulary.count": "{count} su questo computer."
+      "vocabulary.count": "{count} su questo computer.",
+      "island.firstLoad": "Il primo dettato dopo l'avvio carica il motore, quindi può richiedere qualche secondo in più."
     },
     "ja": {
       "about.after": "。新しいバージョンは、ホームの上部にあるボックスからインストールされます。単独でインストールされることはありません。",
@@ -13434,7 +13443,8 @@
       "settings.tabs.vocabulary": "語彙",
       "vocabulary.hint": "スニペットは短い言葉を署名のような長い文章に変えます。",
       "vocabulary.empty": "まだ何もありません。Parlo が間違える名前や、長い一文になるスニペットを追加してください。",
-      "vocabulary.count": "このコンピューターに {count}。"
+      "vocabulary.count": "このコンピューターに {count}。",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "ko": {
       "about.after": ". 새 버전은 홈 상단에 있는 상자에서 설치되며 자체적으로는 설치되지 않습니다.",
@@ -14773,7 +14783,8 @@
       "settings.tabs.vocabulary": "어휘",
       "vocabulary.hint": "스니펫은 짧은 말을 서명처럼 더 긴 문장으로 바꿉니다.",
       "vocabulary.empty": "아직 아무것도 없습니다. Parlo가 계속 틀리는 이름이나 긴 문장을 대신할 스니펫을 추가하세요.",
-      "vocabulary.count": "이 컴퓨터에 {count}."
+      "vocabulary.count": "이 컴퓨터에 {count}.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "nb": {
       "about.after": ". En ny versjon installeres fra boksen på toppen av Home, og aldri på egen hånd.",
@@ -16112,7 +16123,8 @@
       "settings.tabs.vocabulary": "Ordliste",
       "vocabulary.hint": "Et utdrag gjør en kort frase om til en lengre tekst, som avslutningen din.",
       "vocabulary.empty": "Ingenting her ennå. Legg til et navn Parlo fortsatt skriver feil, eller et utdrag for en lengre setning.",
-      "vocabulary.count": "{count} på denne datamaskinen."
+      "vocabulary.count": "{count} på denne datamaskinen.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "nl": {
       "about.after": ". Een nieuwe versie wordt geïnstalleerd vanuit de box bovenaan Home, en nooit uit zichzelf.",
@@ -17451,7 +17463,8 @@
       "settings.tabs.vocabulary": "Woordenlijst",
       "vocabulary.hint": "Een fragment maakt van een korte zin een langere tekst, zoals je afsluiting.",
       "vocabulary.empty": "Nog niets hier. Voeg een naam toe die Parlo nog verkeerd schrijft, of een fragment voor een langere zin.",
-      "vocabulary.count": "{count} op deze computer."
+      "vocabulary.count": "{count} op deze computer.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "pl": {
       "about.after": ". Nowa wersja instaluje się z pudełka na górze strony głównej, nigdy samodzielnie.",
@@ -18790,7 +18803,8 @@
       "settings.tabs.vocabulary": "Słownik",
       "vocabulary.hint": "Fragment zamienia krótką frazę w dłuższy tekst, na przykład twoje pożegnanie.",
       "vocabulary.empty": "Jeszcze nic tu nie ma. Dodaj nazwę, którą Parlo wciąż zapisuje źle, albo fragment zastępujący dłuższe zdanie.",
-      "vocabulary.count": "{count} na tym komputerze."
+      "vocabulary.count": "{count} na tym komputerze.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "pt": {
       "about.after": ". Uma nova versão instala-se pela caixa no topo do Início, e nunca sozinha.",
@@ -20129,7 +20143,8 @@
       "settings.tabs.vocabulary": "Vocabulário",
       "vocabulary.hint": "Um trecho transforma uma frase curta num texto mais longo, como a tua despedida.",
       "vocabulary.empty": "Ainda nada aqui. Adiciona um nome que o Parlo continua a errar, ou um trecho que vale por uma frase maior.",
-      "vocabulary.count": "{count} neste computador."
+      "vocabulary.count": "{count} neste computador.",
+      "island.firstLoad": "O primeiro ditado depois de arrancar carrega o motor, por isso pode demorar mais uns segundos."
     },
     "ro": {
       "about.after": ". O nouă versiune se instalează din caseta din partea de sus a Acasă și niciodată singură.",
@@ -21468,7 +21483,8 @@
       "settings.tabs.vocabulary": "Vocabular",
       "vocabulary.hint": "Un fragment transformă o frază scurtă într-un text mai lung, ca semnătura ta.",
       "vocabulary.empty": "Încă nimic aici. Adaugă un nume pe care Parlo îl scrie greșit sau un fragment pentru o frază mai lungă.",
-      "vocabulary.count": "{count} pe acest computer."
+      "vocabulary.count": "{count} pe acest computer.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "ru": {
       "about.after": ". Новая версия устанавливается из коробки в верхней части главного экрана, а не сама по себе.",
@@ -22807,7 +22823,8 @@
       "settings.tabs.vocabulary": "Словарь",
       "vocabulary.hint": "Фрагмент превращает короткую фразу в длинный текст, например вашу подпись.",
       "vocabulary.empty": "Здесь пока пусто. Добавьте имя, которое Parlo пишет неверно, или фрагмент вместо длинной фразы.",
-      "vocabulary.count": "{count} на этом компьютере."
+      "vocabulary.count": "{count} на этом компьютере.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "sv": {
       "about.after": ". En ny version installeras från lådan överst på Home, och aldrig på egen hand.",
@@ -24146,7 +24163,8 @@
       "settings.tabs.vocabulary": "Ordlista",
       "vocabulary.hint": "Ett utdrag gör en kort fras till en längre text, som din avslutning.",
       "vocabulary.empty": "Inget här än. Lägg till ett namn som Parlo fortfarande skriver fel, eller ett utdrag för en längre mening.",
-      "vocabulary.count": "{count} på den här datorn."
+      "vocabulary.count": "{count} på den här datorn.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "tr": {
       "about.after": ". Yeni bir sürüm Ana Sayfa'nın üst kısmındaki kutudan yüklenir ve hiçbir zaman tek başına yüklenmez.",
@@ -25485,7 +25503,8 @@
       "settings.tabs.vocabulary": "Sözlük",
       "vocabulary.hint": "Bir parça, kısa bir ifadeyi imzanız gibi daha uzun bir metne çevirir.",
       "vocabulary.empty": "Burada henüz bir şey yok. Parlo'nun yanlış yazdığı bir adı veya daha uzun bir cümle yerine geçen bir parçayı ekleyin.",
-      "vocabulary.count": "Bu bilgisayarda {count}."
+      "vocabulary.count": "Bu bilgisayarda {count}.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "uk": {
       "about.after": ". Нова версія встановлюється з коробки у верхній частині головної сторінки, але ніколи самостійно.",
@@ -26824,7 +26843,8 @@
       "settings.tabs.vocabulary": "Словник",
       "vocabulary.hint": "Фрагмент перетворює коротку фразу на довший текст, наприклад ваш підпис.",
       "vocabulary.empty": "Тут поки нічого немає. Додайте ім'я, яке Parlo досі пише неправильно, або фрагмент замість довшої фрази.",
-      "vocabulary.count": "{count} на цьому комп'ютері."
+      "vocabulary.count": "{count} на цьому комп'ютері.",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     },
     "zh": {
       "about.after": "。新版本从主页顶部的框中安装，而不是单独安装。",
@@ -28163,7 +28183,8 @@
       "settings.tabs.vocabulary": "词汇",
       "vocabulary.hint": "片段会把一个短句变成更长的文字，比如你的落款。",
       "vocabulary.empty": "这里还是空的。添加一个 Parlo 总写错的名字，或一段代表更长句子的片段。",
-      "vocabulary.count": "这台电脑上有 {count}。"
+      "vocabulary.count": "这台电脑上有 {count}。",
+      "island.firstLoad": "The first dictation after a start loads the engine, so it can take a few seconds longer."
     }
   }
 }

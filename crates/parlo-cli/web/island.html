@@ -122,6 +122,11 @@
     max-width: 520px;
   }
   body.ready .readout { display: none; }
+  .hint {
+    font-size: 10.5px;
+    line-height: 1.35;
+    color: var(--muted);
+  }
   .state {
     display: flex;
     align-items: center;
@@ -496,6 +501,7 @@
     <div class="readout">
       <span class="state" id="state" role="status" aria-live="polite" aria-atomic="true"></span>
       <span class="line pending" id="line"></span>
+      <span class="hint" id="hint" role="note" hidden data-i18n="island.firstLoad">The first dictation after a start loads the engine, so it can take a few seconds longer.</span>
     </div>
     <div class="actions">
       <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
@@ -551,6 +557,7 @@ const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
 const stateEl = document.getElementById("state");
 const lineEl = document.getElementById("line");
+const hintEl = document.getElementById("hint");
 const tidyEl = document.getElementById("tidy");
 const tidyHint = document.getElementById("tidy-hint");
 const recordEl = document.getElementById("record");
@@ -603,6 +610,7 @@ let starting = false;
 let session = 0;
 let armed = false;
 let autoListening = false;
+let warmed = false;
 
 function tauriWindow() {
   const api = window.__TAURI__;
@@ -911,6 +919,7 @@ async function begin() {
     openWriteMenu(false);
     document.body.classList.remove("ready");
     setState(t("island.listening", "Listening"), "", true);
+    hintEl.hidden = warmed;
     if (!stream && !(await capture())) {
       return;
     }
@@ -1466,6 +1475,8 @@ async function stop() {
       }
       result = await response.json();
     }
+    warmed = true;
+    hintEl.hidden = true;
     const spoken = (result.text || "").trim();
     let text = (result.translation || "").trim() || spoken;
     if (!text) {
