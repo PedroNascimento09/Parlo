@@ -77,6 +77,8 @@ The original transcript is always kept beside the cleaned text, and `off` brings
 
 One request per dictation, on the finished text, never per audio window and never on partial transcripts. A dictation that the rules can handle is never sent anywhere. There is no retry loop, no background polling and no cache of other people's text.
 
+A model has 1.5 s to answer, set by `PARLO_INTELLIGENCE_DEADLINE_MS` and clamped between 200 ms and 5 s. Past that the deterministic text is used and the reason is recorded, so the worst case a person feels is a correction that did not happen, never a dictation waiting on a provider.
+
 An estimate of what a request costs requires the provider's current prices, which Parlo does not bundle; the honest answer today is that Parlo cannot show a price it has not measured, so it does not invent one. Spending limits and per-model price display are planned, not implemented.
 
 ## What is not built yet
@@ -88,7 +90,7 @@ An estimate of what a request costs requires the provider's current prices, whic
 
 ## Tests
 
-`engines/cascade/tests/test_intelligence.py` covers routing (off, local, cloud, auto, an unauthorised cloud, a missing key), the transport rule, the validation rules, fallback on a refused key, fallback on an invented fact, and the loopback-only local model. `test_admin.py` covers the settings the engine reads from the config file, the environment winning over it, a hand-edited value falling back instead of breaking dictation, and the refusals of the key entry. `test_credentials.py` covers the OS store round trip and checks that the Windows file does not carry the secret in clear. The transport is injected, so the tests never touch the network. On the Rust side, `intelligence.rs` tests the settings that reach the engine: modes, provider names, model names, and which plain `http://` addresses are refused.
+`engines/cascade/tests/test_intelligence.py` covers routing (off, local, cloud, auto, an unauthorised cloud, a missing key), the transport rule, the validation rules, fallback on a refused key, fallback on an invented fact, the deadline a slow model is given, and the loopback-only local model. `test_admin.py` covers the settings the engine reads from the config file, the environment winning over it, a hand-edited value falling back instead of breaking dictation, and the refusals of the key entry. `test_credentials.py` covers the OS store round trip and checks that the Windows file does not carry the secret in clear. The transport is injected, so the tests never touch the network. On the Rust side, `intelligence.rs` tests the settings that reach the engine: modes, provider names, model names, and which plain `http://` addresses are refused.
 
 That is **tested**, not **validated**: no real provider call was made with a real key from this machine, and no person has compared `original`, `light` and `intelligent` on their own dictation.
 

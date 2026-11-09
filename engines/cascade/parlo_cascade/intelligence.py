@@ -18,6 +18,9 @@ LOOPBACK_HOSTS = ("localhost", "127.0.0.1", "::1")
 LENGTH_FLOOR = 0.4
 LENGTH_CEILING = 1.6
 LENGTH_SLACK = 20
+DEADLINE = 1.5
+DEADLINE_FLOOR = 0.2
+DEADLINE_CEILING = 5.0
 
 SYSTEM_PROMPT = (
     "You edit dictated text. You are an editor, not an author.\n"
@@ -96,6 +99,7 @@ class Settings:
     local_url: str = ""
     local_model: str = ""
     timeout: float = 20.0
+    deadline: float = DEADLINE
 
     def __post_init__(self):
         if self.mode not in MODES:
@@ -104,6 +108,8 @@ class Settings:
             raise ValueError(f"unknown cleanup mode {self.clean}, expected {CLEAN_MODES}")
         if self.provider and self.provider not in PROVIDERS:
             raise ValueError(f"unknown provider {self.provider}, expected {tuple(PROVIDERS)}")
+        if self.deadline <= 0:
+            raise ValueError("the deadline must be positive")
 
 
 @dataclass(frozen=True)
@@ -133,6 +139,18 @@ class Edit:
     reason: str = ""
 
 
+def configured_deadline(stored: dict | None = None) -> float:
+    raw = os.environ.get("PARLO_INTELLIGENCE_DEADLINE_MS", "").strip()
+    if not raw:
+        saved = (stored or {}).get("deadline_ms")
+        raw = str(saved) if isinstance(saved, int) and not isinstance(saved, bool) else ""
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEADLINE
+    return min(max(value / 1000.0, DEADLINE_FLOOR), DEADLINE_CEILING)
+
+
 def settings_from_environment(clean: str = "light") -> Settings:
     provider = os.environ.get("PARLO_INTELLIGENCE_PROVIDER", "").strip().lower()
     return Settings(
@@ -144,6 +162,7 @@ def settings_from_environment(clean: str = "light") -> Settings:
         base_url=os.environ.get("PARLO_INTELLIGENCE_BASE_URL", "").strip(),
         local_url=os.environ.get("PARLO_INTELLIGENCE_LOCAL_URL", "").strip(),
         local_model=os.environ.get("PARLO_INTELLIGENCE_LOCAL_MODEL", "").strip(),
+        deadline=configured_deadline(),
     )
 
 
@@ -193,6 +212,7 @@ def settings_from_config(default_clean: str = "light") -> Settings:
         base_url=_value(stored, "base_url", "PARLO_INTELLIGENCE_BASE_URL", ""),
         local_url=_value(stored, "local_url", "PARLO_INTELLIGENCE_LOCAL_URL", ""),
         local_model=_value(stored, "local_model", "PARLO_INTELLIGENCE_LOCAL_MODEL", ""),
+        deadline=configured_deadline(stored),
     )
 
 
@@ -294,7 +314,9 @@ class Intelligence:
                 reason=route.reason,
             )
         try:
-            candidate = self._ask(edited, route)
+            candidate = self._ask(
+                edited, route, min(self.settings.timeout, self.settings.deadline)
+            )
         except (IntelligenceError, OSError, ValueError, KeyError, IndexError) as error:
             verdict = Verdict(False, str(error))
             return self._fallback(base, route, verdict, started, personal)
@@ -328,13 +350,13 @@ class Intelligence:
             reason=verdict.reason,
         )
 
-    def _ask(self, text: str, route: Route) -> str:
+    def _ask(self, text: str, route: Route, timeout: float) -> str:
         if route.engine == LOCAL:
             url = self.settings.local_url
             if requires_secure_transport(url):
                 raise IntelligenceError("a local model must be reached over loopback")
             payload, headers = _openai_request(url, self.settings.local_model or "local", text, None)
-            reply = self._transport(url, headers, payload, self.settings.timeout)
+            reply = self._transport(url, headers, payload, timeout)
             return _openai_text(reply)
         provider = PROVIDERS[route.provider]
         key = self._key_lookup(route.provider)
@@ -347,7 +369,7 @@ class Intelligence:
             payload, headers = _anthropic_request(provider.endpoint, route.model, text, key)
         else:
             payload, headers = _gemini_request(provider.endpoint, route.model, text, key)
-        reply = self._transport(endpoint_of(provider, self.settings), headers, payload, self.settings.timeout)
+        reply = self._transport(endpoint_of(provider, self.settings), headers, payload, timeout)
         if provider.kind == "openai":
             return _openai_text(reply)
         if provider.kind == "anthropic":

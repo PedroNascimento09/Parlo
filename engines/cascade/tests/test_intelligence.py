@@ -5,6 +5,7 @@ import unittest
 from parlo_cascade import vocabulary
 from parlo_cascade.intelligence import (
     CLOUD,
+    DEADLINE,
     DETERMINISTIC,
     LOCAL,
     Intelligence,
@@ -185,6 +186,20 @@ class EditTests(unittest.TestCase):
         self.assertEqual(edit.engine, LOCAL)
         self.assertEqual(seen, ["http://127.0.0.1:8080/v1/chat/completions"])
 
+    def test_a_slow_model_is_asked_within_the_deadline(self):
+        waited = []
+
+        def transport(url, headers, payload, timeout):
+            waited.append(timeout)
+            raise IntelligenceError("the provider took too long")
+
+        settings = Settings(mode="cloud", allow_cloud=True, provider="openai", deadline=0.8)
+        engine = Intelligence(settings, "pt", transport=transport, key_lookup=lambda name: "sk-test")
+        edit = engine.edit("preciso de enviar o relatório")
+        self.assertEqual(waited, [0.8])
+        self.assertTrue(edit.fallback)
+        self.assertEqual(edit.engine, DETERMINISTIC)
+
     def test_a_local_model_outside_loopback_is_refused(self):
         settings = Settings(mode="auto", local_url="http://models.example.com/v1")
         engine = Intelligence(settings, "pt", transport=unreachable, key_lookup=lambda name: "")
@@ -215,6 +230,28 @@ class SettingsTests(unittest.TestCase):
         finally:
             for name in ("PARLO_INTELLIGENCE_MODE", "PARLO_INTELLIGENCE_CLOUD", "PARLO_INTELLIGENCE_PROVIDER"):
                 os.environ.pop(name, None)
+
+
+    def test_the_deadline_is_read_from_the_environment(self):
+        os.environ["PARLO_INTELLIGENCE_DEADLINE_MS"] = "900"
+        try:
+            self.assertEqual(settings_from_environment().deadline, 0.9)
+        finally:
+            os.environ.pop("PARLO_INTELLIGENCE_DEADLINE_MS", None)
+
+    def test_a_nonsense_deadline_falls_back(self):
+        os.environ["PARLO_INTELLIGENCE_DEADLINE_MS"] = "soon"
+        try:
+            self.assertEqual(settings_from_environment().deadline, DEADLINE)
+        finally:
+            os.environ.pop("PARLO_INTELLIGENCE_DEADLINE_MS", None)
+
+    def test_a_deadline_outside_the_floor_and_ceiling_is_clamped(self):
+        os.environ["PARLO_INTELLIGENCE_DEADLINE_MS"] = "60000"
+        try:
+            self.assertEqual(settings_from_environment().deadline, 5.0)
+        finally:
+            os.environ.pop("PARLO_INTELLIGENCE_DEADLINE_MS", None)
 
 
 if __name__ == "__main__":

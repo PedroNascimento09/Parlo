@@ -12,6 +12,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- A streamed sentence now closes after about half a second of silence instead of waiting for the segment cap, so the words are already in the field while the person is still holding the key.
+- The island streams in three second windows instead of six, so every partial re-decodes at most three seconds of audio and the wait stops growing as the sentence goes on.
+- A clip that is only silence never reaches the recogniser: nothing said, or a pause with the key held, answers in microseconds without loading the model.
+- The cleanup model has 1.5 s to answer (`PARLO_INTELLIGENCE_DEADLINE_MS`, clamped between 200 ms and 5 s); past it the deterministic text is written and the reason is recorded, so a slow provider no longer holds the dictation.
 - With cleanup on, letting go of the key cleans the sentence the streaming already heard instead of transcribing the audio again, so the text lands in a few tens of milliseconds; if that transcript is missing or the cleanup fails, Parlo falls back to the full transcription for that dictation.
 - With cleanup on, the island shows the waveform while you speak and the cleaned sentence when you stop, instead of a live draft that held the recogniser: on a six second clip the text lands in about 1.0 s instead of 2.8 s after the key is released.
 - Dictation trims the silence before the recogniser, so the same sentence reaches the text field about a third sooner: 375 ms instead of 570 ms from the end of the audio on the reference machine, with the cleaning stage measured at 0.9 ms.
