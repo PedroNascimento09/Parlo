@@ -69,6 +69,7 @@ def run(
     tail: int,
     snr: float | None,
     seed: int,
+    request_ms: int = CHUNK_MS,
 ) -> list[tuple[float, object]]:
     audio = np.concatenate(
         [np.zeros(lead, dtype="float32"), samples, np.zeros(tail, dtype="float32")]
@@ -77,10 +78,13 @@ def run(
         audio = add_noise(audio, snr, seed)
     started = time.perf_counter()
     events = []
-    for index in range(0, len(audio), chunk):
-        pcm = float_to_pcm16(audio[index : index + chunk])
+    step = max(int(request_ms * 16_000 / 1000), 1)
+    for index in range(0, len(audio), step):
+        pcm = float_to_pcm16(audio[index : index + step])
         for event in engine.stream(pcm):
             events.append((time.perf_counter() - started, event))
+    for event in engine.close_stream():
+        events.append((time.perf_counter() - started, event))
     return events
 
 
@@ -184,6 +188,7 @@ def summarise(
 
 
 def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
     parser.add_argument("--corpus", default=str(DEFAULT_CORPUS))
     parser.add_argument("--audio-dir", default="")
@@ -195,6 +200,7 @@ def main() -> int:
     parser.add_argument("--segment", type=float, default=12.0)
     parser.add_argument("--snr", type=float, default=None)
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument("--request-ms", type=int, default=CHUNK_MS)
     parser.add_argument("--lead", type=float, default=0.0)
     parser.add_argument("--tail", type=float, default=0.8)
     parser.add_argument("--limit", type=int, default=0)
@@ -269,7 +275,9 @@ def main() -> int:
     for index, (sentence, samples) in enumerate(work):
         audio_seconds = len(samples) / 16_000
         before = calls["count"]
-        events = run(engine, samples, chunk, lead, tail, args.snr, args.seed + index)
+        events = run(
+            engine, samples, chunk, lead, tail, args.snr, args.seed + index, args.request_ms
+        )
         total_audio_ms = int(round((len(samples) + lead + tail) / 16))
         row = summarise(sentence, events, int(args.segment * 1000), total_audio_ms)
         row["sentence"] = sentence
@@ -303,6 +311,7 @@ def main() -> int:
         "threads": args.threads,
         "decode_every": args.decode_every,
         "rounds": args.rounds,
+        "request_ms": args.request_ms,
         "policy": engine._stream.policy,
         "segment": args.segment,
         "snr": args.snr,
@@ -339,16 +348,16 @@ def main() -> int:
         "corrections": sum(row["corrections"] for row in rows),
     }
     summary["drift"] = drift(rows)
-    print("\n" + json.dumps(summary, indent=2))
-    print(
-        "drift: decode x{decode_growth} | realtime x{realtime_growth}"
-        " | final {first_final_ms} to {last_final_ms} ms".format(**summary["drift"])
-    )
     if args.out:
         Path(args.out).write_text(
             json.dumps({"summary": summary, "rows": rows}, indent=2), encoding="utf-8"
         )
         print(f"written {args.out}")
+    print("\n" + json.dumps(summary, indent=2))
+    print(
+        "drift: decode x{decode_growth} | realtime x{realtime_growth}"
+        " | final {first_final_ms} to {last_final_ms} ms".format(**summary["drift"])
+    )
     growing = summary["drift"]["realtime_growth"]
     falls_behind = growing is not None and growing > 1.25
     return 1 if summary["mean_final_wer"] > 0.35 or falls_behind else 0
