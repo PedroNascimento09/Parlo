@@ -28,6 +28,8 @@ def answer(line: str, engine) -> dict:
 
 
 def main() -> int:
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     voice = os.environ.get("PARLO_CASCADE_VOICE")
     engine = CascadeEngine(
         source=os.environ.get("PARLO_CASCADE_SOURCE", "pt"),
