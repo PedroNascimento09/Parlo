@@ -39,10 +39,12 @@ def main() -> int:
     warmed = False
 
     def background_warmup() -> None:
-        if warm:
+        if not warm:
+            return
+        for label in engine.warmup_stages():
             with busy:
                 with contextlib.redirect_stdout(sys.stderr):
-                    engine.warmup()
+                    engine.warmup_stage(label)
 
     def watch_idle() -> None:
         while True:

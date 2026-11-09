@@ -228,19 +228,33 @@ class CascadeEngine:
     def available(self) -> bool:
         return self._ready
 
-    def warmup(self) -> None:
+    def warmup_stages(self) -> tuple[str, ...]:
         if not self._ready:
-            return
-        stages = [("recognition", self._load_stt)]
+            return ()
+        labels = ["recognition"]
         if not self.dictate:
-            stages.append(("translation", self._translate_warmup))
+            labels.append("translation")
             if self.voice_path.exists():
-                stages.append(("voice", self._synthesize_warmup))
-        for label, stage in stages:
-            try:
-                stage()
-            except Exception as error:
-                print(f"warmup deferred for {label}: {error}", file=sys.stderr)
+                labels.append("voice")
+        return tuple(labels)
+
+    def warmup(self) -> None:
+        for label in self.warmup_stages():
+            self.warmup_stage(label)
+
+    def warmup_stage(self, label: str) -> None:
+        stages = {
+            "recognition": self._load_stt,
+            "translation": self._translate_warmup,
+            "voice": self._synthesize_warmup,
+        }
+        stage = stages.get(label)
+        if stage is None:
+            raise ValueError(f"unknown warmup stage {label}")
+        try:
+            stage()
+        except Exception as error:
+            print(f"warmup deferred for {label}: {error}", file=sys.stderr)
 
     def _translate_warmup(self) -> None:
         self._translate("warmup")

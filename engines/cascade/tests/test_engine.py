@@ -306,6 +306,25 @@ class EngineTest(unittest.TestCase):
             os.environ.pop("PARLO_CASCADE_CLEAN", None)
 
 
+class WarmupTest(unittest.TestCase):
+    def test_dictation_warms_only_the_recogniser(self):
+        engine = CascadeEngine()
+        engine._ready = True
+        engine.dictate = True
+        self.assertEqual(engine.warmup_stages(), ("recognition",))
+
+    def test_the_voice_is_warmed_after_the_translator(self):
+        engine = CascadeEngine()
+        engine._ready = True
+        engine.dictate = False
+        engine.voice_path = __import__("pathlib").Path(__file__)
+        self.assertEqual(engine.warmup_stages(), ("recognition", "translation", "voice"))
+
+    def test_an_unknown_warmup_stage_is_refused(self):
+        with self.assertRaises(ValueError):
+            CascadeEngine().warmup_stage("nonsense")
+
+
 class PairSwitchTest(unittest.TestCase):
     def test_a_switch_keeps_the_recogniser_and_the_known_languages(self):
         engine = CascadeEngine()

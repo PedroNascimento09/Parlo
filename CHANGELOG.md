@@ -14,6 +14,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - A streamed sentence now closes after about half a second of silence instead of waiting for the segment cap, so the words are already in the field while the person is still holding the key.
 - The island streams in three second windows instead of six, so every partial re-decodes at most three seconds of audio and the wait stops growing as the sentence goes on.
+- A sentence that closes on silence reuses the words the last partial already decoded, instead of running the recogniser again over audio it has already read.
+- Warmup loads the recogniser, the translator and the voice one at a time and lets go of the engine between them, so a dictation that arrives while the rest warms up no longer waits for all three.
 - A clip that is only silence never reaches the recogniser: nothing said, or a pause with the key held, answers in microseconds without loading the model.
 - The cleanup model has 1.5 s to answer (`PARLO_INTELLIGENCE_DEADLINE_MS`, clamped between 200 ms and 5 s); past it the deterministic text is written and the reason is recorded, so a slow provider no longer holds the dictation.
 - With cleanup on, letting go of the key cleans the sentence the streaming already heard instead of transcribing the audio again, so the text lands in a few tens of milliseconds; if that transcript is missing or the cleanup fails, Parlo falls back to the full transcription for that dictation.
