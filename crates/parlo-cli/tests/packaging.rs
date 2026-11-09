@@ -269,3 +269,27 @@ fn every_channel_is_documented_with_its_state() {
         );
     }
 }
+
+#[test]
+fn the_installer_takes_its_version_from_the_project() {
+    let iss = read("installer/parlo.iss");
+    assert!(
+        !iss.contains("#define AppVersion "),
+        "installer/parlo.iss: AppVersion must arrive from the build, not from a literal"
+    );
+    assert!(
+        iss.contains("#error AppVersion is missing"),
+        "installer/parlo.iss: a build without a version must fail"
+    );
+    assert!(iss.contains("AppVersion={#AppVersion}"));
+    assert!(iss.contains("VersionInfoProductVersion={#AppVersion}"));
+    let workflow = read(".github/workflows/release.yml");
+    assert!(
+        workflow.contains("Select-String -Path Cargo.toml"),
+        "release.yml: the installer version must be read from Cargo.toml"
+    );
+    assert!(
+        workflow.contains("does not match the Cargo.toml version"),
+        "release.yml: a tag that disagrees with Cargo.toml must fail the build"
+    );
+}

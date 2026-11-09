@@ -197,7 +197,9 @@ jobs:
           Copy-Item release/WebView2Loader.dll $payload/
           Copy-Item release/parlo.png $payload/
           Copy-Item release/parlo-engine "$payload/parlo-engine" -Recurse
-          $version = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "(.*)"').Matches[0].Groups[1].Value
+          $tag = ("${{ github.event.inputs.tag || github.ref_name }}").TrimStart("v")
+          if ($tag -ne $version) { throw "the tag $tag does not match the Cargo.toml version $version" }
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { throw "Inno Setup is missing, so the one click installer cannot be built" }
           if ($env:SIGNED -eq "1") {

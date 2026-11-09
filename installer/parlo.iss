@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.2.7"
+  #error AppVersion is missing: the build passes the project version as /DAppVersion
 #endif
 
 #define Root ".."
