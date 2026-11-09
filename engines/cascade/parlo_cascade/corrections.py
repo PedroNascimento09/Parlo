@@ -30,16 +30,77 @@ REPLACEMENT_MARKERS = {
         "rather",
         "actually",
     ),
+    "es": (
+        "perdón, quería decir",
+        "quería decir",
+        "perdón, quise decir",
+        "quise decir",
+        "no, espera",
+        "no espera",
+        "o mejor",
+        "mejor dicho",
+    ),
+    "fr": (
+        "pardon, je voulais dire",
+        "je voulais dire",
+        "non, attends",
+        "non attends",
+        "ou plutôt",
+    ),
+    "de": (
+        "entschuldigung, ich meinte",
+        "ich meinte",
+        "nein, warte",
+        "nein warte",
+        "oder besser",
+        "besser gesagt",
+    ),
+    "it": (
+        "scusa, volevo dire",
+        "volevo dire",
+        "no, aspetta",
+        "no aspetta",
+        "o meglio",
+        "meglio dire",
+    ),
+    "nl": (
+        "sorry, ik bedoelde",
+        "ik bedoelde",
+        "nee, wacht",
+        "nee wacht",
+        "of beter",
+        "beter gezegd",
+    ),
+    "ru": (
+        "извините, я имел в виду",
+        "я имел в виду",
+        "нет, подожди",
+        "нет подожди",
+        "точнее",
+        "вернее",
+    ),
 }
 
 CLARIFICATION_MARKERS = {
     "pt": ("quer dizer", "isto é", "aliás"),
     "en": ("i mean", "that is"),
+    "es": ("quiero decir", "es decir"),
+    "fr": ("je veux dire", "c'est-à-dire"),
+    "de": ("das heißt",),
+    "it": ("cioè", "voglio dire"),
+    "nl": ("dat wil zeggen", "ik bedoel"),
+    "ru": ("то есть", "в смысле"),
 }
 
 FILLERS = {
     "pt": ("hmm", "hum", "ah", "eh", "ãh", "ahn", "é pá"),
     "en": ("hmm", "hum", "uh", "um", "er"),
+    "es": ("eh", "ehm", "em", "mmm", "ah"),
+    "fr": ("euh", "heu", "hum", "hmm", "bah"),
+    "de": ("äh", "ähm", "hm", "mh"),
+    "it": ("ehm", "eh", "mmm", "uhm"),
+    "nl": ("eh", "ehm", "uhm", "hm"),
+    "ru": ("эм", "ээ", "хм", "э"),
 }
 
 STOPWORDS = {
@@ -120,8 +181,8 @@ def _overlap(left: str, right: str) -> float:
 
 
 def _markers(language: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    key = "pt" if language.lower().startswith("pt") else "en"
-    return REPLACEMENT_MARKERS[key], CLARIFICATION_MARKERS[key]
+    key = language.lower()[:2]
+    return REPLACEMENT_MARKERS.get(key, ()), CLARIFICATION_MARKERS.get(key, ())
 
 
 def _find_marker(text: str, phrases: tuple[str, ...]) -> tuple[int, str] | None:
@@ -236,8 +297,7 @@ def _drop_false_starts(text: str) -> tuple[str, list[str]]:
 
 
 def _drop_fillers(text: str, language: str) -> tuple[str, list[str]]:
-    key = "pt" if language.lower().startswith("pt") else "en"
-    phrases = FILLERS[key]
+    phrases = FILLERS.get(language.lower()[:2], ())
     working = text
     changes = []
     for phrase in phrases:
