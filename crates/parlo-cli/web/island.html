@@ -679,6 +679,13 @@ function startDragging(event) {
 
 document.getElementById("island").addEventListener("pointerdown", startDragging);
 
+function paintFirstLoad(hint, warmed) {
+  if (!hint) {
+    return;
+  }
+  hint.hidden = Boolean(warmed);
+}
+
 function setState(text, line, pending) {
   stateEl.textContent = text;
   if (line !== undefined) {
@@ -919,7 +926,7 @@ async function begin() {
     openWriteMenu(false);
     document.body.classList.remove("ready");
     setState(t("island.listening", "Listening"), "", true);
-    hintEl.hidden = warmed;
+    paintFirstLoad(hintEl, warmed);
     if (!stream && !(await capture())) {
       return;
     }
@@ -1476,7 +1483,7 @@ async function stop() {
       result = await response.json();
     }
     warmed = true;
-    hintEl.hidden = true;
+    paintFirstLoad(hintEl, true);
     const spoken = (result.text || "").trim();
     let text = (result.translation || "").trim() || spoken;
     if (!text) {
