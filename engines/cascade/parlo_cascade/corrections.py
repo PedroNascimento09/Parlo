@@ -170,6 +170,9 @@ def _merge_corrections(text: str, language: str) -> tuple[str, list[str]]:
         if not after:
             merged.append(sentence)
             continue
+        if not before and not explicit:
+            merged.append(sentence)
+            continue
         if _is_correction(before, after, explicit):
             if merged:
                 merged[-1] = _replace_tail(merged[-1], after)
