@@ -634,3 +634,72 @@ pub fn rewrite(target: usize, previous: &str, next: &str) -> Result<(), String> 
 
 #[cfg(test)]
 mod tests;
+
+pub trait Field: Send + Sync {
+    fn write(&self, window: usize, text: &str) -> Result<(), String>;
+    fn erase(&self, window: usize, characters: usize) -> Result<(), String>;
+}
+
+struct Native;
+
+impl Field for Native {
+    fn write(&self, window: usize, text: &str) -> Result<(), String> {
+        match paste(window, text) {
+            Ok(()) => Ok(()),
+            Err(paste) => type_text(window, text)
+                .map_err(|typing| format!("{paste}; typing also failed: {typing}")),
+        }
+    }
+
+    fn erase(&self, window: usize, characters: usize) -> Result<(), String> {
+        erase(window, characters)
+    }
+}
+
+struct Logged {
+    path: std::path::PathBuf,
+}
+
+impl Field for Logged {
+    fn write(&self, window: usize, text: &str) -> Result<(), String> {
+        event(&self.path, "write", window, text)
+    }
+
+    fn erase(&self, window: usize, characters: usize) -> Result<(), String> {
+        if std::env::var("PARLO_FIELD_REJECT").as_deref() == Ok("1") {
+            return Err("the field refused the edit".to_string());
+        }
+        event(&self.path, "erase", window, &characters.to_string())
+    }
+}
+
+fn event(path: &std::path::Path, op: &str, window: usize, text: &str) -> Result<(), String> {
+    use std::io::Write as _;
+    static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
+    let started = START.get_or_init(std::time::Instant::now);
+    let line = serde_json::json!({
+        "at_ms": started.elapsed().as_millis() as u64,
+        "op": op,
+        "window": window,
+        "text": text,
+    });
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .map_err(|error| error.to_string())?;
+    writeln!(file, "{line}").map_err(|error| error.to_string())
+}
+
+pub fn field() -> Box<dyn Field> {
+    match std::env::var("PARLO_FIELD_LOG") {
+        Ok(path) if !path.trim().is_empty() => Box::new(Logged {
+            path: std::path::PathBuf::from(path),
+        }),
+        _ => Box::new(Native),
+    }
+}
+
+pub fn captured() -> bool {
+    matches!(std::env::var("PARLO_FIELD_LOG"), Ok(path) if !path.trim().is_empty())
+}

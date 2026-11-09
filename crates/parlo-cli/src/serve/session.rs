@@ -239,7 +239,12 @@ impl Session {
         replace: &str,
         latency_ms: u64,
     ) -> Result<(), String> {
-        let target = if self
+        let target = if insert::captured() {
+            Target {
+                window: 0,
+                app: "test".to_string(),
+            }
+        } else if self
             .target
             .lock()
             .ok()
@@ -253,15 +258,13 @@ impl Session {
         };
         let common = insert::common_prefix(replace, text);
         let remove = replace.chars().count() - common;
+        let field = insert::field();
         if remove > 0 {
-            insert::erase(target.window, remove)?;
+            field.erase(target.window, remove)?;
         }
         let rest: String = text.chars().skip(common).collect();
         if !rest.is_empty() {
-            if let Err(paste) = insert::paste(target.window, &rest) {
-                insert::type_text(target.window, &rest)
-                    .map_err(|typing| format!("{paste}; typing also failed: {typing}"))?;
-            }
+            field.write(target.window, &rest)?;
         }
         undo::remember(target.window, text);
         if latency_ms > 0 {
