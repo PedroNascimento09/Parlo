@@ -225,12 +225,17 @@ The island times the dictation itself: `performance.now() - releasedAt`, from le
 
 | Path | Release to text | The server's own `latency_ms` |
 |---|---|---|
-| Polish off, audio | **345 ms** | 334 ms |
-| Polish on, audio, first run | **336 ms** | 325 ms |
-| Polish on, audio, second run | **355 ms** | 345 ms |
-| First dictation after start | 8436 ms | 8436 ms |
+| Polish off, audio fallback | 357 ms | 343 ms |
+| Polish on, audio fallback | 329 ms | 319 ms |
+| Polish off, streamed sentence | **9 ms** | 2 ms |
+| Polish on, streamed sentence | **3 ms** | 1 ms |
+| First dictation after start | 8436 to 8877 ms | — |
 
-The first dictation pays the model load once; every later one is in the same 330 to 360 ms band whether Polish is on or off, because with no polish server configured the cleanup stage is the deterministic rules, which cost under a millisecond. What a local polish server adds is capped by the 1.5 s deadline, and this machine has none, so that number stays unmeasured.
+The island no longer transcribes the audio a second time when the stream has already closed the sentence. A sentence that ends on 0.45 s of silence is finalised while the person is still holding the key, so letting go sends that text and asks only for the cleanup: the answer comes back in single digit milliseconds, 357 ms sooner with Polish off and 326 ms sooner with Polish on. The audio path stays as the fallback, and it is still what runs when the stream has no final sentence, when the last words arrived after the close, or when the dictation is being translated, because a text body can only be written in the language it was spoken.
+
+The first dictation pays the model load once. Polish on costs nothing extra here because with no polish server configured the cleanup stage is the deterministic rules, which cost under a millisecond; what a local or cloud polish server adds is capped by the 1.5 s deadline, and this machine has neither configured, so that part stays unmeasured.
+
+Both runs are on a 2.8 s clip followed by 0.6 s of silence, fed in 300 ms chunks with a 3 s stream window, the same cadence the island uses.
 
 Limit: the `/insert` request is not exercised by the test, because inserting would type into whichever window has the focus. The island's measurement ends before `/insert`, so the interval measured here is the one the app prints, minus that last round trip.
 

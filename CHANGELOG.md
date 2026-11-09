@@ -12,6 +12,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 9 ms with Polish off and 3 ms with Polish on, against 357 and 329 ms on the audio path, measured on a 2.8 s clip through the app's own server.
 - The island asks for a partial every 300 ms instead of every 600 ms: on 20 rendered clips the first provisional text arrives 150.6 ms sooner and the finished sentence 149.7 ms sooner after the key is released, at the cost of one extra decode every three sentences and 180.1 ms before the first confirmed words.
 - A streamed sentence now closes after about half a second of silence instead of waiting for the segment cap, so the words are already in the field while the person is still holding the key.
 - The island streams in three second windows instead of six, so every partial re-decodes at most three seconds of audio and the wait stops growing as the sentence goes on.
@@ -35,6 +36,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Fixed
 
+- Accented text survives the round trip through the engine: the cascade sidecar read and wrote its protocol lines in the console encoding, so a cleaned dictation turned `é` into `Ã©`.
 - `stream_bench` writes its JSON before printing the summary, so a Windows console that cannot encode a sentence no longer loses a finished run.
 - A dictation no longer falls back to the clipboard and a manual Ctrl+V; the island restores the target and writes there.
 - The sentence stays visible while you speak instead of being hidden until the dictation ends.
