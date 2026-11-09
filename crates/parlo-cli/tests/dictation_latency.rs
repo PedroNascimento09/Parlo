@@ -121,7 +121,7 @@ fn polish_server(delay: Duration) -> (u16, Arc<AtomicUsize>) {
     (port, calls)
 }
 
-fn serve(port: u16, data: &std::path::Path, polish: u16) -> Serving {
+fn serve(port: u16, data: &std::path::Path, polish: u16, reject: bool) -> Serving {
     let child = Command::new(env!("CARGO_BIN_EXE_parlo"))
         .args([
             "serve",
@@ -153,6 +153,8 @@ fn serve(port: u16, data: &std::path::Path, polish: u16) -> Serving {
             format!("http://127.0.0.1:{polish}/v1/chat/completions"),
         )
         .env("PARLO_INTELLIGENCE_LOCAL_MODEL", "test-polish")
+        .env("PARLO_FIELD_LOG", data.join("field.jsonl"))
+        .env("PARLO_FIELD_REJECT", if reject { "1" } else { "0" })
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .spawn()
@@ -259,6 +261,28 @@ fn dictate(port: u16, headers: &str, text: &str, seconds: f64) -> (u128, String)
     (elapsed, answer)
 }
 
+fn insert_polished(port: u16, text: &str) -> String {
+    let payload =
+        serde_json::json!({ "text": text, "replace": "", "latency_ms": 4, "polish": true })
+            .to_string();
+    let answer = post(
+        port,
+        "/insert",
+        "Content-Type: application/json\r\n",
+        payload.as_bytes(),
+    );
+    assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+    answer
+}
+
+fn sink_events(path: &std::path::Path) -> Vec<serde_json::Value> {
+    std::fs::read_to_string(path)
+        .unwrap_or_default()
+        .lines()
+        .map(|line| serde_json::from_str(line).expect("a sink event"))
+        .collect()
+}
+
 fn wait_for_warm(calls: &Arc<AtomicUsize>) {
     let deadline = Instant::now() + Duration::from_secs(20);
     while calls.load(Ordering::Relaxed) == 0 {
@@ -282,7 +306,7 @@ fn the_dictation_latency_is_measured_with_cleanup_off_and_on() {
     let _ = std::fs::remove_dir_all(&data);
     std::fs::create_dir_all(&data).unwrap();
     let port = free_port();
-    let _fast = serve(port, &data, fast_port);
+    let _fast = serve(port, &data, fast_port, false);
     wait_for_warm(&fast_calls);
 
     let cold = {
@@ -347,6 +371,47 @@ fn the_dictation_latency_is_measured_with_cleanup_off_and_on() {
         elapsed
     };
 
+    let sink = {
+        let path = data.join("field.jsonl");
+        let _ = std::fs::remove_file(&path);
+        let text = release(port, &paused);
+        let began = Instant::now();
+        let answer = insert_polished(port, &text);
+        let elapsed = began.elapsed().as_millis();
+        let events = sink_events(&path);
+        let gap = events
+            .get(2)
+            .and_then(|event| event["at_ms"].as_u64())
+            .unwrap_or(0)
+            - events
+                .first()
+                .and_then(|event| event["at_ms"].as_u64())
+                .unwrap_or(0);
+        println!(
+            "sink, cleanup on with a {} ms model: the raw text is written first, the answer takes {elapsed} ms, the polish rewrites it {gap} ms later, events {events:?}",
+            FAST.as_millis()
+        );
+        assert_eq!(events.len(), 3, "{events:?}");
+        assert_eq!(events[0]["op"], "write");
+        assert_eq!(events[0]["text"], text);
+        assert_eq!(events[1]["op"], "erase");
+        assert_eq!(events[1]["text"], "1");
+        assert_eq!(events[2]["op"], "write");
+        let removed: usize = events[1]["text"].as_str().unwrap_or("0").parse().unwrap();
+        let mut field: String = text.chars().take(text.chars().count() - removed).collect();
+        field.push_str(events[2]["text"].as_str().unwrap_or(""));
+        let expected = format!("{}!", text.trim_end_matches('.'));
+        println!("sink, reconstructed field: {field:?}");
+        assert_eq!(field, expected);
+        assert_eq!(body_json(&answer)["polished"], expected);
+        assert!(gap <= 400, "the polish landed {gap} ms behind the insert");
+        assert!(
+            gap >= 100,
+            "the model answered in {gap} ms, which is not realistic"
+        );
+        (elapsed, gap)
+    };
+
     let audio_on = {
         let began = Instant::now();
         let answer = post(port, "/dictate", WAV_ON, &audio);
@@ -366,7 +431,7 @@ fn the_dictation_latency_is_measured_with_cleanup_off_and_on() {
     let _ = std::fs::remove_dir_all(&slow_data);
     std::fs::create_dir_all(&slow_data).unwrap();
     let slow_serve = free_port();
-    let _slow = serve(slow_serve, &slow_data, slow_port);
+    let _slow = serve(slow_serve, &slow_data, slow_port, false);
     wait_for_warm(&slow_calls);
 
     let (slow_cold, slow_polish) = {
@@ -390,6 +455,49 @@ fn the_dictation_latency_is_measured_with_cleanup_off_and_on() {
         assert!(text_of(&polish_answer).ends_with('!'), "{polish_answer}");
         (raw, polished)
     };
+
+    let slow_sink = {
+        let path = slow_data.join("field.jsonl");
+        let _ = std::fs::remove_file(&path);
+        let text = release(slow_serve, &paused);
+        let answer = insert_polished(slow_serve, &text);
+        let events = sink_events(&path);
+        let polish_ms = body_json(&answer)["polish_ms"].as_u64().unwrap_or(0);
+        println!(
+            "sink, slow model: the polish answers at {polish_ms} ms, past the 400 ms grace, so the sink holds only the raw write, events {events:?}"
+        );
+        assert_eq!(events.len(), 1, "{events:?}");
+        assert_eq!(events[0]["text"], text);
+        assert_eq!(body_json(&answer)["polished"], "");
+        assert!(polish_ms >= 1_000, "{polish_ms}");
+        polish_ms
+    };
+
+    let reject_port = free_port();
+    let reject_data =
+        std::env::temp_dir().join(format!("parlo-latency-refused-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&reject_data);
+    std::fs::create_dir_all(&reject_data).unwrap();
+    let _refused = serve(reject_port, &reject_data, fast_port, true);
+
+    let refused = {
+        let path = reject_data.join("field.jsonl");
+        let text = release(reject_port, &paused);
+        let answer = insert_polished(reject_port, &text);
+        let events = sink_events(&path);
+        println!(
+            "sink, refused replacement: the field rejects the erase, so nothing else is written, events {events:?}"
+        );
+        assert_eq!(events.len(), 1, "{events:?}");
+        assert_eq!(events[0]["text"], text);
+        assert_eq!(body_json(&answer)["polished"], "");
+        events.len()
+    };
+
+    println!(
+        "sink summary: the raw write is the first event, the polish rewrites it {} ms later, the slow model is discarded at {slow_sink} ms, a refused erase leaves {refused} write",
+        sink.1
+    );
 
     println!(
         "summary: cold engine {} ms while speaking, cold release {} ms, audio off {} ms, streamed off {} ms, {} ms polish behind the insert, audio on {} ms; slow model release {} ms, polish {} ms, warmed {} and {} times",
