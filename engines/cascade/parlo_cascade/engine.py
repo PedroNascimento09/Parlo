@@ -650,11 +650,13 @@ class CascadeEngine:
     def _transcribe(self, samples) -> str:
         import numpy as np
 
-        model = self._load_stt()
-        self._touch("recognition")
         samples = np.asarray(samples, dtype="float32")
         if self.trim:
             samples = trim_silence(samples)
+        if rms(samples) < SILENCE_RMS:
+            return ""
+        model = self._load_stt()
+        self._touch("recognition")
         if self.stt == "parakeet":
             stream = model.create_stream()
             stream.accept_waveform(SAMPLE_RATE, samples)

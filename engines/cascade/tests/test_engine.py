@@ -145,6 +145,29 @@ class TrimTest(unittest.TestCase):
         self.assertEqual(len(trim_silence([0.0] * 500)), 500)
 
 
+@unittest.skipUnless(HAS_NUMPY, "numpy is required for the silence gate")
+class SilenceGateTest(unittest.TestCase):
+    def engine(self):
+        engine = CascadeEngine.__new__(CascadeEngine)
+        engine._ready = True
+        engine.trim = True
+        engine.glossary = {}
+
+        def refuse():
+            raise AssertionError("the recogniser was used on silence")
+
+        engine._load_stt = refuse
+        return engine
+
+    def test_silence_never_reaches_the_recogniser(self):
+        self.assertEqual(self.engine().transcribe(float_to_pcm16([0.0] * 16_000)), "")
+
+    def test_a_quiet_but_voiced_clip_is_still_decoded(self):
+        engine = self.engine()
+        with self.assertRaises(AssertionError):
+            engine.transcribe(float_to_pcm16([0.2, -0.2] * 8_000))
+
+
 class GlossaryTest(unittest.TestCase):
     def test_replaces_names_without_case_sensitivity(self):
         self.assertEqual(apply_glossary("palo falou", {"Palo": "Parlo"}), "Parlo falou")
