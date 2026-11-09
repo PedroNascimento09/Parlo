@@ -546,6 +546,7 @@ const ISLAND_HEIGHT = 132;
 const ISLAND_OPEN_HEIGHT = 372;
 const MAX_SECONDS = 60;
 const PARTIAL_MS = 300;
+const POLISH_BUDGET_MS = 40;
 const WINDOW_SECONDS = 3;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
@@ -1278,6 +1279,16 @@ function partialSettled(limitMs) {
   });
 }
 
+function withinBudget(promise, ms) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), ms);
+    promise.then((value) => {
+      clearTimeout(timer);
+      resolve(value);
+    });
+  });
+}
+
 function liveSettled() {
   if (!liveRunning) {
     return Promise.resolve();
@@ -1430,18 +1441,25 @@ async function stop() {
     const fastText = settled || (tidy && transcriptReady ? lastText.trim() : "");
     let result = null;
     if (plain && fastText) {
-      const fast = await fetch("/dictate", {
+      const polishing = tidy;
+      const polish = new AbortController();
+      signal.addEventListener("abort", () => polish.abort(), { once: true });
+      const asked = fetch("/dictate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + token,
-          "x-parlo-clean": tidy ? "on" : "off",
+          "x-parlo-clean": polishing ? "on" : "off",
         },
         body: JSON.stringify({ text: fastText, seconds: captured.seconds }),
-        signal,
-      }).catch(() => null);
-      if (fast && fast.ok) {
-        result = await fast.json().catch(() => null);
+        signal: polish.signal,
+      })
+        .then((answer) => (answer.ok ? answer.json().catch(() => null) : null))
+        .catch(() => null);
+      result = polishing ? await withinBudget(asked, POLISH_BUDGET_MS) : await asked;
+      if (!result) {
+        polish.abort();
+        result = { text: fastText, translation: "", latency_ms: 0, note: "" };
       }
     }
     if (!result) {
