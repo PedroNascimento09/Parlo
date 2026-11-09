@@ -15,6 +15,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 2 ms with Polish off, against 362 ms on the audio path, measured on a 2.8 s clip through the app's own server.
 - Polish never holds the text: the raw sentence is written first and the cleaned one replaces it when it arrives, within a 400 ms grace. A model that answers in 150 ms fills in behind a 2 ms insertion; a model that takes 1.2 s is dropped and the raw text stands.
 - The cleanup stage is warmed when the server starts, so the first dictation of a session no longer pays the polish model's load.
+- The island says so during that first dictation, in a small note, so a slow first sentence is not read as the app being bad.
 - Replacing the raw sentence with the cleaned one now happens inside the server, behind an insert sink that records every write, so the swap is measured end to end instead of assumed.
 - The first dictation after start no longer waits for the recogniser: the model loads while the person is speaking, and letting go costs the same 5 ms as any later dictation instead of 8.7 s.
 - The island asks for a partial every 300 ms instead of every 600 ms: on 20 rendered clips the first provisional text arrives 150.6 ms sooner and the finished sentence 149.7 ms sooner after the key is released, at the cost of one extra decode every three sentences and 180.1 ms before the first confirmed words.
