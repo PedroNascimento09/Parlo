@@ -21,7 +21,7 @@ An initial model, written against the code as it is, not as it might be. It name
 
 - The default listener binds to `127.0.0.1`. Network sharing and the separate TLS server are opt-in and can listen on the network.
 - `POST /translate`, `POST /update` and `POST /models` require the token, sent as `Authorization: Bearer` or `x-parlo-token`, compared with a constant-time comparison that does not return early on the first different byte (`serve::authorised`, `serve::constant_time_eq`).
-- The standalone server and WebSocket tickets use random tokens from the Rustls cryptographic provider. The app generates a separate token at startup, passes it to the server and includes it in the page URL. The server prints its token, including to the app's engine log.
+- The standalone server and WebSocket tickets use random tokens from the Rustls cryptographic provider. The app generates a separate token at startup, passes it to the server and includes it in the page URL. The standalone server prints its token; the app-managed server does not print it to the engine log.
 - Requests are bounded: 16 KiB of headers, 20 MiB of body, 10 second read timeout and 30 second write timeout per connection (`serve::MAX_HEAD`, `serve::MAX_BODY`).
 - Audio is validated before use: RIFF/WAVE header, PCM16 only, chunk sizes checked against the buffer, even data length (`parlo_core::wav::read_pcm16`), and the API additionally requires 16 kHz mono.
 - JSON bodies are escaped before they are written (`serve::json_string`), so a Windows path in an error message cannot break the response.

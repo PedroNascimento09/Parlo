@@ -51,7 +51,9 @@ pub fn start(
         .map_err(|error| format!("cannot bind 127.0.0.1:{port}: {error}"))?;
 
     println!("listening on http://127.0.0.1:{port}");
-    println!("  token      {token}");
+    if std::env::var_os("PARLO_APP_GUARD").is_none() {
+        println!("  token      {token}");
+    }
     {
         let engine_id = session.pipeline().engine_id().to_string();
         let chosen = session.chosen();
@@ -324,7 +326,11 @@ pub fn run(
     to: String,
 ) -> Result<(), String> {
     let server = start(port, token, engine, stt, from, to)?;
-    println!("  api        {}", server.app_url());
+    if std::env::var_os("PARLO_APP_GUARD").is_some() {
+        println!("  api        {}", server.address);
+    } else {
+        println!("  api        {}", server.app_url());
+    }
     if let Some(share) = &server.share {
         println!("  share      {share} with a PIN");
     }
