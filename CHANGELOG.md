@@ -41,6 +41,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Fixed
 
+- Spoken commands now follow the language being written, so a command from another language no longer changes an ordinary word. French and Spanish commands with accents are recognised.
 - The cleaner no longer deletes the start of a sentence: a clarification marker at the beginning ("Isto é uma prova") was read as a self-correction and removed the words before it, so a polished dictation lost its opening.
 - With cleanup off, a configured polish model is no longer called at all: the deterministic route ignored the `original` mode and asked the local server on every dictation, so Polish off waited for a model it was not supposed to use.
 - Accented text survives the round trip through the engine: the cascade sidecar read and wrote its protocol lines in the console encoding, so a cleaned dictation turned `é` into `Ã©`.

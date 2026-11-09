@@ -1,4 +1,4 @@
-const COMMANDS: &[(&str, &str)] = &[
+const ENGLISH: &[(&str, &str)] = &[
     ("new line", "\n"),
     ("new paragraph", "\n\n"),
     ("numbered list", NUMBERED_LIST),
@@ -16,15 +16,22 @@ const COMMANDS: &[(&str, &str)] = &[
     ("dash", " - "),
     ("hyphen", " - "),
     ("scratch that", SCRATCH),
+];
+
+const SPANISH: &[(&str, &str)] = &[
     ("nueva linea", "\n"),
     ("nuevo parrafo", "\n\n"),
-    ("viñeta", "\n• "),
+    ("vineta", "\n• "),
     ("punto", "."),
     ("punto final", "."),
     ("coma", ","),
     ("signo de interrogacion", "?"),
     ("signo de exclamacion", "!"),
     ("borra eso", SCRATCH),
+    ("numero siguiente", NEXT_NUMBER),
+];
+
+const FRENCH: &[(&str, &str)] = &[
     ("nouvelle ligne", "\n"),
     ("nouveau paragraphe", "\n\n"),
     ("puce", "\n• "),
@@ -32,7 +39,12 @@ const COMMANDS: &[(&str, &str)] = &[
     ("virgule", ","),
     ("point d'interrogation", "?"),
     ("point d'exclamation", "!"),
-    ("efface ça", SCRATCH),
+    ("efface ca", SCRATCH),
+    ("liste numerotee", NUMBERED_LIST),
+    ("numero suivant", NEXT_NUMBER),
+];
+
+const GERMAN: &[(&str, &str)] = &[
     ("neue zeile", "\n"),
     ("neuer absatz", "\n\n"),
     ("punkt", "."),
@@ -41,6 +53,12 @@ const COMMANDS: &[(&str, &str)] = &[
     ("fragezeichen", "?"),
     ("ausrufezeichen", "!"),
     ("loesch das", SCRATCH),
+    ("nummerierte liste", NUMBERED_LIST),
+    ("nachste nummer", NEXT_NUMBER),
+    ("naechste nummer", NEXT_NUMBER),
+];
+
+const PORTUGUESE: &[(&str, &str)] = &[
     ("nova linha", "\n"),
     ("novo paragrafo", "\n\n"),
     ("ponto de lista", "\n• "),
@@ -56,25 +74,27 @@ const COMMANDS: &[(&str, &str)] = &[
     ("apaga isso", SCRATCH),
     ("lista numerada", NUMBERED_LIST),
     ("numero seguinte", NEXT_NUMBER),
-    ("numero siguiente", NEXT_NUMBER),
-    ("liste numerotee", NUMBERED_LIST),
-    ("numero suivant", NEXT_NUMBER),
-    ("nummerierte liste", NUMBERED_LIST),
-    ("nachste nummer", NEXT_NUMBER),
-    ("naechste nummer", NEXT_NUMBER),
 ];
 
 const NUMBERED_LIST: &str = "\u{1}";
 const NEXT_NUMBER: &str = "\u{2}";
 const SCRATCH: &str = "\u{8}";
 
-pub fn apply(text: &str) -> String {
+pub fn apply(text: &str, language: &str) -> String {
+    let commands = match language.split(['-', '_']).next().unwrap_or("") {
+        "en" => ENGLISH,
+        "es" => SPANISH,
+        "fr" => FRENCH,
+        "de" => GERMAN,
+        "pt" => PORTUGUESE,
+        _ => return text.to_string(),
+    };
     let words: Vec<&str> = text.split_whitespace().collect();
     let mut out = String::with_capacity(text.len());
     let mut index = 0;
     let mut number = 0u32;
     while index < words.len() {
-        if let Some((taken, piece)) = match_at(&words, index) {
+        if let Some((taken, piece)) = match_at(&words, index, commands) {
             if piece == SCRATCH {
                 scratch(&mut out);
             } else if piece == NUMBERED_LIST || piece == NEXT_NUMBER {
@@ -116,7 +136,11 @@ pub fn apply(text: &str) -> String {
     out.trim_end().to_string()
 }
 
-fn match_at(words: &[&str], index: usize) -> Option<(usize, &'static str)> {
+fn match_at(
+    words: &[&str],
+    index: usize,
+    commands: &'static [(&str, &str)],
+) -> Option<(usize, &'static str)> {
     let mut folded: Vec<String> = Vec::new();
     let mut best: Option<(usize, &'static str)> = None;
     for offset in 0..3 {
@@ -125,7 +149,7 @@ fn match_at(words: &[&str], index: usize) -> Option<(usize, &'static str)> {
         };
         folded.push(fold(word));
         let phrase = folded.join(" ");
-        if let Some((_, piece)) = COMMANDS.iter().find(|(command, _)| *command == phrase) {
+        if let Some((_, piece)) = commands.iter().find(|(command, _)| *command == phrase) {
             best = Some((offset + 1, piece));
         }
     }
@@ -142,6 +166,7 @@ fn fold(word: &str) -> String {
             'ó' | 'ò' | 'ô' | 'õ' | 'ö' | 'Ó' | 'Ò' | 'Ô' | 'Õ' | 'Ö' => 'o',
             'ú' | 'ù' | 'û' | 'ü' | 'Ú' | 'Ù' | 'Û' | 'Ü' => 'u',
             'ç' | 'Ç' => 'c',
+            'ñ' | 'Ñ' => 'n',
             other => other.to_ascii_lowercase(),
         };
         if plain.is_alphanumeric() || plain == '\'' {
@@ -166,97 +191,125 @@ fn scratch(out: &mut String) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::apply;
 
     #[test]
     fn a_comma_lands_against_the_word_before_it() {
-        assert_eq!(apply("hello world comma yes"), "hello world, yes");
+        assert_eq!(apply("hello world comma yes", "en"), "hello world, yes");
     }
 
     #[test]
     fn a_period_ends_the_sentence() {
-        assert_eq!(apply("that is all full stop"), "that is all.");
-        assert_eq!(apply("that is all period"), "that is all.");
+        assert_eq!(apply("that is all full stop", "en"), "that is all.");
+        assert_eq!(apply("that is all period", "en"), "that is all.");
     }
 
     #[test]
     fn english_commands_work() {
-        assert_eq!(apply("yes comma no question mark"), "yes, no?");
-        assert_eq!(apply("stop that exclamation mark"), "stop that!");
+        assert_eq!(apply("yes comma no question mark", "en"), "yes, no?");
+        assert_eq!(apply("stop that exclamation mark", "en"), "stop that!");
     }
 
     #[test]
     fn spanish_commands_work_with_or_without_accents() {
-        assert_eq!(apply("hola coma todo bien"), "hola, todo bien");
-        assert_eq!(apply("ya está punto final"), "ya está.");
-        assert_eq!(apply("no se signo de interrogacion"), "no se?");
+        assert_eq!(apply("hola coma todo bien", "es"), "hola, todo bien");
+        assert_eq!(apply("ya está punto final", "es"), "ya está.");
+        assert_eq!(apply("no se signo de interrogacion", "es"), "no se?");
     }
 
     #[test]
     fn french_commands_work_with_or_without_accents() {
         assert_eq!(
-            apply("bonjour virgule tout va bien"),
+            apply("bonjour virgule tout va bien", "fr"),
             "bonjour, tout va bien"
         );
-        assert_eq!(apply("c'est fini point final"), "c'est fini.");
-        assert_eq!(apply("quoi point d'interrogation"), "quoi?");
+        assert_eq!(apply("c'est fini point final", "fr"), "c'est fini.");
+        assert_eq!(apply("quoi point d'interrogation", "fr"), "quoi?");
     }
 
     #[test]
     fn german_commands_work() {
-        assert_eq!(apply("hallo komma alles gut"), "hallo, alles gut");
-        assert_eq!(apply("es ist vorbei punkt"), "es ist vorbei.");
-        assert_eq!(apply("was fragezeichen"), "was?");
+        assert_eq!(apply("hallo komma alles gut", "de"), "hallo, alles gut");
+        assert_eq!(apply("es ist vorbei punkt", "de"), "es ist vorbei.");
+        assert_eq!(apply("was fragezeichen", "de"), "was?");
     }
 
     #[test]
     fn portuguese_commands_still_work() {
-        assert_eq!(apply("olá vírgula tudo bem"), "olá, tudo bem");
-        assert_eq!(apply("já está ponto final"), "já está.");
-        assert_eq!(apply("não sei ponto de interrogação"), "não sei?");
+        assert_eq!(apply("olá vírgula tudo bem", "pt"), "olá, tudo bem");
+        assert_eq!(apply("já está ponto final", "pt"), "já está.");
+        assert_eq!(apply("não sei ponto de interrogação", "pt"), "não sei?");
     }
 
     #[test]
     fn a_new_line_breaks_without_a_space_before_it() {
-        assert_eq!(apply("first new line second"), "first\nsecond");
-        assert_eq!(apply("first new paragraph second"), "first\n\nsecond");
+        assert_eq!(apply("first new line second", "en"), "first\nsecond");
+        assert_eq!(apply("first new paragraph second", "en"), "first\n\nsecond");
     }
 
     #[test]
     fn scratch_that_drops_the_sentence_it_closes() {
-        assert_eq!(apply("keep this. wrong bit scratch that"), "keep this.");
-        assert_eq!(apply("wrong bit scratch that"), "");
+        assert_eq!(
+            apply("keep this. wrong bit scratch that", "en"),
+            "keep this."
+        );
+        assert_eq!(apply("wrong bit scratch that", "en"), "");
     }
 
     #[test]
     fn an_ordinary_word_is_left_alone() {
-        assert_eq!(apply("the point of it"), "the point of it");
-        assert_eq!(apply("commas are useful"), "commas are useful");
+        assert_eq!(apply("the point of it", "en"), "the point of it");
+        assert_eq!(apply("commas are useful", "en"), "commas are useful");
     }
 
     #[test]
     fn a_bullet_starts_a_list_on_its_own_line() {
         assert_eq!(
-            apply("shopping bullet point milk new line bullet point bread"),
+            apply(
+                "shopping bullet point milk new line bullet point bread",
+                "en"
+            ),
             "shopping\n• milk\n• bread"
         );
-        assert_eq!(apply("lista marcador pao"), "lista\n• pao");
+        assert_eq!(apply("lista marcador pao", "pt"), "lista\n• pao");
     }
 
     #[test]
     fn a_numbered_list_counts_up_on_its_own_lines() {
         assert_eq!(
-            apply("plan numbered list milk next number bread"),
+            apply("plan numbered list milk next number bread", "en"),
             "plan\n1. milk\n2. bread"
         );
         assert_eq!(
-            apply("lista numerada pão numero seguinte leite"),
+            apply("lista numerada pão numero seguinte leite", "pt"),
             "1. pão\n2. leite"
         );
     }
 
     #[test]
+    fn commands_are_limited_to_the_spoken_language() {
+        assert_eq!(apply("the punto is comma here", "en"), "the punto is, here");
+        assert_eq!(
+            apply("o bullet é útil vírgula sim", "pt-PT"),
+            "o bullet é útil, sim"
+        );
+        assert_eq!(
+            apply("leave  this untouched", "it"),
+            "leave  this untouched"
+        );
+    }
+
+    #[test]
+    fn accented_commands_match_their_normalized_entries() {
+        assert_eq!(apply("une erreur efface ça", "fr"), "");
+        assert_eq!(apply("lista viñeta pan", "es"), "lista\n• pan");
+    }
+
+    #[test]
     fn a_command_inside_a_longer_sentence_keeps_the_words_around_it() {
-        assert_eq!(apply("send it colon now question mark"), "send it: now?");
+        assert_eq!(
+            apply("send it colon now question mark", "en"),
+            "send it: now?"
+        );
     }
 }
