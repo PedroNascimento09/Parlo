@@ -656,10 +656,12 @@ impl Field for Native {
     }
 }
 
+#[cfg(debug_assertions)]
 struct Logged {
     path: std::path::PathBuf,
 }
 
+#[cfg(debug_assertions)]
 impl Field for Logged {
     fn write(&self, window: usize, text: &str) -> Result<(), String> {
         event(&self.path, "write", window, text)
@@ -673,6 +675,7 @@ impl Field for Logged {
     }
 }
 
+#[cfg(debug_assertions)]
 fn event(path: &std::path::Path, op: &str, window: usize, text: &str) -> Result<(), String> {
     use std::io::Write as _;
     static START: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
@@ -691,15 +694,88 @@ fn event(path: &std::path::Path, op: &str, window: usize, text: &str) -> Result<
     writeln!(file, "{line}").map_err(|error| error.to_string())
 }
 
+#[cfg(debug_assertions)]
+fn logged() -> Option<Box<dyn Field>> {
+    let path = std::env::var("PARLO_FIELD_LOG").ok()?;
+    if path.trim().is_empty() {
+        return None;
+    }
+    Some(Box::new(Logged {
+        path: std::path::PathBuf::from(path),
+    }))
+}
+
+#[cfg(not(debug_assertions))]
+fn logged() -> Option<Box<dyn Field>> {
+    None
+}
+
 pub fn field() -> Box<dyn Field> {
-    match std::env::var("PARLO_FIELD_LOG") {
-        Ok(path) if !path.trim().is_empty() => Box::new(Logged {
-            path: std::path::PathBuf::from(path),
-        }),
-        _ => Box::new(Native),
+    match logged() {
+        Some(field) => field,
+        None => Box::new(Native),
     }
 }
 
 pub fn captured() -> bool {
-    matches!(std::env::var("PARLO_FIELD_LOG"), Ok(path) if !path.trim().is_empty())
+    cfg!(debug_assertions) && logged().is_some()
+}
+
+pub fn replace_span(
+    field: &dyn Field,
+    window: usize,
+    raw: &str,
+    cleaned: &str,
+) -> Result<(), String> {
+    let common = common_prefix(raw, cleaned);
+    let remove = raw.chars().count() - common;
+    if remove > 0 {
+        field.erase(window, remove)?;
+    }
+    let rest: String = cleaned.chars().skip(common).collect();
+    if !rest.is_empty() {
+        field.write(window, &rest)?;
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod sink_tests {
+    use super::*;
+
+    #[test]
+    fn the_replacement_touches_only_the_changed_tail() {
+        let path = std::env::temp_dir().join(format!("parlo-field-{}.jsonl", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        std::env::set_var("PARLO_FIELD_LOG", &path);
+        std::env::remove_var("PARLO_FIELD_REJECT");
+        let field = field();
+        field.write(424242, "Bom dia.").unwrap();
+        replace_span(&*field, 424242, "Bom dia.", "Bom dia!").unwrap();
+        let events: Vec<serde_json::Value> = std::fs::read_to_string(&path)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .filter(|event: &serde_json::Value| event["window"] == 424242)
+            .collect();
+        assert_eq!(events.len(), 3, "{events:?}");
+        assert_eq!(events[0]["op"], "write");
+        assert_eq!(events[0]["text"], "Bom dia.");
+        assert_eq!(events[1]["op"], "erase");
+        assert_eq!(events[1]["text"], "1");
+        assert_eq!(events[2]["text"], "!");
+        std::env::set_var("PARLO_FIELD_REJECT", "1");
+        field.write(424243, "Bom dia.").unwrap();
+        assert!(replace_span(&*field, 424243, "Bom dia.", "Bom dia!").is_err());
+        let refused: Vec<serde_json::Value> = std::fs::read_to_string(&path)
+            .unwrap()
+            .lines()
+            .map(|line| serde_json::from_str(line).unwrap())
+            .filter(|event: &serde_json::Value| event["window"] == 424243)
+            .collect();
+        assert_eq!(refused.len(), 1, "{refused:?}");
+        std::env::remove_var("PARLO_FIELD_REJECT");
+        std::env::remove_var("PARLO_FIELD_LOG");
+        let _ = std::fs::remove_file(&path);
+    }
 }

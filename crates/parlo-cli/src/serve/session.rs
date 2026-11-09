@@ -81,6 +81,36 @@ impl Session {
         self.busy.load(Ordering::Relaxed)
     }
 
+    pub(super) fn warm(&self) {
+        static WARM: std::sync::Once = std::sync::Once::new();
+        WARM.call_once(|| self.do_warm());
+    }
+
+    fn do_warm(&self) {
+        let stt = self.chosen().stt.clone();
+        let format = match AudioFormat::mono(16_000) {
+            Ok(format) => format,
+            Err(error) => {
+                println!("  warm       {stt} stays cold: {error}");
+                return;
+            }
+        };
+        let silence = parlo_core::wav::write_pcm16(&parlo_core::Wav {
+            format,
+            samples: vec![0.0; 48_000],
+        });
+        match self.dictate(&silence) {
+            Ok(_) => println!(
+                "  warm       {stt} answered a silent clip, so the first sentence starts at once"
+            ),
+            Err(error) => println!("  warm       {stt} stays cold: {error}"),
+        }
+        match self.clean_text("Parlo", None) {
+            Ok(_) => println!("  warm       the cleanup stage is ready"),
+            Err(error) => println!("  warm       the cleanup stage stays cold: {error}"),
+        }
+    }
+
     pub(super) fn lifecycle_snapshot(&self) -> models::Lifecycle {
         let manage = crate::config::load().manage_memory;
         if self.is_working() {
@@ -256,16 +286,8 @@ impl Session {
         } else {
             self.target()?
         };
-        let common = insert::common_prefix(replace, text);
-        let remove = replace.chars().count() - common;
         let field = insert::field();
-        if remove > 0 {
-            field.erase(target.window, remove)?;
-        }
-        let rest: String = text.chars().skip(common).collect();
-        if !rest.is_empty() {
-            field.write(target.window, &rest)?;
-        }
+        insert::replace_span(&*field, target.window, replace, text)?;
         undo::remember(target.window, text);
         if latency_ms > 0 {
             println!("the dictation landed in {latency_ms} ms after the key was released");
