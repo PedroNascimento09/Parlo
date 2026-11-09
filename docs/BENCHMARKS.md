@@ -208,6 +208,32 @@ The close of a sentence was measured on its own, because it is the moment a pers
 
 Reading: a sentence that ends on silence costs no decode at all now, 285.4 ms of recogniser time removed from the close, 10.4% fewer decodes and 210.8 ms less wall time per sentence across the whole stream. The first final of a long sentence is still a segment close, so the p95 first final is unchanged (3401 against 3404 ms); what changed is the moment the sentence actually ends. Quality is level: the same mean WER to three decimals, the same 163 words, and the one final that differs scores the same error rate on both builds. `stream_bench.py` now reports the kind of every close (silence, segment or end of audio) and how many decodes each sentence took, so this is re-run rather than believed.
 
+The island's request cadence was measured the same way, then changed from 600 ms to 300 ms. Two runs of each cadence, interleaved in time so a warm machine cannot favour either side, the same 20 rendered clips, segment 3 s, decode every 0.4 s, 4 threads, `pt_PT-tugão-medium`, and the session closed at the end of every sentence:
+
+| Island request cadence | First partial | First stable | Final | p95 final | Decodes per sentence | Loop wall time per sentence | Final WER | Closes on silence |
+|---|---|---|---|---|---|---|---|---|
+| 600 ms | 935.0 ms | **1861.8 ms** | 2998.9 ms | 3331 ms | **5.0** | 1089.8 ms | **0.219** | 2 of 20 |
+| **300 ms** | **784.4 ms** | 2041.9 ms | **2849.2 ms** | **3223 ms** | 5.3 | **975.0 ms** | 0.233 | 10 of 20 |
+
+Reading: the cadence moves two things in opposite directions. Asking every 300 ms brings the first provisional text 150.6 ms sooner (16.0%) and the finished sentence 149.7 ms sooner (5.0%), and drops the p95 final by 108 ms, because the session now notices silence within 300 ms and ten sentences close on silence instead of two. The confirmed words arrive 180.1 ms later (9.7%), because the finer grid gave one extra decode on average (5.3 against 5.0 per sentence) and stability lands one decode later. The extra decodes cost 6.0% more recogniser calls per sentence, and the whole loop still ended 10.5% sooner (114.8 ms per sentence) because more sentences closed early. Quality is inside one word: 0.233 against 0.219 over 20 sentences, one final reads differently.
+
+**Decision taken:** 300 ms stays. Someone dictating feels the release to text interval and the provisional words, both of which improved; the later first confirmation is the price, and one word in 20 sentences is within the spread of a recogniser this size.
+
+### The latency the app itself measures
+
+The island times the dictation itself: `performance.now() - releasedAt`, from letting go of the key to the sentence being ready, and sends that number with the insertion, where the server prints it as `the dictation landed in N ms after the key was released`. That path is exercised by `cargo test -p parlo-cli --test dictation_latency -- --ignored`, which starts the real `parlo serve` binary and drives it over HTTP the way the island does. Fixture `engines/cascade/tests/fixtures/timing/source.wav`, 2.8 s of European Portuguese speech, cascade engine with Parakeet TDT int8, 4 threads, temp data folder, default configuration (cleanup mode `auto`, `light`, no local polish server and no cloud key, so the cleanup stage runs the deterministic rules only):
+
+| Path | Release to text | The server's own `latency_ms` |
+|---|---|---|
+| Polish off, audio | **345 ms** | 334 ms |
+| Polish on, audio, first run | **336 ms** | 325 ms |
+| Polish on, audio, second run | **355 ms** | 345 ms |
+| First dictation after start | 8436 ms | 8436 ms |
+
+The first dictation pays the model load once; every later one is in the same 330 to 360 ms band whether Polish is on or off, because with no polish server configured the cleanup stage is the deterministic rules, which cost under a millisecond. What a local polish server adds is capped by the 1.5 s deadline, and this machine has none, so that number stays unmeasured.
+
+Limit: the `/insert` request is not exercised by the test, because inserting would type into whichever window has the focus. The island's measurement ends before `/insert`, so the interval measured here is the one the app prints, minus that last round trip.
+
 Limits: synthetic speech from one voice, no noise, no accents, no real speakers. The next section repeats the measurement on recordings.
 
 ### Recorded European Portuguese speech

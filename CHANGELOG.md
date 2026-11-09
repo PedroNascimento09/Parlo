@@ -12,10 +12,12 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
+- The island asks for a partial every 300 ms instead of every 600 ms: on 20 rendered clips the first provisional text arrives 150.6 ms sooner and the finished sentence 149.7 ms sooner after the key is released, at the cost of one extra decode every three sentences and 180.1 ms before the first confirmed words.
 - A streamed sentence now closes after about half a second of silence instead of waiting for the segment cap, so the words are already in the field while the person is still holding the key.
 - The island streams in three second windows instead of six, so every partial re-decodes at most three seconds of audio and the wait stops growing as the sentence goes on.
 - A sentence that closes on silence reuses the words the last partial already decoded, instead of running the recogniser again over audio it has already read: the close costs 0 ms of decoding instead of 285.4 ms, with the same final text and the same WER, measured on 20 rendered clips at a 3 s window.
-- `stream_bench` says how every sentence closed (silence, segment or end of audio) and how many decodes it took, and can render its clips once so two builds are measured on identical audio.
+- `stream_bench` says how every sentence closed (silence, segment or end of audio) and how many decodes it took, can render its clips once so two builds are measured on identical audio, and takes `--request-ms` to reproduce the island's request cadence.
+- `cargo test -p parlo-cli --test dictation_latency -- --ignored` starts a real `parlo serve` and measures the release to text interval with cleanup off and on, so the dictation speed is read from the app instead of estimated.
 - Warmup loads the recogniser, the translator and the voice one at a time and lets go of the engine between them, so a dictation that arrives while the rest warms up no longer waits for all three.
 - A clip that is only silence never reaches the recogniser: nothing said, or a pause with the key held, answers in microseconds without loading the model.
 - The cleanup model has 1.5 s to answer (`PARLO_INTELLIGENCE_DEADLINE_MS`, clamped between 200 ms and 5 s); past it the deterministic text is written and the reason is recorded, so a slow provider no longer holds the dictation.
@@ -33,6 +35,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Fixed
 
+- `stream_bench` writes its JSON before printing the summary, so a Windows console that cannot encode a sentence no longer loses a finished run.
 - A dictation no longer falls back to the clipboard and a manual Ctrl+V; the island restores the target and writes there.
 - The sentence stays visible while you speak instead of being hidden until the dictation ends.
 - Escape closes the island even when the field you are dictating into keeps the keyboard focus; the close button still works.
