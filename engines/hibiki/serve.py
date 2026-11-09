@@ -6,6 +6,8 @@ from parlo_hibiki.protocol import handle_line
 
 
 def main() -> int:
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     engine = HibikiEngine()
     for line in sys.stdin:
         if not line.strip():
