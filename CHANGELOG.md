@@ -12,8 +12,9 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
-- Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 4 ms with Polish off, against 323 ms on the audio path, measured on a 2.8 s clip through the app's own server.
-- Polish never holds the text: the island gives the cleanup 40 ms and writes the raw sentence when it does not answer, so a polish model that takes 1.2 s no longer delays a dictation by 1.2 s.
+- Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 2 ms with Polish off, against 362 ms on the audio path, measured on a 2.8 s clip through the app's own server.
+- Polish never holds the text: the raw sentence is written first and the cleaned one replaces it when it arrives, within a 400 ms grace. A model that answers in 150 ms fills in behind a 2 ms insertion; a model that takes 1.2 s is dropped and the raw text stands.
+- The cleanup stage is warmed when the server starts, so the first dictation of a session no longer pays the polish model's load.
 - The first dictation after start no longer waits for the recogniser: the model loads while the person is speaking, and letting go costs the same 5 ms as any later dictation instead of 8.7 s.
 - The island asks for a partial every 300 ms instead of every 600 ms: on 20 rendered clips the first provisional text arrives 150.6 ms sooner and the finished sentence 149.7 ms sooner after the key is released, at the cost of one extra decode every three sentences and 180.1 ms before the first confirmed words.
 - A streamed sentence now closes after about half a second of silence instead of waiting for the segment cap, so the words are already in the field while the person is still holding the key.
@@ -38,6 +39,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Fixed
 
+- The cleaner no longer deletes the start of a sentence: a clarification marker at the beginning ("Isto é uma prova") was read as a self-correction and removed the words before it, so a polished dictation lost its opening.
 - With cleanup off, a configured polish model is no longer called at all: the deterministic route ignored the `original` mode and asked the local server on every dictation, so Polish off waited for a model it was not supposed to use.
 - Accented text survives the round trip through the engine: the cascade sidecar read and wrote its protocol lines in the console encoding, so a cleaned dictation turned `é` into `Ã©`.
 - `stream_bench` writes its JSON before printing the summary, so a Windows console that cannot encode a sentence no longer loses a finished run.

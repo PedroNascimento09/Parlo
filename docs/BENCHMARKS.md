@@ -225,16 +225,18 @@ The island times the dictation itself: `performance.now() - releasedAt`, from le
 
 | Path | Release to text | The server's own `latency_ms` |
 |---|---|---|
-| Polish off, streamed sentence | **4 ms** | 1 ms |
-| Polish on, streamed sentence, rules only | **3 ms** | 1 ms |
-| Polish off, audio fallback | 323 ms | 311 ms |
-| First dictation after start, streamed | **5 ms** | 1 ms |
-| Polish on, slow model, the polish call itself | 1204 ms | — |
-| Polish on, slow model, audio fallback | 1599 ms | — |
+| Polish off, streamed sentence | **2 ms** | 1 ms |
+| Polish on, 150 ms model, streamed sentence | **2 ms to the raw text, polished text 155 ms later** | — |
+| Polish off, audio fallback | 362 ms | 352 ms |
+| First dictation after start, streamed | **2 ms** | 1 ms |
+| Polish on, 150 ms model, audio fallback | 503 ms | — |
+| Polish on, 1.2 s model, the polish call itself | 1205 ms, past the 400 ms grace, so the raw text stands | — |
 
 The island no longer transcribes the audio a second time when the stream has already closed the sentence. A sentence that ends on 0.45 s of silence is finalised while the person is still holding the key, so letting go sends that text and asks only for the cleanup: the answer comes back in single digit milliseconds, 319 ms sooner than the audio fallback. The audio path stays as the fallback, and it is still what runs when the stream has no final sentence, when the last words arrived after the close, or when the dictation is being translated, because a text body can only be written in the language it was spoken.
 
-The polish never sits in front of the text. With a deliberately slow polish model (a loopback server that answers after 1.2 s), the call itself takes 1204 ms, and the island gives it 40 ms before writing the raw sentence and moving on; a fast cleanup, which is what the deterministic rules cost, answers in 1 to 3 ms and is used. Waiting longer would mean holding the insertion hostage to a model, and applying its answer afterwards would mean rewriting a field the person may have typed into since, which Parlo does not do blind.
+The polish never sits in front of the text. The island writes the raw sentence, then waits up to 400 ms for the cleanup and rewrites the sentence it just wrote when the answer arrives, so a model that answers in 150 ms fills in behind an insertion that took 2 ms. Past the grace window the answer is dropped and the raw text stands, which is what happens with a deliberately slow model (a loopback server that answers after 1.2 s): the call still takes 1205 ms and the sentence in the field never waited for it. The model is warmed at server start, so the first dictation does not pay a load either: the test sees the cleanup stage called 3 times before the first dictation in the fast run.
+
+Two things had to be fixed to get here, and both were real bugs rather than setup. With cleanup off, the intelligence route ignored the mode and still called a configured model, so Polish off waited 1549 ms for a model it was not supposed to use. And the deterministic cleaner read a clarification marker at the start of a sentence as a self-correction and deleted what came before it, so "Bom dia. Isto é uma prova" came back as "uma prova", which made every polished dictation lose its opening.
 
 The first dictation no longer pays the engine load where it hurts. The recogniser takes 8671 ms to load on this machine, and it loads while the person is speaking, because the stream reads the audio as it arrives; letting go then costs the same 5 ms as any later dictation. Only a dictation that arrives with the engine cold and cannot use the stream, such as a translated one, still meets the load.
 
