@@ -568,6 +568,8 @@ let ticker = null;
 let paused = false;
 let busy = false;
 let lastText = "";
+let streamFinal = "";
+let finalStale = false;
 let transcriptComplete = true;
 let promoted = false;
 let writeTarget = "";
@@ -898,6 +900,8 @@ async function begin() {
     partialTicket += 1;
     partialRunning = false;
     lastText = "";
+    streamFinal = "";
+    finalStale = false;
     transcriptComplete = true;
     liveInserted = "";
     liveDesired = "";
@@ -987,6 +991,15 @@ async function sendPartial(force) {
     liveBase = next.base;
     liveConfirmed = next.confirmed;
     liveGuess = next.guess;
+    const closed = pieces.some(
+      (piece) => piece.state === "final" || piece.state === "corrected"
+    );
+    if (closed) {
+      streamFinal = next.text;
+      finalStale = false;
+    } else if (streamFinal && next.text !== streamFinal) {
+      finalStale = true;
+    }
     if (next.text && next.text !== lastText) {
       lastText = next.text;
       if (!busy) {
@@ -1382,11 +1395,10 @@ async function stop() {
   partials = null;
   liveDesired = "";
   await liveSettled();
-  let transcriptReady = !tidy;
-  if (tidy && (await partialSettled(2500))) {
-    await sendPartial(true);
-    transcriptReady = transcriptComplete;
-  }
+  await partialSettled(2500);
+  await sendPartial(true);
+  const transcriptReady = transcriptComplete;
+  const settled = transcriptReady && streamFinal && !finalStale ? streamFinal : "";
   const captured = release();
   partialTicket += 1;
   partialRunning = false;
@@ -1415,16 +1427,17 @@ async function stop() {
       headers["x-parlo-write"] = write;
     }
     const plain = !write || write === "same" || write === writeSource;
+    const fastText = settled || (tidy && transcriptReady ? lastText.trim() : "");
     let result = null;
-    if (tidy && plain && transcriptReady && lastText.trim()) {
+    if (plain && fastText) {
       const fast = await fetch("/dictate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + token,
-          "x-parlo-clean": "on",
+          "x-parlo-clean": tidy ? "on" : "off",
         },
-        body: JSON.stringify({ text: lastText, seconds: captured.seconds }),
+        body: JSON.stringify({ text: fastText, seconds: captured.seconds }),
         signal,
       }).catch(() => null);
       if (fast && fast.ok) {
