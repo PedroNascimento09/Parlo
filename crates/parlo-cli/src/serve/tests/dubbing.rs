@@ -437,8 +437,8 @@ fn a_stream_piece_carries_its_state_and_text() {
 
 #[test]
 fn tokens_are_hex_and_unique_enough() {
-    let token = new_token();
-    assert_eq!(token.len(), 24);
+    let token = new_token().unwrap();
+    assert_eq!(token.len(), 48);
     assert!(token.chars().all(|character| character.is_ascii_hexdigit()));
-    assert_ne!(token, new_token());
+    assert_ne!(token, new_token().unwrap());
 }

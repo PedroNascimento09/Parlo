@@ -23,7 +23,15 @@ pub(crate) fn route(
                     .map(|()| Flow::Serve),
             );
         }
-        let (granted, lifetime) = ticket::issue();
+        let (granted, lifetime) = match ticket::issue() {
+            Ok(ticket) => ticket,
+            Err(error) => {
+                return Some(
+                    respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                        .map(|()| Flow::Serve),
+                );
+            }
+        };
         let answer = serde_json::json!({
             "ticket": granted,
             "expires_in": lifetime,

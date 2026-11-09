@@ -1,11 +1,10 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
-pub fn new_token() -> String {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_nanos())
-        .unwrap_or_default();
-    format!("{nanos:016x}{:08x}", std::process::id())
+pub fn new_token() -> Result<String, String> {
+    let mut bytes = [0u8; 24];
+    rustls::crypto::aws_lc_rs::default_provider()
+        .secure_random
+        .fill(&mut bytes)
+        .map_err(|_| "cannot generate a secure token".to_string())?;
+    Ok(bytes.iter().map(|byte| format!("{byte:02x}")).collect())
 }
 
 pub(crate) fn authorised(headers: &[(String, String)], token: &str) -> bool {

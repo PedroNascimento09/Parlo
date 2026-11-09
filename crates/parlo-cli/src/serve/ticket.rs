@@ -1,26 +1,24 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, OnceLock};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 pub(crate) const TTL_SECONDS: u64 = 30;
 const TTL: Duration = Duration::from_secs(TTL_SECONDS);
-
-static NEXT: AtomicU64 = AtomicU64::new(0);
 
 fn store() -> &'static Mutex<HashMap<String, Instant>> {
     static STORE: OnceLock<Mutex<HashMap<String, Instant>>> = OnceLock::new();
     STORE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-pub(crate) fn issue() -> (String, u64) {
-    let ticket = named();
+pub(crate) fn issue() -> Result<(String, u64), String> {
+    let ticket = super::auth::new_token()?;
     let now = Instant::now();
-    if let Ok(mut live) = store().lock() {
-        live.retain(|_, at| now.saturating_duration_since(*at) <= TTL);
-        live.insert(ticket.clone(), now);
-    }
-    (ticket, TTL_SECONDS)
+    let mut live = store()
+        .lock()
+        .map_err(|_| "the ticket store is unavailable")?;
+    live.retain(|_, at| now.saturating_duration_since(*at) <= TTL);
+    live.insert(ticket.clone(), now);
+    Ok((ticket, TTL_SECONDS))
 }
 
 pub(crate) fn redeem(ticket: &str) -> bool {
@@ -36,22 +34,13 @@ pub(crate) fn redeem(ticket: &str) -> bool {
     }
 }
 
-fn named() -> String {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_nanos())
-        .unwrap_or_default();
-    let count = NEXT.fetch_add(1, Ordering::Relaxed) + 1;
-    format!("{nanos:032x}{count:016x}")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn a_ticket_is_spent_once() {
-        let (ticket, lifetime) = issue();
+        let (ticket, lifetime) = issue().unwrap();
         assert_eq!(lifetime, TTL_SECONDS);
         assert!(redeem(&ticket));
         assert!(!redeem(&ticket));
@@ -59,8 +48,8 @@ mod tests {
 
     #[test]
     fn two_tickets_are_not_the_same() {
-        let (first, _) = issue();
-        let (second, _) = issue();
+        let (first, _) = issue().unwrap();
+        let (second, _) = issue().unwrap();
         assert_ne!(first, second);
     }
 

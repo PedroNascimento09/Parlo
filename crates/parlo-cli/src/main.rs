@@ -482,7 +482,10 @@ fn serve_command(args: &[String]) -> Result<(), String> {
 
     set_direction(&from, &to)?;
     config::check_stt(&stt)?;
-    let token = token.unwrap_or_else(serve::new_token);
+    let token = match token {
+        Some(token) => token,
+        None => serve::new_token()?,
+    };
     match (certificate, key) {
         (Some(certificate), Some(key)) => serve::run_tls(
             port,

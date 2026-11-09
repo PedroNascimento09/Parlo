@@ -19,9 +19,9 @@ An initial model, written against the code as it is, not as it might be. It name
 
 ## What is in place
 
-- The listener is bound to `127.0.0.1` only (`serve::run`), so nothing on the network can reach it directly.
+- The default listener binds to `127.0.0.1`. Network sharing and the separate TLS server are opt-in and can listen on the network.
 - `POST /translate`, `POST /update` and `POST /models` require the token, sent as `Authorization: Bearer` or `x-parlo-token`, compared with a constant-time comparison that does not return early on the first different byte (`serve::authorised`, `serve::constant_time_eq`).
-- The token is 24 hex characters derived from the clock and the process id (`serve::new_token`), printed to the terminal, passed into the page URL by `parlo app`, and sent back by the page as a header (`app.js`).
+- The standalone server and WebSocket tickets use random tokens from the Rustls cryptographic provider. The app generates a separate token at startup, passes it to the server and includes it in the page URL. The server prints its token, including to the app's engine log.
 - Requests are bounded: 16 KiB of headers, 20 MiB of body, 10 second read timeout and 30 second write timeout per connection (`serve::MAX_HEAD`, `serve::MAX_BODY`).
 - Audio is validated before use: RIFF/WAVE header, PCM16 only, chunk sizes checked against the buffer, even data length (`parlo_core::wav::read_pcm16`), and the API additionally requires 16 kHz mono.
 - JSON bodies are escaped before they are written (`serve::json_string`), so a Windows path in an error message cannot break the response.
@@ -31,14 +31,14 @@ An initial model, written against the code as it is, not as it might be. It name
 
 ## What is not in place yet
 
-- **No `Origin` or `Host` validation.** A page the user visits can still fire a request at the loopback server; the token is what stops it from succeeding, not the request's origin. DNS rebinding is possible in the same way, and neither is mitigated in code today.
-- **No checksum or signature on release archives.** The model files are checked against the digest the Hugging Face API publishes, but the release archive is not: `softprops`-built releases carry no signatures and `update::install` extracts and swaps whatever arrived, so a compromised release feed is still code execution on the next start.
+- **Network sharing uses unencrypted HTTP.** When enabled, the PIN and requests can be read by someone on the network. The PIN accepts four to eight digits and there is no rate limit. Use sharing only on a trusted network; the separate TLS server requires a certificate and token.
+- **Release checksums are not signatures.** The updater checks the archive against `SHA256SUMS.txt` from the selected release before extraction. Someone who can replace both files can still supply a malicious update; the Windows builds are unsigned unless a signing certificate is configured.
 - **The model integrity check trusts the transport and the API.** The sha256 comes from the same host over HTTPS, so an attacker who can lie about the file can usually lie about the digest too. It catches a corrupted or truncated download, a mirror serving the wrong bytes, and a file replaced on disk; it does not catch a compromised Hugging Face account. A digest pinned in the repository, published with each release, would close that gap.
 - **Page and API share one origin.** The interface is served by the same server as the API, so there is no browser-enforced separation between them.
 - **No rate limiting.** The token comparison is cheap, but nothing slows down repeated attempts to guess one, and nothing limits repeated translation requests.
 - **The token lives in a URL.** It appears in the browser address bar, in history, and in anything that logs URLs. It is not rotated, and every start of `parlo app` produces a new one only because the process restarts.
 - **The sidecar trusts the Python on disk.** `SidecarEngine::spawn` runs `serve.py` with the interpreter it finds (`PARLO_PYTHON`, then `.venv`, then `python`), so a modified script or a shadowed interpreter runs with the user's rights.
-- **`parlo.previous` is written beside the binary** without checking the directory's permissions, so on a shared or oddly permissioned install it could be readable or writable by someone else.
+- **Updating does not provide a complete rollback.** The current updater replaces the CLI binary, not the app window or engine, and does not create `parlo.previous`.
 
 ## What you can do
 

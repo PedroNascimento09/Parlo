@@ -65,7 +65,14 @@ fn handle(
             return respond_json(stream, "400 Bad Request", &error_json(&error))
                 .map(|()| Flow::Serve);
         }
-        let mut project = match subtitles::project(new_token(), &name, body, &from, &to) {
+        let id = match new_token() {
+            Ok(id) => id,
+            Err(error) => {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let mut project = match subtitles::project(id, &name, body, &from, &to) {
             Ok(project) => project,
             Err(error) => {
                 return respond_json(stream, "400 Bad Request", &error_json(&error))

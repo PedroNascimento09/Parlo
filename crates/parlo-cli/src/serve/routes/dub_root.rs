@@ -143,7 +143,16 @@ fn handle_root(
         });
     let name = dub::safe_name(&requested);
     let project_id = project.as_ref().map(|project| project.id.clone());
-    let id = project_id.clone().unwrap_or_else(new_token);
+    let id = match project_id.clone() {
+        Some(id) => id,
+        None => match new_token() {
+            Ok(id) => id,
+            Err(error) => {
+                return respond_json(stream, "500 Internal Server Error", &error_json(&error))
+                    .map(|()| Flow::Serve);
+            }
+        },
+    };
     let directory = match dub_jobs::directory(&id) {
         Ok(directory) => directory,
         Err(error) => {

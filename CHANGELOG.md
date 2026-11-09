@@ -42,6 +42,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Fixed
 
+- Standalone server tokens and one-use streaming tickets now use cryptographic randomness; a failure to generate one stops the request instead of issuing a predictable token.
 - Updates check the downloaded archive against the checksum from the selected release before extracting it. A missing or mismatched checksum stops the update.
 - Spoken commands now follow the language being written, so a command from another language no longer changes an ordinary word. French and Spanish commands with accents are recognised.
 - The cleaner no longer deletes the start of a sentence: a clarification marker at the beginning ("Isto é uma prova") was read as a self-correction and removed the words before it, so a polished dictation lost its opening.
