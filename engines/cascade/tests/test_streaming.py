@@ -196,6 +196,17 @@ class StreamingSessionTest(unittest.TestCase):
         self.assertIn("final", [event.state for event in events])
         self.assertEqual(session.audio_seconds, 0.0)
 
+    def test_silence_closes_the_sentence_before_the_cap(self):
+        session = self.session(["bom dia", "bom dia", "bom dia"], silence_seconds=0.2)
+        session.feed([0.3] * 500)
+        events = session.feed([0.0] * 500)
+        self.assertIn("final", [event.state for event in events])
+        self.assertEqual(session.audio_seconds, 0.0)
+
+    def test_silence_before_any_speech_does_not_close_anything(self):
+        session = self.session([], silence_seconds=0.2)
+        self.assertEqual(session.feed([0.0] * 500), [])
+
     def test_declares_reprocessing_and_the_policy(self):
         session = self.session(["bom dia"])
         self.assertEqual(session.mode, "stream")

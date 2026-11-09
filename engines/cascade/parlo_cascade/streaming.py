@@ -7,6 +7,7 @@ POLICY = "local-agreement"
 
 FRAME_MS = 20
 FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000
+SILENCE_RMS = 0.01
 
 
 def rms(samples) -> float:
@@ -170,7 +171,10 @@ class StreamingSession:
         self._policy = StabilityPolicy(rounds)
         self._samples: list[float] = []
         self._decoded_seconds = 0.0
+        self.silence_seconds = silence_seconds
         self._silence_seconds = 0.0
+        self._tail: list[float] = []
+        self._speech = False
         self._last_decode_time = 0.0
         self._clock = clock
         self._vad = VoiceActivity(
@@ -192,13 +196,34 @@ class StreamingSession:
 
     def feed(self, samples) -> list[TextEvent]:
         self._samples.extend(samples)
+        self._track(samples)
         events = []
 
         if self.audio_seconds - self._decoded_seconds >= self.decode_every:
             events.extend(self._decode())
         if self.audio_seconds >= self.segment_seconds:
             events.extend(self._finalize())
+        elif (
+            self._speech
+            and self.audio_seconds >= self.min_audio_seconds
+            and self._silence_seconds >= self.silence_seconds
+        ):
+            events.extend(self._finalize())
         return events
+
+    def _track(self, samples) -> None:
+        frame_samples = self.sample_rate * FRAME_MS // 1000
+        self._tail.extend(samples)
+        frames = len(self._tail) // frame_samples
+        for index in range(frames):
+            frame = self._tail[index * frame_samples : (index + 1) * frame_samples]
+            if rms(frame) >= SILENCE_RMS:
+                self._speech = True
+                self._silence_seconds = 0.0
+            else:
+                self._silence_seconds += FRAME_MS / 1000
+        if frames:
+            del self._tail[: frames * frame_samples]
 
     def close(self) -> list[TextEvent]:
         if self.audio_seconds < self.min_audio_seconds:
@@ -209,6 +234,8 @@ class StreamingSession:
         self._samples = []
         self._decoded_seconds = 0.0
         self._silence_seconds = 0.0
+        self._tail = []
+        self._speech = False
         self._policy.reset()
 
     def _decode(self) -> list[TextEvent]:
