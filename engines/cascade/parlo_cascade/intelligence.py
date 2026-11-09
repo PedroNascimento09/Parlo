@@ -230,6 +230,8 @@ def requires_secure_transport(url: str) -> bool:
 
 
 def choose(settings: Settings, key_present: bool) -> Route:
+    if settings.clean == "original":
+        return Route(DETERMINISTIC, reason="cleanup is off")
     if settings.mode == "off":
         return Route(DETERMINISTIC, reason="intelligence is off")
     if settings.local_url:
