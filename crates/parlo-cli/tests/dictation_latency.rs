@@ -1,3 +1,5 @@
+use parlo_core::wav::{read_pcm16, write_pcm16};
+use parlo_core::{AudioFormat, Wav};
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::process::{Child, Command, Stdio};
@@ -9,7 +11,13 @@ const FIXTURE: &str = concat!(
 );
 const WAV_OFF: &str = "Content-Type: audio/wav\r\nx-parlo-clean: off\r\nx-parlo-write: pt\r\n";
 const WAV_ON: &str = "Content-Type: audio/wav\r\nx-parlo-clean: on\r\nx-parlo-write: pt\r\n";
-const JSON_ON: &str = "Content-Type: application/json\r\nx-parlo-clean: on\r\n";
+const JSON_OFF: &str =
+    "Content-Type: application/json\r\nx-parlo-clean: off\r\nx-parlo-write: pt\r\n";
+const JSON_ON: &str =
+    "Content-Type: application/json\r\nx-parlo-clean: on\r\nx-parlo-write: pt\r\n";
+const WINDOW: &str = "Content-Type: audio/wav\r\nx-parlo-window: 3\r\n";
+const CHUNK: usize = 4_800;
+const PAUSE: usize = 9_600;
 
 struct Serving(Child);
 
@@ -89,15 +97,6 @@ fn post(port: u16, path: &str, headers: &str, body: &[u8]) -> String {
     ask(port, &request)
 }
 
-fn heard(port: u16, wav: &[u8]) -> String {
-    post(
-        port,
-        "/listen/stream",
-        "Content-Type: audio/wav\r\nx-parlo-window: 3\r\n",
-        wav,
-    )
-}
-
 fn body_json(answer: &str) -> serde_json::Value {
     let body = answer.split("\r\n\r\n").nth(1).unwrap_or("");
     serde_json::from_str(body).unwrap_or(serde_json::Value::Null)
@@ -111,12 +110,30 @@ fn latency_of(answer: &str) -> u64 {
     body_json(answer)["latency_ms"].as_u64().unwrap_or(0)
 }
 
-fn report(label: &str, elapsed: u128, answer: &str) {
-    println!(
-        "{label}: {elapsed} ms from the key release, the server says {} ms, text {:?}",
-        latency_of(answer),
-        text_of(answer)
-    );
+fn spoken_so_far(answer: &str) -> String {
+    let pieces = body_json(answer);
+    let rows = pieces.as_array().cloned().unwrap_or_default();
+    let mut settled = String::new();
+    for row in &rows {
+        let text = row["text"].as_str().unwrap_or("").trim();
+        let state = row["state"].as_str().unwrap_or("");
+        if state == "final" || state == "corrected" {
+            settled = text.to_string();
+        }
+    }
+    if settled.is_empty() {
+        if let Some(last) = rows.last() {
+            settled = last["text"].as_str().unwrap_or("").trim().to_string();
+        }
+    }
+    settled
+}
+
+fn as_wav(samples: &[f32]) -> Vec<u8> {
+    write_pcm16(&Wav {
+        format: AudioFormat::mono(16_000).unwrap(),
+        samples: samples.to_vec(),
+    })
 }
 
 #[test]
@@ -125,61 +142,101 @@ fn the_dictation_latency_is_measured_with_cleanup_off_and_on() {
     let data = std::env::temp_dir().join(format!("parlo-latency-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&data);
     std::fs::create_dir_all(&data).unwrap();
-    let wav = std::fs::read(FIXTURE).expect("the timing fixture");
+    let bytes = std::fs::read(FIXTURE).expect("the timing fixture");
+    let fixture = read_pcm16(&bytes).expect("the fixture is 16 kHz mono pcm16");
+    let audio = as_wav(&fixture.samples);
+    let seconds = fixture.samples.len() as f64 / 16_000.0;
+    let mut paused = fixture.samples.clone();
+    paused.extend(std::iter::repeat_n(0.0, PAUSE));
     let port = free_port();
     let _serving = serve(port, &data);
 
-    let warm = post(port, "/dictate", WAV_OFF, &wav);
+    let warm = post(port, "/dictate", WAV_OFF, &audio);
     assert!(warm.starts_with("HTTP/1.1 200"), "{warm}");
     println!("warm: the first dictation took {} ms", latency_of(&warm));
 
-    let off = {
-        let partial = heard(port, &wav);
-        assert!(partial.starts_with("HTTP/1.1 200"), "{partial}");
+    let wav_off = {
         let began = Instant::now();
-        let answer = post(port, "/dictate", WAV_OFF, &wav);
+        let answer = post(port, "/dictate", WAV_OFF, &audio);
         let elapsed = began.elapsed().as_millis();
         assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
         assert!(!text_of(&answer).is_empty(), "{answer}");
-        report("cleanup off", elapsed, &answer);
+        println!(
+            "audio, cleanup off: {elapsed} ms, the server says {} ms, text {:?}",
+            latency_of(&answer),
+            text_of(&answer)
+        );
         elapsed
     };
 
-    let on = {
-        let partial = heard(port, &wav);
-        let text = text_of(&partial);
-        if text.is_empty() {
-            let began = Instant::now();
-            let answer = post(port, "/dictate", WAV_ON, &wav);
-            let elapsed = began.elapsed().as_millis();
-            assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
-            report("cleanup on, audio", elapsed, &answer);
-            elapsed
-        } else {
-            let began = Instant::now();
-            let body = serde_json::json!({ "text": text, "seconds": 2.8 }).to_string();
-            let answer = post(port, "/dictate", JSON_ON, body.as_bytes());
-            let elapsed = began.elapsed().as_millis();
-            assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
-            assert!(!text_of(&answer).is_empty(), "{answer}");
-            report("cleanup on", elapsed, &answer);
-            elapsed
-        }
-    };
-
-    let polished = {
-        let partial = heard(port, &wav);
-        assert!(partial.starts_with("HTTP/1.1 200"), "{partial}");
+    let wav_on = {
         let began = Instant::now();
-        let answer = post(port, "/dictate", WAV_ON, &wav);
+        let answer = post(port, "/dictate", WAV_ON, &audio);
         let elapsed = began.elapsed().as_millis();
         assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
-        report("cleanup on, audio", elapsed, &answer);
+        assert!(!text_of(&answer).is_empty(), "{answer}");
+        println!(
+            "audio, cleanup on: {elapsed} ms, the server says {} ms, text {:?}",
+            latency_of(&answer),
+            text_of(&answer)
+        );
+        elapsed
+    };
+
+    let streamed = {
+        let mut closed_text = String::new();
+        let mut partial_wer = 0usize;
+        for chunk in paused.chunks(CHUNK) {
+            let answer = post(port, "/listen/stream", WINDOW, &as_wav(chunk));
+            assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+            let text = spoken_so_far(&answer);
+            if !text.is_empty() {
+                closed_text = text;
+                partial_wer += 1;
+            }
+        }
+        println!("streamed before the release ({partial_wer} pieces): {closed_text:?}");
+        let began = Instant::now();
+        let ended = post(port, "/listen/stream-end", "", b"");
+        assert!(ended.starts_with("HTTP/1.1 200"), "{ended}");
+        let closed = spoken_so_far(&ended);
+        let text = if closed.is_empty() {
+            closed_text
+        } else {
+            closed
+        };
+        let body = serde_json::json!({ "text": text, "seconds": seconds }).to_string();
+        let answer = post(port, "/dictate", JSON_OFF, body.as_bytes());
+        let elapsed = began.elapsed().as_millis();
+        assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+        assert!(!text_of(&answer).is_empty(), "{answer}");
+        println!(
+            "streamed, cleanup off: {elapsed} ms for the close and the answer, the server says {} ms, text {:?}",
+            latency_of(&answer),
+            text_of(&answer)
+        );
+        elapsed
+    };
+
+    let streamed_on = {
+        let answer = post(port, "/listen/stream", WINDOW, &as_wav(&paused[..CHUNK]));
+        assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+        let began = Instant::now();
+        let body = serde_json::json!({ "text": "Bom dia, isto é uma prova dos modos de tempo.", "seconds": seconds })
+            .to_string();
+        let answer = post(port, "/dictate", JSON_ON, body.as_bytes());
+        let elapsed = began.elapsed().as_millis();
+        assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+        println!(
+            "streamed, cleanup on: {elapsed} ms for the answer, the server says {} ms, text {:?}",
+            latency_of(&answer),
+            text_of(&answer)
+        );
         elapsed
     };
 
     println!(
-        "summary: cleanup off {off} ms, cleanup on {on} ms, cleanup on from audio {polished} ms"
+        "summary: audio off {wav_off} ms, audio on {wav_on} ms, streamed off {streamed} ms, streamed on {streamed_on} ms"
     );
     let _ = std::fs::remove_dir_all(&data);
 }
