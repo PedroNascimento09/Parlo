@@ -107,7 +107,7 @@ parlo update --check
 parlo update
 ```
 
-The check prints the version it found; the update downloads the build for your system, stages it, and replaces the binary about two seconds after the old process exits. It keeps a copy of the previous binary next to it as `parlo.previous`, so a bad release can be put back by renaming the file.
+The check prints the version it found. The update verifies the downloaded archive against the selected release's SHA-256 before extraction, then schedules replacement of the CLI binary after it exits. The updater does not replace the window or engine and does not create a rollback copy. Install the full archive over the existing installation to update all components.
 
 ## First run
 

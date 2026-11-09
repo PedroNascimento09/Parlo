@@ -11,9 +11,9 @@ is, complete, with no lost first word and no duplicate text.
 
 | Application | What to do | Run 1 | Run 2 | Run 3 |
 | --- | --- | --- | --- | --- |
-| Notepad | Open Notepad, click in the body, hold `Alt+Z`, say "the quick brown fox jumps over the lazy dog, comma then stops period", release | | | |
-| Chrome | Open any text field (a search box, a comment box), click inside, hold `Alt+Z`, same sentence | | | |
-| VS Code | Open a file, click at the end of a line, hold `Alt+Z`, same sentence | | | |
+| Notepad | Open Notepad, click in the body, hold `Ctrl+Alt+D`, say "the quick brown fox jumps over the lazy dog, comma then stops period", release | | | |
+| Chrome | Open any text field (a search box, a comment box), click inside, hold `Ctrl+Alt+D`, same sentence | | | |
+| VS Code | Open a file, click at the end of a line, hold `Ctrl+Alt+D`, same sentence | | | |
 
 Write a tick or the failure next to every run. A row with a failure blocks the
 release.

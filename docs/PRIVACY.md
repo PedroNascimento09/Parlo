@@ -4,20 +4,20 @@ Parlo is built so that a privacy claim is something you can check, not something
 
 ## What local mode guarantees
 
-- Audio is captured, processed, and written locally. It is never uploaded.
-- There is no telemetry, no analytics, no crash reporting, and no account system.
-- The app asks the GitHub releases API for the latest version when it starts, and nothing else. That request carries no audio, no identifiers and no telemetry; blocking `api.github.com` disables only the update banner.
-- No model weights are bundled or downloaded silently.
+- In local mode, audio is captured and processed on this computer. Dictation history, meeting transcripts and voice samples can be saved in the Parlo data folder.
+- There is no telemetry, no analytics, no remote crash reporting, and no account system.
+- The app checks the GitHub releases API when it starts. Model downloads and updates also use the network when requested. The update check carries no audio or application-generated identifier.
+- Model weights are not bundled and are downloaded only when requested.
 
 ## How to verify
 
-The audio core has zero dependencies:
+Inspect the audio core's dependencies:
 
 ```bash
 cargo tree -p parlo-core
 ```
 
-The only entry is `parlo-core` itself. There is no HTTP client, no analytics crate, and no asynchronous runtime.
+The core uses serialization libraries and does not include an HTTP client or analytics crate.
 
 Search the source for network usage:
 
@@ -25,27 +25,21 @@ Search the source for network usage:
 grep -rn "TcpStream\|reqwest\|http" crates/ engines/
 ```
 
-The Python sidecar imports only the standard library unless you install the optional model extra, and even then it is used for inference on local audio, not for uploads.
+With the required models already installed, run Parlo with the network disabled to check the local inference path.
 
-Run Parlo with the network disabled and it keeps working.
+## Optional remote services
 
-## The one exception, and it is your choice
-
-A bring-your-own-key cloud engine is on the roadmap for users who want languages no local model supports. It is off by default, requires your own key, and the UI states clearly that audio leaves the machine while it is enabled. If you never enable it, nothing leaves.
+If you explicitly enable a cloud provider for text cleanup, the configured provider can receive dictated text. A remote Parlo server can receive audio when you configure and use it. Network sharing is also optional and uses unencrypted HTTP with a PIN; anyone who can observe that network can read the traffic. See [Intelligence](INTELLIGENCE.md) and [Threat model](THREAT-MODEL.md).
 
 ## System audio capture
 
-Two-way translation needs to hear the other participants, which means capturing system audio. When that mode is active:
-
-- The app shows an indicator for the whole time capture is running.
-- No recording is written to disk unless you ask for a transcript.
-- Nothing is retained after the session ends.
+Parlo can capture system audio for supported workflows. Meeting transcripts are saved locally, and recording or export commands can write audio files to disk. Check the destination before starting a recording.
 
 ## Voice and consent
 
-Parlo translates the voice of the person speaking live. It does not import, clone, or imitate a voice from a recording, and it will not accept a voice sample as input. Misuse, impersonation, and fraud are violations of the [acceptable use policy](../ACCEPTABLE_USE.md).
+A voice profile can keep a recorded sample and a consent record on this computer. Samples can be deleted with the profile. This build does not clone a voice from a sample. Misuse, impersonation and fraud are violations of the [acceptable use policy](../ACCEPTABLE_USE.md).
 
-Tell the people you are speaking to that your voice is being translated. The app can play a short notice at the start of a call if you want that automated.
+Tell the people you are speaking to when you record or translate their speech.
 
 ## Reporting a privacy issue
 
