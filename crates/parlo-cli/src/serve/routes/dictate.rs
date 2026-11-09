@@ -365,7 +365,7 @@ fn handle(
                 },
             };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
-        let text = commands::apply(&text, &written);
+        let text = commands::apply(&text, &from);
         let text = crate::snippets::apply(&text, &stored.snippets);
         let text = crate::style::shape(&text, &style);
         let mut entry =
