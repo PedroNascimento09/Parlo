@@ -225,17 +225,20 @@ The island times the dictation itself: `performance.now() - releasedAt`, from le
 
 | Path | Release to text | The server's own `latency_ms` |
 |---|---|---|
-| Polish off, audio fallback | 357 ms | 343 ms |
-| Polish on, audio fallback | 329 ms | 319 ms |
-| Polish off, streamed sentence | **9 ms** | 2 ms |
-| Polish on, streamed sentence | **3 ms** | 1 ms |
-| First dictation after start | 8436 to 8877 ms | — |
+| Polish off, streamed sentence | **4 ms** | 1 ms |
+| Polish on, streamed sentence, rules only | **3 ms** | 1 ms |
+| Polish off, audio fallback | 323 ms | 311 ms |
+| First dictation after start, streamed | **5 ms** | 1 ms |
+| Polish on, slow model, the polish call itself | 1204 ms | — |
+| Polish on, slow model, audio fallback | 1599 ms | — |
 
-The island no longer transcribes the audio a second time when the stream has already closed the sentence. A sentence that ends on 0.45 s of silence is finalised while the person is still holding the key, so letting go sends that text and asks only for the cleanup: the answer comes back in single digit milliseconds, 357 ms sooner with Polish off and 326 ms sooner with Polish on. The audio path stays as the fallback, and it is still what runs when the stream has no final sentence, when the last words arrived after the close, or when the dictation is being translated, because a text body can only be written in the language it was spoken.
+The island no longer transcribes the audio a second time when the stream has already closed the sentence. A sentence that ends on 0.45 s of silence is finalised while the person is still holding the key, so letting go sends that text and asks only for the cleanup: the answer comes back in single digit milliseconds, 319 ms sooner than the audio fallback. The audio path stays as the fallback, and it is still what runs when the stream has no final sentence, when the last words arrived after the close, or when the dictation is being translated, because a text body can only be written in the language it was spoken.
 
-The first dictation pays the model load once. Polish on costs nothing extra here because with no polish server configured the cleanup stage is the deterministic rules, which cost under a millisecond; what a local or cloud polish server adds is capped by the 1.5 s deadline, and this machine has neither configured, so that part stays unmeasured.
+The polish never sits in front of the text. With a deliberately slow polish model (a loopback server that answers after 1.2 s), the call itself takes 1204 ms, and the island gives it 40 ms before writing the raw sentence and moving on; a fast cleanup, which is what the deterministic rules cost, answers in 1 to 3 ms and is used. Waiting longer would mean holding the insertion hostage to a model, and applying its answer afterwards would mean rewriting a field the person may have typed into since, which Parlo does not do blind.
 
-Both runs are on a 2.8 s clip followed by 0.6 s of silence, fed in 300 ms chunks with a 3 s stream window, the same cadence the island uses.
+The first dictation no longer pays the engine load where it hurts. The recogniser takes 8671 ms to load on this machine, and it loads while the person is speaking, because the stream reads the audio as it arrives; letting go then costs the same 5 ms as any later dictation. Only a dictation that arrives with the engine cold and cannot use the stream, such as a translated one, still meets the load.
+
+All of it is on a 2.8 s clip followed by 0.6 s of silence, fed in 300 ms chunks with a 3 s stream window, the same cadence the island uses. The slow model is a local test server, not a real model, so its speed is the point and not its English.
 
 Limit: the `/insert` request is not exercised by the test, because inserting would type into whichever window has the focus. The island's measurement ends before `/insert`, so the interval measured here is the one the app prints, minus that last round trip.
 
