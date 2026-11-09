@@ -28,6 +28,11 @@ jobs:
       - name: Check the page script parses
         run: node --check crates/parlo-cli/web/app.js
 
+      - name: Test interface routes and language choices
+        run: |
+          node --test crates/parlo-cli/web/routes.test.js
+          node crates/parlo-cli/web/check-languages.mjs
+
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
