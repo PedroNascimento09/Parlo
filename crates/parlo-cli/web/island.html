@@ -501,7 +501,7 @@
     <div class="readout">
       <span class="state" id="state" role="status" aria-live="polite" aria-atomic="true"></span>
       <span class="line pending" id="line"></span>
-      <span class="hint" id="hint" role="note" hidden data-i18n="island.firstLoad">The first dictation after a start loads the engine, so it can take a few seconds longer.</span>
+      <span class="hint" id="hint" role="status" aria-live="polite" hidden data-i18n="island.firstLoad">The first dictation after a start loads the engine, so it can take a few seconds longer.</span>
     </div>
     <div class="actions">
       <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
@@ -684,6 +684,16 @@ function paintFirstLoad(hint, warmed) {
     return;
   }
   hint.hidden = Boolean(warmed);
+}
+
+function noteWriteFailure(reason) {
+  document.body.classList.remove("ready");
+  setState(
+    t("island.failed", "Failed"),
+    reason || t("island.dictationFailed", "The dictation failed."),
+    true,
+  );
+  report("error");
 }
 
 function setState(text, line, pending) {
@@ -1497,7 +1507,13 @@ async function stop() {
     report("inserting");
     const landed = Math.round(performance.now() - releasedAt);
     if (polishing) {
-      writeIntoField(text, signal, liveInserted, landed, true).catch(() => {});
+      writeIntoField(text, signal, liveInserted, landed, true)
+        .then((outcome) => {
+          if (!outcome.written) {
+            noteWriteFailure(outcome.reason);
+          }
+        })
+        .catch(() => noteWriteFailure(""));
     }
     const inserted = polishing
       ? { written: true, reason: "" }
@@ -1727,6 +1743,12 @@ async function loadLanguages() {
   }
   buildWriteMenu();
 }
+
+function warmEngine() {
+  fetch("/warm", { method: "POST", headers: { Authorization: "Bearer " + token } }).catch(() => {});
+}
+
+warmEngine();
 
 writeEl.addEventListener("click", () => openWriteMenu(writeMenu.hidden));
 writeEl.addEventListener("keydown", (event) => {

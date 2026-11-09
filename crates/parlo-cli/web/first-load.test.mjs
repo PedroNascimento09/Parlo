@@ -28,8 +28,10 @@ function sourceOf(name) {
 }
 
 test("the island carries the note hidden and keyed to a translation", () => {
-  const tag = island.match(/<span[^>]*role="note"[^>]*>/);
-  assert.ok(tag, "a role=note element exists");
+  const tag = island.match(/<span[^>]*id="hint"[^>]*>/);
+  assert.ok(tag, "the hint element exists");
+  assert.match(tag[0], /role="status"/);
+  assert.match(tag[0], /aria-live="polite"/);
   assert.match(tag[0], /data-i18n="island\.firstLoad"/);
   assert.match(tag[0], /hidden/);
 });
@@ -77,6 +79,28 @@ test("the note shows during the first dictation and stays hidden afterwards", ()
   box.paint(hint, true);
   assert.equal(hint.hidden, true);
   box.paint(null, false);
+});
+
+test("a refused write is reported instead of claiming it was written", () => {
+  const stateEl = { textContent: "" };
+  const lineEl = { textContent: "", classList: { toggle() {} } };
+  const box = {
+    strings: strings.pt,
+    document: { body: { classList: { remove() {} } } },
+    stateEl,
+    lineEl,
+    report() {},
+  };
+  vm.runInNewContext(
+    `${sourceOf("t")}\n${sourceOf("setState")}\n${sourceOf("noteWriteFailure")}\nthis.note = noteWriteFailure;`,
+    box,
+  );
+  box.note("the field refused the edit");
+  assert.equal(box.stateEl.textContent, strings.pt["island.failed"]);
+  assert.equal(box.lineEl.textContent, "the field refused the edit");
+  box.note("");
+  assert.equal(box.lineEl.textContent, strings.pt["island.dictationFailed"]);
+  assert.match(island, /noteWriteFailure\(outcome\.reason\)/);
 });
 
 test("the island paints the note when a dictation begins and when the first result lands", () => {

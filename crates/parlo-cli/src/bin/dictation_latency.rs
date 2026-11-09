@@ -121,8 +121,14 @@ fn polish_server(delay: Duration) -> (u16, Arc<AtomicUsize>) {
     (port, calls)
 }
 
+fn parlo_binary() -> std::path::PathBuf {
+    let mut path = std::env::current_exe().expect("the probe runs as a binary");
+    path.set_file_name(if cfg!(windows) { "parlo.exe" } else { "parlo" });
+    path
+}
+
 fn serve(port: u16, data: &std::path::Path, polish: u16, reject: bool) -> Serving {
-    let child = Command::new(env!("CARGO_BIN_EXE_parlo"))
+    let child = Command::new(parlo_binary())
         .args([
             "serve",
             "--port",
@@ -291,9 +297,7 @@ fn wait_for_warm(calls: &Arc<AtomicUsize>) {
     }
 }
 
-#[test]
-#[ignore = "needs the cascade models and the timing fixture on this machine"]
-fn the_dictation_latency_is_measured_with_cleanup_off_and_on() {
+fn main() {
     let fixture = std::fs::read(FIXTURE).expect("the timing fixture");
     let fixture = read_pcm16(&fixture).expect("the fixture is 16 kHz mono pcm16");
     let audio = as_wav(&fixture.samples);
