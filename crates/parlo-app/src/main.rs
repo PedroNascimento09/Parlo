@@ -82,6 +82,12 @@ fn serve(handle: tauri::AppHandle, window: WebviewWindow) {
         }
     }
 
+    if let Ok(path) = std::env::var("PARLO_APP_PROBE") {
+        if let Ok(mut file) = std::fs::File::create(path) {
+            let _ = writeln!(file, "{{\"port\":{port},\"token\":\"{token}\"}}");
+        }
+    }
+
     match Url::parse(&format!("http://127.0.0.1:{port}/?t={token}")) {
         Ok(url) => {
             if let Err(error) = window.navigate(url) {
@@ -108,7 +114,14 @@ fn show_island(handle: &tauri::AppHandle, port: u16, token: &str) {
         return;
     };
     place(&window);
-    match Url::parse(&format!("http://127.0.0.1:{port}/island?t={token}")) {
+    let selftest = if std::env::var("PARLO_SELFTEST_TRANSCRIPT").is_ok() {
+        "&selftest=1"
+    } else {
+        ""
+    };
+    match Url::parse(&format!(
+        "http://127.0.0.1:{port}/island?t={token}{selftest}"
+    )) {
         Ok(url) => {
             if let Err(error) = window.navigate(url) {
                 note(&format!("cannot open the dictation island: {error}"));

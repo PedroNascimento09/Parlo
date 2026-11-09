@@ -12,13 +12,10 @@ pub fn show(handle: &AppHandle) {
     crate::place(&window);
     #[cfg(windows)]
     {
-        let field = parlo_core::focus::foreground();
         let raw = window.hwnd().ok().map(|handle| handle.0 as usize);
         if let Some(raw) = raw {
+            parlo_core::focus::no_activate(raw, true);
             if parlo_core::focus::reveal(raw) {
-                if let Some(field) = field {
-                    parlo_core::focus::give_back(field);
-                }
                 return;
             }
         }
@@ -191,9 +188,9 @@ pub fn listen(handle: AppHandle) {
     fn open(handle: &AppHandle, script: &'static str) {
         let handle = handle.clone();
         std::thread::spawn(move || {
-            remember_target(&handle);
             show(&handle);
             tell(&handle, script);
+            remember_target(&handle);
         });
     }
 
@@ -212,9 +209,9 @@ pub fn listen(handle: AppHandle) {
             if !current() {
                 return;
             }
-            remember_target(&handle);
             show(&handle);
             tell(&handle, "window.parloArm && window.parloArm()");
+            remember_target(&handle);
             let elapsed = PRESSED_AT
                 .lock()
                 .ok()
@@ -492,22 +489,30 @@ mod bridge_tests {
     }
 
     #[test]
-    fn the_hook_remembers_the_target_before_the_island_takes_the_focus() {
+    fn the_island_is_revealed_without_activating() {
         let hook = include_str!("island.rs");
+        assert!(
+            hook.contains("parlo_core::focus::reveal(raw)"),
+            "the island is shown through an activating call"
+        );
+        assert!(
+            hook.contains("parlo_core::focus::no_activate(raw, true)"),
+            "the island is not marked as non activating before it appears"
+        );
         let start = hook.find("fn open(").expect("there is no open hook");
         let end = hook
             .find("fn hands_free()")
             .expect("there is no hands free hook");
         let body = &hook[start..end];
-        let remembered = body
-            .find("remember_target(&handle);")
-            .expect("the open hook never remembers the target");
         let shown = body
             .find("show(&handle);")
             .expect("the open hook never shows the island");
+        let remembered = body
+            .find("remember_target(&handle);")
+            .expect("the open hook never remembers the target");
         assert!(
-            remembered < shown,
-            "the island is shown before the window you were typing in is remembered, so the text would land in Parlo"
+            shown < remembered,
+            "the target is captured before the island is revealed, which delays the island"
         );
     }
 

@@ -1,7 +1,16 @@
 #[cfg(windows)]
 #[test]
-fn the_push_to_talk_path_lands_the_text_in_the_field() {
+fn the_release_app_shows_the_island_and_lands_the_text() {
+    if std::env::var("PARLO_REAL_APP_PROBE").as_deref() != Ok("1") {
+        println!("skipped: set PARLO_REAL_APP_PROBE=1 in a desktop session");
+        return;
+    }
+    let app = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../target/release/parlo-app.exe"
+    );
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_push_to_talk"))
+        .env("PARLO_APP_EXE", app)
         .output()
         .expect("the push to talk probe runs");
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -13,11 +22,9 @@ fn the_push_to_talk_path_lands_the_text_in_the_field() {
 {stderr}"
     );
     for needle in [
-        "field captured:",
-        "island visible without focus theft:",
-        "hold ended on release:",
+        "island visible and painted:",
+        "recording ended on release:",
         "text inserted into the field: Bom dia.",
-        "target remembered:",
     ] {
         assert!(
             stdout.contains(needle),

@@ -322,6 +322,11 @@ impl Session {
     }
 
     pub(super) fn dictate(&self, pcm16: &[u8]) -> Result<String, String> {
+        if let Ok(text) = std::env::var("PARLO_SELFTEST_TRANSCRIPT") {
+            if !text.trim().is_empty() {
+                return Ok(text);
+            }
+        }
         let _working = self.working();
         self.pipeline()
             .dictate(pcm16)

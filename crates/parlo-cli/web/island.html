@@ -821,18 +821,35 @@ function capture() {
   });
 }
 
+function silentStream() {
+  const runner = new (window.AudioContext || window.webkitAudioContext)();
+  const generator = runner.createOscillator();
+  const mute = runner.createGain();
+  mute.gain.value = 0;
+  const tap = runner.createMediaStreamDestination();
+  generator.connect(mute);
+  mute.connect(tap);
+  generator.start();
+  window.parloSilence = runner;
+  return tap.stream;
+}
+
+const selfTest = new URLSearchParams(location.search).has("selftest");
+
 async function openMicrophone() {
   const ticket = ++attempt;
   let opened = null;
   try {
-    opened = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-    });
+    opened = selfTest
+      ? silentStream()
+      : await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
   } catch (failure) {
     if (ticket !== attempt) {
       return false;
