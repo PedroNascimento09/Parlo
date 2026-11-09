@@ -166,7 +166,7 @@ Parakeet stays the default for two reasons: it holds its rate under noise, and i
 
 ### Streaming, partial to final
 
-The cascade publishes text in four states: partial, stable, final and corrected. The recogniser reads a growing buffer every 0.4 s of audio and confirms a word only when the last two hypotheses agree on it (LocalAgreement, the policy section 4.3 of the plan names for models that cannot stream natively); the buffer closes after 0.45 s of silence or 12 s of audio. The mode is reported as `reprocess`, not native streaming, because every decode re-reads the whole segment.
+The cascade publishes text in four states: partial, stable, final and corrected. The recogniser reads a growing buffer every 0.4 s of audio and confirms a word only when the last two hypotheses agree on it (LocalAgreement, the policy section 4.3 of the plan names for models that cannot stream natively); the buffer closes after 0.45 s of silence or the segment window, 12 s in the tables below and 3 s in the app. The mode is reported as `reprocess`, not native streaming, because every decode re-reads the whole segment.
 
 Corpus: 20 European Portuguese sentences written for this test (`engines/cascade/tests/corpus/pt_pt.txt`), synthesised with the Piper `pt_PT-tugão-medium` voice. Windows 11, 4 threads, decode every 0.4 s, two agreeing hypotheses before a word is stable.
 
@@ -198,6 +198,15 @@ The spread inside a recogniser is wide: the best sentence scored 0.0 and the wor
 python engines/cascade/scripts/setup_models.py --voice pt_pt
 python engines/cascade/scripts/stream_bench.py --voice pt_PT-tugão-medium.onnx --out out/stream.json
 ```
+
+The close of a sentence was measured on its own, because it is the moment a person notices. A close that arrives on silence used to decode the same audio it had already read; two builds of the engine, one before and one after that close reuses its last hypothesis, read the same 20 rendered clips (`--write-clips`, so both processes see identical audio), segment 3 s, decode every 0.4 s, 4 threads, `pt_PT-tugão-medium`:
+
+| Build | Final latency at a silence close | Decodes per sentence | Loop wall time per sentence | Final WER | Finals that changed |
+|---|---|---|---|---|---|
+| Before (`50aa1ea`) | **285.4 ms** | 7.20 | 1328.2 ms | **0.218** | — |
+| After (`be5d415`) | **0 ms** | 6.45 | 1117.4 ms | **0.218** | 1 of 20 |
+
+Reading: a sentence that ends on silence costs no decode at all now, 285.4 ms of recogniser time removed from the close, 10.4% fewer decodes and 210.8 ms less wall time per sentence across the whole stream. The first final of a long sentence is still a segment close, so the p95 first final is unchanged (3401 against 3404 ms); what changed is the moment the sentence actually ends. Quality is level: the same mean WER to three decimals, the same 163 words, and the one final that differs scores the same error rate on both builds. `stream_bench.py` now reports the kind of every close (silence, segment or end of audio) and how many decodes each sentence took, so this is re-run rather than believed.
 
 Limits: synthetic speech from one voice, no noise, no accents, no real speakers. The next section repeats the measurement on recordings.
 

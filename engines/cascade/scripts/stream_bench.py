@@ -84,6 +84,30 @@ def run(
     return events
 
 
+def write_clips(folder: Path, work) -> int:
+    folder.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for index, (sentence, samples) in enumerate(work):
+        name = f"clip-{index:03d}.wav"
+        with wave.open(str(folder / name), "wb") as handle:
+            handle.setnchannels(1)
+            handle.setsampwidth(2)
+            handle.setframerate(16_000)
+            handle.writeframes(float_to_pcm16(samples))
+        rows.append({"audio": name, "text": sentence})
+    manifest = "\n".join(json.dumps(row, ensure_ascii=False) for row in rows)
+    (folder / "reference.jsonl").write_text(manifest + "\n", encoding="utf-8")
+    return len(rows)
+
+
+def close_kind(event, segment_ms: int, total_audio_ms: int) -> str:
+    if event.audio_ms >= total_audio_ms - 10:
+        return "end"
+    if event.audio_ms >= segment_ms - 20:
+        return "cap"
+    return "silence"
+
+
 def growth(values: list[float]) -> float | None:
     if len(values) < 3:
         return None
@@ -110,14 +134,24 @@ def drift(rows: list[dict]) -> dict:
     }
 
 
-def summarise(reference: str, events: list[tuple[float, object]]) -> dict:
+def summarise(
+    reference: str,
+    events: list[tuple[float, object]],
+    segment_ms: int,
+    total_audio_ms: int,
+) -> dict:
     partials = [(wall, event) for wall, event in events if event.state == "partial"]
     stables = [(wall, event) for wall, event in events if event.state == "stable"]
     finals = [(wall, event) for wall, event in events if event.state == "final"]
+    silent = [
+        event
+        for _, event in finals
+        if close_kind(event, segment_ms, total_audio_ms) == "silence"
+    ]
     corrected = [event for _, event in events if event.state == "corrected"]
     partial_text = partials[-1][1].text if partials else ""
     stable_text = " ".join(event.text for _, event in stables).strip()
-    final_text = finals[-1][1].text if finals else ""
+    final_text = " ".join(event.text for _, event in finals).strip()
     latencies = [event.latency_ms for _, event in events]
 
     def moment(event):
@@ -130,6 +164,13 @@ def summarise(reference: str, events: list[tuple[float, object]]) -> dict:
         "process_ms": round(events[-1][0] * 1000, 1) if events else None,
         "decode_ms": round(statistics.mean(latencies), 1) if latencies else None,
         "corrections": len(corrected),
+        "final_count": len(finals),
+        "silence_finals": len(silent),
+        "silence_final_latency_ms": (
+            round(statistics.mean(event.latency_ms for event in silent), 1)
+            if silent
+            else None
+        ),
         "partial": partial_text,
         "stable": stable_text,
         "final": final_text,
@@ -159,6 +200,7 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--events", action="store_true")
     parser.add_argument("--voice", default="")
+    parser.add_argument("--write-clips", default="")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -185,8 +227,14 @@ def main() -> int:
         raise SystemExit("missing voice model, run scripts/setup_models.py")
     from parlo_cascade.streaming import StreamingSession
 
+    calls = {"count": 0}
+
+    def counted(samples):
+        calls["count"] += 1
+        return engine._transcribe(samples)
+
     engine._stream = StreamingSession(
-        engine._transcribe,
+        counted,
         decode_every=args.decode_every,
         segment_seconds=args.segment,
         rounds=args.rounds,
@@ -208,6 +256,10 @@ def main() -> int:
             for sentence in sentences
         ]
     )
+    if args.write_clips:
+        written = write_clips(Path(args.write_clips), work)
+        print(f"wrote {written} clips to {args.write_clips}")
+        return 0
     source = Path(args.audio_dir).name if clips else Path(args.corpus).name
     voice = "recorded" if clips else engine.voice_path.name
     print(
@@ -216,10 +268,14 @@ def main() -> int:
     )
     for index, (sentence, samples) in enumerate(work):
         audio_seconds = len(samples) / 16_000
+        before = calls["count"]
         events = run(engine, samples, chunk, lead, tail, args.snr, args.seed + index)
-        row = summarise(sentence, events)
+        total_audio_ms = int(round((len(samples) + lead + tail) / 16))
+        row = summarise(sentence, events, int(args.segment * 1000), total_audio_ms)
         row["sentence"] = sentence
         row["audio_seconds"] = round(audio_seconds, 2)
+        row["decodes"] = calls["count"] - before
+        row["total_audio_ms"] = total_audio_ms
         rows.append(row)
         if args.events:
             for _, event in events:
@@ -228,8 +284,10 @@ def main() -> int:
                     f"{event.latency_ms:>5d} ms decode  "
                     f"{event.state:<9} {event.text}"
                 )
+        closing = f"{row['final_count']}f/{row['silence_finals']}s"
         print(
-            f"  {row['first_partial_ms'] or 0:>6.0f} ms  "
+            f"  {row['decodes']:>2d} dec  {closing:<8}  "
+            f"{row['first_partial_ms'] or 0:>6.0f} ms  "
             f"{row['first_stable_ms'] or 0:>6.0f} ms  "
             f"{row['final_ms'] or 0:>6.0f} ms  "
             f"WER {row['partial_wer']:.2f} / {row['stable_wer']:.2f} / "
@@ -260,6 +318,24 @@ def main() -> int:
             statistics.mean(row["stable_coverage"] for row in rows), 3
         ),
         "mean_final_wer": round(statistics.mean(row["final_wer"] for row in rows), 3),
+        "mean_decodes": round(statistics.mean(row["decodes"] for row in rows), 2),
+        "finals_total": sum(row["final_count"] for row in rows),
+        "silence_finals_total": sum(row["silence_finals"] for row in rows),
+        "mean_silence_final_latency_ms": (
+            round(
+                statistics.mean(
+                    row["silence_final_latency_ms"]
+                    for row in rows
+                    if row["silence_final_latency_ms"] is not None
+                ),
+                1,
+            )
+            if any(row["silence_final_latency_ms"] is not None for row in rows)
+            else None
+        ),
+        "mean_process_ms": round(
+            statistics.mean(row["process_ms"] for row in rows if row["process_ms"]), 1
+        ),
         "corrections": sum(row["corrections"] for row in rows),
     }
     summary["drift"] = drift(rows)
