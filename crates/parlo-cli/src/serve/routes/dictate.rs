@@ -25,7 +25,11 @@ struct InsertRequest {
     live: bool,
     #[serde(default)]
     latency_ms: u64,
+    #[serde(default)]
+    polish: bool,
 }
+
+const POLISH_GRACE_MS: u64 = 400;
 
 pub(crate) fn route(
     method: &str,
@@ -131,7 +135,33 @@ fn handle(
             session.insert_text(&request.text, &request.replace, latency)
         };
         return match outcome {
-            Ok(()) => respond_json(stream, "200 OK", "{\"inserted\":true}").map(|()| Flow::Serve),
+            Ok(()) => {
+                let mut polished = String::new();
+                let mut polish_ms = 0u64;
+                if request.polish && !request.live {
+                    let began = Instant::now();
+                    if let Ok(cleaned) = session.clean_text(request.text.trim(), None) {
+                        polish_ms = began.elapsed().as_millis() as u64;
+                        let cleaned = cleaned.trim();
+                        if polish_ms <= POLISH_GRACE_MS
+                            && !cleaned.is_empty()
+                            && cleaned != request.text.trim()
+                            && session.insert_text(cleaned, &request.text, 0).is_ok()
+                        {
+                            polished = cleaned.to_string();
+                        }
+                    }
+                }
+                respond_json(
+                    stream,
+                    "200 OK",
+                    &format!(
+                        "{{\"inserted\":true,\"polished\":\"{}\",\"polish_ms\":{polish_ms}}}",
+                        json_string(&polished)
+                    ),
+                )
+                .map(|()| Flow::Serve)
+            }
             Err(error) => respond_json(
                 stream,
                 "409 Conflict",

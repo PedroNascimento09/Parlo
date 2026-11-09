@@ -546,7 +546,6 @@ const ISLAND_HEIGHT = 132;
 const ISLAND_OPEN_HEIGHT = 372;
 const MAX_SECONDS = 60;
 const PARTIAL_MS = 300;
-const POLISH_GRACE_MS = 400;
 const WINDOW_SECONDS = 3;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
 
@@ -1242,12 +1241,12 @@ function readLive(base, confirmed, guess, pieces) {
   };
 }
 
-async function writeIntoField(text, signal, replace, latency) {
+async function writeIntoField(text, signal, replace, latency, polish) {
   try {
     const response = await fetch("/insert", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ text: text, replace: replace, latency_ms: latency || 0 }),
+      body: JSON.stringify({ text: text, replace: replace, latency_ms: latency || 0, polish: !!polish }),
       signal,
     });
     if (response.ok) {
@@ -1276,16 +1275,6 @@ function partialSettled(limitMs) {
       }
     };
     check();
-  });
-}
-
-function withinBudget(promise, ms) {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), ms);
-    promise.then((value) => {
-      clearTimeout(timer);
-      resolve(value);
-    });
   });
 }
 
@@ -1489,7 +1478,12 @@ async function stop() {
     lastText = text;
     report("inserting");
     const landed = Math.round(performance.now() - releasedAt);
-    const inserted = await writeIntoField(text, signal, liveInserted, landed);
+    if (polishing) {
+      writeIntoField(text, signal, liveInserted, landed, true).catch(() => {});
+    }
+    const inserted = polishing
+      ? { written: true, reason: "" }
+      : await writeIntoField(text, signal, liveInserted, landed, false);
     if (inserted.written) {
       liveInserted = "";
       liveBase = "";
@@ -1497,22 +1491,6 @@ async function stop() {
       liveGuess = "";
       setState(t("island.written", "Written"), text, false);
       hideAfterDelay(4000);
-      if (polishing) {
-        const refined = await withinBudget(polishing.asked, POLISH_GRACE_MS);
-        if (!refined) {
-          polishing.polish.abort();
-        } else {
-          const polished = (refined.text || "").trim();
-          if (polished && polished !== text) {
-            const swapped = await writeIntoField(polished, signal, text, 0);
-            if (swapped.written) {
-              text = polished;
-              lastText = polished;
-              setState(t("island.written", "Written"), polished, false);
-            }
-          }
-        }
-      }
     } else {
       document.body.classList.remove("ready");
       setState(
