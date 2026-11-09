@@ -42,6 +42,10 @@ fn warm_dictation(session: &Arc<Session>) {
             Ok(()) => println!("  warm       {stt} loaded, so the first dictation starts at once"),
             Err(error) => println!("  warm       {stt} stays cold: {error}"),
         }
+        match session.clean_text("Parlo", None) {
+            Ok(_) => println!("  warm       the cleanup stage is ready"),
+            Err(error) => println!("  warm       the cleanup stage stays cold: {error}"),
+        }
     });
 }
 
