@@ -15,6 +15,7 @@ pub struct Latest {
     pub version: String,
     pub notes_url: String,
     pub archive_url: Option<String>,
+    pub checksum_url: Option<String>,
 }
 
 pub fn archive_name() -> &'static str {
@@ -102,6 +103,7 @@ pub fn percent_from_curl(line: &str) -> Option<u8> {
 fn download(url: &str, archive: &Path, version: &str) -> Result<(), String> {
     let mut child = Command::new("curl")
         .args([
+            "--fail",
             "-L",
             "--progress-bar",
             "-o",
@@ -283,26 +285,28 @@ fn release(document: &serde_json::Value) -> Result<Latest, String> {
         .and_then(serde_json::Value::as_str)
         .unwrap_or_default()
         .to_string();
-    let archive_url = document
-        .get("assets")
-        .and_then(serde_json::Value::as_array)
-        .and_then(|assets| {
-            assets.iter().find_map(|asset| {
-                let name = asset.get("name")?.as_str()?;
-                if name == archive_name() {
-                    asset
-                        .get("browser_download_url")?
-                        .as_str()
-                        .map(str::to_string)
-                } else {
-                    None
-                }
+    let asset_url = |wanted: &str| {
+        document
+            .get("assets")
+            .and_then(serde_json::Value::as_array)
+            .and_then(|assets| {
+                assets.iter().find_map(|asset| {
+                    (asset.get("name")?.as_str()? == wanted)
+                        .then(|| {
+                            asset
+                                .get("browser_download_url")?
+                                .as_str()
+                                .map(str::to_string)
+                        })
+                        .flatten()
+                })
             })
-        });
+    };
     Ok(Latest {
         version,
         notes_url,
-        archive_url,
+        archive_url: asset_url(archive_name()),
+        checksum_url: asset_url("SHA256SUMS.txt"),
     })
 }
 
@@ -311,14 +315,33 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
         .archive_url
         .as_deref()
         .ok_or_else(|| format!("release {} has no build for this platform", latest.version))?;
+    let checksum_url = latest
+        .checksum_url
+        .as_deref()
+        .ok_or_else(|| format!("release {} has no published checksums", latest.version))?;
+    if !url.starts_with("https://") || !checksum_url.starts_with("https://") {
+        return Err("the release downloads must use HTTPS".to_string());
+    }
+    if latest.version.is_empty()
+        || !latest.version.chars().all(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '.' | '-' | '_')
+        })
+    {
+        return Err("the release version is invalid".to_string());
+    }
+    let sums = fetch(checksum_url)?;
+    let expected = checksum_for(&sums, archive_name())?;
     report(true, "downloading", 0, &latest.version);
     let directory = std::env::temp_dir().join(format!("parlo-{}", latest.version));
     let _ = fs::remove_dir_all(&directory);
     fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
     let archive = directory.join(archive_name());
 
+    download(url, &archive, &latest.version)?;
+    report(true, "checking", 76, &latest.version);
+    verify_archive(&archive, &expected)?;
+
     if cfg!(target_os = "windows") {
-        download(url, &archive, &latest.version)?;
         report(true, "unpacking", 78, &latest.version);
         run(
             "powershell",
@@ -326,14 +349,13 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
                 "-NoProfile",
                 "-Command",
                 &format!(
-                    "Expand-Archive -Path '{}' -DestinationPath '{}' -Force",
-                    archive.display(),
-                    directory.display()
+                    "Expand-Archive -LiteralPath '{}' -DestinationPath '{}' -Force",
+                    archive.display().to_string().replace('\'', "''"),
+                    directory.display().to_string().replace('\'', "''")
                 ),
             ],
         )?;
     } else {
-        download(url, &archive, &latest.version)?;
         report(true, "unpacking", 78, &latest.version);
         run(
             "tar",
@@ -353,6 +375,58 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
     }
     report(true, "ready", 100, &latest.version);
     Ok(binary)
+}
+
+fn checksum_for(sums: &str, name: &str) -> Result<String, String> {
+    let mut found = None;
+    for line in sums.lines() {
+        let mut parts = line.split_whitespace();
+        let (Some(hash), Some(file)) = (parts.next(), parts.next()) else {
+            continue;
+        };
+        if file.trim_start_matches('*') != name || parts.next().is_some() {
+            continue;
+        }
+        if found.is_some() || hash.len() != 64 || !hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+        {
+            return Err(format!("the published checksum for {name} is invalid"));
+        }
+        found = Some(hash.to_ascii_lowercase());
+    }
+    found.ok_or_else(|| format!("the release has no checksum for {name}"))
+}
+
+fn verify_archive(path: &Path, expected: &str) -> Result<(), String> {
+    let output = if cfg!(windows) {
+        Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-Command",
+                "(Get-FileHash -LiteralPath $env:PARLO_UPDATE_ARCHIVE -Algorithm SHA256).Hash",
+            ])
+            .env("PARLO_UPDATE_ARCHIVE", path)
+            .output()
+    } else if cfg!(target_os = "macos") {
+        Command::new("shasum")
+            .args(["-a", "256"])
+            .arg(path)
+            .output()
+    } else {
+        Command::new("sha256sum").arg(path).output()
+    }
+    .map_err(|error| format!("cannot verify the downloaded update: {error}"))?;
+    if !output.status.success() {
+        return Err("cannot calculate the downloaded update's SHA-256".to_string());
+    }
+    let actual = String::from_utf8_lossy(&output.stdout);
+    if !actual
+        .split_whitespace()
+        .next()
+        .is_some_and(|hash| hash.eq_ignore_ascii_case(expected))
+    {
+        return Err("the downloaded update does not match the published checksum".to_string());
+    }
+    Ok(())
 }
 
 pub fn replacement_script(pid: u32, new_binary: &Path, current: &Path) -> String {
@@ -391,8 +465,9 @@ fn fetch(url: &str) -> Result<String, String> {
             .args([
                 "-NoProfile",
                 "-Command",
-                &format!("(Invoke-WebRequest -UseBasicParsing -Uri '{url}').Content"),
+                "(Invoke-WebRequest -UseBasicParsing -Uri $env:PARLO_RELEASE_URL).Content",
             ])
+            .env("PARLO_RELEASE_URL", url)
             .output()
     } else {
         Command::new("curl").args(["-fsSL", url]).output()
@@ -562,11 +637,39 @@ mod tests {
     }
 
     #[test]
+    fn checksums_must_name_the_exact_archive_once() {
+        let hash = "a".repeat(64);
+        assert_eq!(
+            checksum_for(&format!("{hash}  *{}\n", archive_name()), archive_name()).unwrap(),
+            hash
+        );
+        assert!(checksum_for(&format!("{hash}  other.zip"), archive_name()).is_err());
+        assert!(checksum_for(&format!("short  {}", archive_name()), archive_name()).is_err());
+        assert!(checksum_for(
+            &format!("{hash}  {}\n{hash}  {}", archive_name(), archive_name()),
+            archive_name()
+        )
+        .is_err());
+    }
+
+    #[test]
+    fn archive_verification_rejects_changed_bytes() {
+        let path = std::env::temp_dir().join(format!("parlo-checksum-test-{}", std::process::id()));
+        fs::write(&path, b"abc").unwrap();
+        let hash = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
+        assert!(verify_archive(&path, hash).is_ok());
+        fs::write(&path, b"changed").unwrap();
+        assert!(verify_archive(&path, hash).is_err());
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn a_missing_build_is_reported() {
         let latest = Latest {
             version: "0.9.9".to_string(),
             notes_url: String::new(),
             archive_url: None,
+            checksum_url: None,
         };
         assert!(install(&latest).is_err());
     }
