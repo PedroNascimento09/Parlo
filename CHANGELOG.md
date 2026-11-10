@@ -42,6 +42,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Fixed
 
+- Cleanup rejects model edits that remove, add or repeat digit sequences, keeping the deterministic text instead.
+- A model configured as local cannot send dictation to a remote HTTPS address; local model endpoints must be on loopback.
 - The app-managed server no longer writes its session token into the engine log.
 - Standalone server tokens and one-use streaming tickets now use cryptographic randomness; a failure to generate one stops the request instead of issuing a predictable token.
 - Updates check the downloaded archive against the checksum from the selected release before extracting it. A missing or mismatched checksum stops the update.

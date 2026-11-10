@@ -81,6 +81,17 @@ class ValidationTests(unittest.TestCase):
         self.assertFalse(verdict.ok)
         self.assertIn("number", verdict.reason)
 
+    def test_a_removed_or_repeated_number_is_refused(self):
+        original = "Envia 3 livros e 2 revistas para o Pedro."
+        for edited in (
+            "Envia livros e 2 revistas para o Pedro.",
+            "Envia 3 livros, 3 livros e 2 revistas para o Pedro.",
+            "Envia 3 livros e 3 revistas para o Pedro.",
+        ):
+            with self.subTest(edited=edited):
+                self.assertFalse(validate(original, edited).ok)
+        self.assertTrue(validate(original, "Envia 2 revistas e 3 livros para o Pedro.").ok)
+
     def test_an_invented_name_is_refused(self):
         self.assertFalse(validate("Envia ao Pedro.", "Envia ao Pedro e ao João.").ok)
 
@@ -173,6 +184,17 @@ class EditTests(unittest.TestCase):
         self.assertTrue(edit.fallback)
         self.assertIn("number", edit.reason)
 
+    def test_a_dropped_number_keeps_the_deterministic_text(self):
+        def transport(*args):
+            return openai_reply("Envia os livros e 2 revistas para o Pedro.")
+
+        settings = Settings(mode="cloud", allow_cloud=True, provider="openai")
+        engine = Intelligence(settings, "pt", transport=transport, key_lookup=lambda name: "sk-test")
+        edit = engine.edit("Envia 3 livros e 2 revistas para o Pedro.")
+        self.assertTrue(edit.fallback)
+        self.assertEqual(edit.text, "Envia 3 livros e 2 revistas para o Pedro.")
+        self.assertIn("number", edit.reason)
+
     def test_a_local_model_is_used_over_loopback(self):
         seen = []
 
@@ -201,11 +223,13 @@ class EditTests(unittest.TestCase):
         self.assertEqual(edit.engine, DETERMINISTIC)
 
     def test_a_local_model_outside_loopback_is_refused(self):
-        settings = Settings(mode="auto", local_url="http://models.example.com/v1")
-        engine = Intelligence(settings, "pt", transport=unreachable, key_lookup=lambda name: "")
-        edit = engine.edit("olá")
-        self.assertTrue(edit.fallback)
-        self.assertIn("loopback", edit.reason)
+        for url in ("http://models.example.com/v1", "https://models.example.com/v1"):
+            with self.subTest(url=url):
+                settings = Settings(mode="auto", local_url=url)
+                engine = Intelligence(settings, "pt", transport=unreachable, key_lookup=lambda name: "")
+                edit = engine.edit("olá")
+                self.assertTrue(edit.fallback)
+                self.assertIn("loopback", edit.reason)
 
 
 class SettingsTests(unittest.TestCase):

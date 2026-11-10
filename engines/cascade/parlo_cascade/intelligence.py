@@ -4,6 +4,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -264,15 +265,14 @@ def validate(original: str, edited: str) -> Verdict:
     if "You edit dictated text" in edited or "```" in edited:
         return Verdict(False, "the model answered with commentary")
     if not _numbers_are_kept(original, edited):
-        return Verdict(False, "the model introduced a number that was not said")
+        return Verdict(False, "the model changed or dropped a number")
     if _new_names(original, edited):
         return Verdict(False, "the model introduced a name that was not said")
     return Verdict(True)
 
 
 def _numbers_are_kept(original: str, edited: str) -> bool:
-    said = set(NUMBER.findall(original))
-    return set(NUMBER.findall(edited)) <= said
+    return Counter(NUMBER.findall(original)) == Counter(NUMBER.findall(edited))
 
 
 def _new_names(original: str, edited: str) -> bool:
@@ -355,7 +355,7 @@ class Intelligence:
     def _ask(self, text: str, route: Route, timeout: float) -> str:
         if route.engine == LOCAL:
             url = self.settings.local_url
-            if requires_secure_transport(url):
+            if requires_secure_transport(url) or not is_loopback(url):
                 raise IntelligenceError("a local model must be reached over loopback")
             payload, headers = _openai_request(url, self.settings.local_model or "local", text, None)
             reply = self._transport(url, headers, payload, timeout)

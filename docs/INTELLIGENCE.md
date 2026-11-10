@@ -1,6 +1,6 @@
 # The intelligence engine
 
-PIE, the Parlo Intelligence Engine, is the layer between a transcript and the text that is written. It applies self-corrections, removes false starts, hesitations and accidental repetitions, fixes punctuation, and refuses any edit that would change what the person said. It never translates, never summarises and never adds a fact.
+PIE, the Parlo Intelligence Engine, is the layer between a transcript and the text that is written. It applies self-corrections, removes false starts, hesitations and accidental repetitions, and fixes punctuation. Model edits are instructed to preserve what the person said and are checked before use, but these checks cannot detect every change in meaning.
 
 It runs after recognition and before insertion:
 
@@ -66,12 +66,12 @@ Requests go from the machine directly to the provider. There is no Parlo proxy a
 A model is an editor, not an author, and the answer is checked before it can be used:
 
 - The answer must be JSON with a `text` field. Free-form prose, a code fence or commentary is rejected.
-- It cannot contain a number that was not in the text it was given.
+- Digit sequences must be preserved with the same occurrences: an added, removed or repeated number is rejected.
 - It cannot introduce a capitalised name that was not there.
 - It cannot grow past 1.6 times the original length or shrink below 0.4 of it.
 - On any failure — an invalid key, a rate limit, a timeout, a rejected answer — the deterministic text is used and the reason is recorded. Nothing is lost and nothing is retried behind the user's back.
 
-The original transcript is always kept beside the cleaned text, and `off` brings all of it back.
+These checks do not prove that names, negations or other facts were preserved. Review the result when accuracy matters. The original transcript is kept beside the cleaned text.
 
 ## Cost and latency
 
