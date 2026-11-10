@@ -16,7 +16,52 @@ is, complete, with no lost first word and no duplicate text.
 | VS Code | Open a file, click at the end of a line, hold `Ctrl+Alt+D`, same sentence | | | |
 
 Write a tick or the failure next to every run. A row with a failure blocks the
-release.
+release. Record the Parlo version or commit, Windows version, microphone,
+selected model and whether Polish is enabled. Repeat with Polish on and off.
+
+## Focus and recovery
+
+Run these checks in a disposable document without personal or important text.
+Record the result for each application above.
+
+1. Dictate a short sentence, move the caret before the text settles and type a
+   word. Check that the typed word and surrounding text remain intact.
+2. Start dictating, switch to a different window before the result arrives, and
+   check where the result lands. It must not change text in the wrong field.
+3. Close the target while dictating. Confirm the failure is visible and the
+   transcript can be recovered without recording again.
+4. Press Escape while recording. Check the resulting field and history for any
+   text that was already written; record exactly what remains.
+5. Copy text and an image before separate dictations. Check the clipboard after
+   each insertion, including when insertion fails.
+
+A failed check blocks a release that changes the relevant path. Do not assume a
+window handle identifies a particular text field or that a successful simulated
+keystroke proves the application accepted it.
+
+## Comparing dictation products
+
+Use consenting speakers and test phrases that contain no sensitive information.
+For each speaker, prepare the same intended text in PT-PT or English, including
+names, amounts, negations, punctuation, hesitations and explicit corrections.
+Keep spontaneous speech as a separate set from read phrases. Record audio only
+with permission; explain where it will be stored, who can access it and when it
+will be deleted. Do not upload recordings to a service without explicit consent.
+
+Test Parlo, Wispr Flow and Handy on the same computer and microphone. Record
+product and model versions, language, cleanup settings, hardware, network state,
+room conditions and whether each product processes audio or text in the cloud.
+Where an app cannot accept the same recording, have the same speaker read the
+same prompts and mark the comparison as repeated speech, not identical audio.
+Use the same target application and alternate product order between speakers.
+
+For each attempt keep the reference, raw output, final output, transcription
+errors, missing or changed numbers and negations, manual edits, failures and the
+time from the end of speech until usable text appears in the field. Include
+failed attempts in the report. State the number of speakers and attempts, the
+measurement method and whether the model was warm. Do not compare the app's
+internal timing with an end-to-end stopwatch as if they measured the same thing.
+Never publish recordings, transcripts or identifiable results without permission.
 
 ## What else to check in the same session
 
@@ -27,8 +72,9 @@ release.
 - `Ctrl+Alt+Shift+D` keeps listening until it is pressed again.
 - The island shows no timer. The sentence stays visible while you speak, so you
   see it before you stop.
-- With Polish off, the sentence appears in the field while you speak; with Polish
-  on, it lands only when you stop. Neither path asks for Ctrl+V.
+- Check Polish off and on separately. Record when text appears and whether a
+  correction replaces it without deleting unrelated text. If insertion fails,
+  check that the sentence remains available for recovery.
 - Speaking quietly still produces text: the first second of audio is measured
   and lifted when the room is silent.
 - "new line", "bullet point", "comma", "period" and "scratch that" change what
