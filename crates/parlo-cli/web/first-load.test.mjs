@@ -659,7 +659,7 @@ test("an uncopied result prevents a new recording and stays visible", async () =
       add: (name) => classes.add(name),
       remove: (...names) => names.forEach((name) => classes.delete(name)),
     } } },
-    setState: (...args) => messages.push(args),
+    setState: (...args) => messages.push(args), t: (_key, fallback) => fallback,
     discard() { throw new Error("the result was discarded"); },
   };
   vm.runInNewContext(`${sourceOf("ready")}\n${sourceOf("arm")}\nthis.ready = ready; this.arm = arm;`, box);
@@ -772,7 +772,7 @@ test("saved recovery loads before recording and retains its full text", async ()
     document: { body: { classList: {
       remove: (name) => classes.delete(name), add: (name) => classes.add(name),
     } } },
-    resizeIsland: async () => {}, setState: (...args) => messages.push(args), report: (state) => messages.push(["report", state]),
+    resizeIsland: async () => {}, setState: (...args) => messages.push(args), report: (state) => messages.push(["report", state]), t: (_key, fallback) => fallback,
     fetch: async () => ({ ok: true, json: async () => ({ text: "First\nSecond", partial: true }) }),
   };
   vm.runInNewContext(`${sourceOf("loadRecovery")}\nthis.load = loadRecovery;`, box);
@@ -791,7 +791,7 @@ test("a recovery read failure is reported and blocks recording", async () => {
     recoveryReady: false, token: "token",
     document: { body: { classList: { remove() {} } } },
     fetch: async () => ({ ok: false }),
-    setState: (...args) => states.push(args), report: (state) => states.push(["report", state]),
+    setState: (...args) => states.push(args), report: (state) => states.push(["report", state]), t: (_key, fallback) => fallback,
   };
   vm.runInNewContext(`${sourceOf("loadRecovery")}\nthis.load = loadRecovery;`, box);
   await box.load();
@@ -802,7 +802,7 @@ test("a recovery read failure is reported and blocks recording", async () => {
 
 test("new recording waits for recovery loading and cannot erase pending text", async () => {
   const states = [];
-  const box = { recoveryReady: false, setState: (...args) => states.push(args), report: (state) => states.push(["report", state]) };
+  const box = { recoveryReady: false, setState: (...args) => states.push(args), report: (state) => states.push(["report", state]), t: (_key, fallback) => fallback };
   vm.runInNewContext(`${sourceOf("begin")}\n${sourceOf("ready")}\nthis.begin = begin; this.ready = ready;`, box);
   await box.begin();
   box.ready();
@@ -826,7 +826,7 @@ test("recovery writes stay ordered and a failure prevents an unsafe clear", asyn
   const writes = [];
   const messages = [];
   const box = {
-    recoveryQueue: Promise.resolve(), token: "token", setState: (...args) => messages.push(args),
+    recoveryQueue: Promise.resolve(), token: "token", setState: (...args) => messages.push(args), t: (_key, fallback) => fallback,
     fetch: async (_url, options) => {
       const payload = JSON.parse(options.body);
       writes.push(payload.text);

@@ -586,7 +586,7 @@
       </div>
       <div class="whisper">
         <span class="switch-label" id="whisper-label">Whisper</span>
-        <span class="whisper-hint sr-only" id="whisper-hint">Raises the microphone gain for quiet speech</span>
+        <span class="whisper-hint sr-only" id="whisper-hint" data-i18n="text.Raises the microphone gain for quiet speech">Raises the microphone gain for quiet speech</span>
         <button type="button" class="switch" id="whisper" role="switch" aria-checked="false" aria-labelledby="whisper-label" aria-describedby="whisper-hint">
           <span class="knob"></span>
         </button>
@@ -822,8 +822,8 @@ function showRecovery(text, partial) {
   copyRecoveryEl.hidden = !recoveryText;
   clearRecoveryEl.hidden = !recoveryText;
   clearRecoveryEl.dataset.confirm = "no";
-  clearRecoveryEl.textContent = "Discard";
-  copyRecoveryEl.textContent = recoveryPartial ? "Copy partial text" : "Copy text";
+  clearRecoveryEl.textContent = t("text.Discard", "Discard");
+  copyRecoveryEl.textContent = recoveryPartial ? t("text.Copy partial text", "Copy partial text") : t("text.Copy text", "Copy text");
   document.body.classList.toggle("recovery", Boolean(recoveryText));
   resizeIsland(Boolean(recoveryText)).catch(() => {});
   if (recoveryText) {
@@ -842,7 +842,7 @@ function saveRecovery(text, partial) {
       if (!response.ok) throw new Error("The result could not be saved on this computer.");
       return true;
     } catch (failure) {
-      setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+      setState(t("text.Save failed", "Save failed"), t("text.Copy the text before closing Parlo. It could not be saved for recovery.", "Copy the text before closing Parlo. It could not be saved for recovery."), true);
       return false;
     }
   });
@@ -863,17 +863,17 @@ async function loadRecovery() {
       recoveryTextEl.tabIndex = 0;
       copyRecoveryEl.hidden = false;
       clearRecoveryEl.hidden = false;
-      copyRecoveryEl.textContent = recoveryPartial ? "Copy partial text" : "Copy text";
+      copyRecoveryEl.textContent = recoveryPartial ? t("text.Copy partial text", "Copy partial text") : t("text.Copy text", "Copy text");
       document.body.classList.remove("ready");
       document.body.classList.add("recovery");
       resizeIsland(true).catch(() => {});
-      setState("Recovered text", "Saved on this computer. Review, copy or discard it.", true);
+      setState(t("text.Recovered text", "Recovered text"), t("text.Saved on this computer. Review, copy or discard it.", "Saved on this computer. Review, copy or discard it."), true);
       report("ready-to-copy");
     }
     recoveryReady = true;
   } catch (failure) {
     document.body.classList.remove("ready");
-    setState("Recovery unavailable", "Restart Parlo to try loading your saved dictation.", true);
+    setState(t("text.Recovery unavailable", "Recovery unavailable"), t("text.Restart Parlo to try loading your saved dictation.", "Restart Parlo to try loading your saved dictation."), true);
     report("error");
   }
 }
@@ -882,8 +882,8 @@ async function clearRecovery() {
   if (!recoveryText || copyRecoveryEl.disabled || clearRecoveryEl.disabled || starting) return;
   if (clearRecoveryEl.dataset.confirm !== "yes") {
     clearRecoveryEl.dataset.confirm = "yes";
-    clearRecoveryEl.textContent = "Confirm discard";
-    setState("Discard dictation?", "Press Confirm discard to remove the saved text, or copy it instead.", true);
+    clearRecoveryEl.textContent = t("text.Confirm discard", "Confirm discard");
+    setState(t("text.Discard dictation?", "Discard dictation?"), t("text.Press Confirm discard to remove the saved text, or copy it instead.", "Press Confirm discard to remove the saved text, or copy it instead."), true);
     return;
   }
   clearRecoveryEl.disabled = true;
@@ -1201,11 +1201,11 @@ async function openMicrophone() {
 
 async function begin() {
   if (!recoveryReady) {
-    setState("Recovery unavailable", "Wait for saved dictation to load before recording.", true);
+    setState(t("text.Recovery unavailable", "Recovery unavailable"), t("text.Wait for saved dictation to load before recording.", "Wait for saved dictation to load before recording."), true);
     return;
   }
   if (recoveryText && (!recoveryCopied || copyRecoveryEl.disabled)) {
-    setState("Copy your text first", "Copy the result before starting another dictation.", true);
+    setState(t("text.Copy your text first", "Copy your text first"), t("text.Copy the result before starting another dictation.", "Copy the result before starting another dictation."), true);
     return;
   }
   if (busy || starting) {
@@ -1763,7 +1763,7 @@ async function cancel() {
   report(recovered ? "error" : "cancelled");
   const cancelledSession = session;
   if (hadSomething && recovered && !(await recoveryQueue) && cancelledSession === session) {
-    setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+    setState(t("text.Save failed", "Save failed"), t("text.Copy the text before closing Parlo. It could not be saved for recovery.", "Copy the text before closing Parlo. It could not be saved for recovery."), true);
   }
 }
 
@@ -1869,18 +1869,18 @@ async function commandModeStart() {
       headers: { Authorization: "Bearer " + token },
     });
   } catch {
-    setState("Command failed", "Parlo did not answer.", true);
+    setState(t("text.Command failed", "Command failed"), t("text.Parlo did not answer.", "Parlo did not answer."), true);
     return;
   }
   if (!answer.ok) {
     const detail = await answer.json().catch(() => ({}));
-    setState("Nothing to change", detail.error || "Select some text first, then press the command shortcut again.", true);
+    setState(t("text.Nothing to change", "Nothing to change"), detail.error || t("text.Select some text first, then press the command shortcut again.", "Select some text first, then press the command shortcut again."), true);
     return;
   }
   const body = await answer.json().catch(() => null);
   const text = ((body && body.text) || "").trim();
   if (!text) {
-    setState("Nothing to change", "Select some text first, then press the command shortcut again.", true);
+    setState(t("text.Nothing to change", "Nothing to change"), t("text.Select some text first, then press the command shortcut again.", "Select some text first, then press the command shortcut again."), true);
     return;
   }
   commandSelection = text;
@@ -1891,7 +1891,7 @@ async function commandModeStart() {
     commandSelection = "";
     return;
   }
-  setState("Say a command", "Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets.", true);
+  setState(t("text.Say a command", "Say a command"), t("text.Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets.", "Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets."), true);
 }
 
 function commandName(spoken) {
@@ -1918,7 +1918,7 @@ async function stopCommand() {
   }
   stream.getTracks().forEach((track) => track.stop());
   document.body.classList.remove("listening", "paused");
-  setState("Processing", "Changing the selection.", true);
+  setState(t("text.Processing", "Processing"), t("text.Changing the selection.", "Changing the selection."), true);
   report("processing");
   clearInterval(partials);
   partials = null;
@@ -1947,7 +1947,7 @@ async function stopCommand() {
     }
     const wanted = commandName((said.text || "").trim());
     if (!wanted) {
-      setState("Unknown command", "Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets.", true);
+      setState(t("text.Unknown command", "Unknown command"), t("text.Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets.", "Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets."), true);
       report("error");
       return;
     }
@@ -1967,11 +1967,11 @@ async function stopCommand() {
     const finalText = (out.text || "").trim();
     lastText = finalText;
     showRecovery(finalText, false);
-    setState("Ready to copy", "The changed text is ready. Copy it and paste it over the selection.", false);
+    setState(t("text.Ready to copy", "Ready to copy"), t("text.The changed text is ready. Copy it and paste it over the selection.", "The changed text is ready. Copy it and paste it over the selection."), false);
     report("ready-to-copy");
   } catch (failure) {
     if (ticket === session) {
-      setState("Command failed", failure.message || "The command failed.", true);
+      setState(t("text.Command failed", "Command failed"), failure.message || "The command failed.", true);
       report("error");
     }
   } finally {
@@ -2013,7 +2013,7 @@ async function stop() {
     queuePolishSegment(chunks.length, true);
   }
   document.body.classList.remove("listening", "paused");
-  setState("Processing", "Preparing your dictation.", true);
+  setState(t("text.Processing", "Processing"), t("text.Preparing your dictation.", "Preparing your dictation."), true);
   report("processing");
   clearInterval(partials);
   partials = null;
@@ -2050,12 +2050,12 @@ async function stop() {
         setState("Written", segmentWarning || "The cleaned sentence is in your field. Undo removes it.", false);
         hideAfterDelay(4000);
       } else {
-        setState("Ready to copy", polished.reason || segmentWarning || "Review and copy the text, then paste it into your field.", false);
+        setState(t("text.Ready to copy", "Ready to copy"), polished.reason || segmentWarning || "Review and copy the text, then paste it into your field.", false);
       }
       report("ready-to-copy");
     }
     if (lastText && !(await recoveryQueue) && ticket === session) {
-      setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+      setState(t("text.Save failed", "Save failed"), t("text.Copy the text before closing Parlo. It could not be saved for recovery.", "Copy the text before closing Parlo. It could not be saved for recovery."), true);
     }
     return;
   }
@@ -2082,7 +2082,7 @@ async function stop() {
     busy = false;
     if (lastText) {
       showRecovery(lastText, true);
-      setState("Ready to copy", "Only the partial text is available to copy.", true);
+      setState(t("text.Ready to copy", "Ready to copy"), t("text.Only the partial text is available to copy.", "Only the partial text is available to copy."), true);
       report("error");
     } else {
       report("cancelled");
@@ -2090,7 +2090,7 @@ async function stop() {
     }
     return;
   }
-  setState("Processing", tidy ? t("island.polishing", "Polishing the sentence.") : "Transcribing your recording.", true);
+  setState(t("text.Processing", "Processing"), tidy ? t("island.polishing", "Polishing the sentence.") : "Transcribing your recording.", true);
   controller = new AbortController();
   const { signal } = controller;
   try {
@@ -2169,7 +2169,7 @@ async function stop() {
       setState("Written", result.note || "The sentence is in your field. Undo removes it.", false);
       hideAfterDelay(4000);
     } else {
-      setState("Ready to copy", written.reason || result.note || "Review and copy the text, then paste it into your field.", false);
+      setState(t("text.Ready to copy", "Ready to copy"), written.reason || result.note || "Review and copy the text, then paste it into your field.", false);
     }
   } catch (failure) {
     if (ticket !== session) {
@@ -2188,7 +2188,7 @@ async function stop() {
   busy = false;
   report(failed ? (signal.aborted ? "cancelled" : "error") : "ready-to-copy");
   if (recoveryShown && !(await recoveryQueue) && ticket === session) {
-    setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+    setState(t("text.Save failed", "Save failed"), t("text.Copy the text before closing Parlo. It could not be saved for recovery.", "Copy the text before closing Parlo. It could not be saved for recovery."), true);
   }
 }
 
@@ -2222,11 +2222,11 @@ function beginFromHold() {
 
 function arm() {
   if (!recoveryReady) {
-    setState("Recovery unavailable", "Wait for saved dictation to load before recording.", true);
+    setState(t("text.Recovery unavailable", "Recovery unavailable"), t("text.Wait for saved dictation to load before recording.", "Wait for saved dictation to load before recording."), true);
     return;
   }
   if (recoveryText && (!recoveryCopied || copyRecoveryEl.disabled)) {
-    setState("Copy your text first", "Copy the result before starting another dictation.", true);
+    setState(t("text.Copy your text first", "Copy your text first"), t("text.Copy the result before starting another dictation.", "Copy the result before starting another dictation."), true);
     return;
   }
   if (busy || starting || (promoted && stream)) {
@@ -2248,7 +2248,7 @@ function ready() {
   if (recoveryText && (!recoveryCopied || copyRecoveryEl.disabled)) {
     document.body.classList.remove("ready", "listening");
     document.body.classList.add("recovery");
-    setState("Copy your text first", "Copy the result before starting another dictation.", true);
+    setState(t("text.Copy your text first", "Copy your text first"), t("text.Copy the result before starting another dictation.", "Copy the result before starting another dictation."), true);
     return;
   }
   if (busy || (promoted && stream)) {
@@ -2466,7 +2466,7 @@ whisperEl.addEventListener("click", () => {
 
 async function copyRecovery() {
   if (!recoveryText) {
-    setState("Nothing to copy", "There is no dictation text to copy yet.", true);
+    setState(t("text.Nothing to copy", "Nothing to copy"), t("text.There is no dictation text to copy yet.", "There is no dictation text to copy yet."), true);
     return;
   }
   if (copyRecoveryEl.disabled || starting) {
@@ -2475,7 +2475,7 @@ async function copyRecovery() {
   copyRecoveryEl.disabled = true;
   clearRecoveryEl.disabled = true;
   clearRecoveryEl.dataset.confirm = "no";
-  clearRecoveryEl.textContent = "Discard";
+  clearRecoveryEl.textContent = t("text.Discard", "Discard");
   recoveryCopied = false;
   try {
     const response = await fetch("/clipboard", {
