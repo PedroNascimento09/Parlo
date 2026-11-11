@@ -13,6 +13,10 @@ pub fn modifier_bit(key: u32) -> u32 {
     }
 }
 
+pub fn matches(key: u32, held: u32, trigger: u32, modifiers: u32) -> bool {
+    key == trigger && held == modifiers
+}
+
 pub fn ends_hold(key: u32, trigger: u32, modifiers: u32) -> bool {
     key == trigger || modifier_bit(key) & modifiers != 0
 }
@@ -20,6 +24,14 @@ pub fn ends_hold(key: u32, trigger: u32, modifiers: u32) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn extra_modifiers_select_the_correct_shortcut() {
+        let held = MOD_CONTROL | MOD_ALT | MOD_SHIFT;
+        assert!(!matches(0x44, held, 0x44, MOD_CONTROL | MOD_ALT));
+        assert!(matches(0x44, held, 0x44, held));
+        assert!(!matches(0x43, held, 0x44, held));
+    }
 
     #[test]
     fn lifting_the_shortcut_key_ends_the_dictation() {
