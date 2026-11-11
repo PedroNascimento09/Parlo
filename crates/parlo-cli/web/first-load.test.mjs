@@ -272,7 +272,7 @@ function stopHarness(overrides = {}) {
     ticker: null,
     effectiveWrite: () => "same",
     paintFirstLoad() {},
-    hideAfterDelay() {},
+    hideAfterDelay: (milliseconds) => calls.push(["hide", milliseconds]),
     ready() {},
     showRecovery: (...args) => calls.push(["recovery", ...args]),
     noteWriteFailure: (reason) => calls.push(["write-failed", reason]),
@@ -322,6 +322,7 @@ test("an unchanged final text is not inserted a second time", async () => {
   await box.stop();
   assert.equal(calls.some((entry) => entry[0] === "insert"), false);
   assert.deepEqual(calls.find((entry) => entry[0] === "state" && entry[1] === "Written").slice(1), ["Written", "The sentence is in your field. Undo removes it.", false]);
+  assert.deepEqual(calls.find((entry) => entry[0] === "hide"), ["hide", 4000]);
 });
 
 test("an unset write choice sends the spoken language on final audio", async () => {

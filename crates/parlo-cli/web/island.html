@@ -2048,6 +2048,7 @@ async function stop() {
       showRecovery(segmentText, false);
       if (polished.written) {
         setState("Written", segmentWarning || "The cleaned sentence is in your field. Undo removes it.", false);
+        hideAfterDelay(4000);
       } else {
         setState("Ready to copy", polished.reason || segmentWarning || "Review and copy the text, then paste it into your field.", false);
       }
@@ -2166,6 +2167,7 @@ async function stop() {
     }
     if (written.written) {
       setState("Written", result.note || "The sentence is in your field. Undo removes it.", false);
+      hideAfterDelay(4000);
     } else {
       setState("Ready to copy", written.reason || result.note || "Review and copy the text, then paste it into your field.", false);
     }
