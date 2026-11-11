@@ -32,6 +32,7 @@ jobs:
         run: |
           node --test crates/parlo-cli/web/routes.test.js
           node --test crates/parlo-cli/web/history-insert.test.mjs
+          node --test crates/parlo-cli/web/home-steps.test.mjs
           node crates/parlo-cli/web/check-languages.mjs
 
       - name: Install toolchain

@@ -3348,6 +3348,73 @@ input[type="checkbox"]:focus-visible,
   background: var(--accent);
 }
 
+.home-steps {
+  display: grid;
+  gap: 14px;
+  padding: clamp(18px, 2.5vw, 26px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.home-steps[hidden] {
+  display: none;
+}
+
+.home-steps-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.home-steps-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-steps-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-sunken);
+}
+
+.home-step-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--surface);
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.home-steps-list h3 {
+  margin: 2px 0 4px;
+  font-size: 15px;
+}
+
+.home-steps-list p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .stage-sub {
   display: flex;
   flex-wrap: wrap;

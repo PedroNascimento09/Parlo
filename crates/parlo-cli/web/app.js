@@ -1703,9 +1703,32 @@ const homeLastWhen = document.getElementById("home-last-when");
 const homeLastApp = document.getElementById("home-last-app");
 const homeLastDot = document.getElementById("home-last-dot");
 const homeLastLabel = document.getElementById("home-last-label");
+const homeSteps = document.getElementById("home-steps");
+const homeStepsDismiss = document.getElementById("home-steps-dismiss");
 
 function storedName() {
   return (localStorage.getItem("parlo.name") || "").trim();
+}
+
+const HOME_STEPS_DISMISSED = "parlo.homeStepsDismissed";
+
+if (homeStepsDismiss) {
+  homeStepsDismiss.addEventListener("click", () => {
+    try {
+      localStorage.setItem(HOME_STEPS_DISMISSED, "1");
+    } catch (failure) {
+      return;
+    }
+    homeSteps.hidden = true;
+  });
+}
+
+function stepsDismissed() {
+  try {
+    return localStorage.getItem(HOME_STEPS_DISMISSED) === "1";
+  } catch (failure) {
+    return false;
+  }
 }
 
 function paintHome() {
@@ -1731,6 +1754,10 @@ function paintHome() {
       day: "numeric",
       month: "long",
     }).format(new Date());
+  }
+  if (homeSteps) {
+    const hasHistory = historyEntries.some((item) => (item.translation || item.text || "").trim());
+    homeSteps.hidden = stepsDismissed() || hasHistory;
   }
   if (homeLast) {
     const entry = historyEntries.find((item) => (item.translation || item.text || "").trim());
