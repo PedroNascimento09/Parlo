@@ -94,12 +94,12 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        return respond_json(
-            stream,
-            "409 Conflict",
-            &error_json("Parlo cannot verify the text or cursor position. Undo in the target application instead."),
-        )
-        .map(|()| Flow::Serve);
+        return match crate::insert::undo_last() {
+            Ok(()) => respond_json(stream, "200 OK", "{\"undone\":true}").map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
     }
 
     if method == "POST" && path == "/warm" {

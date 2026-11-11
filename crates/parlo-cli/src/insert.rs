@@ -8,6 +8,7 @@ mod win {
     const KEYEVENTF_KEYUP: u32 = 0x0002;
     const KEYEVENTF_UNICODE: u32 = 0x0004;
     const VK_RETURN: u16 = 0x0D;
+    const VK_BACK: u16 = 0x08;
     const VK_CONTROL: u16 = 0x11;
     const VK_C: u16 = 0x43;
     pub const SW_RESTORE: i32 = 9;
@@ -74,6 +75,10 @@ mod win {
                     },
                 },
             }
+        }
+
+        pub fn backspace(released: bool) -> Self {
+            Self::key(VK_BACK, released)
         }
 
         pub fn enter(released: bool) -> Self {
@@ -173,6 +178,78 @@ mod win {
 
 #[cfg(windows)]
 static LAST_TARGET: std::sync::Mutex<Option<usize>> = std::sync::Mutex::new(None);
+
+static LAST_INSERT: std::sync::Mutex<Option<(usize, String)>> = std::sync::Mutex::new(None);
+
+fn remember_last(target: usize, text: &str) {
+    if let Ok(mut slot) = LAST_INSERT.lock() {
+        *slot = Some((target, text.to_string()));
+    }
+}
+
+fn take_last() -> Option<(usize, String)> {
+    LAST_INSERT.lock().ok().and_then(|mut slot| slot.take())
+}
+
+pub fn undo_last() -> Result<(), String> {
+    let (target, text) = take_last().ok_or_else(|| {
+        "there is no dictation to undo; the last text Parlo typed is already gone".to_string()
+    })?;
+    delete_back(target, &text)
+}
+
+#[cfg(windows)]
+fn delete_back(target: usize, text: &str) -> Result<(), String> {
+    use win::*;
+    if focus(target as Window).is_err() {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    let mut batch: Vec<Input> = Vec::new();
+    for _ in 0..text.encode_utf16().count() {
+        batch.push(Input::backspace(false));
+        batch.push(Input::backspace(true));
+        if batch.len() >= 256 {
+            send(&batch)?;
+            batch.clear();
+        }
+    }
+    if !batch.is_empty() {
+        send(&batch)?;
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn delete_back(target: usize, text: &str) -> Result<(), String> {
+    if x11::active_window()? != target {
+        return Err("the window you were writing in is not in front any more".to_string());
+    }
+    for _ in 0..text.chars().count() {
+        x11::key("BackSpace")?;
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+fn delete_back(_target: usize, text: &str) -> Result<(), String> {
+    let app = mac::frontmost()?;
+    let held = CAPTURED_APP
+        .lock()
+        .map_err(|_| "the program in front could not be read".to_string())?
+        .clone();
+    if held.as_deref() != Some(app.as_str()) {
+        return Err("the program you were writing in is not in front any more".to_string());
+    }
+    for _ in 0..text.chars().count() {
+        mac::run("tell application \"System Events\" to key code 51")?;
+    }
+    Ok(())
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+fn delete_back(_target: usize, _text: &str) -> Result<(), String> {
+    Err(NO_FIELD.to_string())
+}
 
 #[cfg(windows)]
 fn live_foreground() -> Result<usize, String> {
@@ -301,6 +378,7 @@ pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     if !batch.is_empty() {
         send(&batch)?;
     }
+    remember_last(target, text);
     Ok(())
 }
 
@@ -456,11 +534,13 @@ pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     if x11::active_window()? != target {
         return Err("the window you were writing in is not in front any more".to_string());
     }
-    x11::write(text)
+    x11::write(text)?;
+    remember_last(target, text);
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]
-pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
+pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     let app = mac::frontmost()?;
     let held = CAPTURED_APP
         .lock()
@@ -469,7 +549,9 @@ pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
     if held.as_deref() != Some(app.as_str()) {
         return Err("the program you were writing in is not in front any more".to_string());
     }
-    mac::run(&applescript_for(text)).map(|_| ())
+    mac::run(&applescript_for(text))?;
+    remember_last(target, text);
+    Ok(())
 }
 
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]

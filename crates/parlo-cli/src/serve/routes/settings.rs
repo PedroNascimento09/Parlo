@@ -60,14 +60,6 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        if requested.undo.is_some() {
-            return respond_json(
-                stream,
-                "409 Conflict",
-                "{\"error\":\"Undo is unavailable. Use undo in the target application.\"}",
-            )
-            .map(|()| Flow::Serve);
-        }
         let wanted_keys = [
             ("dictation", requested.shortcut.as_deref()),
             ("hands free", requested.hands_free.as_deref()),

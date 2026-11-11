@@ -39,6 +39,11 @@ fn an_applescript_keystroke_escapes_quotes_and_backslashes() {
 }
 
 #[test]
+fn undo_with_nothing_typed_says_so() {
+    assert!(undo_last().is_err());
+}
+
+#[test]
 fn a_newline_becomes_a_return_key() {
     let script = applescript_for("primeira\nsegunda");
     assert_eq!(script.matches("keystroke").count(), 2);
