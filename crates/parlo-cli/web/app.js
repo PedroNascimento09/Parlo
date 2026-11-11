@@ -47,6 +47,9 @@ const modelsBox = document.getElementById("models");
 const homeEngine = document.getElementById("home-engine");
 const homeModel = document.getElementById("home-model");
 const homeMic = document.getElementById("home-mic");
+const homeMicCheck = document.getElementById("home-mic-check");
+const homeMicNote = document.getElementById("home-mic-note");
+const homeMicMeter = document.getElementById("home-mic-meter");
 const modelsList = document.getElementById("models-list");
 const modelsCancel = document.getElementById("models-cancel");
 const featureTranslation = document.getElementById("feature-translation");
@@ -234,15 +237,15 @@ function showTranslation(encoded) {
 
 function describeMicrophoneError(failure) {
   if (failure && failure.name === "NotAllowedError") {
-    return "Windows blocked the microphone. Allow Parlo in Settings, Privacy, Microphone, then try again.";
+    return t("text.Windows blocked the microphone. Allow Parlo in Settings, Privacy, Microphone, then try again.", "Windows blocked the microphone. Allow Parlo in Settings, Privacy, Microphone, then try again.");
   }
   if (failure && failure.name === "NotFoundError") {
-    return "No microphone was found. Connect one and reload this page.";
+    return t("text.No microphone was found. Connect one and reload this page.", "No microphone was found. Connect one and reload this page.");
   }
   if (failure && failure.name === "NotReadableError") {
-    return "Another program is using the microphone. Close it and try again.";
+    return t("text.Another program is using the microphone. Close it and try again.", "Another program is using the microphone. Close it and try again.");
   }
-  return "The microphone could not be opened. Check the input device in your system settings.";
+  return t("text.The microphone could not be opened. Check the input device in your system settings.", "The microphone could not be opened. Check the input device in your system settings.");
 }
 
 function describeSystemAudioError(failure) {
@@ -6619,6 +6622,12 @@ function routeNow() {
   libraryTab = parsed.libraryTab;
   settingsTab = parsed.settingsTab;
   showRoute(parsed.route);
+  if (parsed.route !== "home") {
+    stopHomeMicCheck();
+    if (homeMicNote) {
+      homeMicNote.textContent = t("gate.microphone.idle", "Tap «Check it now» and say hello. The bar moves when it can hear you.");
+    }
+  }
   localStorage.setItem("parlo.route", parsed.canonical);
 }
 
@@ -7724,6 +7733,111 @@ function startGateMicMeter(stream) {
     gateMicContext.resume().catch(() => {});
   }
   drawGateMeter();
+}
+
+let homeMicStream = null;
+let homeMicContext = null;
+let homeMicFrame = null;
+let homeMicAnalyser = null;
+let homeMicLevels = null;
+let homeMicTimer = null;
+
+function stopHomeMicCheck() {
+  if (homeMicFrame) {
+    cancelAnimationFrame(homeMicFrame);
+    homeMicFrame = null;
+  }
+  if (homeMicTimer) {
+    clearTimeout(homeMicTimer);
+    homeMicTimer = null;
+  }
+  if (homeMicStream) {
+    homeMicStream.getTracks().forEach((track) => track.stop());
+    homeMicStream = null;
+  }
+  if (homeMicContext && homeMicContext.state !== "closed") {
+    homeMicContext.close().catch(() => {});
+  }
+  homeMicContext = null;
+  homeMicAnalyser = null;
+  homeMicLevels = null;
+  if (homeMicMeter) {
+    homeMicMeter.style.width = "0%";
+  }
+  if (homeMicCheck) {
+    homeMicCheck.textContent = t("gate.microphone.check", "Check it now");
+  }
+}
+
+function drawHomeMicMeter() {
+  if (!homeMicAnalyser || !homeMicLevels) {
+    homeMicFrame = null;
+    return;
+  }
+  homeMicFrame = requestAnimationFrame(drawHomeMicMeter);
+  homeMicAnalyser.getFloatTimeDomainData(homeMicLevels);
+  let sum = 0;
+  for (let index = 0; index < homeMicLevels.length; index += 1) {
+    sum += homeMicLevels[index] * homeMicLevels[index];
+  }
+  const rms = Math.sqrt(sum / homeMicLevels.length);
+  const decibels = 20 * Math.log10(rms + 1e-6);
+  const level = Math.min(1, Math.max(0, (decibels + 60) / 60));
+  if (homeMicMeter) {
+    homeMicMeter.style.width = (level * 100).toFixed(1) + "%";
+  }
+  if (homeMicNote && level > 0.08) {
+    homeMicNote.textContent = t("gate.microphone.heard", "The microphone hears you. Continue when you are ready.");
+  }
+}
+
+function startHomeMicCheck(stream) {
+  stopHomeMicCheck();
+  homeMicStream = stream;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  homeMicContext = new AudioContext();
+  homeMicAnalyser = homeMicContext.createAnalyser();
+  homeMicAnalyser.fftSize = 2048;
+  homeMicLevels = new Float32Array(homeMicAnalyser.fftSize);
+  homeMicContext.createMediaStreamSource(stream).connect(homeMicAnalyser);
+  if (homeMicContext.state === "suspended") {
+    homeMicContext.resume().catch(() => {});
+  }
+  drawHomeMicMeter();
+}
+
+if (homeMicCheck) {
+  homeMicCheck.addEventListener("click", async () => {
+    if (homeMicStream) {
+      stopHomeMicCheck();
+      homeMicNote.textContent = t("gate.microphone.idle", "Tap «Check it now» and say hello. The bar moves when it can hear you.");
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      homeMicNote.textContent = t("text.This browser cannot open a microphone.", "This browser cannot open a microphone.");
+      return;
+    }
+    homeMicNote.textContent = t("gate.microphone.waiting", "Waiting for Windows…");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, echoCancellation: true },
+      });
+      startHomeMicCheck(stream);
+      localStorage.setItem("parlo.mic", "ready");
+      if (homeMic) {
+        homeMic.textContent = statusWord("ready");
+      }
+      homeMicNote.textContent = t("gate.microphone.ok", "The microphone works. Tap Continue when you are ready.");
+      homeMicCheck.textContent = t("gate.dictate.stop", "Stop");
+      homeMicTimer = setTimeout(() => {
+        stopHomeMicCheck();
+        homeMicNote.textContent = t("gate.microphone.ok", "The microphone works. Tap Continue when you are ready.");
+      }, 20000);
+    } catch (failure) {
+      stopHomeMicCheck();
+      homeMicNote.textContent = describeMicrophoneError(failure);
+    }
+  });
 }
 
 function stopGateDictate() {
