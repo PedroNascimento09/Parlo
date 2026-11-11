@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>Speech becomes text on your own computer.</b><br>
-  Hold a key, speak, then copy the sentence into the window you are using.<br>
+  Hold a key and speak; the sentence is typed into the window you were using, at the cursor.<br>
   No account, no telemetry, no audio uploaded.
 </p>
 
@@ -13,7 +13,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-1e4f4a?style=flat-square"></a>
 </p>
 
-Parlo is a desktop program for dictation, live translation, captions, meetings and file dubbing. The recogniser, the translator and the voice run on the machine, from models downloaded once; after that, dictation, translation and captions work with the network off. The current copy-only dictation flow has not been validated end to end on Windows; macOS and Linux build from the same source.
+Parlo is a desktop program for dictation, live translation, captions, meetings and file dubbing. The recogniser, the translator and the voice run on the machine, from models downloaded once; after that, dictation, translation and captions work with the network off. Typing into other applications has not been validated end to end on Windows yet; macOS and Linux build from the same source.
 
 <p align="center">
   <img src="docs/demo.gif" width="760" alt="The Parlo window: the home screen, the history with a Portuguese sentence and its English translation, and the counters for what was dictated">
@@ -77,10 +77,10 @@ The tray lists the three modes above a separator and the five destinations below
 
 | Keys | What happens |
 |---|---|
-| `Ctrl+Alt+D` | Opens the bar and dictates text to copy |
+| `Ctrl+Alt+D` | Opens the bar and types the sentence into the window you were in, at the cursor |
 | `Ctrl+Alt+Shift+D` | Keeps listening without holding any key |
 | `Ctrl+Alt+C` | Opens or closes captions |
-| `Ctrl+Alt+Z` | Unavailable until Parlo can verify the target field; use undo in the target application |
+| `Ctrl+Alt+Z` | Removes the text Parlo typed last, while that window is still in front |
 | `Escape` | Discards the phrase, or stops live text, captions or a meeting in progress |
 
 The dictation, hands-free and captions shortcuts can be changed in Settings. An optional global copy shortcut is disabled until you choose one. Parlo checks combinations on save and reports conflicts detected by Windows; other keyboard hooks may not be detectable. Global shortcuts are available on Windows only.
@@ -121,7 +121,7 @@ Local mode makes no network call. Audio is not written to disk unless you pass a
 
 - Beta. The build is unsigned, there is no signed `.msi`, `.dmg` or `.deb`, and SmartScreen may warn once.
 - The current dictation flow has not been validated end to end on Windows. macOS and Linux are compiled and tested by CI, but the window has not been opened there.
-- The dictation shortcut exists on Windows only. Insertion types into the window captured when the dictation started, only while that window is still in front; otherwise the text goes to the clipboard. Parlo's undo is disabled because the cursor cannot yet be verified; undo in the target program.
+- The dictation shortcut exists on Windows only. Insertion types into the window captured when the dictation started, only while that window is still in front; otherwise the text goes to the clipboard. Parlo's undo sends one backspace per character of the last dictation into the window you were writing in, while it is still in front; it cannot see the cursor, so if you typed or moved in that window after dictating, check the field after undoing.
 - Portuguese and English are the only pairs that install. The language list names others, and Parlo blocks them until their weights, licence and measured quality exist.
 - Dictation has been tested with the author's recordings, not with a panel of other speakers.
 - Meetings and captions read the microphone, not another app's audio, so routing the translation into a call still needs a virtual cable.

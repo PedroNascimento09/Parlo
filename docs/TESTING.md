@@ -71,12 +71,12 @@ Never publish recordings, transcripts or identifiable results without permission
 - The result stays available until it is copied; a new dictation must not replace an uncopied result.
 - Set an unused copy shortcut in Settings, copy a result with it, then disable it and confirm it no longer acts. Try a conflicting shortcut and check the error.
 - Close and reopen Parlo with an uncopied result and check that the saved text can be reviewed, copied or discarded.
-- `Ctrl+Alt+Z` does not erase text; use undo in the target application.
+- `Ctrl+Alt+Z` removes the text Parlo typed last, while that window is still in front; it sends one backspace per character and cannot see the cursor.
 - `Ctrl+Alt+Shift+D` keeps listening until it is pressed again.
 - The island shows no timer. The sentence stays visible while you speak, so you
   see it before you stop.
 - Check Polish off and on separately. In both modes the result is available to
-  copy, and Parlo does not change text in the target application.
+  copy, and with Polish on the sentence in the field is swapped for the cleaned one.
 - Speaking quietly still produces text: the first second of audio is measured
   and lifted when the room is silent.
 - "new line", "bullet point", "comma", "period" and "scratch that" change what
