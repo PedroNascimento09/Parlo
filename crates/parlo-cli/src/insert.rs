@@ -191,6 +191,25 @@ fn take_last() -> Option<(usize, String)> {
     LAST_INSERT.lock().ok().and_then(|mut slot| slot.take())
 }
 
+pub fn replace_recorded(window: usize, raw: &str, cleaned: &str) -> Result<(), String> {
+    let recorded = LAST_INSERT.lock().ok().and_then(|slot| slot.clone());
+    let matches = recorded
+        .as_ref()
+        .is_some_and(|(target, text)| *target == window && text == raw);
+    if !matches {
+        return Err("Parlo cannot verify the previous text or cursor position, so it did not change the field.".to_string());
+    }
+    delete_back(window, raw)?;
+    if cleaned.is_empty() {
+        if let Ok(mut slot) = LAST_INSERT.lock() {
+            *slot = None;
+        }
+    } else {
+        type_text(window, cleaned)?;
+    }
+    Ok(())
+}
+
 pub fn undo_last() -> Result<(), String> {
     let (target, text) = take_last().ok_or_else(|| {
         "there is no dictation to undo; the last text Parlo typed is already gone".to_string()

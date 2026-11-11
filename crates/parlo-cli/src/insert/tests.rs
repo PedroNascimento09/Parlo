@@ -39,6 +39,11 @@ fn an_applescript_keystroke_escapes_quotes_and_backslashes() {
 }
 
 #[test]
+fn replacement_without_a_matching_record_changes_nothing() {
+    assert!(replace_recorded(0, "previous", "next").is_err());
+}
+
+#[test]
 fn undo_with_nothing_typed_says_so() {
     assert!(undo_last().is_err());
 }

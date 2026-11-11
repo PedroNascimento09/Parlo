@@ -272,32 +272,35 @@ impl Session {
             .and_then(|slot| slot.as_ref().map(|target| target.window))
     }
 
+    fn target_window(&self) -> Result<usize, String> {
+        match self.target.lock() {
+            Ok(target) => match target.as_ref() {
+                Some(target) => Ok(target.window),
+                None => Err(
+                    "Parlo has no window to write in. Copy the text and paste it yourself."
+                        .to_string(),
+                ),
+            },
+            Err(_) => Err(
+                "Parlo cannot read the window it captured. Copy the text and paste it yourself."
+                    .to_string(),
+            ),
+        }
+    }
+
     pub(super) fn insert_text(
         &self,
         text: &str,
         replace: &str,
         latency_ms: u64,
     ) -> Result<(), String> {
-        let window = match self.target.lock() {
-            Ok(target) => match target.as_ref() {
-                Some(target) => target.window,
-                None => {
-                    return Err(
-                        "Parlo has no window to write in. Copy the text and paste it yourself."
-                            .to_string(),
-                    )
-                }
-            },
-            Err(_) => return Err(
-                "Parlo cannot read the window it captured. Copy the text and paste it yourself."
-                    .to_string(),
-            ),
-        };
-        if !replace.is_empty() {
-            return Err("Parlo cannot verify the previous text or cursor position, so it did not change the field.".to_string());
+        let window = self.target_window()?;
+        if replace.is_empty() {
+            let field = insert::field();
+            insert::replace_span(&*field, window, replace, text)?;
+        } else {
+            insert::replace_recorded(window, replace, text)?;
         }
-        let field = insert::field();
-        insert::replace_span(&*field, window, replace, text)?;
         if latency_ms > 0 {
             println!("the dictation landed in {latency_ms} ms after the key was released");
             if let Err(error) = crate::history::stamp_latency(latency_ms) {
@@ -307,11 +310,14 @@ impl Session {
         Ok(())
     }
 
-    pub(super) fn live_text(&self, _text: &str, _replace: &str) -> Result<(), String> {
-        Err(
-            "Parlo cannot verify the focused field. Copy the text and paste it yourself."
-                .to_string(),
-        )
+    pub(super) fn live_text(&self, text: &str, replace: &str) -> Result<(), String> {
+        let window = self.target_window()?;
+        if replace.is_empty() {
+            let field = insert::field();
+            insert::replace_span(&*field, window, replace, text)
+        } else {
+            insert::replace_recorded(window, replace, text)
+        }
     }
 
     pub(super) fn clean_text(&self, text: &str, clean: Option<&str>) -> Result<String, String> {
