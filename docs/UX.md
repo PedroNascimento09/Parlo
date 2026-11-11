@@ -10,23 +10,25 @@ Facts, read from the repository, not remembered.
 
 | Surface | File | What it does |
 | --- | --- | --- |
-| Main window | `crates/parlo-cli/web/index.html`, 370 lines | One scrolling page: hero with a hold-to-speak button, a Live row, a Dictate row, four status lines, then languages, cleanup, vocabulary, meetings, model library, history, voice, models, dubbing, licences |
-| Global shortcut | `crates/parlo-app/src/island.rs` | `RegisterHotKey` on the configured combination, then toggles the island window visible or hidden |
-| Island | `crates/parlo-cli/web/island.html` | Separate window, opens the microphone on the shortcut, shows the recognised words while you speak and writes the final sentence into the target when you stop; posts the WAV to `/dictate` and the text to `/insert` |
+| Main window | `crates/parlo-cli/web/index.html`, 1444 lines | Hub with five destinations (Home, Library, Meetings, Voice, Settings); Settings carries seven tabs, one screen each; no recorder on the page |
+| Global shortcut | `crates/parlo-app/src/island.rs` | Low-level keyboard hook on the configured combination: down arms the island, up stops the capture; falls back to `RegisterHotKey` |
+| Island | `crates/parlo-cli/web/island.html` | Separate window, opens the microphone on the shortcut, writes the recognised words into the field live while you speak and the final sentence when you stop; posts the WAV to `/dictate` and the text to `/insert` |
 | Tray | `crates/parlo-app/src/presence.rs` | Dictate, Live and Captions above a separator, Home, Library, Meetings, Voice and Settings below it, Quit last; a left click toggles the island |
-| Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` writes the final sentence into the retained target on Windows; paste is the fallback for the final sentence |
-| History | `crates/parlo-cli/src/history.rs` | Append-only JSONL, 200 entries, fields `at`, `text`, `translation`, `from`, `to` |
+| Capture and insertion | `crates/parlo-cli/src/serve/`, `insert.rs` | Types into the window captured on the shortcut only while that window is still in front, on Windows, X11 and macOS; when the target moved, the text goes to the clipboard and the island says so |
+| History | `crates/parlo-cli/src/history.rs` | Append-only JSONL, 200 entries, fields `at`, `text`, `translation`, `from`, `to`, `app`, `mode` |
 
 ### What is wrong with it
 
-1. **The main window is the recorder.** The largest element on the page is "Hold to speak", and every other capability sits below it in one scroll. A person who opens Parlo sees a recorder, not the state of a voice layer.
-2. **The shortcut is a window toggle, not push-to-talk.** Key down shows the island, key up does nothing. There is no distinction between holding and pressing, so the mental model the overlay teaches ("press and speak") is false.
-3. **Escape inserts instead of cancelling.** In `island.html`, `Escape` calls `finish()`, which transcribes and inserts. The one key a person presses to abandon something is the key that commits it.
-4. **Losing focus ends the dictation.** `visibilitychange` calls `finish()`, so clicking into the target application — the normal thing to do — submits a partial sentence.
-5. **Nothing is remembered about where the text went.** History stores the sentence but not the application, the mode, or the duration, so it cannot answer "what did I dictate into Slack".
-6. **The island learns whether a field accepts text only when it writes.** A refusal is reported with the reason instead of copied to the clipboard.
-7. **Configuration lives on the daily surface.** Model library, licences and dubbing share the page with the thing a person does twenty times a day.
-8. **No cancellation state exists anywhere.** There is Ready, Listening, Writing, Inserted, Copied, Failed. "Stop" and "cancel" are the same code path.
+Status below each item, read against the current code.
+
+1. **The main window is the recorder.** The largest element on the page is "Hold to speak", and every other capability sits below it in one scroll. A person who opens Parlo sees a recorder, not the state of a voice layer. *Fixed: the window is a hub of five destinations and the island is the only recorder.*
+2. **The shortcut is a window toggle, not push-to-talk.** Key down shows the island, key up does nothing. There is no distinction between holding and pressing, so the mental model the overlay teaches ("press and speak") is false. *Fixed: a low-level keyboard hook reads down and up, so hold-to-talk, tap for hands free, and a second press to stop are distinct.*
+3. **Escape inserts instead of cancelling.** In `island.html`, `Escape` calls `finish()`, which transcribes and inserts. The one key a person presses to abandon something is the key that commits it. *Fixed: `Escape` dismisses the island and cancels; nothing is transcribed, written or recorded.*
+4. **Losing focus ends the dictation.** `visibilitychange` calls `finish()`, so clicking into the target application — the normal thing to do — submits a partial sentence. *Fixed: no `visibilitychange` handler exists; losing focus keeps the session open.*
+5. **Nothing is remembered about where the text went.** History stores the sentence but not the application, the mode, or the duration, so it cannot answer "what did I dictate into Slack". *Fixed: entries carry `app` and `mode`, and the history is searchable by program.*
+6. **The island learns whether a field accepts text only when it writes.** A refusal is reported with the reason instead of copied to the clipboard. *Still true, with one softening: live writing discovers the refusal at the first partial instead of at the stop, and the recovery panel copies the text on request.*
+7. **Configuration lives on the daily surface.** Model library, licences and dubbing share the page with the thing a person does twenty times a day. *Fixed: Home answers "is it ready" and configuration lives on the Settings tabs.*
+8. **No cancellation state exists anywhere.** There is Ready, Listening, Writing, Inserted, Copied, Failed. "Stop" and "cancel" are the same code path. *Fixed: `stop()` and `cancel()` are separate functions and the island has a cancellation state.*
 9. **The overlay only knows the primary monitor.** `place()` uses `primary_monitor()`, so on a second screen it appears on the wrong one.
 10. **The tray duplicates the window.** Dictate opens the island, Live and Settings open the window; three entries and one duplicate action.
 
@@ -97,7 +99,7 @@ Changes from the current tree, stated plainly:
    Shortcut= the only way a person dictates in normal work
 ```
 
-Every surface reads its state from one place, so they cannot disagree. The state lives in the engine process, not in each view: `serve.rs` exposes it, the island, tray and window render it.
+Every surface reads its state from one place, so they cannot disagree. The state lives in the engine process, not in each view: `serve/` exposes it, the island, tray and window render it.
 
 ## D. User flows
 
@@ -118,7 +120,7 @@ Every surface reads its state from one place, so they cannot disagree. The state
 
 ### Cancel
 
-Escape at any moment while listening, processing, before insertion. Capture is discarded, no text is written, no history entry is created, island returns to Ready. The target field is never touched. This is the flow that today inserts text instead.
+Escape at any moment while listening, processing, before insertion. Capture is discarded, no text is written, no history entry is created, island returns to Ready. The target field is never touched.
 
 ### Dictation versus translation
 
@@ -159,7 +161,7 @@ One machine, shared by island, tray and window.
 | `ERROR` | any failure | `IDLE` on dismiss, retry, or 8 s | one sentence and one action |
 | `CANCELLED` | Escape | `IDLE` at once | nothing, no history entry |
 
-Rules: a state transition never depends on the pointer. Every state is reachable by keyboard alone. `CANCELLED` exists so the code has one place that means "throw it away", which today it does not.
+Rules: a state transition never depends on the pointer. Every state is reachable by keyboard alone. `CANCELLED` is the one place that means "throw it away".
 
 ## F. Screen by screen
 
