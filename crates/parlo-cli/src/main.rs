@@ -69,7 +69,6 @@ mod style;
 mod subtitles;
 mod summary;
 mod translate;
-mod undo;
 mod update;
 mod voicefile;
 mod watch;
@@ -412,13 +411,10 @@ fn record_command(args: &[String]) -> Result<(), String> {
 }
 
 fn undo_command() -> Result<(), String> {
-    let last = undo::take()?;
-    if let Err(error) = insert::erase(last.window, last.characters) {
-        undo::restore(&last);
-        return Err(error);
-    }
-    println!("took back {} characters", last.characters);
-    Ok(())
+    Err(
+        "Parlo cannot verify the text or cursor position. Undo in the target application instead."
+            .to_string(),
+    )
 }
 
 fn serve_command(args: &[String]) -> Result<(), String> {

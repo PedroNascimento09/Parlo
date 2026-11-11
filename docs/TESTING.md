@@ -6,8 +6,9 @@ that touches the island, the insertion path or the engine.
 
 ## What has to be true
 
-For each application below, three dictations in a row must land where the cursor
-is, complete, with no lost first word and no duplicate text.
+For each application below, copy and paste three dictations in a row. Each result
+must be complete, with no lost first word or duplicate text. Automatic insertion
+is disabled until Parlo can verify the target field and cursor.
 
 | Application | What to do | Run 1 | Run 2 | Run 3 |
 | --- | --- | --- | --- | --- |
@@ -67,14 +68,15 @@ Never publish recordings, transcripts or identifiable results without permission
 
 - The island follows the pointer when dragged and stays where it is dropped.
 - The language menu opens fully: every pair is readable and the list scrolls.
-- The island hides about four seconds after the text is written.
-- `Ctrl+Alt+Z` removes the last dictation.
+- The result stays available until it is copied; a new dictation must not replace an uncopied result.
+- Set an unused copy shortcut in Settings, copy a result with it, then disable it and confirm it no longer acts. Try a conflicting shortcut and check the error.
+- Close and reopen Parlo with an uncopied result and check that the saved text can be reviewed, copied or discarded.
+- `Ctrl+Alt+Z` does not erase text; use undo in the target application.
 - `Ctrl+Alt+Shift+D` keeps listening until it is pressed again.
 - The island shows no timer. The sentence stays visible while you speak, so you
   see it before you stop.
-- Check Polish off and on separately. Record when text appears and whether a
-  correction replaces it without deleting unrelated text. If insertion fails,
-  check that the sentence remains available for recovery.
+- Check Polish off and on separately. In both modes the result is available to
+  copy, and Parlo does not change text in the target application.
 - Speaking quietly still produces text: the first second of audio is measured
   and lifted when the room is silent.
 - "new line", "bullet point", "comma", "period" and "scratch that" change what

@@ -1,5 +1,8 @@
 import importlib.util
 import unittest
+from unittest.mock import patch
+
+from parlo_cascade.intelligence import Settings
 
 from parlo_cascade import (
     CascadeEngine,
@@ -33,6 +36,19 @@ class CleanTextTest(unittest.TestCase):
 
         self.assertIn("prova", cleaned)
         self.assertTrue(cleaned[0].isupper())
+
+    def test_explicit_cleanup_mode_overrides_saved_mode(self):
+        engine = self.engine()
+        saved = Settings(mode="off", clean="original")
+        with patch("parlo_cascade.engine.settings_from_config", return_value=saved):
+            self.assertEqual(engine.clean_text("um hello hello", "original"), "um hello hello")
+            engine.source = "en"
+            self.assertEqual(engine.clean_text("um hello hello"), "um hello hello")
+            self.assertEqual(engine.clean_text("um hello hello", "light"), "hello")
+            engine.transcribe = lambda pcm: "um hello hello"
+            engine.target = "en"
+            self.assertEqual(engine.write(b"pcm", "en", "light")[0], "hello")
+            self.assertEqual(engine.write(b"pcm", "en", "original")[0], "um hello hello")
 
     def test_cleaning_keeps_the_spoken_language_for_the_sentence(self):
         engine = self.engine()

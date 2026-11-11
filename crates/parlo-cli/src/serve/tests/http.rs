@@ -1,6 +1,25 @@
 use super::*;
 
 #[test]
+fn unsafe_insertions_and_undo_are_refused_over_http() {
+    let (port, stop) = start_server();
+    for body in [
+        r#"{"text":"hello"}"#,
+        r#"{"text":"hello","replace":"old"}"#,
+        r#"{"text":"hello","live":true}"#,
+        r#"{"text":"","replace":"old","live":true}"#,
+    ] {
+        let answer = send(port, "POST", "/insert", body);
+        assert!(answer.starts_with("HTTP/1.1 409"), "{answer}");
+        assert!(!answer.contains("\"inserted\":true"), "{answer}");
+    }
+    let answer = send(port, "POST", "/undo", "");
+    assert!(answer.starts_with("HTTP/1.1 409"), "{answer}");
+    stop.store(false, Ordering::Relaxed);
+    let _ = TcpStream::connect(("127.0.0.1", port));
+}
+
+#[test]
 fn the_main_routes_answer_on_a_real_socket() {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -51,6 +70,99 @@ fn the_main_routes_answer_on_a_real_socket() {
         assert!(answer.starts_with("HTTP/1.1 401"), "{answer}");
     }
 
+    stop.store(false, Ordering::Relaxed);
+    let _ = TcpStream::connect(("127.0.0.1", port));
+}
+
+#[test]
+fn translated_dictation_uses_the_spoken_language_for_commands() {
+    struct CommandEngine(Option<&'static str>);
+
+    impl Engine for CommandEngine {
+        fn id(&self) -> &str {
+            "command-test"
+        }
+
+        fn target_languages(&self) -> Vec<String> {
+            vec!["en".to_string()]
+        }
+
+        fn latency_ms(&self) -> u32 {
+            1
+        }
+
+        fn process(&mut self, _input: &Frame) -> Result<EngineOutput, EngineError> {
+            Ok(EngineOutput::empty())
+        }
+
+        fn write(
+            &mut self,
+            _pcm16: &[u8],
+            _target: Option<&str>,
+            _clean: Option<&str>,
+        ) -> Result<(String, String), EngineError> {
+            Ok((
+                "hello comma there vírgula mundo ponto final".to_string(),
+                self.0.unwrap_or("").to_string(),
+            ))
+        }
+    }
+
+    let (port, stop) = start_server_with(Session::with_engine(
+        Box::new(CommandEngine(Some("translated sentence"))),
+        "pt",
+        "en",
+    ));
+    let wav = parlo_core::wav::write_pcm16(&parlo_core::Wav {
+        format: parlo_core::AudioFormat::mono(16_000).unwrap(),
+        samples: vec![0.1; 3_200],
+    });
+    let mut request = format!(
+        "POST /dictate HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\nx-parlo-write: en\r\nx-parlo-clean: off\r\nx-parlo-style: formal\r\nContent-Length: {}\r\n\r\n",
+        wav.len()
+    )
+    .into_bytes();
+    request.extend_from_slice(&wav);
+    let answer = String::from_utf8(ask_raw(port, &request)).unwrap();
+    assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+    let body = body_json(&answer);
+    assert_eq!(body["text"], "Hello comma there, mundo.");
+    assert_eq!(body["translation"], "translated sentence");
+    stop.store(false, Ordering::Relaxed);
+    let _ = TcpStream::connect(("127.0.0.1", port));
+
+    let (port, stop) = start_server_with(Session::with_engine(
+        Box::new(CommandEngine(None)),
+        "pt",
+        "en",
+    ));
+    let answer = String::from_utf8(ask_raw(port, &request)).unwrap();
+    assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+    let body = body_json(&answer);
+    assert_eq!(body["text"], "Hello comma there, mundo.");
+    assert_eq!(body["translation"], "");
+    assert!(body["note"].as_str().unwrap().contains("unavailable"));
+    stop.store(false, Ordering::Relaxed);
+    let _ = TcpStream::connect(("127.0.0.1", port));
+
+    let (port, stop) = start_server_with(Session::with_engine(
+        Box::new(CommandEngine(Some(
+            "hello comma there vírgula mundo ponto final",
+        ))),
+        "pt",
+        "en",
+    ));
+    let mut request = format!(
+        "POST /dictate HTTP/1.1\r\nHost: 127.0.0.1\r\nx-parlo-token: t0ken\r\nx-parlo-write: pt\r\nx-parlo-clean: off\r\nx-parlo-style: formal\r\nContent-Length: {}\r\n\r\n",
+        wav.len()
+    )
+    .into_bytes();
+    request.extend_from_slice(&wav);
+    let answer = String::from_utf8(ask_raw(port, &request)).unwrap();
+    assert!(answer.starts_with("HTTP/1.1 200"), "{answer}");
+    let body = body_json(&answer);
+    assert_eq!(body["text"], "Hello comma there, mundo.");
+    assert_eq!(body["translation"], "");
     stop.store(false, Ordering::Relaxed);
     let _ = TcpStream::connect(("127.0.0.1", port));
 }

@@ -3,8 +3,6 @@ use super::super::http::{error_json, header, respond_json, Stream};
 use super::super::session::Session;
 use super::super::{absorb, dictation_target, json_string, respond_audio, Flow};
 use crate::commands;
-use crate::insert;
-use crate::undo;
 use parlo_core::wav::{read_pcm16, write_pcm16};
 use parlo_core::{AudioFormat, Wav};
 use std::time::{Duration, Instant};
@@ -33,6 +31,14 @@ const POLISH_GRACE_MS: u64 = 400;
 
 pub(crate) fn within_grace(polish_ms: u64) -> bool {
     polish_ms <= POLISH_GRACE_MS
+}
+
+fn requested_clean(header: &str, configured: &str) -> String {
+    match (header, configured) {
+        ("off", _) => "original".to_string(),
+        ("on", "original") => "light".to_string(),
+        _ => configured.to_string(),
+    }
 }
 
 pub(crate) fn route(
@@ -88,25 +94,12 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        let last = match undo::take() {
-            Ok(last) => last,
-            Err(error) => {
-                return respond_json(stream, "409 Conflict", &error_json(&error))
-                    .map(|()| Flow::Serve);
-            }
-        };
-        return match insert::erase(last.window, last.characters) {
-            Ok(()) => respond_json(
-                stream,
-                "200 OK",
-                &format!("{{\"erased\":{}}}", last.characters),
-            )
-            .map(|()| Flow::Serve),
-            Err(error) => {
-                undo::restore(&last);
-                respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
-            }
-        };
+        return respond_json(
+            stream,
+            "409 Conflict",
+            &error_json("Parlo cannot verify the text or cursor position. Undo in the target application instead."),
+        )
+        .map(|()| Flow::Serve);
     }
 
     if method == "POST" && path == "/warm" {
@@ -265,11 +258,7 @@ fn handle(
             .map(|()| Flow::Serve);
         }
         let stored = crate::config::load();
-        let clean = if clean_header == "off" {
-            Some("original".to_string())
-        } else {
-            Some(stored.intelligence.clean.clone())
-        };
+        let clean = Some(requested_clean(&clean_header, &stored.intelligence.clean));
         let style_header = header(headers, "x-parlo-style")
             .unwrap_or_default()
             .trim()
@@ -320,7 +309,7 @@ fn handle(
         }
         let started = Instant::now();
         let _ = stream.set_write_timeout(Some(Duration::from_secs(120)));
-        let (text, translation, note, written) =
+        let (text, mut translation, mut note, mut written) =
             match streamed.as_ref().filter(|_| target == from) {
                 Some(request) => match session.clean_text(request.text.trim(), clean.as_deref()) {
                     Ok(edited) => (edited, String::new(), String::new(), target.clone()),
@@ -365,6 +354,15 @@ fn handle(
                 },
             };
         let _ = stream.set_write_timeout(Some(Duration::from_secs(30)));
+        if written != from && translation.trim().is_empty() && !text.trim().is_empty() {
+            note =
+                "The translation was unavailable, so the sentence stayed in the language spoken."
+                    .to_string();
+            written = from.clone();
+        }
+        if written == from {
+            translation.clear();
+        }
         let text = commands::apply(&text, &from);
         let text = crate::snippets::apply(&text, &stored.snippets);
         let text = crate::style::shape(&text, &style);
@@ -449,7 +447,15 @@ fn handle(
 
 #[cfg(test)]
 mod tests {
-    use super::within_grace;
+    use super::{requested_clean, within_grace};
+
+    #[test]
+    fn the_island_switch_overrides_a_saved_original_mode() {
+        assert_eq!(requested_clean("on", "original"), "light");
+        assert_eq!(requested_clean("on", "intelligent"), "intelligent");
+        assert_eq!(requested_clean("off", "intelligent"), "original");
+        assert_eq!(requested_clean("", "original"), "original");
+    }
 
     #[test]
     fn the_polish_is_replaced_only_inside_its_grace() {
