@@ -115,7 +115,10 @@ try {
   </div>
 <section class="gate" id="name-gate" aria-labelledby="gate-title" hidden>
   <div class="gate-card">
-    <p class="gate-progress" id="gate-progress" data-i18n="text.Step 1 of 5">Step 1 of 5</p>
+    <p class="gate-progress" id="gate-progress" data-i18n="text.Step 1 of 6">Step 1 of 6</p>
+    <div class="gate-actions gate-top-actions">
+      <button id="gate-skip-all" class="swap" type="button" data-i18n="gate.skipAll">Skip the guide</button>
+    </div>
     <div class="gate-step" id="gate-name">
       <p class="gate-kicker" data-i18n="gate.welcome">Welcome</p>
       <h1 id="gate-title" data-i18n="gate.name.title">What should Parlo call you?</h1>
@@ -158,6 +161,8 @@ try {
       <p class="gate-kicker" data-i18n="gate.microphone.kicker">Microphone</p>
       <h1 data-i18n="gate.microphone.title">Check the microphone.</h1>
       <p class="gate-note" data-i18n="gate.microphone.note">Parlo asks Windows once. If it is blocked, open Settings &gt; Privacy &amp; security &gt; Microphone and allow desktop apps.</p>
+      <div class="gate-meter" aria-hidden="true"><span id="gate-mic-meter"></span></div>
+      <p class="gate-note" id="gate-mic-level" aria-live="polite" data-i18n="gate.microphone.idle">Tap Check it now, then speak. The bar moves when the microphone hears you.</p>
       <div class="gate-actions">
         <button id="gate-mic-check" class="install" type="button" data-i18n="gate.microphone.check">Check it now</button>
         <button id="gate-mic-next" class="swap" type="button" disabled data-i18n="gate.continue">Continue</button>
@@ -203,7 +208,28 @@ try {
       <p class="gate-note"><span data-i18n="gate.shortcut.hold">Hold</span> <kbd id="gate-shortcut-key">Ctrl+Alt+D</kbd> <span data-i18n="gate.shortcut.middle">in any program, speak, and let go.</span> <kbd>Escape</kbd> <span data-i18n="gate.shortcut.discard">throws the sentence away.</span></p>
       <p class="gate-note" data-i18n="gate.shortcut.note2">You can change the key later in Settings, Shortcuts.</p>
       <div class="gate-actions">
-        <button id="gate-finish" class="install" type="button" data-i18n="gate.finish">Start using Parlo</button>
+        <button id="gate-shortcut-try" class="swap" type="button" data-i18n="gate.shortcut.try">Try the shortcut</button>
+        <button id="gate-shortcut-next" class="install" type="button" disabled data-i18n="gate.continue">Continue</button>
+        <button id="gate-shortcut-skip" class="swap" type="button" data-i18n="gate.skip">Skip</button>
+      </div>
+      <p class="gate-note" id="gate-shortcut-note" aria-live="polite"></p>
+    </div>
+    <div class="gate-step" id="gate-dictate" hidden>
+      <p class="gate-kicker" data-i18n="gate.dictate.kicker">First sentence</p>
+      <h1 data-i18n="gate.dictate.title">Say your first sentence.</h1>
+      <p class="gate-note" data-i18n="gate.dictate.note">Press Record, say one short sentence, then press Stop. Parlo writes it here and copies it, so you can paste it anywhere.</p>
+      <div class="gate-actions">
+        <button id="gate-dictate-record" class="install" type="button" data-i18n="gate.dictate.record">Record</button>
+        <button id="gate-dictate-copy" class="swap" type="button" disabled data-i18n="gate.dictate.copy">Copy the sentence</button>
+        <button id="gate-dictate-skip" class="swap" type="button" data-i18n="gate.skip">Skip</button>
+      </div>
+      <label class="field" for="gate-dictate-result">
+        <span class="field-label" data-i18n="gate.dictate.result">Your sentence</span>
+        <textarea id="gate-dictate-result" class="field-input gate-result" rows="3" readonly placeholder=""></textarea>
+      </label>
+      <p class="gate-note" id="gate-dictate-note" aria-live="polite"></p>
+      <div class="gate-actions">
+        <button id="gate-finish" class="install" type="button" disabled data-i18n="gate.finish">Start using Parlo</button>
       </div>
     </div>
   </div>
@@ -449,6 +475,15 @@ try {
       </label>
       <button id="settings-name-save" class="install" type="button" data-i18n="text.Save name">Save name</button>
       <p class="settings-note field-wide" id="settings-name-note" aria-live="polite"></p>
+    </div>
+    <div class="settings-row">
+      <div class="field field-wide">
+        <span class="field-label" data-i18n="gate.review.title">First-run guide</span>
+        <p class="settings-note" id="onboarding-status" aria-live="polite"></p>
+        <div class="tool-actions">
+          <button id="onboarding-review" class="swap" type="button" data-i18n="gate.review.open">Review the guide</button>
+        </div>
+      </div>
     </div>
     <div class="settings-row">
       <div class="field field-wide">

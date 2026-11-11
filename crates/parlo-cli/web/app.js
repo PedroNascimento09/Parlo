@@ -7539,7 +7539,21 @@ const gateMicSkip = document.getElementById("gate-mic-skip");
 const gateMicNote = document.getElementById("gate-mic-note");
 const gateShortcutKey = document.getElementById("gate-shortcut-key");
 const gateFinish = document.getElementById("gate-finish");
-const GATE_STEPS = ["gate-name", "gate-languages", "gate-microphone", "gate-style", "gate-shortcut"];
+const gateSkipAll = document.getElementById("gate-skip-all");
+const gateMicMeter = document.getElementById("gate-mic-meter");
+const gateMicLevel = document.getElementById("gate-mic-level");
+const gateShortcutTry = document.getElementById("gate-shortcut-try");
+const gateShortcutNext = document.getElementById("gate-shortcut-next");
+const gateShortcutSkip = document.getElementById("gate-shortcut-skip");
+const gateShortcutNote = document.getElementById("gate-shortcut-note");
+const gateDictateRecord = document.getElementById("gate-dictate-record");
+const gateDictateCopy = document.getElementById("gate-dictate-copy");
+const gateDictateSkip = document.getElementById("gate-dictate-skip");
+const gateDictateResult = document.getElementById("gate-dictate-result");
+const gateDictateNote = document.getElementById("gate-dictate-note");
+const onboardingReview = document.getElementById("onboarding-review");
+const onboardingStatus = document.getElementById("onboarding-status");
+const GATE_STEPS = ["gate-name", "gate-languages", "gate-microphone", "gate-style", "gate-shortcut", "gate-dictate"];
 const styleControls = [
   ...document.querySelectorAll(".style-card"),
   ...document.querySelectorAll(".style-chip"),
@@ -7577,8 +7591,107 @@ for (const button of themeChoices) {
   });
 }
 
+let gateMicStream = null;
+let gateMicContext = null;
+let gateMicFrame = null;
+let gateMicAnalyser = null;
+let gateMicLevels = null;
+let gateDictate = null;
+let gateShortcutArmed = false;
+
+function stopGateMicMeter() {
+  if (gateMicFrame) {
+    cancelAnimationFrame(gateMicFrame);
+    gateMicFrame = null;
+  }
+  if (gateMicStream) {
+    gateMicStream.getTracks().forEach((track) => track.stop());
+    gateMicStream = null;
+  }
+  if (gateMicContext && gateMicContext.state !== "closed") {
+    gateMicContext.close().catch(() => {});
+  }
+  gateMicContext = null;
+  gateMicAnalyser = null;
+  gateMicLevels = null;
+  if (gateMicMeter) {
+    gateMicMeter.style.width = "0%";
+  }
+}
+
+function drawGateMeter() {
+  if (!gateMicAnalyser || !gateMicLevels) {
+    gateMicFrame = null;
+    return;
+  }
+  gateMicFrame = requestAnimationFrame(drawGateMeter);
+  gateMicAnalyser.getFloatTimeDomainData(gateMicLevels);
+  let sum = 0;
+  for (let index = 0; index < gateMicLevels.length; index += 1) {
+    sum += gateMicLevels[index] * gateMicLevels[index];
+  }
+  const rms = Math.sqrt(sum / gateMicLevels.length);
+  const decibels = 20 * Math.log10(rms + 1e-6);
+  const level = Math.min(1, Math.max(0, (decibels + 60) / 60));
+  if (gateMicMeter) {
+    gateMicMeter.style.width = (level * 100).toFixed(1) + "%";
+  }
+  if (gateMicLevel && level > 0.08) {
+    gateMicLevel.textContent = t("gate.microphone.heard", "The microphone hears you. Continue when you are ready.");
+  }
+}
+
+function startGateMicMeter(stream) {
+  stopGateMicMeter();
+  gateMicStream = stream;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  gateMicContext = new AudioContext();
+  gateMicAnalyser = gateMicContext.createAnalyser();
+  gateMicAnalyser.fftSize = 2048;
+  gateMicLevels = new Float32Array(gateMicAnalyser.fftSize);
+  gateMicContext.createMediaStreamSource(stream).connect(gateMicAnalyser);
+  if (gateMicContext.state === "suspended") {
+    gateMicContext.resume().catch(() => {});
+  }
+  drawGateMeter();
+}
+
+function stopGateDictate() {
+  if (!gateDictate) {
+    return;
+  }
+  gateDictate.recording = false;
+  if (gateDictate.timer) {
+    clearTimeout(gateDictate.timer);
+  }
+  if (gateDictate.processor) {
+    gateDictate.processor.onaudioprocess = null;
+    gateDictate.processor.disconnect();
+  }
+  if (gateDictate.source) {
+    gateDictate.source.disconnect();
+  }
+  if (gateDictate.sink) {
+    gateDictate.sink.disconnect();
+  }
+  if (gateDictate.stream) {
+    gateDictate.stream.getTracks().forEach((track) => track.stop());
+  }
+  if (gateDictate.context && gateDictate.context.state !== "closed") {
+    gateDictate.context.close().catch(() => {});
+  }
+  gateDictate = null;
+}
+
 function gateStep(name) {
   const index = GATE_STEPS.indexOf(name);
+  if (name !== "gate-microphone") {
+    stopGateMicMeter();
+  }
+  if (name !== "gate-dictate") {
+    stopGateDictate();
+  }
+  gateShortcutArmed = false;
   for (const [position, id] of GATE_STEPS.entries()) {
     const step = document.getElementById(id);
     if (step) {
@@ -7587,6 +7700,11 @@ function gateStep(name) {
   }
   if (gateProgress) {
     paintGateProgress(index, GATE_STEPS.length);
+  }
+  const step = document.getElementById(name);
+  const focusable = step && step.querySelector("input, button:not([disabled]), textarea");
+  if (focusable) {
+    focusable.focus();
   }
 }
 
@@ -7618,23 +7736,69 @@ function chooseStyle(style) {
   }).catch(() => {});
 }
 
-function closeGate() {
+function onboardingState() {
+  return localStorage.getItem("parlo.onboarding") || "";
+}
+
+function paintOnboardingStatus() {
+  if (!onboardingStatus) {
+    return;
+  }
+  const state = onboardingState();
+  onboardingStatus.textContent =
+    state === "done"
+      ? t("gate.review.done", "Guide finished. You can run it again any time.")
+      : state === "skipped"
+        ? t("gate.review.skipped", "Guide skipped. You can run it any time.")
+        : t("gate.review.notStarted", "Guide not finished yet.");
+}
+
+function closeGate(state) {
+  localStorage.setItem("parlo.onboarding", state || "done");
+  stopGateMicMeter();
+  stopGateDictate();
   nameGate.hidden = true;
   document.body.classList.remove("gating");
+  paintOnboardingStatus();
   navigate("home");
   paintHome();
 }
 
 function showNameGateIfNeeded() {
-  if (storedName() || localStorage.getItem("parlo.nameSkipped")) {
+  if (onboardingState()) {
     return;
   }
+  document.body.classList.add("gating");
+  nameGate.hidden = false;
+  paintGate();
+  paintOnboardingStatus();
+  gateStep("gate-name");
+  nameInput.focus();
+}
+
+function reopenGate() {
   document.body.classList.add("gating");
   nameGate.hidden = false;
   paintGate();
   gateStep("gate-name");
   nameInput.focus();
 }
+
+if (gateSkipAll) {
+  gateSkipAll.addEventListener("click", () => closeGate("skipped"));
+}
+
+if (onboardingReview) {
+  onboardingReview.addEventListener("click", reopenGate);
+}
+
+paintOnboardingStatus();
+
+document.addEventListener("keydown", (event) => {
+  if (nameGate && !nameGate.hidden && event.key === "Escape") {
+    closeGate("skipped");
+  }
+});
 
 function storeName(raw) {
   const value = raw.trim().replace(/\s+/g, " ").slice(0, 40);
@@ -7656,6 +7820,7 @@ function paintSettingsName() {
   if (settingsName) {
     settingsName.value = storedName();
   }
+  paintOnboardingStatus();
 }
 
 nameSave.addEventListener("click", () => {
@@ -7747,28 +7912,249 @@ gatePairSave.addEventListener("click", async () => {
 
 gateMicCheck.addEventListener("click", async () => {
   gateMicCheck.disabled = true;
-  gateMicNote.textContent = "Waiting for Windows…";
+  gateMicNote.textContent = t("gate.microphone.waiting", "Waiting for Windows…");
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    for (const track of stream.getTracks()) {
-      track.stop();
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true },
+    });
+    startGateMicMeter(stream);
     localStorage.setItem("parlo.mic", "ready");
     if (homeMic) {
       homeMic.textContent = statusWord("ready");
     }
-    gateMicNote.textContent = "The microphone answers. Continue when you are ready.";
+    gateMicNote.textContent = t("gate.microphone.ok", "The microphone answers. Continue when you are ready.");
+    if (gateMicLevel) {
+      gateMicLevel.textContent = t("gate.microphone.idle", "Tap Check it now, then speak. The bar moves when the microphone hears you.");
+    }
     gateMicNext.disabled = false;
   } catch (failure) {
-    gateMicNote.textContent =
-      "Windows did not allow it. Open Settings > Privacy & security > Microphone, allow desktop apps, then try again.";
+    gateMicNote.textContent = describeMicrophoneError(failure);
     gateMicCheck.disabled = false;
   }
 });
 
 gateMicNext.addEventListener("click", () => gateStep("gate-style"));
 gateMicSkip.addEventListener("click", () => gateStep("gate-style"));
-gateFinish.addEventListener("click", closeGate);
+
+function shortcutMatches(event) {
+  const parts = (currentShortcut || "Ctrl+Alt+D")
+    .split("+")
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+  const key = event.key.toLowerCase();
+  const keyPart = parts.find(
+    (part) => !["ctrl", "control", "alt", "shift", "command", "win", "super"].includes(part),
+  );
+  if (!keyPart || key !== keyPart) {
+    return false;
+  }
+  if (parts.includes("ctrl") || parts.includes("control")) {
+    if (!event.ctrlKey) return false;
+  }
+  if (parts.includes("alt") && !event.altKey) return false;
+  if (parts.includes("shift") && !event.shiftKey) return false;
+  return true;
+}
+
+if (gateShortcutTry) {
+  gateShortcutTry.addEventListener("click", () => {
+    gateShortcutArmed = true;
+    gateShortcutNote.textContent = t("gate.shortcut.listening", "Now press {shortcut}…", { shortcut: currentShortcut || "Ctrl+Alt+D" });
+    gateShortcutTry.disabled = true;
+    gateShortcutTry.focus();
+  });
+}
+
+document.addEventListener("keydown", (event) => {
+  if (!gateShortcutArmed) {
+    return;
+  }
+  if (event.key === "Escape") {
+    gateShortcutArmed = false;
+    gateShortcutTry.disabled = false;
+    gateShortcutNote.textContent = t("gate.shortcut.cancelled", "Shortcut test cancelled. You can skip this step.");
+    return;
+  }
+  if (!shortcutMatches(event)) {
+    return;
+  }
+  event.preventDefault();
+  gateShortcutArmed = false;
+  gateShortcutTry.disabled = false;
+  gateShortcutNote.textContent = t("gate.shortcut.ok", "That is the shortcut. It works here, so it works anywhere.");
+  gateShortcutNext.disabled = false;
+  gateShortcutNext.focus();
+});
+
+if (gateShortcutNext) {
+  gateShortcutNext.addEventListener("click", () => gateStep("gate-dictate"));
+}
+if (gateShortcutSkip) {
+  gateShortcutSkip.addEventListener("click", () => gateStep("gate-dictate"));
+}
+
+async function copyGateText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (failure) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.append(area);
+    area.select();
+    let done = false;
+    try {
+      done = document.execCommand("copy");
+    } catch (error) {
+      done = false;
+    }
+    area.remove();
+    return done;
+  }
+}
+
+async function startGateDictate() {
+  if (gateDictate && gateDictate.recording) {
+    return;
+  }
+  gateDictateRecord.disabled = true;
+  gateDictateNote.textContent = t("gate.dictate.waiting", "Waiting for the microphone…");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+    });
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const gateContext = new AudioContext();
+    const source = gateContext.createMediaStreamSource(stream);
+    const processor = gateContext.createScriptProcessor(4096, 1, 1);
+    const sink = gateContext.createGain();
+    sink.gain.value = 0;
+    const chunks = [];
+    processor.onaudioprocess = (event) => {
+      const block = event.inputBuffer.getChannelData(0);
+      const copy = new Float32Array(block.length);
+      copy.set(block);
+      chunks.push(copy);
+    };
+    source.connect(processor);
+    processor.connect(sink);
+    sink.connect(gateContext.destination);
+    if (gateContext.state === "suspended") {
+      await gateContext.resume();
+    }
+    gateDictate = {
+      recording: true,
+      stream,
+      context: gateContext,
+      source,
+      processor,
+      sink,
+      chunks,
+      timer: null,
+    };
+    gateDictateNote.textContent = t("gate.dictate.listening", "Listening. Say one short sentence, then press Stop.");
+    gateDictateRecord.textContent = t("gate.dictate.stop", "Stop");
+    gateDictateRecord.disabled = false;
+    gateDictateRecord.focus();
+    gateDictate.timer = setTimeout(() => finishGateDictate(), 30000);
+  } catch (failure) {
+    gateDictateNote.textContent = describeMicrophoneError(failure);
+    gateDictateRecord.disabled = false;
+  }
+}
+
+async function finishGateDictate() {
+  if (!gateDictate || !gateDictate.recording) {
+    return;
+  }
+  const captured = gateDictate;
+  gateDictate = null;
+  captured.recording = false;
+  if (captured.timer) {
+    clearTimeout(captured.timer);
+  }
+  captured.processor.onaudioprocess = null;
+  captured.processor.disconnect();
+  captured.source.disconnect();
+  captured.sink.disconnect();
+  captured.stream.getTracks().forEach((track) => track.stop());
+  const rate = captured.context.sampleRate;
+  await captured.context.close().catch(() => {});
+  gateDictateRecord.textContent = t("gate.dictate.record", "Record");
+  gateDictateRecord.disabled = true;
+  gateDictateNote.textContent = t("gate.dictate.working", "Writing your sentence…");
+  const length = captured.chunks.reduce((total, chunk) => total + chunk.length, 0);
+  if (length < rate * 0.4) {
+    gateDictateNote.textContent = t("gate.dictate.tooShort", "That was too short. Press Record and say a full sentence.");
+    gateDictateRecord.disabled = false;
+    return;
+  }
+  const merged = new Float32Array(length);
+  let offset = 0;
+  for (const chunk of captured.chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  try {
+    const wav = encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE);
+    const response = await fetch("/dictate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: wav,
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "Parlo did not answer. Check that Parlo is still running and try again.");
+    }
+    const text = ((detail.translation || "").trim() || (detail.text || "").trim());
+    if (!text) {
+      gateDictateNote.textContent = t("gate.dictate.nothingHeard", "Nothing was heard. Move closer to the microphone and try again.");
+      gateDictateRecord.disabled = false;
+      return;
+    }
+    gateDictateResult.value = text;
+    gateDictateCopy.disabled = false;
+    const copied = await copyGateText(text);
+    gateDictateNote.textContent = copied
+      ? t("gate.dictate.copied", "Copied. Paste it wherever you are writing.")
+      : t("gate.dictate.copyFailed", "Copy was refused by the browser. Select the sentence and copy it by hand.");
+    gateFinish.disabled = false;
+    gateFinish.focus();
+  } catch (failure) {
+    gateDictateNote.textContent = failure.message || "Parlo did not answer. Check that Parlo is still running and try again.";
+    gateDictateRecord.disabled = false;
+  }
+}
+
+if (gateDictateRecord) {
+  gateDictateRecord.addEventListener("click", () => {
+    if (gateDictate && gateDictate.recording) {
+      finishGateDictate();
+    } else {
+      startGateDictate();
+    }
+  });
+}
+
+if (gateDictateCopy) {
+  gateDictateCopy.addEventListener("click", async () => {
+    const text = gateDictateResult.value.trim();
+    if (!text) return;
+    const copied = await copyGateText(text);
+    gateDictateNote.textContent = copied
+      ? t("gate.dictate.copied", "Copied. Paste it wherever you are writing.")
+      : t("gate.dictate.copyFailed", "Copy was refused by the browser. Select the sentence and copy it by hand.");
+    if (copied) gateFinish.disabled = false;
+  });
+}
+
+if (gateDictateSkip) {
+  gateDictateSkip.addEventListener("click", () => closeGate("skipped"));
+}
+
+gateFinish.addEventListener("click", () => closeGate("done"));
 
 const settingsName = document.getElementById("settings-name");
 const settingsNameSave = document.getElementById("settings-name-save");

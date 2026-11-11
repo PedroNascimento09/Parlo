@@ -2134,6 +2134,31 @@ textarea.field-input {
   gap: 10px;
 }
 
+.gate-top-actions {
+  justify-content: flex-end;
+}
+
+.gate-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.gate-meter span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 80ms linear;
+}
+
+.gate-result {
+  resize: vertical;
+  min-height: 72px;
+}
+
 .style-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
