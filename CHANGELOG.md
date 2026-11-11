@@ -9,6 +9,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Undo for the last dictation: Parlo remembers what it typed, and the undo shortcut (Ctrl+Alt+Z by default) deletes exactly that text from the window it went to, on Windows, X11 and macOS. The tray menu and the settings carry the same control.
 - Snippets expand anywhere inside a dictation, not only as the whole sentence. The longest matching cue wins and a snippet keeps its own case and punctuation.
 - A "delete last word" voice command in English, Portuguese, Spanish, French and German, so a slip can be fixed without touching the keyboard.
+- `parlo undo` on the command line removes the last dictation through the running server, which now writes its port and token to `address.json` in the data folder.
 
 ## [0.2.9] - 11 November 2026
 
