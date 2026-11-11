@@ -10,6 +10,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - Snippets expand anywhere inside a dictation, not only as the whole sentence. The longest matching cue wins and a snippet keeps its own case and punctuation.
 - A "delete last word" voice command in English, Portuguese, Spanish, French and German, so a slip can be fixed without touching the keyboard.
 - `parlo undo` on the command line removes the last dictation through the running server, which now writes its port and token to `address.json` in the data folder.
+- Turning Polish on now actually swaps the typed sentence for the cleaned one, and the target route reports a captured field as insertable instead of always refusing.
 
 ## [0.2.9] - 11 November 2026
 
