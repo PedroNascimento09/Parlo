@@ -150,24 +150,32 @@ fn probe() -> Result<(), String> {
     let painted = win::changed(&before, &after);
     if painted < 200 {
         return Err(format!(
-            "the island window changed only {painted} pixels, so nothing was painted"
+            "the island window changed only {painted} pixels, so nothing was painted (captured {} and {} pixels)",
+            before.len(),
+            after.len()
         ));
     }
     let focused = win::foreground();
     if focused != field {
         return Err(format!(
-            "the island took the focus: 0x{focused:x} instead of the field 0x{field:x}"
+            "the island took the focus: 0x{focused:x} instead of the field 0x{field:x} (island 0x{island:x})"
         ));
     }
     println!(
         "island visible and painted: window=0x{island:x} client={width}x{height} changed_pixels={painted} foreground=0x{focused:x}"
     );
 
-    step("releasing the modifier");
+    step("releasing the shortcut");
+    win::lift(0x78);
+    win::lift(0x12);
     win::lift(0x11);
     for _ in 0..20 {
         std::thread::sleep(Duration::from_millis(250));
-        step(&format!("after release state {}", win::state(port, &token)));
+        step(&format!(
+            "after release state {} raw {:?}",
+            win::state(port, &token),
+            win::get(port, "/state", Some(&token))
+        ));
     }
     let typed = win::wait_for_text(field_host, &lines, "Bom dia.", Duration::from_secs(30))?;
     win::lift(0x78);
@@ -617,7 +625,7 @@ mod win {
             .count()
     }
 
-    fn get(port: u16, path: &str, token: Option<&str>) -> Result<String, String> {
+    pub fn get(port: u16, path: &str, token: Option<&str>) -> Result<String, String> {
         let mut stream =
             TcpStream::connect(("127.0.0.1", port)).map_err(|error| error.to_string())?;
         let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
