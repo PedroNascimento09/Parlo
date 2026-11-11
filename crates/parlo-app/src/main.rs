@@ -247,6 +247,7 @@ Connection: close
         "paused",
         "processing",
         "inserting",
+        "ready-to-copy",
         "success",
         "error",
         "cancelled",
@@ -270,13 +271,11 @@ fn place(window: &WebviewWindow) {
         return;
     };
     let scale = monitor.scale_factor();
-    let origin = monitor.position();
-    let screen = monitor.size();
-    let width = window
-        .outer_size()
-        .map(|size| size.width)
-        .unwrap_or((ISLAND_WIDTH * scale) as u32);
-    let base = PhysicalSize::new(width, (ISLAND_HEIGHT * scale) as u32);
+    let area = monitor.work_area();
+    let origin = area.position;
+    let screen = area.size;
+    let width = ((ISLAND_WIDTH * scale) as u32).min(screen.width);
+    let base = PhysicalSize::new(width, ((ISLAND_HEIGHT * scale) as u32).min(screen.height));
     let _ = window.set_size(base);
     let size = window.outer_size().unwrap_or(base);
     let margin = (ISLAND_MARGIN * scale) as i32;

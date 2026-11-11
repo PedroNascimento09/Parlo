@@ -6,6 +6,7 @@ pub enum State {
     Paused,
     Processing,
     Inserting,
+    ReadyToCopy,
     Success,
     Error,
     Cancelled,
@@ -20,6 +21,7 @@ impl State {
             "paused" => Some(Self::Paused),
             "processing" => Some(Self::Processing),
             "inserting" => Some(Self::Inserting),
+            "ready-to-copy" => Some(Self::ReadyToCopy),
             "success" => Some(Self::Success),
             "error" => Some(Self::Error),
             "cancelled" => Some(Self::Cancelled),
@@ -35,6 +37,7 @@ impl State {
             Self::Paused => "paused",
             Self::Processing => "processing",
             Self::Inserting => "inserting",
+            Self::ReadyToCopy => "ready-to-copy",
             Self::Success => "success",
             Self::Error => "error",
             Self::Cancelled => "cancelled",
@@ -45,11 +48,12 @@ impl State {
         use State::*;
         matches!(
             (self, next),
-            (Idle, Armed)
-                | (Armed, Listening | Error | Cancelled)
+            (Idle, Armed | ReadyToCopy | Error)
+                | (Armed, Listening | ReadyToCopy | Error | Cancelled)
                 | (Listening, Paused | Processing | Error | Cancelled)
                 | (Paused, Listening | Processing | Error | Cancelled)
-                | (Processing, Inserting | Error | Cancelled)
+                | (Processing, Inserting | ReadyToCopy | Error | Cancelled)
+                | (ReadyToCopy, Armed | Idle | Error)
                 | (Inserting, Success | Error | Cancelled)
                 | (Success | Error | Cancelled, Idle | Armed)
         )
@@ -110,6 +114,7 @@ mod tests {
             State::Paused,
             State::Processing,
             State::Inserting,
+            State::ReadyToCopy,
             State::Success,
             State::Error,
             State::Cancelled,
@@ -153,6 +158,30 @@ mod tests {
     #[test]
     fn a_paused_dictation_is_not_quiet() {
         assert!(!State::Paused.is_quiet());
+    }
+
+    #[test]
+    fn transcription_can_be_ready_to_copy_without_insertion() {
+        let mut machine = Machine::new();
+        for state in [
+            State::Armed,
+            State::Listening,
+            State::Processing,
+            State::ReadyToCopy,
+            State::Armed,
+        ] {
+            assert!(machine.enter(state).is_ok());
+        }
+    }
+
+    #[test]
+    fn saved_recovery_and_load_failures_are_visible_at_startup() {
+        let mut restored = Machine::new();
+        assert!(restored.enter(State::ReadyToCopy).is_ok());
+        assert!(restored.enter(State::Armed).is_ok());
+        let mut failed = Machine::new();
+        assert!(failed.enter(State::Error).is_ok());
+        assert!(failed.enter(State::Armed).is_ok());
     }
 
     #[test]

@@ -6,9 +6,17 @@ const ICON: &[u8] = include_bytes!("../../../assets/parlo-256.png");
 
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
     let dictate = MenuItem::with_id(app, "dictate", "Dictate", true, None::<&str>)?;
+    let copy = MenuItem::with_id(app, "copy", "Copy dictation", true, None::<&str>)?;
+    let review = MenuItem::with_id(app, "review", "Review dictation", true, None::<&str>)?;
     let live = MenuItem::with_id(app, "live", "Live", true, None::<&str>)?;
     let captions = MenuItem::with_id(app, "captions", "Captions", true, None::<&str>)?;
-    let undo = MenuItem::with_id(app, "undo", "Undo last dictation", true, None::<&str>)?;
+    let undo = MenuItem::with_id(
+        app,
+        "undo",
+        "Undo unavailable; use the target app",
+        false,
+        None::<&str>,
+    )?;
     let home = MenuItem::with_id(app, "home", "Home", true, None::<&str>)?;
     let library = MenuItem::with_id(app, "library", "Library", true, None::<&str>)?;
     let meetings = MenuItem::with_id(app, "meetings", "Meetings", true, None::<&str>)?;
@@ -19,6 +27,8 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         app,
         &[
             &dictate,
+            &copy,
+            &review,
             &live,
             &captions,
             &undo,
@@ -41,6 +51,8 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "dictate" => crate::island::show(app),
+            "copy" => crate::island::copy_recovery(app),
+            "review" => crate::island::review_recovery(app),
             "live" => crate::live_toggle(app),
             "captions" => crate::captions_toggle(app),
             "undo" => crate::undo_last(app),

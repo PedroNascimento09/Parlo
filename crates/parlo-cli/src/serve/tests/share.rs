@@ -54,6 +54,12 @@ fn the_share_listener_refuses_anything_without_the_pin() {
     );
     assert!(typed.starts_with("HTTP/1.1 200"), "{typed}");
 
+    let recovery = ask(
+        port,
+        &format!("GET /recovery HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-Parlo-Pin: 1234\r\n\r\n"),
+    );
+    assert!(recovery.starts_with("HTTP/1.1 403"), "{recovery}");
+
     let models = ask(
         port,
         &format!("GET /v1/models HTTP/1.1\r\nHost: 127.0.0.1:{port}\r\nX-Parlo-Pin: 1234\r\n\r\n"),

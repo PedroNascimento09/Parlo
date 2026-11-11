@@ -61,7 +61,7 @@ pub(crate) fn route(
             .map(|()| Flow::Serve),
         );
     }
-    if text.chars().count() > 20_000 {
+    if !request.keep && text.chars().count() > 20_000 {
         return Some(
             respond_json(
                 stream,
