@@ -411,10 +411,47 @@ fn record_command(args: &[String]) -> Result<(), String> {
 }
 
 fn undo_command() -> Result<(), String> {
-    Err(
-        "Parlo cannot verify the text or cursor position. Undo in the target application instead."
-            .to_string(),
-    )
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+    use std::time::Duration;
+    let text = fs::read_to_string(serve::address_path()).map_err(|_| {
+        "Parlo is not running, so there is no dictation to undo. Start Parlo and dictate first."
+            .to_string()
+    })?;
+    let number = |key: &str| {
+        text.split(&format!("\"{key}\":"))
+            .nth(1)
+            .and_then(|rest| rest.split(|c: char| !c.is_ascii_digit()).next())
+            .and_then(|digits| digits.parse::<u16>().ok())
+    };
+    let port = number("port").ok_or_else(|| "the running address is unreadable".to_string())?;
+    let token = text
+        .split("\"token\":\"")
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .ok_or_else(|| "the running address carries no token".to_string())?;
+    let mut stream = TcpStream::connect(("127.0.0.1", port))
+        .map_err(|_| "Parlo is not answering, so there is no dictation to undo.".to_string())?;
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(5)));
+    let request = format!("POST /undo HTTP/1.1\r\nHost: 127.0.0.1\r\nAuthorization: Bearer {token}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    stream
+        .write_all(request.as_bytes())
+        .map_err(|error| error.to_string())?;
+    let mut answer = String::new();
+    stream
+        .read_to_string(&mut answer)
+        .map_err(|error| error.to_string())?;
+    if answer.starts_with("HTTP/1.1 200") {
+        println!("undone");
+        Ok(())
+    } else {
+        Err(answer
+            .lines()
+            .last()
+            .unwrap_or("undo failed")
+            .trim()
+            .to_string())
+    }
 }
 
 fn serve_command(args: &[String]) -> Result<(), String> {

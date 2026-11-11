@@ -29,7 +29,7 @@ use dub_exports::{host_is_share, origin_allowed_for, pin_offered, Share};
 use http::{
     content_type, header, host_is_local, origin_allowed, percent_decode, respond_json, Stream,
 };
-pub use listener::{run, run_tls, TlsFiles};
+pub use listener::{address_path, run, run_tls, TlsFiles};
 use session::{rooms, Session};
 
 #[derive(PartialEq, Eq)]

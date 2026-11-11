@@ -28,6 +28,20 @@ impl Server {
     }
 }
 
+pub fn address_path() -> PathBuf {
+    crate::config::data_root().join("address.json")
+}
+
+fn write_address(port: u16, token: &str) {
+    if let Some(root) = address_path().parent() {
+        let _ = fs::create_dir_all(root);
+        let _ = fs::write(
+            address_path(),
+            format!("{{\"port\":{port},\"token\":\"{token}\"}}"),
+        );
+    }
+}
+
 fn warm_dictation(session: &Arc<Session>) {
     let session = Arc::clone(session);
     std::thread::spawn(move || {
@@ -50,6 +64,7 @@ pub fn start(
     let listener = TcpListener::bind(("127.0.0.1", port))
         .map_err(|error| format!("cannot bind 127.0.0.1:{port}: {error}"))?;
 
+    write_address(port, &token);
     println!("listening on http://127.0.0.1:{port}");
     if std::env::var_os("PARLO_APP_GUARD").is_none() {
         println!("  token      {token}");
