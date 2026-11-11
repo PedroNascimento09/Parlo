@@ -1,6 +1,6 @@
 name: parlo
 base: core24
-version: '0.2.7'
+version: '0.2.8'
 summary: Offline dictation, translation and meetings
 description: |
   Parlo turns speech into writing on this computer and never sends audio
@@ -28,7 +28,7 @@ apps:
 parts:
   parlo:
     plugin: dump
-    source: https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.7/parlo-linux-x86_64.tar.gz
+    source: https://github.com/PedroNascimento09/Parlo/releases/download/v0.2.8/parlo-linux-x86_64.tar.gz
     source-checksum: sha256/5600d387001d22c26472c2eec6f6bc3d07ef906f06a42cb7e3732b27987157fe
     stage-packages:
       - libasound2t64
