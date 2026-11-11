@@ -43,15 +43,44 @@ pub fn apply(text: &str, saved: &BTreeMap<String, String>) -> String {
     if saved.is_empty() {
         return text.to_string();
     }
-    let wanted = normalise(text);
-    if wanted.is_empty() {
+    let mut cues: Vec<(Vec<String>, String)> = saved
+        .iter()
+        .map(|(cue, value)| (fold_words(cue), value.trim().to_string()))
+        .filter(|(cue, _)| !cue.is_empty())
+        .collect();
+    cues.sort_by(|left, right| right.0.len().cmp(&left.0.len()));
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.is_empty() {
         return text.to_string();
     }
-    saved
-        .iter()
-        .find(|(cue, _)| normalise(cue) == wanted)
-        .map(|(_, value)| value.trim().to_string())
-        .unwrap_or_else(|| text.to_string())
+    let folded: Vec<String> = words.iter().map(|word| fold_word(word)).collect();
+    let mut out: Vec<String> = Vec::new();
+    let mut index = 0;
+    while index < words.len() {
+        let hit = cues.iter().find(|(cue, _)| {
+            index + cue.len() <= words.len() && folded[index..index + cue.len()] == cue[..]
+        });
+        match hit {
+            Some((cue, value)) => {
+                out.push(value.clone());
+                index += cue.len();
+            }
+            None => {
+                out.push(words[index].to_string());
+                index += 1;
+            }
+        }
+    }
+    out.join(" ")
+}
+
+fn fold_words(text: &str) -> Vec<String> {
+    text.split_whitespace().map(fold_word).collect()
+}
+
+fn fold_word(word: &str) -> String {
+    word.trim_matches(|mark: char| ".,!?;:".contains(mark))
+        .to_lowercase()
 }
 
 pub fn check(value: &str, max: usize, what: &str) -> Result<String, String> {
@@ -95,10 +124,20 @@ mod tests {
     }
 
     #[test]
-    fn a_saved_phrase_inside_a_sentence_is_left_alone() {
+    fn a_saved_phrase_inside_a_sentence_expands_inline() {
         assert_eq!(
             apply("send my address to her", &saved()),
-            "send my address to her"
+            "send 12 Rua das Flores, Lisboa to her"
+        );
+    }
+
+    #[test]
+    fn the_longest_cue_wins_and_punctuation_does_not_block_a_match() {
+        let mut map = saved();
+        map.insert("address".to_string(), "the address".to_string());
+        assert_eq!(
+            apply("my address, please", &map),
+            "12 Rua das Flores, Lisboa please"
         );
     }
 
