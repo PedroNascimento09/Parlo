@@ -226,7 +226,7 @@ pub fn undo_last() -> Result<(), String> {
 #[cfg(windows)]
 fn delete_back(target: usize, text: &str) -> Result<(), String> {
     use win::*;
-    if focus(target as Window).is_err() {
+    if !is_front(target as Window) {
         return Err("the window you were writing in is not in front any more".to_string());
     }
     let mut batch: Vec<Input> = Vec::new();
@@ -346,6 +346,12 @@ pub fn foreground() -> Result<(usize, String), String> {
 }
 
 #[cfg(windows)]
+fn is_front(window: win::Window) -> bool {
+    use win::*;
+    unsafe { GetForegroundWindow() == window }
+}
+
+#[cfg(windows)]
 fn focus(window: win::Window) -> Result<(), ()> {
     use win::*;
     if unsafe { IsIconic(window) } != 0 {
@@ -380,7 +386,7 @@ fn focus(window: win::Window) -> Result<(), ()> {
 pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     use win::*;
     let window = target as Window;
-    if focus(window).is_err() {
+    if !is_front(window) {
         return Err("the window you were writing in is not in front any more".to_string());
     }
     let mut batch: Vec<Input> = Vec::new();
