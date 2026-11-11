@@ -2304,6 +2304,704 @@
       "memory_mb": 2,
       "speed": "0.16 realtime here",
       "category": "voice"
+    },
+    {
+      "id": "piper-voice-pl_PL-gosia-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/pl/pl_PL/gosia/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Polish voice (Gosia)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "pl-PL"
+      ],
+      "size_mb": 63,
+      "unit": "voice-pl",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-sv_SE-lisa-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/sv/sv_SE/lisa/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Swedish voice (Lisa)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "sv-SE"
+      ],
+      "size_mb": 63,
+      "unit": "voice-sv",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-cs_CZ-jirka-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/cs/cs_CZ/jirka/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Czech voice (Jirka)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "cs-CZ"
+      ],
+      "size_mb": 63,
+      "unit": "voice-cs",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-da_DK-talesyntese-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/da/da_DK/talesyntese/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Danish voice (Talesyntese)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "da-DK"
+      ],
+      "size_mb": 63,
+      "unit": "voice-da",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-fi_FI-harri-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/fi/fi_FI/harri/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Finnish voice (Harri)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "fi-FI"
+      ],
+      "size_mb": 63,
+      "unit": "voice-fi",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-el_GR-joy-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/el/el_GR/joy/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Greek voice (Joy)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "el-GR"
+      ],
+      "size_mb": 63,
+      "unit": "voice-el",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-ro_RO-mihai-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/ro/ro_RO/mihai/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Romanian voice (Mihai)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "ro-RO"
+      ],
+      "size_mb": 63,
+      "unit": "voice-ro",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-hu_HU-anna-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/hu/hu_HU/anna/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Hungarian voice (Anna)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "hu-HU"
+      ],
+      "size_mb": 63,
+      "unit": "voice-hu",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-tr_TR-dfki-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/tr/tr_TR/dfki/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Turkish voice (DFKI)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "tr-TR"
+      ],
+      "size_mb": 63,
+      "unit": "voice-tr",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-uk_UA-tetiana-high",
+      "kind": "voice",
+      "version": "high",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/uk/uk_UA/tetiana/high",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Ukrainian voice (Tetiana)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "uk-UA"
+      ],
+      "size_mb": 63,
+      "unit": "voice-uk",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "piper-voice-ca_ES-upc_ona-medium",
+      "kind": "voice",
+      "version": "medium",
+      "license": "MIT",
+      "status": "verified",
+      "source": "https://huggingface.co/rhasspy/piper-voices/resolve/main/ca/ca_ES/upc_ona/medium",
+      "attribution": "Voice from rhasspy/piper-voices, repository declared MIT",
+      "name": "Catalan voice (Ona)",
+      "purpose": "Read text aloud",
+      "languages": [
+        "ca-ES"
+      ],
+      "size_mb": 63,
+      "unit": "voice-ca",
+      "memory_mb": 2,
+      "category": "voice"
+    },
+    {
+      "id": "opus-mt-en-pl",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "pl",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-pl",
+      "note": "English to Polish. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→pl"
+    },
+    {
+      "id": "opus-mt-en-sv",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "sv",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-sv",
+      "note": "English to Swedish. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→sv"
+    },
+    {
+      "id": "opus-mt-en-cs",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "cs",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-cs",
+      "note": "English to Czech. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→cs"
+    },
+    {
+      "id": "opus-mt-en-da",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "da",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-da",
+      "note": "English to Danish. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→da"
+    },
+    {
+      "id": "opus-mt-en-fi",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "fi",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-fi",
+      "note": "English to Finnish. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→fi"
+    },
+    {
+      "id": "opus-mt-en-el",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "el",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-el",
+      "note": "English to Greek. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→el"
+    },
+    {
+      "id": "opus-mt-en-ro",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "ro",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-ro",
+      "note": "English to Romanian. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→ro"
+    },
+    {
+      "id": "opus-mt-en-hu",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "hu",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-hu",
+      "note": "English to Hungarian. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→hu"
+    },
+    {
+      "id": "opus-mt-en-tr",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "tr",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-tr",
+      "note": "English to Turkish. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→tr"
+    },
+    {
+      "id": "opus-mt-en-uk",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "uk",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-uk",
+      "note": "English to Ukrainian. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→uk"
+    },
+    {
+      "id": "opus-mt-en-ca",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "ca",
+        "en"
+      ],
+      "size_mb": 83,
+      "unit": "mt-en-ca",
+      "note": "English to Catalan. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "en→ca"
+    },
+    {
+      "id": "opus-mt-pl-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "pl"
+      ],
+      "size_mb": 83,
+      "unit": "mt-pl-en",
+      "note": "Polish to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "pl→en"
+    },
+    {
+      "id": "opus-mt-sv-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "sv"
+      ],
+      "size_mb": 83,
+      "unit": "mt-sv-en",
+      "note": "Swedish to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "sv→en"
+    },
+    {
+      "id": "opus-mt-cs-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "cs"
+      ],
+      "size_mb": 83,
+      "unit": "mt-cs-en",
+      "note": "Czech to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "cs→en"
+    },
+    {
+      "id": "opus-mt-da-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "da"
+      ],
+      "size_mb": 83,
+      "unit": "mt-da-en",
+      "note": "Danish to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "da→en"
+    },
+    {
+      "id": "opus-mt-fi-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "fi"
+      ],
+      "size_mb": 83,
+      "unit": "mt-fi-en",
+      "note": "Finnish to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "fi→en"
+    },
+    {
+      "id": "opus-mt-el-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "el"
+      ],
+      "size_mb": 83,
+      "unit": "mt-el-en",
+      "note": "Greek to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "el→en"
+    },
+    {
+      "id": "opus-mt-ro-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "ro"
+      ],
+      "size_mb": 83,
+      "unit": "mt-ro-en",
+      "note": "Romanian to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "ro→en"
+    },
+    {
+      "id": "opus-mt-hu-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "hu"
+      ],
+      "size_mb": 83,
+      "unit": "mt-hu-en",
+      "note": "Hungarian to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "hu→en"
+    },
+    {
+      "id": "opus-mt-tr-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "tr"
+      ],
+      "size_mb": 83,
+      "unit": "mt-tr-en",
+      "note": "Turkish to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "tr→en"
+    },
+    {
+      "id": "opus-mt-uk-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "uk"
+      ],
+      "size_mb": 83,
+      "unit": "mt-uk-en",
+      "note": "Ukrainian to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "uk→en"
+    },
+    {
+      "id": "opus-mt-ca-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "ca"
+      ],
+      "size_mb": 83,
+      "unit": "mt-ca-en",
+      "note": "Catalan to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "ca→en"
+    },
+    {
+      "id": "opus-mt-it-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "it"
+      ],
+      "size_mb": 83,
+      "unit": "mt-it-en",
+      "note": "Italian to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "it→en"
+    },
+    {
+      "id": "opus-mt-nl-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "nl"
+      ],
+      "size_mb": 83,
+      "unit": "mt-nl-en",
+      "note": "Dutch to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "nl→en"
+    },
+    {
+      "id": "opus-mt-ru-en",
+      "kind": "mt",
+      "category": "translation",
+      "name": "Opus-MT",
+      "purpose": "Translation",
+      "version": "",
+      "license": "Apache-2.0",
+      "status": "experimental",
+      "source": "https://github.com/argosopentech/argospm-index",
+      "attribution": "OPUS-MT, Apache-2.0, repackaged by Argos Open Tech",
+      "languages": [
+        "en",
+        "ru"
+      ],
+      "size_mb": 83,
+      "unit": "mt-ru-en",
+      "note": "Russian to English. Downloaded on demand from the Argos index; quality not measured yet.",
+      "pair": "ru→en"
     }
   ]
 }

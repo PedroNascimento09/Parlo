@@ -52,7 +52,52 @@ VOICES = {
         "https://huggingface.co/rhasspy/piper-voices/resolve/main/ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
         "ru/ru_RU/irina/medium/ru_RU-irina-medium.onnx",
     ),
+    "pl_PL-gosia-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/pl/pl_PL/gosia/medium/pl_PL-gosia-medium.onnx",
+        "pl/pl_PL/gosia/medium/pl_PL-gosia-medium.onnx",
+    ),
+    "sv_SE-lisa-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/sv/sv_SE/lisa/medium/sv_SE-lisa-medium.onnx",
+        "sv/sv_SE/lisa/medium/sv_SE-lisa-medium.onnx",
+    ),
+    "cs_CZ-jirka-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx",
+        "cs/cs_CZ/jirka/medium/cs_CZ-jirka-medium.onnx",
+    ),
+    "da_DK-talesyntese-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/da/da_DK/talesyntese/medium/da_DK-talesyntese-medium.onnx",
+        "da/da_DK/talesyntese/medium/da_DK-talesyntese-medium.onnx",
+    ),
+    "fi_FI-harri-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/fi/fi_FI/harri/medium/fi_FI-harri-medium.onnx",
+        "fi/fi_FI/harri/medium/fi_FI-harri-medium.onnx",
+    ),
+    "el_GR-joy-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/el/el_GR/joy/medium/el_GR-joy-medium.onnx",
+        "el/el_GR/joy/medium/el_GR-joy-medium.onnx",
+    ),
+    "ro_RO-mihai-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/ro/ro_RO/mihai/medium/ro_RO-mihai-medium.onnx",
+        "ro/ro_RO/mihai/medium/ro_RO-mihai-medium.onnx",
+    ),
+    "hu_HU-anna-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx",
+        "hu/hu_HU/anna/medium/hu_HU-anna-medium.onnx",
+    ),
+    "tr_TR-dfki-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/tr/tr_TR/dfki/medium/tr_TR-dfki-medium.onnx",
+        "tr/tr_TR/dfki/medium/tr_TR-dfki-medium.onnx",
+    ),
+    "uk_UA-tetiana-high": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/uk/uk_UA/tetiana/high/uk_UA-tetiana-high.onnx",
+        "uk/uk_UA/tetiana/high/uk_UA-tetiana-high.onnx",
+    ),
+    "ca_ES-upc_ona-medium": (
+        "https://huggingface.co/rhasspy/piper-voices/resolve/main/ca/ca_ES/upc_ona/medium/ca_ES-upc_ona-medium.onnx",
+        "ca/ca_ES/upc_ona/medium/ca_ES-upc_ona-medium.onnx",
+    ),
 }
+
 DEFAULT_VOICES = ("pt_PT-tugão-medium", "en_US-lessac-medium")
 OPTIONAL_VOICES = {"pt_br": ("pt_BR-faber-medium",)}
 PAIR_UNITS = (
@@ -71,6 +116,31 @@ PAIR_UNITS = (
     ("mt-de-en", "de", "en"),
     ("mt-fr-de", "fr", "de"),
     ("mt-es-en", "es", "en"),
+    ("mt-en-pl", "en", "pl"),
+    ("mt-en-sv", "en", "sv"),
+    ("mt-en-cs", "en", "cs"),
+    ("mt-en-da", "en", "da"),
+    ("mt-en-fi", "en", "fi"),
+    ("mt-en-el", "en", "el"),
+    ("mt-en-ro", "en", "ro"),
+    ("mt-en-hu", "en", "hu"),
+    ("mt-en-tr", "en", "tr"),
+    ("mt-en-uk", "en", "uk"),
+    ("mt-en-ca", "en", "ca"),
+    ("mt-pl-en", "pl", "en"),
+    ("mt-sv-en", "sv", "en"),
+    ("mt-cs-en", "cs", "en"),
+    ("mt-da-en", "da", "en"),
+    ("mt-fi-en", "fi", "en"),
+    ("mt-el-en", "el", "en"),
+    ("mt-ro-en", "ro", "en"),
+    ("mt-hu-en", "hu", "en"),
+    ("mt-tr-en", "tr", "en"),
+    ("mt-uk-en", "uk", "en"),
+    ("mt-ca-en", "ca", "en"),
+    ("mt-it-en", "it", "en"),
+    ("mt-nl-en", "nl", "en"),
+    ("mt-ru-en", "ru", "en"),
 )
 
 DIRECTIONS = (
@@ -89,6 +159,31 @@ DIRECTIONS = (
     ("de", "en"),
     ("fr", "de"),
     ("es", "en"),
+    ("en", "pl"),
+    ("en", "sv"),
+    ("en", "cs"),
+    ("en", "da"),
+    ("en", "fi"),
+    ("en", "el"),
+    ("en", "ro"),
+    ("en", "hu"),
+    ("en", "tr"),
+    ("en", "uk"),
+    ("en", "ca"),
+    ("pl", "en"),
+    ("sv", "en"),
+    ("cs", "en"),
+    ("da", "en"),
+    ("fi", "en"),
+    ("el", "en"),
+    ("ro", "en"),
+    ("hu", "en"),
+    ("tr", "en"),
+    ("uk", "en"),
+    ("ca", "en"),
+    ("it", "en"),
+    ("nl", "en"),
+    ("ru", "en"),
 )
 PARAKEET_BASE = f"https://huggingface.co/{PARAKEET_REPO}/resolve/main"
 PARAKEET_FILES = ("encoder.int8.onnx", "decoder.int8.onnx", "joiner.int8.onnx", "tokens.txt")
@@ -258,6 +353,17 @@ UNITS = (
     "voice-it",
     "voice-nl",
     "voice-ru",
+    "voice-pl",
+    "voice-sv",
+    "voice-cs",
+    "voice-da",
+    "voice-fi",
+    "voice-el",
+    "voice-ro",
+    "voice-hu",
+    "voice-tr",
+    "voice-uk",
+    "voice-ca",
     "mt-pt-en",
     "mt-en-pt",
     "mt-pt-es",
@@ -273,6 +379,31 @@ UNITS = (
     "mt-de-en",
     "mt-fr-de",
     "mt-es-en",
+    "mt-en-pl",
+    "mt-en-sv",
+    "mt-en-cs",
+    "mt-en-da",
+    "mt-en-fi",
+    "mt-en-el",
+    "mt-en-ro",
+    "mt-en-hu",
+    "mt-en-tr",
+    "mt-en-uk",
+    "mt-en-ca",
+    "mt-pl-en",
+    "mt-sv-en",
+    "mt-cs-en",
+    "mt-da-en",
+    "mt-fi-en",
+    "mt-el-en",
+    "mt-ro-en",
+    "mt-hu-en",
+    "mt-tr-en",
+    "mt-uk-en",
+    "mt-ca-en",
+    "mt-it-en",
+    "mt-nl-en",
+    "mt-ru-en",
     "speakers",
     "whisper",
 )
@@ -315,6 +446,28 @@ def main(argv=None) -> int:
             voices.append("nl_NL-mls-medium")
         if "voice-ru" in only:
             voices.append("ru_RU-irina-medium")
+        if "voice-pl" in only:
+            voices.append("pl_PL-gosia-medium")
+        if "voice-sv" in only:
+            voices.append("sv_SE-lisa-medium")
+        if "voice-cs" in only:
+            voices.append("cs_CZ-jirka-medium")
+        if "voice-da" in only:
+            voices.append("da_DK-talesyntese-medium")
+        if "voice-fi" in only:
+            voices.append("fi_FI-harri-medium")
+        if "voice-el" in only:
+            voices.append("el_GR-joy-medium")
+        if "voice-ro" in only:
+            voices.append("ro_RO-mihai-medium")
+        if "voice-hu" in only:
+            voices.append("hu_HU-anna-medium")
+        if "voice-tr" in only:
+            voices.append("tr_TR-dfki-medium")
+        if "voice-uk" in only:
+            voices.append("uk_UA-tetiana-high")
+        if "voice-ca" in only:
+            voices.append("ca_ES-upc_ona-medium")
     install_voices(voices)
 
     if only is None:

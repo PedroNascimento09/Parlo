@@ -116,7 +116,13 @@ fn openai_speech_translation_and_models_answer_with_their_shapes() {
     assert_eq!(parakeet["owned_by"], "parlo");
     assert_eq!(parakeet["default"], true);
     assert_eq!(parakeet["licence"], "CC-BY-4.0");
-    assert_eq!(parakeet["languages"], serde_json::json!(["pt", "en"]));
+    assert_eq!(
+        parakeet["languages"],
+        serde_json::json!([
+            "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv",
+            "lt", "mt", "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk"
+        ])
+    );
 
     stop.store(false, Ordering::Relaxed);
     let _ = TcpStream::connect(("127.0.0.1", port));

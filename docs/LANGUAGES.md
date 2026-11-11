@@ -8,12 +8,14 @@ Portuguese to English and English to Portuguese run end to end through the casca
 |---|---|---|
 | Portuguese | English | Ships, measured |
 | English | Portuguese | Ships, measured |
+| Polish, Swedish, Czech, Danish, Finnish, Greek, Romanian, Hungarian, Turkish, Ukrainian, Catalan | English and back | Downloadable from the Argos index, experimental, quality not measured yet |
+| Italian, Dutch, Russian | English | Downloadable from the Argos index, experimental, quality not measured yet |
 | Portuguese | German | Measured directly, no published weights, cannot be installed |
 | Portuguese | Spanish, French, Italian, Dutch, Russian | Registered, no download manifest, cannot be installed |
 | English | Spanish, French, Italian | Registered, no download manifest, cannot be installed |
 | German, French, Spanish | English | Registered, no download manifest, cannot be installed |
 
-The registry offers thirteen translation pairs and `catalog/manifests/` carries a download for two. A pair appears in the app only when its weights, its licence and its measured quality are all present.
+The app offers 40 translation pairs. Pairs that download from the Argos index are marked experimental until their quality is measured on this machine; they are never called supported before that.
 
 ## Why a cascade
 

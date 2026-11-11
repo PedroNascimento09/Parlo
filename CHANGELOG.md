@@ -6,12 +6,15 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- Eleven more languages: Polish, Swedish, Czech, Danish, Finnish, Greek, Romanian, Hungarian, Turkish, Ukrainian and Catalan, each with a translation pack in both directions with English, a text-to-speech voice, and Italian, Dutch and Russian to English. The packs download on demand from the Argos index (Apache-2.0, OPUS-MT) and are marked experimental until measured here; dictation hears nine of them with Parakeet and Turkish and Catalan with Whisper.
+
 - `parlo bench dictate` measures the dictation path end to end on a fixed speech clip, with the synthetic tone kept for comparison, and compares the median with the recorded baseline.
 - Numbered lists: "numbered list" starts one and "next number" counts up, in English, Portuguese, Spanish, French and German.
 - Correcting a dictation in the history keeps those word pairs in the vocabulary by itself, so the next dictation writes them that way.
 
 ### Changed
 
+- Dictation keeps its result in the bar for copying instead of sending unverified keystrokes to another application. Pending text is saved locally for recovery. An optional Windows copy shortcut is disabled by default. Automatic insertion, live replacement and Parlo's undo remain unavailable until the target field and cursor can be verified.
 - Home gives the dictation shortcut more room, and the island's language choices show a clear keyboard focus ring.
 - Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 2 ms with Polish off, against 362 ms on the audio path, measured on a 2.8 s clip through the app's own server.
 - Polish never holds the text: the raw sentence is written first and the cleaned one replaces it when it arrives, within a 400 ms grace. A model that answers in 150 ms fills in behind a 2 ms insertion; a model that takes 1.2 s is dropped and the raw text stands.

@@ -7,12 +7,55 @@
     "it": "Italian",
     "nl": "Dutch",
     "pt": "Portuguese",
-    "ru": "Russian"
+    "ru": "Russian",
+    "pl": "Polish",
+    "sv": "Swedish",
+    "cs": "Czech",
+    "da": "Danish",
+    "fi": "Finnish",
+    "el": "Greek",
+    "ro": "Romanian",
+    "hu": "Hungarian",
+    "tr": "Turkish",
+    "uk": "Ukrainian",
+    "ca": "Catalan"
   },
   "pairs": [
     [
+      "ca",
+      "en"
+    ],
+    [
+      "cs",
+      "en"
+    ],
+    [
+      "da",
+      "en"
+    ],
+    [
       "de",
       "en"
+    ],
+    [
+      "el",
+      "en"
+    ],
+    [
+      "en",
+      "ca"
+    ],
+    [
+      "en",
+      "cs"
+    ],
+    [
+      "en",
+      "da"
+    ],
+    [
+      "en",
+      "el"
     ],
     [
       "en",
@@ -20,7 +63,15 @@
     ],
     [
       "en",
+      "fi"
+    ],
+    [
+      "en",
       "fr"
+    ],
+    [
+      "en",
+      "hu"
     ],
     [
       "en",
@@ -28,7 +79,27 @@
     ],
     [
       "en",
+      "pl"
+    ],
+    [
+      "en",
       "pt"
+    ],
+    [
+      "en",
+      "ro"
+    ],
+    [
+      "en",
+      "sv"
+    ],
+    [
+      "en",
+      "tr"
+    ],
+    [
+      "en",
+      "uk"
     ],
     [
       "es",
@@ -37,6 +108,10 @@
     [
       "es",
       "pt"
+    ],
+    [
+      "fi",
+      "en"
     ],
     [
       "fr",
@@ -45,6 +120,22 @@
     [
       "fr",
       "pt"
+    ],
+    [
+      "hu",
+      "en"
+    ],
+    [
+      "it",
+      "en"
+    ],
+    [
+      "nl",
+      "en"
+    ],
+    [
+      "pl",
+      "en"
     ],
     [
       "pt",
@@ -69,6 +160,26 @@
     [
       "pt",
       "ru"
+    ],
+    [
+      "ro",
+      "en"
+    ],
+    [
+      "ru",
+      "en"
+    ],
+    [
+      "sv",
+      "en"
+    ],
+    [
+      "tr",
+      "en"
+    ],
+    [
+      "uk",
+      "en"
     ]
   ]
 }

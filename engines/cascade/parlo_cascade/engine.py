@@ -4,7 +4,7 @@ import os
 import sys
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .corrections import CLEAN_MODES, clean
@@ -37,6 +37,18 @@ VOICES = {
     "de": "de_DE-thorsten-medium.onnx",
     "it": "it_IT-riccardo-medium.onnx",
     "nl": "nl_NL-nathalie-medium.onnx",
+    "ru": "ru_RU-irina-medium.onnx",
+    "pl": "pl_PL-gosia-medium.onnx",
+    "sv": "sv_SE-lisa-medium.onnx",
+    "cs": "cs_CZ-jirka-medium.onnx",
+    "da": "da_DK-talesyntese-medium.onnx",
+    "fi": "fi_FI-harri-medium.onnx",
+    "el": "el_GR-joy-medium.onnx",
+    "ro": "ro_RO-mihai-medium.onnx",
+    "hu": "hu_HU-anna-medium.onnx",
+    "tr": "tr_TR-dfki-medium.onnx",
+    "uk": "uk_UA-tetiana-high.onnx",
+    "ca": "ca_ES-upc_ona-medium.onnx",
 }
 GLOSSARY_FILE = Path(__file__).resolve().parent.parent / "glossary.txt"
 UNLOAD_DEFAULT_MINUTES = 30
@@ -524,8 +536,10 @@ class CascadeEngine:
         spoken = text.strip()
         if not spoken:
             return ""
-        chosen = mode if mode in CLEAN_MODES else self.clean_mode
-        edit = Intelligence(settings_from_config(chosen), self.source).edit(spoken)
+        settings = settings_from_config(self.clean_mode)
+        if mode in CLEAN_MODES:
+            settings = replace(settings, clean=mode)
+        edit = Intelligence(settings, self.source).edit(spoken)
         self.last_original = edit.original
         self.last_engine = edit.engine
         return edit.text
@@ -568,7 +582,10 @@ class CascadeEngine:
             return "", ""
         mode = clean_mode if clean_mode in CLEAN_MODES else self.clean_mode
         if mode in CLEAN_MODES:
-            self.intelligence = Intelligence(settings_from_config(mode), self.source)
+            settings = settings_from_config(self.clean_mode)
+            if clean_mode in CLEAN_MODES:
+                settings = replace(settings, clean=clean_mode)
+            self.intelligence = Intelligence(settings, self.source)
             edit = self.intelligence.edit(text)
             self.last_original = edit.original
             self.last_engine = edit.engine
