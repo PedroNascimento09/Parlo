@@ -48,7 +48,7 @@ pub fn apply(text: &str, saved: &BTreeMap<String, String>) -> String {
         .map(|(cue, value)| (fold_words(cue), value.trim().to_string()))
         .filter(|(cue, _)| !cue.is_empty())
         .collect();
-    cues.sort_by(|left, right| right.0.len().cmp(&left.0.len()));
+    cues.sort_by_key(|left| std::cmp::Reverse(left.0.len()));
     let words: Vec<&str> = text.split_whitespace().collect();
     if words.is_empty() {
         return text.to_string();
