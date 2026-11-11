@@ -142,7 +142,7 @@ pub(crate) fn route(
             );
         }
         let answer = match session.target_app() {
-            Some(app) => format!("{{\"insertable\":false,\"app\":\"{}\",\"reason\":\"Parlo cannot verify the focused field. Copy the text and paste it yourself.\"}}", json_string(&app)),
+            Some(app) => format!("{{\"insertable\":true,\"app\":\"{}\"}}", json_string(&app)),
             None => format!(
                 "{{\"insertable\":false,\"reason\":\"{}\"}}",
                 json_string("Parlo does not know which field to write into")
