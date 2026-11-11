@@ -1213,7 +1213,7 @@ function describeModels(state) {
       const held = document.createElement("button");
       held.type = "button";
       held.className = "models-action";
-      held.textContent = model.state === "loaded" ? "Unload now" : "Load";
+      held.textContent = model.state === "loaded" ? t("text.Unload now", "Unload now") : t("text.Load", "Load");
       held.disabled = Boolean(state.downloading) || model.state === "in use";
       held.title = model.state === "in use" ? "In use. Unload it when the task finishes." : "";
       held.addEventListener("click", () => modelStateAction(model, held));
@@ -1224,7 +1224,7 @@ function describeModels(state) {
       const restore = document.createElement("button");
       restore.type = "button";
       restore.className = "models-action";
-      restore.textContent = "Restore";
+      restore.textContent = t("text.Restore", "Restore");
       restore.disabled = Boolean(state.downloading);
       restore.addEventListener("click", () => rollbackModel(model, restore));
       actions.append(restore);
@@ -1233,7 +1233,7 @@ function describeModels(state) {
     const action = document.createElement("button");
     action.type = "button";
     action.className = "models-action";
-    action.textContent = model.installed ? "Remove" : "Download";
+    action.textContent = model.installed ? t("text.Remove", "Remove") : t("text.Download", "Download");
     action.disabled = Boolean(state.downloading);
     action.addEventListener("click", () => modelAction(model, action));
     actions.append(action);
@@ -1317,7 +1317,7 @@ async function modelAction(model, button) {
       await loadFeatures();
     }
   } catch (failure) {
-    modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
+    modelsNote.textContent = t("text.That could not be done. Check that Parlo is still running.", "That could not be done. Check that Parlo is still running.");
     button.disabled = false;
   }
 }
@@ -1339,7 +1339,7 @@ async function modelStateAction(model, button) {
       button.disabled = false;
     }
   } catch (failure) {
-    modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
+    modelsNote.textContent = t("text.That could not be done. Check that Parlo is still running.", "That could not be done. Check that Parlo is still running.");
     button.disabled = false;
   }
 }
@@ -1381,7 +1381,7 @@ async function moveModels() {
     if (!response.ok) {
       modelsMoveNote.textContent = detail.error || "The models could not be moved.";
       movePlan = null;
-      modelsMove.textContent = "Move the models";
+      modelsMove.textContent = t("text.Move the models", "Move the models");
       return;
     }
     modelsMoveNote.textContent = detail.message || "The models were moved.";
@@ -1393,13 +1393,13 @@ async function moveModels() {
       return;
     }
     movePlan = null;
-    modelsMove.textContent = "Move the models";
+    modelsMove.textContent = t("text.Move the models", "Move the models");
     modelsFolder.dataset.filled = "1";
     await loadModels();
   } catch (failure) {
-    modelsMoveNote.textContent = "The models could not be moved. Check that Parlo is still running.";
+    modelsMoveNote.textContent = t("text.The models could not be moved. Check that Parlo is still running.", "The models could not be moved. Check that Parlo is still running.");
     movePlan = null;
-    modelsMove.textContent = "Move the models";
+    modelsMove.textContent = t("text.Move the models", "Move the models");
   } finally {
     modelsMove.disabled = false;
   }
@@ -1417,7 +1417,7 @@ async function rollbackModel(model, button) {
       detail.message || detail.error || "That could not be done.";
     await loadModels();
   } catch (failure) {
-    modelsNote.textContent = "That could not be done. Check that Parlo is still running.";
+    modelsNote.textContent = t("text.That could not be done. Check that Parlo is still running.", "That could not be done. Check that Parlo is still running.");
   } finally {
     button.disabled = false;
   }
@@ -1437,7 +1437,7 @@ async function cancelDownload() {
       detail.message || detail.error || "The download could not be stopped.";
     await loadModels();
   } catch (failure) {
-    modelsNote.textContent = "The download could not be stopped. Check that Parlo is still running.";
+    modelsNote.textContent = t("text.The download could not be stopped. Check that Parlo is still running.", "The download could not be stopped. Check that Parlo is still running.");
   } finally {
     modelsCancel.disabled = false;
   }
@@ -1508,10 +1508,10 @@ function stopPollingModels() {
   clearInterval(modelsTimer);
   modelsTimer = null;
   modelsInstall.disabled = false;
-  modelsInstall.textContent = "Download models";
+  modelsInstall.textContent = t("text.Download models", "Download models");
   stopWelcomeClock();
   welcomeInstall.disabled = false;
-  welcomeInstall.textContent = "Download the dictation model";
+  welcomeInstall.textContent = t("text.Download the dictation model", "Download the dictation model");
 }
 
 async function downloadModels(path = "/models") {
@@ -1521,9 +1521,9 @@ async function downloadModels(path = "/models") {
   modelsPolling = true;
   modelsDownloading = false;
   modelsInstall.disabled = true;
-  modelsInstall.textContent = "Downloading…";
+  modelsInstall.textContent = t("text.Downloading…", "Downloading…");
   welcomeInstall.disabled = true;
-  welcomeInstall.textContent = "Downloading…";
+  welcomeInstall.textContent = t("text.Downloading…", "Downloading…");
   startWelcomeClock();
   modelsNote.textContent =
     path === "/models/dictation"
@@ -1552,7 +1552,7 @@ async function downloadModels(path = "/models") {
       const done = path === "/models/dictation" ? Boolean(modelState.dictation) : ready;
       if (done) {
         stopPollingModels();
-        modelsNote.textContent = "The models are installed. If the translator does not answer, reload this page.";
+        modelsNote.textContent = t("text.The models are installed. If the translator does not answer, reload this page.", "The models are installed. If the translator does not answer, reload this page.");
         return;
       }
       if (wasDownloading && !modelsDownloading) {
@@ -1566,7 +1566,7 @@ async function downloadModels(path = "/models") {
     }, 5000);
   } catch (failure) {
     stopPollingModels();
-    modelsNote.textContent = "The download could not start. Try again, or run parlo app once more.";
+    modelsNote.textContent = t("text.The download could not start. Try again, or run parlo app once more.", "The download could not start. Try again, or run parlo app once more.");
     setWelcomeStatus(modelsNote.textContent);
   }
 }
@@ -1844,7 +1844,7 @@ async function saveShortcut(field, input, sentence, override) {
     input.value = answer[field] ?? wanted;
     shortcutsNote.textContent = "Saved. " + sentence + " Windows applies changes within a second.";
   } catch (failure) {
-    shortcutsNote.textContent = "The shortcut could not be saved.";
+    shortcutsNote.textContent = t("text.The shortcut could not be saved.", "The shortcut could not be saved.");
   }
 }
 
@@ -1910,16 +1910,16 @@ function captureShortcut(input, note) {
     if (event.shiftKey) modifiers.push("Shift");
     if (event.metaKey) modifiers.push("Win");
     if (["Control", "Alt", "Shift", "Meta", "Escape", "Tab"].includes(event.key)) {
-      note.textContent = "Keep the modifiers held and press a letter, a digit or Space.";
+      note.textContent = t("text.Keep the modifiers held and press a letter, a digit or Space.", "Keep the modifiers held and press a letter, a digit or Space.");
       return;
     }
     if (!modifiers.length) {
-      note.textContent = "A key on its own is refused: it would swallow typing everywhere.";
+      note.textContent = t("text.A key on its own is refused: it would swallow typing everywhere.", "A key on its own is refused: it would swallow typing everywhere.");
       return;
     }
     const named = { " ": "Space", Spacebar: "Space" };
     input.value = modifiers.concat([named[event.key] || event.key.toUpperCase()]).join("+");
-    note.textContent = "Press the button beside it to save this combination.";
+    note.textContent = t("text.Press the button beside it to save this combination.", "Press the button beside it to save this combination.");
   });
 }
 
@@ -2126,7 +2126,7 @@ async function saveSettings() {
     settingsFrom.value !== savedSettings.from || settingsTo.value !== savedSettings.to;
   const reloads = settingsStt.value !== savedSettings.stt;
   lockSettings(true);
-  settingsApply.textContent = reloads ? "Loading models…" : "Switching…";
+  settingsApply.textContent = reloads ? t("text.Loading models…", "Loading models…") : t("text.Switching…", "Switching…");
   settingsNote.textContent = reloads
     ? "Parlo is loading the models again. This takes about twenty seconds."
     : pairChanged
@@ -2161,7 +2161,7 @@ async function saveSettings() {
     showError(failure.message || "Parlo could not change the languages. Try again.");
   } finally {
     lockSettings(false);
-    settingsApply.textContent = "Apply";
+    settingsApply.textContent = t("text.Apply", "Apply");
     refreshApply();
   }
 }
@@ -2356,7 +2356,7 @@ function fillIntelligenceModels() {
 
 function describeIntelligenceKey(names) {
   if (!names.length) {
-    intelligenceKeyNote.textContent = "Choose a provider to save a key.";
+    intelligenceKeyNote.textContent = t("text.Choose a provider to save a key.", "Choose a provider to save a key.");
     return;
   }
   const saved = names.filter((name) => name.key).map((name) => name.label);
@@ -2385,7 +2385,7 @@ function renderIntelligence(state) {
   intelligenceProvider.replaceChildren();
   const none = document.createElement("option");
   none.value = "";
-  none.textContent = "None";
+  none.textContent = t("text.None", "None");
   intelligenceProvider.append(none);
   intelligenceProviders.forEach((provider) => {
     const option = document.createElement("option");
@@ -2410,12 +2410,12 @@ async function loadIntelligence() {
   try {
     const response = await fetch("/intelligence", { cache: "no-store" });
     if (!response.ok) {
-      intelligenceNote.textContent = "The cleanup settings could not be read.";
+      intelligenceNote.textContent = t("text.The cleanup settings could not be read.", "The cleanup settings could not be read.");
       return;
     }
     renderIntelligence(await response.json());
   } catch (failure) {
-    intelligenceNote.textContent = "The cleanup settings could not be read.";
+    intelligenceNote.textContent = t("text.The cleanup settings could not be read.", "The cleanup settings could not be read.");
   }
 }
 
@@ -2423,7 +2423,7 @@ async function saveIntelligence() {
   const chosen = intelligenceProvider.value;
   intelligenceApply.disabled = true;
   cleanupApply.disabled = true;
-  intelligenceNote.textContent = "Saving.";
+  intelligenceNote.textContent = t("text.Saving.", "Saving.");
   try {
     const response = await fetch("/intelligence", {
       method: "POST",
@@ -2444,7 +2444,7 @@ async function saveIntelligence() {
       throw new Error(detail.error || "Parlo could not save these settings.");
     }
     renderIntelligence(detail);
-    intelligenceNote.textContent = "Saved. It applies to the next thing you dictate.";
+    intelligenceNote.textContent = t("text.Saved. It applies to the next thing you dictate.", "Saved. It applies to the next thing you dictate.");
   } catch (failure) {
     intelligenceNote.textContent = failure.message || "Parlo could not save these settings.";
   } finally {
@@ -2456,11 +2456,11 @@ async function saveIntelligence() {
 async function saveIntelligenceKey() {
   const wanted = intelligenceKey.value.trim();
   if (!wanted) {
-    intelligenceKeyNote.textContent = "Paste the key before saving it.";
+    intelligenceKeyNote.textContent = t("text.Paste the key before saving it.", "Paste the key before saving it.");
     return;
   }
   if (!intelligenceProvider.value) {
-    intelligenceKeyNote.textContent = "Choose a provider before saving a key.";
+    intelligenceKeyNote.textContent = t("text.Choose a provider before saving a key.", "Choose a provider before saving a key.");
     return;
   }
   try {
@@ -2484,7 +2484,7 @@ async function saveIntelligenceKey() {
 
 async function removeIntelligenceKey() {
   if (!intelligenceProvider.value) {
-    intelligenceKeyNote.textContent = "Choose a provider before removing a key.";
+    intelligenceKeyNote.textContent = t("text.Choose a provider before removing a key.", "Choose a provider before removing a key.");
     return;
   }
   try {
@@ -2508,7 +2508,7 @@ async function removeIntelligenceKey() {
 
 async function testIntelligence() {
   intelligenceTest.disabled = true;
-  intelligenceTestNote.textContent = "Sending one sentence, this can take a few seconds.";
+  intelligenceTestNote.textContent = t("text.Sending one sentence, this can take a few seconds.", "Sending one sentence, this can take a few seconds.");
   try {
     const response = await fetch("/intelligence/test", {
       method: "POST",
@@ -2690,7 +2690,7 @@ function showDub(result) {
         const retry = document.createElement("button");
         retry.type = "button";
         retry.className = "swap";
-        retry.textContent = line.skipped ? "Put back" : "Retry";
+        retry.textContent = line.skipped ? t("text.Put back", "Put back") : t("text.Retry", "Retry");
         retry.addEventListener("click", () =>
           lineAction("retry", result.id, line.id, retry),
         );
@@ -2699,7 +2699,7 @@ function showDub(result) {
           const skip = document.createElement("button");
           skip.type = "button";
           skip.className = "swap";
-          skip.textContent = "Skip";
+          skip.textContent = t("text.Skip", "Skip");
           skip.addEventListener("click", () =>
             lineAction("skip", result.id, line.id, skip),
           );
@@ -2979,7 +2979,7 @@ async function openProject(id) {
 async function recoverProject(id, button) {
   const label = button.textContent;
   button.disabled = true;
-  button.textContent = "Recovering…";
+  button.textContent = t("text.Recovering…", "Recovering…");
   setDubStatus("Recovering the project from the saved source.");
   try {
     const response = await fetch("/dub/project/" + encodeURIComponent(id) + "/recover", {
@@ -3104,7 +3104,7 @@ async function loadDubProjects() {
       throw new Error(payload.error || "The projects could not be listed.");
     }
     renderDubProjects(Array.isArray(payload.projects) ? payload.projects : []);
-    dubProjectsNote.textContent = "Finished and interrupted renders stay here after a restart.";
+    dubProjectsNote.textContent = t("text.Finished and interrupted renders stay here after a restart.", "Finished and interrupted renders stay here after a restart.");
   } catch (failure) {
     setNote(dubProjectsNote, failure.message || "The projects could not be listed.", "error");
   }
@@ -3543,7 +3543,7 @@ function storyLineRow(line) {
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "swap";
-  remove.textContent = "Remove";
+  remove.textContent = t("text.Remove", "Remove");
   remove.addEventListener("click", () => row.remove());
   row.append(speaker, text, pace, state, audio, remove);
   return row;
@@ -3583,12 +3583,12 @@ function storyChapterCard(chapter) {
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "swap";
-  remove.textContent = "Remove chapter";
+  remove.textContent = t("text.Remove chapter", "Remove chapter");
   remove.addEventListener("click", () => card.remove());
   const add = document.createElement("button");
   add.type = "button";
   add.className = "swap";
-  add.textContent = "Add line";
+  add.textContent = t("text.Add line", "Add line");
   const lines = document.createElement("div");
   lines.className = "story-lines";
   add.addEventListener("click", () => {
@@ -3962,7 +3962,7 @@ function renderWatch(folders) {
   if (!folders.length) {
     const empty = document.createElement("p");
     empty.className = "batch-empty";
-    empty.textContent = "No folder is watched yet.";
+    empty.textContent = t("text.No folder is watched yet.", "No folder is watched yet.");
     watchList.append(empty);
     return;
   }
@@ -3992,12 +3992,12 @@ function renderWatch(folders) {
     const scan = document.createElement("button");
     scan.type = "button";
     scan.className = "swap";
-    scan.textContent = "Scan now";
+    scan.textContent = t("text.Scan now", "Scan now");
     scan.addEventListener("click", () => scanWatch(folder.id, scan));
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "swap";
-    remove.textContent = "Remove";
+    remove.textContent = t("text.Remove", "Remove");
     remove.addEventListener("click", () => removeWatch(folder.id, remove));
     actions.append(scan, remove);
     card.append(actions);
@@ -4267,7 +4267,7 @@ async function startDubUrl(value) {
   dubbing = true;
   dubUrlStart.disabled = true;
   dubStart.disabled = true;
-  dubUrlStart.textContent = "Dubbing…";
+  dubUrlStart.textContent = t("text.Dubbing…", "Dubbing…");
   dubResult.hidden = true;
   const started = Date.now();
   const tick = () =>
@@ -4315,7 +4315,7 @@ async function startDubUrl(value) {
     dubTimer = null;
     dubbing = false;
     dubUrlStart.disabled = false;
-    dubUrlStart.textContent = "Dub this link";
+    dubUrlStart.textContent = t("text.Dub this link", "Dub this link");
     dubStart.disabled = !chosenFile;
   }
 }
@@ -4382,7 +4382,7 @@ async function startDub() {
   stopPlayback();
   dubbing = true;
   dubStart.disabled = true;
-  dubStart.textContent = "Dubbing…";
+  dubStart.textContent = t("text.Dubbing…", "Dubbing…");
   dubResult.hidden = true;
 
   const started = Date.now();
@@ -4433,7 +4433,7 @@ async function startDub() {
     dubTimer = null;
     dubbing = false;
     dubStart.disabled = !chosenFile;
-    dubStart.textContent = "Dub this file";
+    dubStart.textContent = t("text.Dub this file", "Dub this file");
   }
 }
 
@@ -4835,7 +4835,7 @@ async function downloadMeeting(meeting) {
 async function importMeeting() {
   const text = meetingText.value.trim();
   if (!text) {
-    meetingNote.textContent = "Paste a transcript first.";
+    meetingNote.textContent = t("text.Paste a transcript first.", "Paste a transcript first.");
     return;
   }
   try {
@@ -4923,10 +4923,10 @@ function renderAnswer(answer) {
 async function askMeetings(every) {
   const question = meetingQuestion.value.trim();
   if (!question) {
-    meetingAnswer.textContent = "Ask a question first.";
+    meetingAnswer.textContent = t("text.Ask a question first.", "Ask a question first.");
     return;
   }
-  meetingAnswer.textContent = "Reading the stored lines…";
+  meetingAnswer.textContent = t("text.Reading the stored lines…", "Reading the stored lines…");
   meetingCitations.replaceChildren();
   try {
     const response = await fetch(every ? "/memory/ask" : "/meeting/ask", {
@@ -4987,7 +4987,7 @@ function renderVocabulary(profile) {
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "swap";
-    remove.textContent = "Remove";
+    remove.textContent = t("text.Remove", "Remove");
     remove.addEventListener("click", () => removeVocabulary(row));
     detail.append(written, remove);
     vocabularyList.append(term, detail);
@@ -5004,12 +5004,12 @@ async function loadVocabulary() {
       headers: { Authorization: "Bearer " + token },
     });
     if (!response.ok) {
-      vocabularyNote.textContent = "The words could not be read.";
+      vocabularyNote.textContent = t("text.The words could not be read.", "The words could not be read.");
       return;
     }
     renderVocabulary(await response.json());
   } catch (failure) {
-    vocabularyNote.textContent = "The words could not be read.";
+    vocabularyNote.textContent = t("text.The words could not be read.", "The words could not be read.");
   }
 }
 
@@ -5017,7 +5017,7 @@ async function addVocabulary() {
   const wrong = vocabularyWrong.value.trim();
   const right = vocabularyRight.value.trim();
   if (!wrong || !right) {
-    vocabularyNote.textContent = "Both sides are needed: what Parlo hears and what it should write.";
+    vocabularyNote.textContent = t("text.Both sides are needed: what Parlo hears and what it should write.", "Both sides are needed: what Parlo hears and what it should write.");
     return;
   }
   try {
@@ -5194,7 +5194,7 @@ async function startMeeting() {
       await ensureAudio();
     }
   } catch (failure) {
-    micEl.textContent = useSystem ? "not used" : "blocked";
+    micEl.textContent = useSystem ? t("text.not used", "not used") : "blocked";
     showError(useSystem ? describeSystemAudioError(failure) : describeMicrophoneError(failure));
     return;
   }
@@ -5224,7 +5224,7 @@ async function startMeeting() {
   meetingPaused = false;
   meetingPausedAt = 0;
   meetingPausedTotal = 0;
-  meetingPause.textContent = "Pause";
+  meetingPause.textContent = t("text.Pause", "Pause");
   meetingPause.setAttribute("aria-pressed", "false");
   meetingPause.disabled = false;
   meetingSystem.disabled = true;
@@ -5235,7 +5235,7 @@ async function startMeeting() {
   meetingFailures = 0;
   chunks = [];
   meetingLive.setAttribute("aria-pressed", "true");
-  micEl.textContent = useSystem ? "not used" : "recording";
+  micEl.textContent = useSystem ? t("text.not used", "not used") : "recording";
   meetingStatus("");
   clearTimeout(meetingTimer);
   meetingTimer = setTimeout(meetingStep, 200);
@@ -5250,7 +5250,7 @@ function pauseMeeting() {
   meetingPaused = true;
   meetingPausedAt = performance.now();
   chunks = [];
-  meetingPause.textContent = "Resume";
+  meetingPause.textContent = t("text.Resume", "Resume");
   meetingPause.setAttribute("aria-pressed", "true");
   meetingStatus("");
 }
@@ -5263,7 +5263,7 @@ function resumeMeeting() {
   meetingPaused = false;
   meetingPausedAt = 0;
   chunks = [];
-  meetingPause.textContent = "Pause";
+  meetingPause.textContent = t("text.Pause", "Pause");
   meetingPause.setAttribute("aria-pressed", "false");
   meetingStatus("");
   clearTimeout(meetingTimer);
@@ -5276,7 +5276,7 @@ async function addMeetingNote() {
     return;
   }
   if (!text) {
-    meetingLiveNote.textContent = "Write the note before adding it.";
+    meetingLiveNote.textContent = t("text.Write the note before adding it.", "Write the note before adding it.");
     return;
   }
   const at = meetingElapsed();
@@ -5309,7 +5309,7 @@ async function stopMeeting(message) {
   meetingHint = null;
   meetingPaused = false;
   meetingPausedAt = 0;
-  meetingPause.textContent = "Pause";
+  meetingPause.textContent = t("text.Pause", "Pause");
   meetingPause.setAttribute("aria-pressed", "false");
   meetingPause.disabled = true;
   meetingSystem.disabled = false;
@@ -5318,7 +5318,7 @@ async function stopMeeting(message) {
   clearTimeout(meetingTimer);
   meetingTimer = null;
   meetingLive.setAttribute("aria-pressed", "false");
-  micEl.textContent = "ready";
+  micEl.textContent = statusWord("ready");
   const rest = takeWindow(LIVE_MIN_SECONDS);
   chunks = [];
   meetingStatus("");
@@ -5364,7 +5364,7 @@ async function exportMeetings() {
     }
     const meetings = await response.json();
     if (!meetings.length) {
-      meetingNote.textContent = "There is nothing to export yet.";
+      meetingNote.textContent = t("text.There is nothing to export yet.", "There is nothing to export yet.");
       return;
     }
     await navigator.clipboard.writeText(meetingsAsMarkdown(meetings));
@@ -5427,7 +5427,7 @@ async function searchMeetings() {
 meetingSearch.addEventListener("input", searchMeetings);
 
 async function summariseMeeting() {
-  meetingSummaryText.textContent = "Reading the transcript.";
+  meetingSummaryText.textContent = t("text.Reading the transcript.", "Reading the transcript.");
   try {
     const response = await fetch("/meeting/summary", {
       method: "POST",
@@ -5449,7 +5449,7 @@ async function summariseMeeting() {
       meetingSummaryText.textContent += " · the model could not be used: " + answer.note;
     }
   } catch (failure) {
-    meetingSummaryText.textContent = "The model could not be reached.";
+    meetingSummaryText.textContent = t("text.The model could not be reached.", "The model could not be reached.");
   }
 }
 
@@ -5708,7 +5708,7 @@ function fitBadge(entry) {
     }
   }
   badge.dataset.state = state;
-  badge.textContent = "Runs here";
+  badge.textContent = t("text.Runs here", "Runs here");
   badge.title = reason;
   return badge;
 }
@@ -5722,13 +5722,13 @@ async function loadCatalog() {
     await loadHardware();
     renderCatalog(catalogEntries);
   } catch (failure) {
-    catalogNote.textContent = "The catalogue could not be read.";
+    catalogNote.textContent = t("text.The catalogue could not be read.", "The catalogue could not be read.");
   }
 }
 
 async function downloadCatalogModel(entry, button) {
   button.disabled = true;
-  button.textContent = "Starting…";
+  button.textContent = t("text.Starting…", "Starting…");
   try {
     const response = await fetch("/models/download/" + encodeURIComponent(entry.unit), {
       method: "POST",
@@ -5744,7 +5744,7 @@ async function downloadCatalogModel(entry, button) {
   } catch (failure) {
     catalogNote.textContent = failure.message || "The download could not start.";
     button.disabled = false;
-    button.textContent = "Download";
+    button.textContent = t("text.Download", "Download");
   }
 }
 
@@ -5878,13 +5878,13 @@ function catalogCard(entry, items) {
   action.type = "button";
   action.className = "models-action";
   if (installed) {
-    action.textContent = "On disk";
+    action.textContent = t("text.On disk", "On disk");
     action.disabled = true;
   } else if (entry.unit) {
-    action.textContent = "Download";
+    action.textContent = t("text.Download", "Download");
     action.addEventListener("click", () => downloadCatalogModel(entry, action));
   } else {
-    action.textContent = "Not in this build";
+    action.textContent = t("text.Not in this build", "Not in this build");
     action.disabled = true;
   }
   card.append(action);
@@ -5896,7 +5896,7 @@ function renderCatalog(entries) {
   catalogTabs.replaceChildren();
   catalogList.replaceChildren();
   if (!entries.length) {
-    catalogNote.textContent = "This build carries an empty catalogue.";
+    catalogNote.textContent = t("text.This build carries an empty catalogue.", "This build carries an empty catalogue.");
     return;
   }
   const sections = new Map();
@@ -5988,7 +5988,7 @@ function fillHistoryApps() {
   historyApp.replaceChildren();
   const any = document.createElement("option");
   any.value = "";
-  any.textContent = "Any program";
+  any.textContent = t("text.Any program", "Any program");
   historyApp.append(any);
   for (const app of [...seen].sort()) {
     const option = document.createElement("option");
@@ -6060,7 +6060,7 @@ function paintInsights() {
   if (!ranked.length) {
     const empty = document.createElement("li");
     empty.className = "insights-empty";
-    empty.textContent = "No words written yet, so there is nowhere to point at.";
+    empty.textContent = t("text.No words written yet, so there is nowhere to point at.", "No words written yet, so there is nowhere to point at.");
     list.append(empty);
   }
   for (const [name, total] of ranked) {
@@ -6104,7 +6104,7 @@ function paintInsights() {
   if (!top.length) {
     const empty = document.createElement("li");
     empty.className = "insights-empty";
-    empty.textContent = "Nothing written yet, so there are no favourites.";
+    empty.textContent = t("text.Nothing written yet, so there are no favourites.", "Nothing written yet, so there are no favourites.");
     wordList.append(empty);
   }
   for (const [word, hits] of top) {
@@ -6295,7 +6295,7 @@ function paintHistoryNote() {
 async function copyHistory(text) {
   try {
     await navigator.clipboard.writeText(text);
-    historyNote.textContent = "Copied to the clipboard. Paste it where you need it.";
+    historyNote.textContent = t("text.Copied to the clipboard. Paste it where you need it.", "Copied to the clipboard. Paste it where you need it.");
   } catch (failure) {
     setNote(historyNote, "The clipboard refused the text. Select it here and copy by hand.", "error");
   }
@@ -6332,7 +6332,7 @@ async function editHistory(entry) {
     const updated = await historyPost("/history/edit", { id: entry.id, text: chosen });
     await loadHistory();
     renderLearned(updated.suggestions || []);
-    historyNote.textContent = "Corrected on this computer. Nothing was sent anywhere.";
+    historyNote.textContent = t("text.Corrected on this computer. Nothing was sent anywhere.", "Corrected on this computer. Nothing was sent anywhere.");
   } catch (failure) {
     setNote(historyNote, failure.message, "error");
   }
@@ -6362,7 +6362,7 @@ async function deleteHistory(entry, ...buttons) {
   for (const button of buttons) {
     button.disabled = true;
   }
-  historyNote.textContent = "Deleting this dictation…";
+  historyNote.textContent = t("text.Deleting this dictation…", "Deleting this dictation…");
   try {
     await historyPost("/history/delete", { id: entry.id });
     await loadHistory();
@@ -6382,7 +6382,7 @@ const historyClearKeep = document.getElementById("history-clear-keep");
 async function clearHistory() {
   historyClearYes.disabled = true;
   historyClearKeep.disabled = true;
-  historyNote.textContent = "Deleting every dictation…";
+  historyNote.textContent = t("text.Deleting every dictation…", "Deleting every dictation…");
   try {
     const response = await fetch("/history/clear", {
       method: "POST",
@@ -6440,7 +6440,7 @@ talk.addEventListener("keyup", (event) => {
 
 installButton.addEventListener("click", () => installUpdate());
 
-micEl.textContent = "not opened yet";
+micEl.textContent = t("text.not opened yet", "not opened yet");
 refreshHealth();
 setInterval(() => {
   if (document.visibilityState === "visible") {
@@ -7492,7 +7492,7 @@ async function loadFeatures() {
 }
 
 async function saveFeatures() {
-  featuresNote.textContent = "Saving.";
+  featuresNote.textContent = t("text.Saving.", "Saving.");
   try {
     const response = await fetch("/features", {
       method: "POST",
@@ -7517,7 +7517,7 @@ async function saveFeatures() {
       ? "Off: " + off.join(", ") + ". The models stay on this computer."
       : "Everything is on again.";
   } catch (failure) {
-    featuresNote.textContent = "The switch was not saved. Check that Parlo is still running.";
+    featuresNote.textContent = t("text.The switch was not saved. Check that Parlo is still running.", "The switch was not saved. Check that Parlo is still running.");
   }
 }
 
@@ -7908,7 +7908,7 @@ gatePairSave.addEventListener("click", async () => {
     gatePairNote.textContent = "";
     gateStep("gate-microphone");
   } catch (failure) {
-    gatePairNote.textContent = "The pair could not be saved. Check that Parlo is still running.";
+    gatePairNote.textContent = t("text.The pair could not be saved. Check that Parlo is still running.", "The pair could not be saved. Check that Parlo is still running.");
   } finally {
     gatePairSave.disabled = false;
   }
@@ -8167,9 +8167,9 @@ const settingsNameNote = document.getElementById("settings-name-note");
 if (settingsNameSave) {
   settingsNameSave.addEventListener("click", () => {
     if (storeName(settingsName.value)) {
-      settingsNameNote.textContent = "Saved. The greeting and the sign off use it from now on.";
+      settingsNameNote.textContent = t("text.Saved. The greeting and the sign off use it from now on.", "Saved. The greeting and the sign off use it from now on.");
     } else {
-      settingsNameNote.textContent = "Two letters at least, so it reads like a name.";
+      settingsNameNote.textContent = t("text.Two letters at least, so it reads like a name.", "Two letters at least, so it reads like a name.");
       settingsName.focus();
     }
   });
@@ -8208,7 +8208,7 @@ function paintPrograms() {
     const forget = document.createElement("button");
     forget.type = "button";
     forget.className = "swap";
-    forget.textContent = "Forget";
+    forget.textContent = t("text.Forget", "Forget");
     forget.title = "Let this program use the usual style again";
     forget.addEventListener("click", () => saveProgram(program, "", ""));
     detail.append(forget);
@@ -8265,7 +8265,7 @@ if (programsSave) {
   programsSave.addEventListener("click", () => {
     const program = programsName.value.trim();
     if (!program) {
-      programsNote.textContent = "Name the program first, as Windows calls it.";
+      programsNote.textContent = t("text.Name the program first, as Windows calls it.", "Name the program first, as Windows calls it.");
       programsName.focus();
       return;
     }
@@ -8287,7 +8287,7 @@ async function loadProfiles() {
     appProfiles = await response.json();
     paintPrograms();
   } catch (failure) {
-    programsNote.textContent = "The programs could not be read from Parlo.";
+    programsNote.textContent = t("text.The programs could not be read from Parlo.", "The programs could not be read from Parlo.");
   }
 }
 
@@ -8352,7 +8352,7 @@ if (historyExport) {
       }
       saveAsText(await response.text(), "parlo-dictations.md", "text/markdown");
       if (note) {
-        note.textContent = "Saved parlo-dictations.md.";
+        note.textContent = t("text.Saved parlo-dictations.md.", "Saved parlo-dictations.md.");
       }
     } catch (failure) {
       if (note) {
@@ -8411,7 +8411,7 @@ if (vocabularyExport) {
         throw new Error("The list could not be saved.");
       }
       saveAsText(await response.text(), "parlo-words.tsv", "text/tab-separated-values");
-      vocabularyNote.textContent = "Saved parlo-words.tsv.";
+      vocabularyNote.textContent = t("text.Saved parlo-words.tsv.", "Saved parlo-words.tsv.");
     } catch (failure) {
       vocabularyNote.textContent = failure.message || "The list could not be saved.";
     }
@@ -8574,7 +8574,7 @@ const retentionDelete = document.getElementById("retention-delete");
 if (retentionCheck && retentionDays && retentionDelete) {
   const check = async () => {
     retentionCheck.disabled = true;
-    retentionNote.textContent = "Checking…";
+    retentionNote.textContent = t("text.Checking…", "Checking…");
     try {
       const response = await fetch("/retention?days=" + encodeURIComponent(retentionDays.value), {
         cache: "no-store",
@@ -8608,7 +8608,7 @@ if (retentionCheck && retentionDays && retentionDelete) {
   retentionCheck.addEventListener("click", check);
   retentionDelete.addEventListener("click", async () => {
     retentionDelete.disabled = true;
-    retentionNote.textContent = "Deleting…";
+    retentionNote.textContent = t("text.Deleting…", "Deleting…");
     try {
       const response = await fetch("/retention", {
         method: "POST",
