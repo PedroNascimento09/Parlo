@@ -187,10 +187,6 @@ fn remember_last(target: usize, text: &str) {
     }
 }
 
-fn take_last() -> Option<(usize, String)> {
-    LAST_INSERT.lock().ok().and_then(|mut slot| slot.take())
-}
-
 pub fn replace_recorded(window: usize, raw: &str, cleaned: &str) -> Result<(), String> {
     let recorded = LAST_INSERT.lock().ok().and_then(|slot| slot.clone());
     let matches = recorded
@@ -211,10 +207,20 @@ pub fn replace_recorded(window: usize, raw: &str, cleaned: &str) -> Result<(), S
 }
 
 pub fn undo_last() -> Result<(), String> {
-    let (target, text) = take_last().ok_or_else(|| {
-        "there is no dictation to undo; the last text Parlo typed is already gone".to_string()
-    })?;
-    delete_back(target, &text)
+    let (target, text) = LAST_INSERT
+        .lock()
+        .ok()
+        .and_then(|slot| slot.clone())
+        .ok_or_else(|| {
+            "there is no dictation to undo; the last text Parlo typed is already gone".to_string()
+        })?;
+    delete_back(target, &text)?;
+    if let Ok(mut slot) = LAST_INSERT.lock() {
+        if slot.as_ref() == Some(&(target, text.clone())) {
+            *slot = None;
+        }
+    }
+    Ok(())
 }
 
 #[cfg(windows)]
