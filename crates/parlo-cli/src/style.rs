@@ -17,6 +17,82 @@ pub fn shape(text: &str, style: &str) -> String {
     }
 }
 
+pub const COMMANDS: &[&str] = &[
+    "formal",
+    "casual",
+    "excited",
+    "uppercase",
+    "lowercase",
+    "title",
+    "shorter",
+    "bullets",
+];
+
+const FILLER: &[&str] = &[
+    "um",
+    "uh",
+    "hmm",
+    "ah",
+    "like",
+    "just",
+    "very",
+    "really",
+    "basically",
+    "actually",
+    "so",
+];
+
+pub fn command(text: &str, command: &str) -> Result<String, String> {
+    match command {
+        "formal" | "casual" | "excited" => Ok(shape(text, command)),
+        "uppercase" => Ok(text.to_uppercase()),
+        "lowercase" => Ok(text.to_lowercase()),
+        "title" => Ok(title(text)),
+        "shorter" => Ok(shorter(text)),
+        "bullets" => Ok(bullets(text)),
+        name => Err(format!(
+            "unknown command \"{name}\"; the choices are {}",
+            COMMANDS.join(", ")
+        )),
+    }
+}
+
+fn title(text: &str) -> String {
+    text.split_whitespace()
+        .map(|word| {
+            let mut characters = word.chars();
+            match characters.next() {
+                Some(first) => {
+                    let mut titled = first.to_uppercase().to_string();
+                    titled.push_str(&characters.as_str().to_lowercase());
+                    titled
+                }
+                None => word.to_string(),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn shorter(text: &str) -> String {
+    text.split_whitespace()
+        .filter(|word| {
+            let bare = word.to_lowercase();
+            !FILLER.contains(&bare.trim_matches(|mark| ".,!?;".contains(mark)))
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn bullets(text: &str) -> String {
+    text.split(|mark| ".?!\n".contains(mark))
+        .map(str::trim)
+        .filter(|sentence| !sentence.is_empty())
+        .map(|sentence| format!("- {sentence}"))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn formal(text: &str) -> String {
     let mut out = String::with_capacity(text.len() + 1);
     let mut capitalise = true;
@@ -115,5 +191,28 @@ mod tests {
     #[test]
     fn unknown_styles_leave_the_text_alone() {
         assert_eq!(shape("  as dictated  ", "natural"), "as dictated");
+    }
+
+    #[test]
+    fn a_command_mode_style_delegates_to_the_same_shaping() {
+        assert_eq!(command("hello world", "uppercase").unwrap(), "HELLO WORLD");
+        assert_eq!(command("HELLO WORLD", "lowercase").unwrap(), "hello world");
+        assert_eq!(command("hello world", "title").unwrap(), "Hello World");
+        assert_eq!(
+            command("i think like we should just go", "shorter").unwrap(),
+            "i think we should go"
+        );
+        assert_eq!(
+            command("we ship. we test. we rest.", "bullets").unwrap(),
+            "- we ship\n- we test\n- we rest"
+        );
+        assert_eq!(command("hey there", "formal").unwrap(), "Hey there.");
+    }
+
+    #[test]
+    fn an_unknown_command_names_the_choices() {
+        let error = command("hello", "whisper").unwrap_err();
+        assert!(error.contains("unknown command"));
+        assert!(error.contains("bullets"));
     }
 }

@@ -75,6 +75,10 @@ struct Settings {
     #[serde(default)]
     captions: Option<String>,
     #[serde(default)]
+    command: Option<String>,
+    #[serde(default)]
+    copy_shortcut: Option<String>,
+    #[serde(default)]
     undo: Option<String>,
     #[serde(default)]
     name: Option<String>,
@@ -182,6 +186,12 @@ fn handle(
     }
 
     if let Some(answer) =
+        routes::command::route(method, path, stream, &headers, token, &body, session)
+    {
+        return answer;
+    }
+
+    if let Some(answer) =
         routes::settings_style::route(method, path, stream, &headers, token, &body)
     {
         return answer;
@@ -241,6 +251,15 @@ fn handle(
 
     if let Some(answer) = routes::clipboard::route(method, path, stream, &headers, token, &body) {
         return answer;
+    }
+
+    if path == "/recovery" && (share.is_some() || remote) {
+        return respond_json(
+            stream,
+            "403 Forbidden",
+            "{\"error\":\"recovery is available only on this computer\"}",
+        )
+        .map(|()| Flow::Serve);
     }
 
     if let Some(answer) =

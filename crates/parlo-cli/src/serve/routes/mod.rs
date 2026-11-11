@@ -1,5 +1,6 @@
 pub(super) mod batch;
 pub(super) mod clipboard;
+pub(super) mod command;
 pub(super) mod desktop;
 pub(super) mod diarize;
 pub(super) mod dictate;

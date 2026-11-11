@@ -1599,6 +1599,12 @@ const settingsHandsFree = document.getElementById("settings-hands-free");
 const settingsHandsFreeSave = document.getElementById("settings-hands-free-save");
 const settingsCaptions = document.getElementById("settings-captions");
 const settingsCaptionsSave = document.getElementById("settings-captions-save");
+const settingsCommand = document.getElementById("settings-command");
+const settingsCommandSave = document.getElementById("settings-command-save");
+const settingsCopyShortcut = document.getElementById("settings-copy-shortcut");
+const settingsCopyShortcutSave = document.getElementById("settings-copy-shortcut-save");
+const settingsCopyShortcutClear = document.getElementById("settings-copy-shortcut-clear");
+const shortcutsNote = document.getElementById("shortcuts-note");
 const settingsUndo = document.getElementById("settings-undo");
 const settingsUndoSave = document.getElementById("settings-undo-save");
 const meetingTitle = document.getElementById("meeting-title");
@@ -1802,6 +1808,8 @@ function reflectSettings(values) {
   currentShortcut = settingsShortcut.value;
   settingsHandsFree.value = values.hands_free || "Ctrl+Alt+Shift+D";
   settingsCaptions.value = values.captions || "Ctrl+Alt+C";
+  settingsCommand.value = values.command || "Ctrl+Alt+M";
+  settingsCopyShortcut.value = values.copy_shortcut || "";
   if (settingsUndo) {
     settingsUndo.value = values.undo || "Ctrl+Alt+Z";
   }
@@ -1818,8 +1826,8 @@ function reflectSettings(values) {
   refreshApply();
 }
 
-async function saveShortcut(field, input, sentence) {
-  const wanted = input.value.trim();
+async function saveShortcut(field, input, sentence, override) {
+  const wanted = override === undefined ? input.value.trim() : override;
   const body = {};
   body[field] = wanted;
   try {
@@ -1830,13 +1838,13 @@ async function saveShortcut(field, input, sentence) {
     });
     const answer = await response.json().catch(() => ({}));
     if (!response.ok) {
-      settingsNote.textContent = answer.error || "That shortcut cannot be used.";
+      shortcutsNote.textContent = answer.error || "That shortcut cannot be used.";
       return;
     }
-    input.value = answer[field] || wanted;
-    settingsNote.textContent = "Saved. " + sentence;
+    input.value = answer[field] ?? wanted;
+    shortcutsNote.textContent = "Saved. " + sentence + " Windows applies changes within a second.";
   } catch (failure) {
-    settingsNote.textContent = "The shortcut could not be saved.";
+    shortcutsNote.textContent = "The shortcut could not be saved.";
   }
 }
 
@@ -1861,6 +1869,19 @@ settingsCaptionsSave.addEventListener("click", () =>
     "The old combination stops working.",
   ),
 );
+settingsCommandSave.addEventListener("click", () =>
+  saveShortcut(
+    "command",
+    settingsCommand,
+    "The old combination stops working.",
+  ),
+);
+settingsCopyShortcutSave.addEventListener("click", () =>
+  saveShortcut("copy_shortcut", settingsCopyShortcut, "Use it to copy the last dictation."),
+);
+settingsCopyShortcutClear.addEventListener("click", () => {
+  saveShortcut("copy_shortcut", settingsCopyShortcut, "Copy shortcut disabled.", "");
+});
 if (settingsUndoSave) {
   settingsUndoSave.addEventListener("click", () =>
     saveShortcut(
@@ -1902,9 +1923,9 @@ function captureShortcut(input, note) {
   });
 }
 
-for (const input of [settingsShortcut, settingsHandsFree, settingsCaptions, settingsUndo]) {
+for (const input of [settingsShortcut, settingsHandsFree, settingsCaptions, settingsCommand, settingsCopyShortcut, settingsUndo]) {
   if (input) {
-    captureShortcut(input, settingsNote);
+    captureShortcut(input, shortcutsNote);
   }
 }
 
@@ -7504,6 +7525,7 @@ loadFeatures();
 const nameGate = document.getElementById("name-gate");
 const nameInput = document.getElementById("name-input");
 const nameSave = document.getElementById("name-save");
+const nameSkip = document.getElementById("name-skip");
 const nameNote = document.getElementById("name-note");
 const gateProgress = document.getElementById("gate-progress");
 const gateFrom = document.getElementById("gate-from");
@@ -7604,7 +7626,7 @@ function closeGate() {
 }
 
 function showNameGateIfNeeded() {
-  if (storedName()) {
+  if (storedName() || localStorage.getItem("parlo.nameSkipped")) {
     return;
   }
   document.body.classList.add("gating");
@@ -7645,6 +7667,13 @@ nameSave.addEventListener("click", () => {
     nameInput.focus();
     return;
   }
+  nameNote.textContent = "";
+  paintGate();
+  gateStep("gate-languages");
+});
+
+nameSkip.addEventListener("click", () => {
+  localStorage.setItem("parlo.nameSkipped", "1");
   nameNote.textContent = "";
   paintGate();
   gateStep("gate-languages");

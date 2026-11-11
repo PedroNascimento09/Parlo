@@ -74,23 +74,26 @@ pub fn copy(text: &str) -> Result<u64, String> {
     copy_for(text, LEASE)
 }
 
-pub fn copy_for(text: &str, after: Duration) -> Result<u64, String> {
-    let text = text.trim();
+fn set_for_paste(backend: &mut dyn Backend, text: &str) -> Result<(), String> {
     if text.is_empty() {
         return Err("the clipboard cannot take an empty sentence".to_string());
     }
-    let mut clipboard =
-        Clipboard::new().map_err(|error| format!("the system clipboard did not open: {error}"))?;
+    backend
+        .set_text(text)
+        .map_err(|error| format!("the system clipboard refused the text: {error}"))
+}
+
+pub fn copy_for(text: &str, after: Duration) -> Result<u64, String> {
     let mut stored = state()
         .lock()
         .map_err(|_| "the clipboard lease is unavailable".to_string())?;
+    let mut clipboard =
+        Clipboard::new().map_err(|error| format!("the system clipboard did not open: {error}"))?;
     let snapshot = match stored.as_ref() {
         Some(active) => active.snapshot.clone(),
         None => capture(&mut clipboard),
     };
-    clipboard
-        .set_text(text)
-        .map_err(|error| format!("the system clipboard refused the text: {error}"))?;
+    set_for_paste(&mut clipboard, text)?;
     let generation = NEXT.fetch_add(1, Ordering::Relaxed) + 1;
     *stored = Some(Lease {
         generation,
@@ -105,19 +108,32 @@ pub fn copy_for(text: &str, after: Duration) -> Result<u64, String> {
     Ok(generation)
 }
 
+pub fn current() -> Result<Option<String>, String> {
+    let mut clipboard =
+        Clipboard::new().map_err(|error| format!("the system clipboard did not open: {error}"))?;
+    Ok(clipboard.text())
+}
+
 pub fn keep(text: &str) -> Result<(), String> {
     let text = text.trim();
     if text.is_empty() {
         return Err("the clipboard cannot take an empty sentence".to_string());
     }
+    let mut stored = state()
+        .lock()
+        .map_err(|_| "the clipboard lease is unavailable".to_string())?;
     let mut clipboard =
         Clipboard::new().map_err(|error| format!("the system clipboard did not open: {error}"))?;
-    clipboard
-        .set_text(text)
-        .map_err(|error| format!("the system clipboard refused the text: {error}"))?;
-    if let Ok(mut stored) = state().lock() {
-        *stored = None;
-    }
+    keep_with(&mut clipboard, &mut stored, text)
+}
+
+fn keep_with(
+    backend: &mut dyn Backend,
+    stored: &mut Option<Lease>,
+    text: &str,
+) -> Result<(), String> {
+    set_for_paste(backend, text)?;
+    *stored = None;
     Ok(())
 }
 
@@ -151,13 +167,25 @@ fn restore_after(snapshot: Snapshot, generation: u64, expected: String, after: D
         Ok(clipboard) => clipboard,
         Err(_) => return,
     };
-    if clipboard.get_text().ok().as_deref() != Some(expected.as_str()) {
+    let _ = restore_if_current(&mut clipboard, &mut lease, &snapshot, generation, &expected);
+}
+
+fn restore_if_current(
+    backend: &mut dyn Backend,
+    lease: &mut Option<Lease>,
+    snapshot: &Snapshot,
+    generation: u64,
+    expected: &str,
+) -> Result<(), String> {
+    if lease.as_ref().map(|active| active.generation) != Some(generation) {
+        return Ok(());
+    }
+    if backend.text().as_deref() != Some(expected) {
         *lease = None;
-        return;
+        return Ok(());
     }
     *lease = None;
-    drop(lease);
-    let _ = restore(&mut clipboard, &snapshot);
+    restore(backend, snapshot)
 }
 
 #[cfg(test)]
@@ -201,6 +229,36 @@ mod tests {
             height: 2,
             bytes: vec![1, 2, 3, 4],
         }
+    }
+
+    #[test]
+    fn a_paste_keeps_spacing_and_line_breaks_in_a_replacement_tail() {
+        let mut board = Memory::default();
+        for text in [" next word", " ", "\nsecond line", "• "] {
+            set_for_paste(&mut board, text).unwrap();
+            assert_eq!(board.text.as_deref(), Some(text));
+        }
+        assert!(set_for_paste(&mut board, "").is_err());
+    }
+
+    #[test]
+    fn permanent_copy_cannot_be_replaced_by_an_older_lease() {
+        let mut board = Memory {
+            text: Some("temporary".into()),
+            ..Memory::default()
+        };
+        let snapshot = Snapshot {
+            text: Some("older".into()),
+            image: None,
+        };
+        let mut lease = Some(Lease {
+            generation: 7,
+            snapshot: snapshot.clone(),
+        });
+        keep_with(&mut board, &mut lease, "recognized text").unwrap();
+        restore_if_current(&mut board, &mut lease, &snapshot, 7, "temporary").unwrap();
+        assert_eq!(board.text.as_deref(), Some("recognized text"));
+        assert_eq!(board.writes, 1);
     }
 
     #[test]

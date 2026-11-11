@@ -4,6 +4,7 @@ pub const DEFAULT: &str = "Ctrl+Alt+D";
 pub const HANDS_FREE: &str = "Ctrl+Alt+Shift+D";
 pub const CAPTIONS: &str = "Ctrl+Alt+C";
 pub const UNDO: &str = "Ctrl+Alt+Z";
+pub const COMMAND: &str = "Ctrl+Alt+M";
 
 pub const ALT: u32 = 0x0001;
 pub const CONTROL: u32 = 0x0002;
@@ -113,7 +114,8 @@ pub fn resolve(
     hands_free: &str,
     captions: &str,
     undo: &str,
-) -> Option<(Shortcut, Shortcut, Shortcut, Shortcut)> {
+    command: &str,
+) -> Option<(Shortcut, Shortcut, Shortcut, Shortcut, Shortcut)> {
     let fallback = |text: &str, default: &str| {
         Shortcut::parse(text)
             .or_else(|_| Shortcut::parse(default))
@@ -124,6 +126,7 @@ pub fn resolve(
         fallback(hands_free, HANDS_FREE),
         fallback(captions, CAPTIONS),
         fallback(undo, UNDO),
+        fallback(command, COMMAND),
     ))
 }
 
@@ -222,6 +225,7 @@ mod tests {
             "Ctrl+Alt+Shift+D"
         );
         assert_eq!(Shortcut::parse(CAPTIONS).unwrap().text(), "Ctrl+Alt+C");
+        assert_eq!(Shortcut::parse(COMMAND).unwrap().text(), "Ctrl+Alt+M");
     }
 
     #[test]
@@ -234,8 +238,8 @@ mod tests {
 
     #[test]
     fn a_saved_change_reaches_the_keys_without_a_restart() {
-        let before = resolve(DEFAULT, HANDS_FREE, CAPTIONS, UNDO).unwrap();
-        let after = resolve("Ctrl+Shift+K", HANDS_FREE, CAPTIONS, UNDO).unwrap();
+        let before = resolve(DEFAULT, HANDS_FREE, CAPTIONS, UNDO, COMMAND).unwrap();
+        let after = resolve("Ctrl+Shift+K", HANDS_FREE, CAPTIONS, UNDO, COMMAND).unwrap();
         assert_ne!(before.0, after.0);
         assert_eq!(after.0.key, 0x4B);
         assert_eq!(after.1, before.1);
@@ -243,6 +247,6 @@ mod tests {
 
     #[test]
     fn an_unusable_dictation_keeps_the_keys_already_listening() {
-        assert!(resolve("nonsense", HANDS_FREE, CAPTIONS, UNDO).is_none());
+        assert!(resolve("nonsense", HANDS_FREE, CAPTIONS, UNDO, COMMAND).is_none());
     }
 }

@@ -60,11 +60,21 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
+        if requested.undo.is_some() {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"Undo is unavailable. Use undo in the target application.\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
         let wanted_keys = [
             ("dictation", requested.shortcut.as_deref()),
             ("hands free", requested.hands_free.as_deref()),
             ("captions", requested.captions.as_deref()),
             ("undo", requested.undo.as_deref()),
+            ("copy", requested.copy_shortcut.as_deref()),
+            ("command", requested.command.as_deref()),
         ];
         if wanted_keys.iter().any(|(_, text)| text.is_some()) {
             let mut config = crate::config::load();
@@ -73,12 +83,18 @@ fn handle(
                 config.hands_free.clone(),
                 config.captions.clone(),
                 config.undo.clone(),
+                config.copy_shortcut.clone(),
+                config.command.clone(),
             ];
             let mut after = before.clone();
             for (index, (label, text)) in wanted_keys.iter().enumerate() {
                 let Some(text) = *text else {
                     continue;
                 };
+                if index == 4 && text.trim().is_empty() {
+                    after[index].clear();
+                    continue;
+                }
                 let parsed = match parlo_core::Shortcut::parse(text) {
                     Ok(shortcut) => shortcut,
                     Err(error) => {
@@ -91,13 +107,22 @@ fn handle(
                     }
                 };
                 let canonical = parsed.text();
-                if let Some(other) =
-                    (0..after.len()).find(|other| *other != index && after[*other] == canonical)
-                {
+                if let Some(other) = (0..after.len()).find(|other| {
+                    *other != index
+                        && parlo_core::Shortcut::parse(&after[*other])
+                            .is_ok_and(|shortcut| shortcut == parsed)
+                }) {
                     let message = format!(
                         "{} is already the {} shortcut, so {label} needs another one.",
                         canonical,
-                        ["dictation", "hands free", "captions", "undo"][other]
+                        [
+                            "dictation",
+                            "hands free",
+                            "captions",
+                            "undo",
+                            "copy",
+                            "command"
+                        ][other]
                     );
                     return respond_json(
                         stream,
@@ -123,6 +148,8 @@ fn handle(
             config.hands_free = after[1].clone();
             config.captions = after[2].clone();
             config.undo = after[3].clone();
+            config.copy_shortcut = after[4].clone();
+            config.command = after[5].clone();
             if let Err(error) = crate::config::save(&config) {
                 return respond_json(
                     stream,
@@ -137,6 +164,8 @@ fn handle(
                 chosen.hands_free = after[1].clone();
                 chosen.captions = after[2].clone();
                 chosen.undo = after[3].clone();
+                chosen.copy_shortcut = after[4].clone();
+                chosen.command = after[5].clone();
             }
             let only_shortcut = requested.engine.is_none()
                 && requested.stt.is_none()

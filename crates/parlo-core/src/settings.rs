@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::shortcut::HANDS_FREE as DEFAULT_HANDS_FREE;
 use crate::shortcut::{
-    CAPTIONS as DEFAULT_CAPTIONS, DEFAULT as DEFAULT_SHORTCUT, UNDO as DEFAULT_UNDO,
+    CAPTIONS as DEFAULT_CAPTIONS, COMMAND as DEFAULT_COMMAND, DEFAULT as DEFAULT_SHORTCUT,
+    UNDO as DEFAULT_UNDO,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -24,6 +25,8 @@ pub struct Config {
     pub shortcut: String,
     pub hands_free: String,
     pub captions: String,
+    pub command: String,
+    pub copy_shortcut: String,
     pub undo: String,
     pub name: String,
     pub history_days: u32,
@@ -139,6 +142,8 @@ impl Default for Config {
             shortcut: DEFAULT_SHORTCUT.to_string(),
             hands_free: DEFAULT_HANDS_FREE.to_string(),
             captions: DEFAULT_CAPTIONS.to_string(),
+            command: DEFAULT_COMMAND.to_string(),
+            copy_shortcut: String::new(),
             undo: DEFAULT_UNDO.to_string(),
             name: String::new(),
             history_days: 0,

@@ -75,6 +75,8 @@ mod tests {
             shortcut: "Ctrl+Shift+D".to_string(),
             hands_free: "Ctrl+Alt+Shift+D".to_string(),
             captions: "Ctrl+Alt+C".to_string(),
+            command: "Ctrl+Alt+M".to_string(),
+            copy_shortcut: "Ctrl+Alt+F10".to_string(),
             undo: "Ctrl+Alt+Z".to_string(),
             name: "Ana".to_string(),
             history_days: 30,

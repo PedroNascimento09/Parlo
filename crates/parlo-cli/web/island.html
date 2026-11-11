@@ -45,19 +45,20 @@
   }
   body {
     display: grid;
+    grid-template-rows: minmax(0, 1fr) 132px;
     align-items: center;
     justify-items: center;
-    padding: 10px 8px;
+    padding: 0 8px;
     font: 13px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
     user-select: none;
   }
-  body.menu {
-    align-items: end;
-    padding-bottom: 14px;
+  body.menu-down {
+    grid-template-rows: 132px minmax(0, 1fr);
   }
   .island {
+    grid-row: 2;
     position: relative;
     display: flex;
     align-items: center;
@@ -72,6 +73,7 @@
     box-shadow: var(--shadow);
     transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   }
+  body.menu-down .island { grid-row: 1; }
   body.listening .island {
     gap: 14px;
     padding-right: 10px;
@@ -89,11 +91,12 @@
   .wave i {
     display: block;
     width: 2px;
-    height: 4px;
+    height: 18px;
     border-radius: 2px;
     background: var(--muted);
+    transform: scaleY(0.22);
     transform-origin: center;
-    transition: height 80ms linear, background 160ms ease, opacity 160ms ease;
+    transition: transform 80ms linear, background 160ms ease, opacity 160ms ease;
   }
   body.ready .wave i {
     animation: breathe 2.6s ease-in-out infinite;
@@ -184,11 +187,13 @@
     gap: 8px;
   }
   body.ready .actions,
-  body.listening .actions {
+  body.listening .actions,
+  body.recovery .actions {
     display: flex;
   }
   .pause,
-  .stop {
+  .stop,
+  .copy-recovery {
     display: none;
     align-items: center;
     justify-content: center;
@@ -220,8 +225,50 @@
     color: var(--accent-ink);
   }
   .stop:hover { filter: brightness(0.95); }
+  body.recovery .copy-recovery { display: inline-flex; }
+  body.recovery .record { display: inline-flex; }
+  .copy-recovery {
+    border: 1px solid var(--line-strong);
+    background: var(--track);
+    color: var(--ink);
+  }
+  .copy-recovery:hover { border-color: var(--accent); }
+  .recovery-text {
+    display: block;
+    max-height: 6.75em;
+    overflow: auto;
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    user-select: text;
+  }
+  body.recovery { grid-template-rows: minmax(0, 1fr) auto; padding-bottom: 8px; }
+  body.recovery .island { border-radius: 22px; }
+  body.recovery.menu-down { grid-template-rows: auto minmax(0, 1fr); }
+  .clear-recovery { display: none; }
+  body.recovery .clear-recovery { display: inline-flex; }
+  .clear-recovery {
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .clear-recovery:focus-visible, .recovery-text:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .recovery-text[hidden],
+  .copy-recovery[hidden],
+  .clear-recovery[hidden] { display: none; }
   .pause:active,
   .stop:active,
+  .copy-recovery:active,
   .record:active,
   .write-btn:active,
   .dismiss:active {
@@ -281,8 +328,9 @@
     z-index: 20;
     display: grid;
     gap: 2px;
+    grid-auto-rows: min-content;
     min-width: 220px;
-    max-height: 252px;
+    max-height: min(252px, calc(100vh - 112px));
     padding: 6px;
     overflow-y: auto;
     border: 1px solid var(--line);
@@ -291,6 +339,12 @@
     box-shadow: var(--shadow-menu);
     transform-origin: bottom right;
     animation: menuIn 140ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  body.menu-down .write-menu {
+    top: calc(100% + 10px);
+    bottom: auto;
+    transform-origin: top right;
+    animation-name: menuDownIn;
   }
   .write-menu[hidden] { display: none; }
   .write-option {
@@ -400,19 +454,15 @@
   body.ready .record { display: inline-flex; }
   .record:hover { filter: brightness(0.95); }
   .dismiss {
-    position: absolute;
-    top: -12px;
-    right: 0;
-    z-index: 30;
+    flex: 0 0 28px;
     display: grid;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     padding: 0;
-    border: 1px solid var(--line);
+    border: 1px solid transparent;
     border-radius: 50%;
-    background: var(--menu);
-    box-shadow: 0 4px 12px rgba(24, 18, 12, 0.16);
+    background: transparent;
     color: var(--muted);
     font: inherit;
     font-size: 15px;
@@ -427,6 +477,7 @@
   .write-btn:focus-visible,
   .pause:focus-visible,
   .stop:focus-visible,
+  .copy-recovery:focus-visible,
   .switch:focus-visible,
   .record:focus-visible,
   .dismiss:focus-visible {
@@ -445,8 +496,8 @@
     border: 0;
   }
   @keyframes breathe {
-    0%, 100% { transform: scaleY(1); opacity: 0.55; }
-    50% { transform: scaleY(1.8); opacity: 0.9; }
+    0%, 100% { transform: scaleY(0.22); opacity: 0.55; }
+    50% { transform: scaleY(0.4); opacity: 0.9; }
   }
   @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
@@ -454,6 +505,10 @@
   }
   @keyframes menuIn {
     from { opacity: 0; transform: translateY(4px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes menuDownIn {
+    from { opacity: 0; transform: translateY(-4px) scale(0.985); }
     to { opacity: 1; transform: none; }
   }
   @media (max-width: 540px) {
@@ -484,6 +539,7 @@
     .line,
     .pause,
     .stop,
+    .copy-recovery,
     .write-btn,
     .write-menu,
     .write-option,
@@ -503,10 +559,13 @@
     <span class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
     <div class="readout">
       <span class="state" id="state" role="status" aria-live="polite" aria-atomic="true"></span>
-      <span class="line pending" id="line"></span>
+      <span class="line pending" id="line" role="status" aria-live="polite" aria-atomic="true"></span>
+      <span class="recovery-text" id="recovery-text" role="region" aria-label="Dictation result" tabindex="0" hidden></span>
       <span class="hint" id="hint" role="status" aria-live="polite" hidden data-i18n="island.firstLoad">The first dictation after a start loads the engine, so it can take a few seconds longer.</span>
     </div>
     <div class="actions">
+      <button type="button" class="copy-recovery" id="copy-recovery" aria-keyshortcuts="Control+Enter" title="Copy text (Ctrl+Enter)">Copy text</button>
+      <button type="button" class="clear-recovery" id="clear-recovery" hidden>Discard</button>
       <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
       <button type="button" class="stop" id="stop" data-i18n="island.stop">Stop</button>
       <div class="write" role="group" aria-label="Write in" data-i18n-aria-label="island.writeIn">
@@ -554,6 +613,7 @@ const TARGET_RATE = 16000;
 const ISLAND_HEIGHT = 132;
 const ISLAND_OPEN_HEIGHT = 372;
 const MAX_SECONDS = 60;
+const MAX_POLISH_PENDING = 8;
 const PARTIAL_MS = 300;
 const WINDOW_SECONDS = 3;
 const WEIGHTS = [0.55, 0.9, 1, 0.75, 0.95, 0.6, 0.8];
@@ -566,6 +626,9 @@ const tidyHint = document.getElementById("tidy-hint");
 const recordEl = document.getElementById("record");
 const bars = [...document.querySelectorAll(".wave i")];
 const pauseEl = document.getElementById("pause");
+const copyRecoveryEl = document.getElementById("copy-recovery");
+const recoveryTextEl = document.getElementById("recovery-text");
+const clearRecoveryEl = document.getElementById("clear-recovery");
 const version = document.querySelector('meta[name="parlo-version"]').content;
 
 let stream = null;
@@ -606,6 +669,7 @@ let liveBase = "";
 let liveConfirmed = "";
 let liveGuess = "";
 let liveRunning = false;
+let liveUncertain = false;
 let liveWaiters = [];
 let partialTicket = 0;
 let partialRunning = false;
@@ -614,6 +678,27 @@ let session = 0;
 let armed = false;
 let autoListening = false;
 let warmed = false;
+let commandMode = false;
+let commandSelection = "";
+let recoveryText = "";
+let recoveryPartial = false;
+let recoveryCopied = false;
+let recoveryReady = false;
+let recoveryQueue = Promise.resolve();
+let lastReported = "";
+let reportQueue = Promise.resolve();
+let silenceDetector = null;
+let segmentStart = 0;
+let segmentQueue = Promise.resolve();
+let segmentFailure = null;
+let segmentsWritten = 0;
+let segmentText = "";
+let segmentPending = 0;
+let segmentUnsent = 0;
+let segmentController = null;
+let segmentWarning = "";
+let audioBlocks = 0;
+let segmentSamples = 0;
 
 function tauriWindow() {
   const api = window.__TAURI__;
@@ -643,22 +728,40 @@ function hideAfterDelay(milliseconds) {
   hideTimer = setTimeout(hideIsland, milliseconds);
 }
 
-async function setIslandHeight(height) {
+async function setIslandHeight(open) {
   const win = tauriWindow();
-  const dpi = window.__TAURI__ && window.__TAURI__.dpi;
-  if (!win || !dpi) {
+  const api = window.__TAURI__;
+  if (!win || !api.dpi) {
     return;
   }
-  try {
-    const scale = await win.scaleFactor();
-    const size = await win.outerSize();
-    const position = await win.outerPosition();
-    const next = Math.round(height * scale);
-    const bottom = position.y + size.height;
-    await win.setSize(new dpi.PhysicalSize(size.width, next));
-    await win.setPosition(new dpi.PhysicalPosition(position.x, bottom - next));
-  } catch (failure) {
-    return;
+  const scale = await win.scaleFactor();
+  const size = await win.outerSize();
+  const position = await win.outerPosition();
+  let next = open ? Math.max(size.height, Math.round(ISLAND_OPEN_HEIGHT * scale)) : Math.round(ISLAND_HEIGHT * scale);
+  const down = document.body.classList.contains("menu-down");
+  let top = down ? position.y : position.y + size.height - next;
+  if (open) {
+    const monitor = await api.window.monitorFromPoint(position.x + size.width / 2, position.y + size.height / 2);
+    if (monitor) {
+      const area = monitor.workArea || { position: monitor.position, size: monitor.size };
+      const availableTop = position.y - area.position.y;
+      const availableBottom = area.position.y + area.size.height - position.y - size.height;
+      const growDown = availableTop < next - size.height && availableBottom > availableTop;
+      const available = growDown ? availableBottom : availableTop;
+      next = Math.min(next, size.height + Math.max(0, available));
+      top = growDown ? position.y : position.y + size.height - next;
+      document.body.classList.toggle("menu-down", growDown);
+    }
+  }
+  if (open) {
+    await win.setPosition(new api.dpi.PhysicalPosition(position.x, top));
+    await win.setSize(new api.dpi.PhysicalSize(size.width, next));
+  } else {
+    await win.setSize(new api.dpi.PhysicalSize(size.width, next));
+    await win.setPosition(new api.dpi.PhysicalPosition(position.x, top));
+  }
+  if (!open) {
+    document.body.classList.remove("menu-down");
   }
 }
 
@@ -666,7 +769,7 @@ function startDragging(event) {
   if (event.button !== 0) {
     return;
   }
-  if (event.target.closest("button, a, input, select, [role=\"listbox\"], [role=\"switch\"]")) {
+  if (event.target.closest("button, a, input, select, .recovery-text, [role=\"listbox\"], [role=\"switch\"]")) {
     return;
   }
   const api = window.__TAURI__ && window.__TAURI__.window;
@@ -689,8 +792,100 @@ function paintFirstLoad(hint, warmed) {
   hint.hidden = Boolean(warmed);
 }
 
+let islandResize = Promise.resolve();
+
+function resizeIsland(open) {
+  islandResize = islandResize.catch(() => {}).then(() => setIslandHeight(open));
+  return islandResize;
+}
+
+function showRecovery(text, partial) {
+  recoveryText = text.trim();
+  recoveryPartial = Boolean(partial);
+  recoveryCopied = false;
+  recoveryTextEl.textContent = recoveryText;
+  recoveryTextEl.hidden = !recoveryText;
+  recoveryTextEl.tabIndex = recoveryText ? 0 : -1;
+  copyRecoveryEl.hidden = !recoveryText;
+  clearRecoveryEl.hidden = !recoveryText;
+  clearRecoveryEl.dataset.confirm = "no";
+  clearRecoveryEl.textContent = "Discard";
+  copyRecoveryEl.textContent = recoveryPartial ? "Copy partial text" : "Copy text";
+  document.body.classList.toggle("recovery", Boolean(recoveryText));
+  resizeIsland(Boolean(recoveryText)).catch(() => {});
+  if (recoveryText) {
+    saveRecovery(recoveryText, recoveryPartial);
+  }
+}
+
+function saveRecovery(text, partial) {
+  recoveryQueue = recoveryQueue.then(async () => {
+    try {
+      const response = await fetch("/recovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ text, partial }),
+      });
+      if (!response.ok) throw new Error("The result could not be saved on this computer.");
+      return true;
+    } catch (failure) {
+      setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+      return false;
+    }
+  });
+  return recoveryQueue;
+}
+
+async function loadRecovery() {
+  try {
+    const response = await fetch("/recovery", { headers: { Authorization: "Bearer " + token }, cache: "no-store" });
+    if (!response.ok) throw new Error("The saved result could not be read.");
+    const saved = await response.json();
+    if (saved.text) {
+      recoveryText = saved.text;
+      recoveryPartial = Boolean(saved.partial);
+      recoveryCopied = false;
+      recoveryTextEl.textContent = recoveryText;
+      recoveryTextEl.hidden = false;
+      recoveryTextEl.tabIndex = 0;
+      copyRecoveryEl.hidden = false;
+      clearRecoveryEl.hidden = false;
+      copyRecoveryEl.textContent = recoveryPartial ? "Copy partial text" : "Copy text";
+      document.body.classList.remove("ready");
+      document.body.classList.add("recovery");
+      resizeIsland(true).catch(() => {});
+      setState("Recovered text", "Saved on this computer. Review, copy or discard it.", true);
+      report("ready-to-copy");
+    }
+    recoveryReady = true;
+  } catch (failure) {
+    document.body.classList.remove("ready");
+    setState("Recovery unavailable", "Restart Parlo to try loading your saved dictation.", true);
+    report("error");
+  }
+}
+
+async function clearRecovery() {
+  if (!recoveryText || copyRecoveryEl.disabled || clearRecoveryEl.disabled || starting) return;
+  if (clearRecoveryEl.dataset.confirm !== "yes") {
+    clearRecoveryEl.dataset.confirm = "yes";
+    clearRecoveryEl.textContent = "Confirm discard";
+    setState("Discard dictation?", "Press Confirm discard to remove the saved text, or copy it instead.", true);
+    return;
+  }
+  clearRecoveryEl.disabled = true;
+  copyRecoveryEl.disabled = true;
+  if (await saveRecovery("", false)) {
+    showRecovery("", false);
+    ready();
+  }
+  clearRecoveryEl.disabled = false;
+  copyRecoveryEl.disabled = false;
+}
+
 function noteWriteFailure(reason) {
   document.body.classList.remove("ready");
+  showRecovery(lastText, false);
   setState(
     t("island.failed", "Failed"),
     reason || t("island.dictationFailed", "The dictation failed."),
@@ -708,12 +903,27 @@ function setState(text, line, pending) {
 }
 
 function report(state) {
-  fetch("/state", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({ state }),
-    keepalive: true,
-  }).catch(() => {});
+  if (lastReported === state) {
+    return;
+  }
+  lastReported = state;
+  reportQueue = reportQueue.then(async () => {
+    try {
+      const response = await fetch("/state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ state }),
+        keepalive: true,
+      });
+      if (!response.ok && lastReported === state) {
+        lastReported = "";
+      }
+    } catch (failure) {
+      if (lastReported === state) {
+        lastReported = "";
+      }
+    }
+  });
 }
 
 function describeMicrophone(failure) {
@@ -794,6 +1004,41 @@ function measureQuiet(block) {
   }
 }
 
+function makeSilenceDetector() {
+  const levels = [];
+  let speechMs = 0;
+  let quietMs = 0;
+  let speaking = false;
+  const observe = (level, milliseconds) => {
+    const ordered = [...levels].sort((a, b) => a - b);
+    const floor = ordered.length ? ordered[Math.floor((ordered.length - 1) * 0.2)] : 0.008;
+    const threshold = Math.max(0.008, Math.min(floor, 0.025) * 2.2);
+    if ((!speaking && level <= threshold) || (speaking && level < floor * 1.8)) {
+      levels.push(level);
+      if (levels.length > 80) {
+        levels.shift();
+      }
+    }
+    if (level > threshold) {
+      speechMs += milliseconds;
+      quietMs = 0;
+      if (speechMs >= 160) {
+        speaking = true;
+      }
+    } else {
+      speechMs = 0;
+      quietMs += milliseconds;
+    }
+    if (speaking && quietMs >= 800) {
+      speaking = false;
+      quietMs = 0;
+      return true;
+    }
+    return false;
+  };
+  return observe;
+}
+
 function paintLevel(block) {
   let peak = 0;
   for (let index = 0; index < block.length; index += 1) {
@@ -804,7 +1049,7 @@ function paintLevel(block) {
   }
   bars.forEach((bar, index) => {
     const height = Math.min(18, 3 + peak * 90 * WEIGHTS[index]);
-    bar.style.height = height.toFixed(1) + "px";
+    bar.style.transform = `scaleY(${(height / 18).toFixed(3)})`;
   });
 }
 
@@ -859,6 +1104,7 @@ async function openMicrophone() {
     }
     document.body.classList.remove("ready");
     setState(t("island.micBlocked", "Microphone blocked"), describeMicrophone(failure), true);
+    showRecovery("", false);
     report("error");
     return false;
   }
@@ -881,7 +1127,7 @@ async function openMicrophone() {
     let voiceFrames = 0;
     const voiceThreshold = 0.015;
     processor.onaudioprocess = (event) => {
-      if (paused) {
+      if (paused || busy) {
         return;
       }
       const block = event.inputBuffer.getChannelData(0);
@@ -889,10 +1135,12 @@ async function openMicrophone() {
       const copy = new Float32Array(block.length);
       measureQuiet(block);
       let sum = 0;
+      let rawSum = 0;
       for (let index = 0; index < block.length; index += 1) {
         const sample = Math.max(-1, Math.min(1, block[index] * quietGain));
         copy[index] = sample;
         sum += sample * sample;
+        rawSum += block[index] * block[index];
       }
       const rms = Math.sqrt(sum / block.length);
       if (armed && !promoted && !starting && !busy) {
@@ -907,7 +1155,12 @@ async function openMicrophone() {
         }
       }
       chunks.push(copy);
-      if (promoted && chunks.length * copy.length > context.sampleRate * MAX_SECONDS) {
+      audioBlocks += 1;
+      segmentSamples += copy.length;
+      if (tidy && promoted && silenceDetector && silenceDetector(Math.sqrt(rawSum / block.length), block.length * 1000 / context.sampleRate)) {
+        queuePolishSegment(chunks.length);
+      }
+      if (promoted && (tidy ? segmentSamples : audioBlocks * copy.length) > context.sampleRate * MAX_SECONDS) {
         stop();
       }
     };
@@ -926,19 +1179,45 @@ async function openMicrophone() {
   } catch (failure) {
     discard();
     document.body.classList.remove("ready");
-    setState(t("island.micFailed", "The microphone did not open. Check that another program is not using it."), describeMicrophone(failure), true);
+    setState(t("island.micBlocked", "Microphone blocked"), describeMicrophone(failure), true);
+    showRecovery("", false);
     report("error");
     return false;
   }
 }
 
 async function begin() {
+  if (!recoveryReady) {
+    setState("Recovery unavailable", "Wait for saved dictation to load before recording.", true);
+    return;
+  }
+  if (recoveryText && (!recoveryCopied || copyRecoveryEl.disabled)) {
+    setState("Copy your text first", "Copy the result before starting another dictation.", true);
+    return;
+  }
   if (busy || starting) {
     return;
   }
   const ticket = ++session;
   starting = true;
+  if (recoveryText) {
+    copyRecoveryEl.disabled = true;
+    clearRecoveryEl.disabled = true;
+  }
+  if (recoveryText && !(await saveRecovery("", false))) {
+    if (ticket === session) starting = false;
+    copyRecoveryEl.disabled = false;
+    clearRecoveryEl.disabled = false;
+    return;
+  }
+  copyRecoveryEl.disabled = false;
+  clearRecoveryEl.disabled = false;
+  if (ticket !== session) {
+    if (recoveryText) await saveRecovery(recoveryText, recoveryPartial);
+    return;
+  }
   armed = false;
+  report("armed");
   try {
     keepIsland();
     endStream();
@@ -953,8 +1232,22 @@ async function begin() {
     liveBase = "";
     liveConfirmed = "";
     liveGuess = "";
+    liveUncertain = false;
+    silenceDetector = makeSilenceDetector();
+    segmentStart = 0;
+    audioBlocks = 0;
+    segmentSamples = 0;
+    segmentQueue = Promise.resolve();
+    segmentFailure = null;
+    segmentsWritten = 0;
+    segmentText = "";
+    segmentPending = 0;
+    segmentUnsent = 0;
+    segmentController = new AbortController();
+    segmentWarning = "";
     openWriteMenu(false);
-    document.body.classList.remove("ready");
+    showRecovery("", false);
+    document.body.classList.remove("ready", "recovery");
     setState(t("island.listening", "Listening"), "", true);
     paintFirstLoad(hintEl, warmed);
     if (!stream && !(await capture())) {
@@ -971,7 +1264,9 @@ async function begin() {
     }
     promoted = true;
     clearInterval(partials);
-    partials = setInterval(sendPartial, PARTIAL_MS);
+    if (!tidy) {
+      partials = setInterval(sendPartial, PARTIAL_MS);
+    }
     paintPause();
     document.body.classList.remove("ready", "paused");
     document.body.classList.add("listening");
@@ -997,7 +1292,7 @@ async function sendPartial(force) {
   if (!stream || !context || paused) {
     return;
   }
-  if (!force && (busy || partialRunning)) {
+  if (!force && (busy || partialRunning || !transcriptComplete)) {
     return;
   }
   const batch = chunks.slice(sentChunks);
@@ -1005,6 +1300,9 @@ async function sendPartial(force) {
     return;
   }
   sentChunks = chunks.length;
+  if (streamFinal) {
+    finalStale = true;
+  }
   const ticket = partialTicket;
   partialRunning = true;
   try {
@@ -1040,7 +1338,7 @@ async function sendPartial(force) {
     const closed = pieces.some(
       (piece) => piece.state === "final" || piece.state === "corrected"
     );
-    if (closed) {
+    if (closed && !next.confirmed && !next.guess) {
       streamFinal = next.text;
       finalStale = false;
     } else if (streamFinal && next.text !== streamFinal) {
@@ -1048,9 +1346,9 @@ async function sendPartial(force) {
     }
     if (next.text && next.text !== lastText) {
       lastText = next.text;
+      saveRecovery(lastText, true);
       if (!busy) {
         setState(t("island.listening", "Listening"), lastText, true);
-        writeLive(lastText);
       }
     }
   } catch (failure) {
@@ -1075,15 +1373,23 @@ function pause() {
   if (!stream || busy || paused) {
     return;
   }
+  if (tidy && silenceDetector) {
+    queuePolishSegment(chunks.length, true);
+    silenceDetector = makeSilenceDetector();
+  }
   paused = true;
+  if (partialRunning) {
+    transcriptComplete = false;
+  }
   partialTicket += 1;
   partialRunning = false;
   clearInterval(partials);
   partials = null;
   bars.forEach((bar) => {
-    bar.style.height = "3px";
+    bar.style.transform = "scaleY(0.167)";
   });
   paintPause();
+  setState("Paused", lastText || "Recording paused. Resume or stop.", true);
   report("paused");
 }
 
@@ -1092,10 +1398,11 @@ function resume() {
     return;
   }
   paused = false;
-  if (stream && !partials) {
+  if (stream && !partials && !tidy) {
     partials = setInterval(sendPartial, PARTIAL_MS);
   }
   paintPause();
+  setState(t("island.listening", "Listening"), lastText, true);
   report("listening");
 }
 
@@ -1115,7 +1422,7 @@ function teardown() {
   paintPause();
   document.body.classList.remove("listening");
   bars.forEach((bar) => {
-    bar.style.height = "3px";
+    bar.style.transform = "scaleY(0.167)";
   });
   if (processor) {
     processor.onaudioprocess = null;
@@ -1156,10 +1463,7 @@ function discard() {
   teardown();
 }
 
-function release() {
-  clearInterval(ticker);
-  ticker = null;
-  const { collected, rate } = teardown();
+function recording(collected, rate) {
   const length = collected.reduce((total, chunk) => total + chunk.length, 0);
   if (!length) {
     return null;
@@ -1175,6 +1479,13 @@ function release() {
     return null;
   }
   return { wav: encodeWav(downsample(merged, rate, TARGET_RATE), TARGET_RATE), seconds };
+}
+
+function release() {
+  clearInterval(ticker);
+  ticker = null;
+  const { collected, rate } = teardown();
+  return recording(collected, rate);
 }
 
 async function loadLocale() {
@@ -1252,8 +1563,7 @@ function readLive(base, confirmed, guess, pieces) {
   let settled = base.trim();
   let stable = wordsOf(confirmed);
   let hypothesis = wordsOf(guess);
-  let fresh = [];
-  let closing = "";
+  let corrected = "";
   for (const piece of pieces) {
     const text = (piece.text || "").trim();
     if (!text) {
@@ -1261,18 +1571,18 @@ function readLive(base, confirmed, guess, pieces) {
     }
     if (piece.state === "partial") {
       hypothesis = wordsOf(text);
+      corrected = "";
     } else if (piece.state === "stable") {
-      fresh = fresh.concat(wordsOf(text));
-    } else if (piece.state === "final" || piece.state === "corrected") {
-      closing = text;
+      stable = stable.concat(wordsOf(text));
+      corrected = "";
+    } else if (piece.state === "corrected" || piece.state === "final") {
+      if (piece.state !== "final" || text !== corrected) {
+        settled = combineWords(settled, text);
+      }
+      stable = [];
+      hypothesis = [];
+      corrected = piece.state === "corrected" ? text : "";
     }
-  }
-  if (closing) {
-    settled = combineWords(settled, closing);
-    return { base: settled, confirmed: "", guess: "", text: settled };
-  }
-  if (fresh.length) {
-    stable = stable.concat(fresh);
   }
   let current = stable;
   if (hypothesis.length && stable.every((word, index) => hypothesis[index] === word)) {
@@ -1295,13 +1605,13 @@ async function writeIntoField(text, signal, replace, latency, polish) {
       body: JSON.stringify({ text: text, replace: replace, latency_ms: latency || 0, polish: !!polish }),
       signal,
     });
-    if (response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    if (response.ok && detail.inserted === true) {
       return { written: true, reason: "" };
     }
-    const detail = await response.json().catch(() => ({}));
-    return { written: false, reason: detail.error || "" };
+    return { written: false, reason: detail.error || "The insertion could not be confirmed. Check the field before pasting." };
   } catch (failure) {
-    return { written: false, reason: "" };
+    return { written: false, reason: "The insertion could not be confirmed. Check the field before pasting." };
   }
 }
 
@@ -1348,9 +1658,11 @@ async function pumpLive() {
           body: JSON.stringify({ text: next, replace: previous, live: true }),
         });
       } catch (failure) {
+        liveUncertain = true;
         break;
       }
       if (!response.ok) {
+        liveUncertain = true;
         break;
       }
       liveInserted = next;
@@ -1366,7 +1678,7 @@ async function pumpLive() {
 }
 
 function writeLive(text) {
-  if (tidy || !text || text === liveInserted) {
+  if (tidy || liveUncertain || !text || text === liveInserted) {
     return;
   }
   liveDesired = text;
@@ -1375,42 +1687,73 @@ function writeLive(text) {
 
 async function clearLive() {
   if (!liveInserted) {
-    return;
+    return true;
   }
-  const previous = liveInserted;
-  liveInserted = "";
-  await fetch("/insert", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-    body: JSON.stringify({ text: "", replace: previous, live: true }),
-    keepalive: true,
-  }).catch(() => {});
+  try {
+    const response = await fetch("/insert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ text: "", replace: liveInserted, live: true }),
+      keepalive: true,
+    });
+    if (!response.ok) {
+      return false;
+    }
+    liveInserted = "";
+    return true;
+  } catch (failure) {
+    return false;
+  }
 }
 
 async function cancel() {
-  const hadSomething = Boolean(stream) || busy;
+  const hadSomething = Boolean(stream) || busy || starting;
+  const recovered = hadSomething ? (segmentText || lastText) : recoveryText;
+  const finalRequest = Boolean(controller) || segmentPending > 0 || segmentsWritten > 0;
   busy = true;
-  liveDesired = "";
-  await liveSettled();
-  await clearLive();
-  liveBase = "";
-  liveConfirmed = "";
-  liveGuess = "";
-  attempt += 1;
+  session += 1;
+  commandMode = false;
+  commandSelection = "";
+  if (processor) {
+    processor.onaudioprocess = null;
+  }
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+  }
+  if (segmentController) {
+    segmentController.abort();
+    segmentController = null;
+  }
   if (controller) {
     controller.abort();
     controller = null;
   }
+  liveDesired = "";
+  await liveSettled();
+  const cleared = !liveUncertain && !finalRequest && await clearLive();
+  liveBase = "";
+  liveConfirmed = "";
+  liveGuess = "";
+  attempt += 1;
   discard();
   busy = false;
   document.body.classList.remove("listening");
   if (hadSomething) {
     document.body.classList.remove("ready");
-    setState(t("island.cancelled", "Cancelled"), t("island.nothingInserted", "Nothing was inserted."), true);
+    if (recovered) {
+      showRecovery(recovered, true);
+      setState(t("island.cancelled", "Cancelled"), "Recognized text is available to copy. Later audio may not have been transcribed.", true);
+    } else {
+      setState(t("island.cancelled", "Cancelled"), cleared ? t("island.nothingInserted", "Nothing was inserted.") : "Cancellation requested. Check your field for any text already written.", true);
+    }
   } else {
     ready();
   }
-  report("cancelled");
+  report(recovered ? "error" : "cancelled");
+  const cancelledSession = session;
+  if (hadSomething && recovered && !(await recoveryQueue) && cancelledSession === session) {
+    setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+  }
 }
 
 async function dismissIsland() {
@@ -1418,6 +1761,215 @@ async function dismissIsland() {
   openWriteMenu(false);
   await cancel();
   hideIsland();
+}
+
+function queuePolishSegment(end, trailing = false) {
+  if (!context || segmentFailure) {
+    return;
+  }
+  if (segmentPending >= MAX_POLISH_PENDING && !busy) {
+    stop();
+    return;
+  }
+  const collected = chunks.slice(segmentStart, end);
+  if (!collected.length) {
+    return;
+  }
+  const captured = recording(collected, context.sampleRate);
+  if (!captured) {
+    return;
+  }
+  chunks.splice(segmentStart, end - segmentStart);
+  segmentSamples -= collected.reduce((sum, chunk) => sum + chunk.length, 0);
+  const ticket = session;
+  const signal = segmentController.signal;
+  const write = effectiveWrite();
+  const headers = {
+    "Content-Type": "audio/wav",
+    Authorization: "Bearer " + token,
+    "x-parlo-clean": "on",
+  };
+  if ((!write || write === "same") && writeSource) {
+    headers["x-parlo-write"] = writeSource;
+  } else if (write && write !== "same") {
+    headers["x-parlo-write"] = write;
+  }
+  segmentPending += 1;
+  segmentQueue = segmentQueue.then(async () => {
+    let text = "";
+    try {
+      if (segmentFailure || ticket !== session) {
+        if (ticket === session) {
+          segmentUnsent += 1;
+        }
+        return;
+      }
+      const response = await fetch("/dictate", { method: "POST", headers, body: captured.wav, signal });
+      if (!response.ok) {
+        const detail = await response.json().catch(() => ({}));
+        throw new Error(detail.error || "Could not transcribe the recording.");
+      }
+      const result = await response.json();
+      if (ticket !== session) {
+        return;
+      }
+      text = (result.translation || result.text || "").trim();
+      if (!text) {
+        if (trailing) {
+          return;
+        }
+        throw new Error("No words were recognized. Try speaking closer to the microphone.");
+      }
+      segmentText = segmentText ? segmentText + " " + text : text;
+      saveRecovery(segmentText, true);
+      segmentsWritten += 1;
+      lastText = segmentText;
+      warmed = true;
+      paintFirstLoad(hintEl, true);
+      if (result.note) {
+        segmentWarning = result.note;
+        setState(t("island.listening", "Listening"), result.note, true);
+      } else if (!busy) {
+        setState(t("island.listening", "Listening"), text, false);
+      }
+    } catch (failure) {
+      if (ticket === session) {
+        segmentFailure = { message: failure.message || "Could not process the recording.", text };
+        if (!busy) {
+          stop();
+        }
+      }
+    } finally {
+      if (ticket === session) {
+        segmentPending -= 1;
+      }
+    }
+  });
+}
+
+async function commandModeStart() {
+  if (busy || starting || !recoveryReady) {
+    return;
+  }
+  let answer;
+  try {
+    answer = await fetch("/command/copy", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+  } catch {
+    setState("Command failed", "Parlo did not answer.", true);
+    return;
+  }
+  if (!answer.ok) {
+    const detail = await answer.json().catch(() => ({}));
+    setState("Nothing to change", detail.error || "Select some text first, then press the command shortcut again.", true);
+    return;
+  }
+  const body = await answer.json().catch(() => null);
+  const text = ((body && body.text) || "").trim();
+  if (!text) {
+    setState("Nothing to change", "Select some text first, then press the command shortcut again.", true);
+    return;
+  }
+  commandSelection = text;
+  commandMode = true;
+  await begin();
+  if (!promoted) {
+    commandMode = false;
+    commandSelection = "";
+    return;
+  }
+  setState("Say a command", "Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets.", true);
+}
+
+function commandName(spoken) {
+  const said = spoken.toLowerCase().replace(/[^a-z ]+/g, " ");
+  if (/\bformal\b/.test(said)) return "formal";
+  if (/\bcasual\b/.test(said)) return "casual";
+  if (/\bexcited\b/.test(said)) return "excited";
+  if (/\bupper/.test(said)) return "uppercase";
+  if (/\blower/.test(said)) return "lowercase";
+  if (/\btitle\b/.test(said)) return "title";
+  if (/\bshort/.test(said)) return "shorter";
+  if (/\bbullet/.test(said)) return "bullets";
+  return "";
+}
+
+async function stopCommand() {
+  busy = true;
+  const ticket = session;
+  if (processor) {
+    processor.onaudioprocess = null;
+  }
+  if (segmentController) {
+    segmentController.abort();
+  }
+  stream.getTracks().forEach((track) => track.stop());
+  document.body.classList.remove("listening", "paused");
+  setState("Processing", "Changing the selection.", true);
+  report("processing");
+  clearInterval(partials);
+  partials = null;
+  liveDesired = "";
+  const captured = release();
+  partialTicket += 1;
+  partialRunning = false;
+  if (!captured) {
+    busy = false;
+    commandSelection = "";
+    ready();
+    return;
+  }
+  try {
+    const heard = await fetch("/dictate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token, "x-parlo-clean": "off" },
+      body: captured.wav,
+    });
+    if (!heard.ok) {
+      const detail = await heard.json().catch(() => ({}));
+      throw new Error(detail.error || "The command was not heard.");
+    }
+    const said = await heard.json();
+    if (ticket !== session) {
+      return;
+    }
+    const wanted = commandName((said.text || "").trim());
+    if (!wanted) {
+      setState("Unknown command", "Say make it formal, make it casual, make it excited, uppercase, lowercase, title case, make it shorter, or bullets.", true);
+      report("error");
+      return;
+    }
+    const changed = await fetch("/command", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ text: commandSelection, command: wanted }),
+    });
+    if (!changed.ok) {
+      const detail = await changed.json().catch(() => ({}));
+      throw new Error(detail.error || "The selection could not be changed.");
+    }
+    const out = await changed.json();
+    if (ticket !== session) {
+      return;
+    }
+    const finalText = (out.text || "").trim();
+    lastText = finalText;
+    showRecovery(finalText, false);
+    setState("Ready to copy", "The changed text is ready. Copy it and paste it over the selection.", false);
+    report("ready-to-copy");
+  } catch (failure) {
+    if (ticket === session) {
+      setState("Command failed", failure.message || "The command failed.", true);
+      report("error");
+    }
+  } finally {
+    if (ticket === session) {
+      busy = false;
+    }
+    commandSelection = "";
+  }
 }
 
 async function stop() {
@@ -1434,15 +1986,71 @@ async function stop() {
   if (!stream) {
     return;
   }
+  if (commandMode) {
+    commandMode = false;
+    await stopCommand();
+    return;
+  }
   busy = true;
-  const releasedAt = performance.now();
+  const ticket = session;
   let failed = false;
+  let recoveryShown = false;
+  if (processor) {
+    processor.onaudioprocess = null;
+  }
+  stream.getTracks().forEach((track) => track.stop());
+  if (tidy) {
+    queuePolishSegment(chunks.length, true);
+  }
+  document.body.classList.remove("listening", "paused");
+  setState("Processing", "Preparing your dictation.", true);
+  report("processing");
   clearInterval(partials);
   partials = null;
   liveDesired = "";
+  if (tidy) {
+    const hasUnsentTail = chunks.length > segmentStart;
+    clearInterval(ticker);
+    ticker = null;
+    teardown();
+    await segmentQueue;
+    if (ticket !== session) {
+      return;
+    }
+    segmentController = null;
+    busy = false;
+    if (segmentFailure) {
+      lastText = segmentText;
+      const omitted = segmentUnsent || hasUnsentTail;
+      const warning = "Later audio was not transcribed.";
+      showRecovery(lastText, true);
+      setState(t("island.failed", "Failed"), segmentFailure.message + (omitted && !segmentFailure.message.includes(warning) ? " " + warning : ""), true);
+      report("error");
+    } else if (!segmentsWritten) {
+      setState(t("island.nothingHeard", "Nothing heard"), t("island.speakCloser", "Speak a little closer to the microphone."), true);
+      showRecovery("", false);
+      report("error");
+    } else {
+      showRecovery(segmentText, false);
+      setState("Ready to copy", segmentWarning || "Review and copy the text, then paste it into your field.", false);
+      report("ready-to-copy");
+    }
+    if (lastText && !(await recoveryQueue) && ticket === session) {
+      setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+    }
+    return;
+  }
   await liveSettled();
-  await partialSettled(2500);
-  await sendPartial(true);
+  if (ticket !== session) {
+    return;
+  }
+  const settledInTime = await partialSettled(2500);
+  if (ticket !== session) {
+    return;
+  }
+  if (!settledInTime || paused || sentChunks !== chunks.length) {
+    transcriptComplete = false;
+  }
   const transcriptReady = transcriptComplete;
   const settled = transcriptReady && streamFinal && !finalStale ? streamFinal : "";
   const captured = release();
@@ -1450,12 +2058,17 @@ async function stop() {
   partialRunning = false;
   if (!captured) {
     busy = false;
-    report("cancelled");
-    ready();
+    if (lastText) {
+      showRecovery(lastText, true);
+      setState("Ready to copy", "Only the partial text is available to copy.", true);
+      report("error");
+    } else {
+      report("cancelled");
+      ready();
+    }
     return;
   }
-  setState(t("island.cleaning", "Cleaning up"), t("island.polishing", "Polishing the sentence."), true);
-  report("processing");
+  setState("Processing", tidy ? t("island.polishing", "Polishing the sentence.") : "Transcribing your recording.", true);
   controller = new AbortController();
   const { signal } = controller;
   try {
@@ -1465,7 +2078,7 @@ async function stop() {
       "x-parlo-clean": tidy ? "on" : "off",
     };
     const write = effectiveWrite();
-    if (write === "same") {
+    if (!write || write === "same") {
       if (writeSource) {
         headers["x-parlo-write"] = writeSource;
       }
@@ -1473,31 +2086,24 @@ async function stop() {
       headers["x-parlo-write"] = write;
     }
     const plain = !write || write === "same" || write === writeSource;
-    const fastText = settled || (tidy && transcriptReady ? lastText.trim() : "");
+    const fastText = settled;
     let result = null;
-    let polishing = null;
     if (plain && fastText) {
       const wanted = tidy;
-      const polish = new AbortController();
-      signal.addEventListener("abort", () => polish.abort(), { once: true });
       const asked = fetch("/dictate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + token,
           "x-parlo-clean": wanted ? "on" : "off",
+          ...(writeSource ? { "x-parlo-write": writeSource } : {}),
         },
         body: JSON.stringify({ text: fastText, seconds: captured.seconds }),
-        signal: polish.signal,
+        signal,
       })
         .then((answer) => (answer.ok ? answer.json().catch(() => null) : null))
         .catch(() => null);
-      if (wanted) {
-        result = { text: fastText, translation: "", latency_ms: 0, note: "" };
-        polishing = { asked, polish };
-      } else {
-        result = await asked;
-      }
+      result = await asked;
     }
     if (!result) {
       const response = await fetch("/dictate", {
@@ -1512,72 +2118,49 @@ async function stop() {
       }
       result = await response.json();
     }
+    if (ticket !== session) {
+      return;
+    }
     warmed = true;
     paintFirstLoad(hintEl, true);
     const spoken = (result.text || "").trim();
-    let text = (result.translation || "").trim() || spoken;
+    const text = (result.translation || "").trim() || spoken;
     if (!text) {
       setState(t("island.nothingHeard", "Nothing heard"), t("island.speakCloser", "Speak a little closer to the microphone."), true);
       document.body.classList.remove("ready");
+      showRecovery(lastText, true);
+      controller = null;
       busy = false;
       report("error");
       return;
     }
     lastText = text;
-    report("inserting");
-    const landed = Math.round(performance.now() - releasedAt);
-    if (polishing) {
-      writeIntoField(text, signal, liveInserted, landed, true)
-        .then((outcome) => {
-          if (!outcome.written) {
-            noteWriteFailure(outcome.reason);
-          }
-        })
-        .catch(() => noteWriteFailure(""));
-    }
-    const inserted = polishing
-      ? { written: true, reason: "" }
-      : await writeIntoField(text, signal, liveInserted, landed, false);
-    if (inserted.written) {
-      liveInserted = "";
-      liveBase = "";
-      liveConfirmed = "";
-      liveGuess = "";
-      setState(t("island.written", "Written"), text, false);
-      hideAfterDelay(4000);
-    } else {
-      document.body.classList.remove("ready");
-      setState(
-        t("island.failed", "Failed"),
-        inserted.reason || t("island.dictationFailed", "The dictation failed."),
-        true,
-      );
-      failed = true;
-    }
+    showRecovery(text, false);
+    recoveryShown = true;
+    setState("Ready to copy", result.note || "Review and copy the text, then paste it into your field.", false);
   } catch (failure) {
+    if (ticket !== session) {
+      return;
+    }
     document.body.classList.remove("ready");
     if (signal.aborted) {
-      setState(t("island.cancelled", "Cancelled"), t("island.nothingInserted", "Nothing was inserted."), true);
+      setState(t("island.cancelled", "Cancelled"), "Cancellation requested. Check your field for any text already written.", true);
     } else {
       setState(t("island.failed", "Failed"), failure.message || t("island.dictationFailed", "The dictation failed."), true);
+      showRecovery(lastText, true);
     }
     failed = true;
   }
   controller = null;
   busy = false;
-  report(failed ? (signal.aborted ? "cancelled" : "error") : "success");
+  report(failed ? (signal.aborted ? "cancelled" : "error") : "ready-to-copy");
+  if (recoveryShown && !(await recoveryQueue) && ticket === session) {
+    setState("Save failed", "Copy the text before closing Parlo. It could not be saved for recovery.", true);
+  }
 }
 
 function tap() {
-  attempt += 1;
-  if (controller) {
-    controller.abort();
-    controller = null;
-  }
-  discard();
-  busy = false;
-  document.body.classList.remove("listening");
-  ready();
+  return cancel();
 }
 
 function handsFree() {
@@ -1605,7 +2188,15 @@ function beginFromHold() {
 }
 
 function arm() {
-  if (busy || (promoted && stream)) {
+  if (!recoveryReady) {
+    setState("Recovery unavailable", "Wait for saved dictation to load before recording.", true);
+    return;
+  }
+  if (recoveryText && (!recoveryCopied || copyRecoveryEl.disabled)) {
+    setState("Copy your text first", "Copy the result before starting another dictation.", true);
+    return;
+  }
+  if (busy || starting || (promoted && stream)) {
     return;
   }
   armed = true;
@@ -1618,12 +2209,21 @@ function arm() {
 }
 
 function ready() {
+  if (!recoveryReady) {
+    return;
+  }
+  if (recoveryText && (!recoveryCopied || copyRecoveryEl.disabled)) {
+    document.body.classList.remove("ready", "listening");
+    document.body.classList.add("recovery");
+    setState("Copy your text first", "Copy the result before starting another dictation.", true);
+    return;
+  }
   if (busy || (promoted && stream)) {
     return;
   }
   discard();
   document.body.classList.add("ready");
-  document.body.classList.remove("listening");
+  document.body.classList.remove("listening", "recovery");
   setState("", "", true);
   report("armed");
 }
@@ -1670,20 +2270,30 @@ function paintWrite() {
   }
 }
 
-async function openWriteMenu(open) {
+let menuResize = Promise.resolve();
+
+function openWriteMenu(open) {
+  if (writeMenu.hidden === !open) {
+    return menuResize;
+  }
   writeMenu.hidden = !open;
   writeEl.setAttribute("aria-expanded", String(open));
-  document.body.classList.toggle("menu", open);
-  if (!open) {
-    await setIslandHeight(ISLAND_HEIGHT);
-    return;
+  if (open) {
+    keepIsland();
   }
-  keepIsland();
-  const active = writeMenu.querySelector('[aria-selected="true"]') || writeMenu.firstElementChild;
-  await setIslandHeight(ISLAND_OPEN_HEIGHT);
-  if (!writeMenu.hidden && active) {
-    active.focus();
-  }
+  menuResize = menuResize.then(async () => {
+    await resizeIsland(open);
+    if (open && !writeMenu.hidden) {
+      const active = writeMenu.querySelector('[aria-selected="true"]') || writeMenu.firstElementChild;
+      if (active) {
+        active.focus();
+      }
+    }
+  }).catch(() => {
+    writeMenu.hidden = true;
+    writeEl.setAttribute("aria-expanded", "false");
+  });
+  return menuResize;
 }
 
 function chooseWrite(code) {
@@ -1808,6 +2418,46 @@ tidyEl.addEventListener("click", () => {
   paintTidy();
 });
 
+async function copyRecovery() {
+  if (!recoveryText) {
+    setState("Nothing to copy", "There is no dictation text to copy yet.", true);
+    return;
+  }
+  if (copyRecoveryEl.disabled || starting) {
+    return;
+  }
+  copyRecoveryEl.disabled = true;
+  clearRecoveryEl.disabled = true;
+  clearRecoveryEl.dataset.confirm = "no";
+  clearRecoveryEl.textContent = "Discard";
+  recoveryCopied = false;
+  try {
+    const response = await fetch("/clipboard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ text: recoveryText, keep: true }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "The clipboard did not accept the text.");
+    }
+    const detail = await response.json();
+    if (detail.copied !== true) {
+      throw new Error("The clipboard did not confirm the copy.");
+    }
+    recoveryCopied = true;
+    setState(t("island.copied", "Copied"), recoveryPartial ? "Partial text copied. Check it before using it." : "Text copied. Paste it into your field.", true);
+  } catch (failure) {
+    setState(t("island.failed", "Failed"), failure.message || "Could not copy the text.", true);
+  } finally {
+    copyRecoveryEl.disabled = false;
+    clearRecoveryEl.disabled = false;
+  }
+}
+
+copyRecoveryEl.addEventListener("click", copyRecovery);
+clearRecoveryEl.addEventListener("click", clearRecovery);
+
 recordEl.addEventListener("click", () => {
   begin();
 });
@@ -1824,11 +2474,17 @@ paintWrite();
 window.parloArm = arm;
 window.parloReady = ready;
 window.parloBegin = beginFromHold;
+window.parloCommand = commandModeStart;
 window.parloStop = stop;
 window.parloCancel = cancel;
 window.parloTap = tap;
 window.parloHandsFree = handsFree;
 window.parloEscape = escapeIsland;
+window.parloResizeRecovery = () => { if (recoveryText) resizeIsland(true).catch(() => {}); };
+window.parloCopyRecovery = copyRecovery;
+window.parloReviewRecovery = () => {
+  if (recoveryText) recoveryTextEl.focus();
+};
 
 pauseEl.addEventListener("click", togglePause);
 
@@ -1846,12 +2502,17 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     escapeIsland();
   }
+  if (event.key === "Enter" && event.ctrlKey && recoveryText) {
+    event.preventDefault();
+    copyRecovery();
+  }
   if (event.key === " " && stream && !(event.target instanceof HTMLButtonElement)) {
     event.preventDefault();
     togglePause();
   }
 });
 
+loadRecovery();
 loadLocale();
 loadVersion();
 Promise.all([loadSettings(), loadLanguages()]).then(loadCoverage);

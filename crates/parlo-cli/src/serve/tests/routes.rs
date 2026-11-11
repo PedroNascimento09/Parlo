@@ -474,3 +474,36 @@ fn an_agent_uses_mcp_over_http() {
     stop.store(false, Ordering::Relaxed);
     let _ = TcpStream::connect(("127.0.0.1", port));
 }
+
+#[test]
+fn a_command_transforms_the_selection_and_refuses_unknown_ones() {
+    let (port, stop) = start_server();
+    let changed = send(
+        port,
+        "POST",
+        "/command",
+        "{\"text\":\"we ship. we test.\",\"command\":\"bullets\"}",
+    );
+    assert!(changed.starts_with("HTTP/1.1 200"), "{changed}");
+    assert_eq!(
+        body_json(&changed)["text"].as_str().unwrap(),
+        "- we ship\n- we test"
+    );
+    let unknown = send(
+        port,
+        "POST",
+        "/command",
+        "{\"text\":\"hello\",\"command\":\"whisper\"}",
+    );
+    assert!(unknown.starts_with("HTTP/1.1 400"), "{unknown}");
+    let empty = send(
+        port,
+        "POST",
+        "/command",
+        "{\"text\":\"\",\"command\":\"uppercase\"}",
+    );
+    assert!(empty.starts_with("HTTP/1.1 400"), "{empty}");
+    let no_window = send(port, "POST", "/command/copy", "");
+    assert!(no_window.starts_with("HTTP/1.1 400"), "{no_window}");
+    stop.store(false, std::sync::atomic::Ordering::SeqCst);
+}

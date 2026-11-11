@@ -8,6 +8,8 @@ mod win {
     const KEYEVENTF_KEYUP: u32 = 0x0002;
     const KEYEVENTF_UNICODE: u32 = 0x0004;
     const VK_RETURN: u16 = 0x0D;
+    const VK_CONTROL: u16 = 0x11;
+    const VK_C: u16 = 0x43;
     pub const SW_RESTORE: i32 = 9;
 
     #[repr(C)]
@@ -87,6 +89,33 @@ mod win {
                     },
                 },
             }
+        }
+
+        pub fn key(vk: u16, released: bool) -> Self {
+            Self {
+                kind: INPUT_KEYBOARD,
+                union: Union {
+                    keyboard: KeyboardInput {
+                        vk,
+                        scan: 0,
+                        flags: if released { KEYEVENTF_KEYUP } else { 0 },
+                        time: 0,
+                        extra: 0,
+                    },
+                },
+            }
+        }
+
+        pub fn copy() -> Self {
+            Self::key(VK_C, false)
+        }
+
+        pub fn copy_release() -> Self {
+            Self::key(VK_C, true)
+        }
+
+        pub fn control(released: bool) -> Self {
+            Self::key(VK_CONTROL, released)
         }
     }
 
@@ -339,6 +368,18 @@ mod x11 {
             .unwrap_or_else(|_| "another program".to_string())
     }
 
+    pub fn key(chord: &str) -> Result<(), String> {
+        run(
+            "xdotool",
+            &[
+                OsStr::new("key"),
+                OsStr::new("--clearmodifiers"),
+                OsStr::new(chord),
+            ],
+        )
+        .map(|_| ())
+    }
+
     pub fn write(text: &str) -> Result<(), String> {
         run(
             "xdotool",
@@ -434,6 +475,67 @@ pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 pub fn type_text(_target: usize, _text: &str) -> Result<(), String> {
     Err(NO_FIELD.to_string())
+}
+
+#[cfg(windows)]
+fn press_copy() -> Result<(), String> {
+    use win::*;
+    send(&[
+        Input::control(false),
+        Input::copy(),
+        Input::copy_release(),
+        Input::control(true),
+    ])
+}
+
+#[cfg(target_os = "linux")]
+fn press_copy() -> Result<(), String> {
+    x11::key("ctrl+c")
+}
+
+#[cfg(target_os = "macos")]
+fn press_copy() -> Result<(), String> {
+    mac::run("tell application \"System Events\" to keystroke \"c\" using command down").map(|_| ())
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
+fn press_copy() -> Result<(), String> {
+    Err(NO_FIELD.to_string())
+}
+
+pub fn copy_selection(window: usize) -> Result<String, String> {
+    #[cfg(windows)]
+    if focus(window as win::Window).is_err() {
+        return Err("the window you selected in is not in front any more".to_string());
+    }
+    #[cfg(target_os = "linux")]
+    if x11::active_window()? != window {
+        return Err("the window you selected in is not in front any more".to_string());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let app = mac::frontmost()?;
+        let held = CAPTURED_APP
+            .lock()
+            .map_err(|_| "the program in front could not be read".to_string())?
+            .clone();
+        if held.as_deref() != Some(app.as_str()) {
+            return Err("the program you selected in is not in front any more".to_string());
+        }
+    }
+    let previous = crate::clipboard::current()?;
+    press_copy()?;
+    std::thread::sleep(std::time::Duration::from_millis(150));
+    let selected = crate::clipboard::current()?.unwrap_or_default();
+    if let Some(previous) = previous {
+        let _ = crate::clipboard::keep(&previous);
+    }
+    if selected.trim().is_empty() {
+        return Err(
+            "no text is selected; select the words first, then ask to change them".to_string(),
+        );
+    }
+    Ok(selected)
 }
 
 #[cfg(test)]

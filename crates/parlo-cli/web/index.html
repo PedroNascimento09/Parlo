@@ -125,6 +125,7 @@ try {
         <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="">
       </label>
       <button id="name-save" class="install" type="button" data-i18n="gate.continue">Continue</button>
+      <button id="name-skip" class="swap" type="button" data-i18n="gate.skip">Skip</button>
       <p class="gate-note" id="name-note" aria-live="polite"></p>
     </div>
     <div class="gate-step" id="gate-languages" hidden>
@@ -210,7 +211,7 @@ try {
 
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
     <h1 id="welcome-title" data-i18n="welcome.title">Speak once. Be heard.</h1>
-    <p class="welcome-lede"><span data-i18n="welcome.hold">Hold</span> <kbd id="welcome-key">Ctrl+Alt+D</kbd><span data-i18n="welcome.rest">, say a sentence, and let go. It lands where the cursor is, and nothing leaves this computer.</span></p>
+    <p class="welcome-lede"><span data-i18n="welcome.hold">Hold</span> <kbd id="welcome-key">Ctrl+Alt+D</kbd><span>, say a sentence, and let go. Copy the result and paste it where you want it.</span></p>
     <div class="welcome-actions">
       <button id="welcome-install" class="install welcome-install" type="button" data-i18n="welcome.install">Download the dictation model</button>
       <a id="welcome-more" class="welcome-more" href="#library/models" data-i18n="welcome.more">More models</a>
@@ -226,7 +227,7 @@ try {
     <header class="home-hero">
       <p class="home-date" id="home-date"></p>
       <h1 class="home-greeting" id="home-greeting">Hello again</h1>
-      <p class="home-lede" data-i18n="home.lede">Say it once. Parlo writes it where the cursor is, and nothing leaves this computer.</p>
+      <p class="home-lede">Say it once. Copy the result and paste it where you want it.</p>
     </header>
 
     <div class="home-primary">
@@ -236,7 +237,7 @@ try {
         <kbd id="status-shortcut" aria-label="Dictation shortcut" data-i18n-aria-label="home.shortcutLabel">Ctrl+Alt+D</kbd>
         <span data-i18n="home.andSpeak">and speak.</span>
       </p>
-      <p class="home-hint" data-i18n="home.hint">Let go, and the sentence lands where the cursor is.</p>
+      <p class="home-hint">Let go, then copy the sentence from the bar.</p>
       <p class="stage-sub" hidden><span id="status-languages" data-i18n="text.Portuguese to English">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
       <p class="home-privacy"><span class="home-dot" aria-hidden="true"></span><span data-i18n="home.stays">Stays on this computer</span></p>
     </div>
@@ -776,11 +777,27 @@ try {
       <button id="settings-captions-save" class="install" type="button" data-i18n="text.Save captions">Save captions</button>
     </div>
     <div class="settings-row">
-      <label class="field field-wide" for="settings-undo">
-        <span class="field-label" data-i18n="text.Undo shortcut">Undo shortcut</span>
-        <input id="settings-undo" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
+      <label class="field field-wide" for="settings-command">
+        <span class="field-label">Command mode shortcut (Windows)</span>
+        <input id="settings-command" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
       </label>
-      <button id="settings-undo-save" class="install" type="button" data-i18n="text.Save undo">Save undo</button>
+      <button id="settings-command-save" class="install" type="button">Save command shortcut</button>
+    </div>
+    <div class="settings-row">
+      <label class="field field-wide" for="settings-copy-shortcut">
+        <span class="field-label">Copy dictation shortcut (optional, Windows)</span>
+        <input id="settings-copy-shortcut" class="field-input shortcut-capture" type="text" readonly placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
+      </label>
+      <button id="settings-copy-shortcut-save" class="install" type="button">Save copy shortcut</button>
+      <button id="settings-copy-shortcut-clear" class="install quiet" type="button">Disable</button>
+    </div>
+    <p class="settings-note" id="shortcuts-note" role="status" aria-live="polite">Choose an unused combination to copy the last result from any app.</p>
+    <div class="settings-row">
+      <label class="field field-wide" for="settings-undo">
+        <span class="field-label">Undo shortcut (unavailable until field edits can be verified)</span>
+        <input id="settings-undo" class="field-input shortcut-capture" type="text" readonly disabled placeholder="Click, then press the keys" autocomplete="off" spellcheck="false" />
+      </label>
+      <button id="settings-undo-save" class="install" type="button" disabled data-i18n="text.Save undo">Save undo</button>
     </div>
   </section>
 

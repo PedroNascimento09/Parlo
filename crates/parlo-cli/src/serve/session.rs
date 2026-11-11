@@ -18,6 +18,7 @@ pub(super) struct Chosen {
     pub(super) shortcut: String,
     pub(super) hands_free: String,
     pub(super) captions: String,
+    pub(super) command: String,
     pub(super) copy_shortcut: String,
     pub(super) undo: String,
 }
@@ -170,6 +171,7 @@ impl Session {
                 shortcut: stored.shortcut,
                 hands_free: stored.hands_free,
                 captions: stored.captions,
+                command: stored.command,
                 copy_shortcut: stored.copy_shortcut,
                 undo: stored.undo,
             }),
@@ -193,10 +195,11 @@ impl Session {
         let chosen = self.chosen();
         let same_backend = chosen.engine == engine && chosen.stt == stt;
         let same_pair = chosen.from == from && chosen.to == to;
-        let (shortcut, hands_free, captions, copy_shortcut, undo) = (
+        let (shortcut, hands_free, captions, command, copy_shortcut, undo) = (
             chosen.shortcut.clone(),
             chosen.hands_free.clone(),
             chosen.captions.clone(),
+            chosen.command.clone(),
             chosen.copy_shortcut.clone(),
             chosen.undo.clone(),
         );
@@ -230,6 +233,7 @@ impl Session {
                 shortcut,
                 hands_free,
                 captions,
+                command,
                 copy_shortcut,
                 undo,
             };
@@ -259,6 +263,13 @@ impl Session {
             .lock()
             .ok()
             .and_then(|slot| slot.as_ref().map(|target| target.app.clone()))
+    }
+
+    pub(super) fn captured_window(&self) -> Option<usize> {
+        self.target
+            .lock()
+            .ok()
+            .and_then(|slot| slot.as_ref().map(|target| target.window))
     }
 
     pub(super) fn insert_text(
@@ -521,7 +532,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"copy_shortcut\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\",\"translation\":{}}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"command\":\"{}\",\"copy_shortcut\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\",\"translation\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -530,6 +541,7 @@ impl Session {
             json_string(&chosen.shortcut),
             json_string(&chosen.hands_free),
             json_string(&chosen.captions),
+            json_string(&chosen.command),
             json_string(&chosen.copy_shortcut),
             json_string(&chosen.undo),
             stored.manage_memory,

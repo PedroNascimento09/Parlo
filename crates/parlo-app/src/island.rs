@@ -9,7 +9,10 @@ pub fn show(handle: &AppHandle) {
     let Some(window) = handle.get_webview_window(ISLAND) else {
         return;
     };
-    crate::place(&window);
+    if !window.is_visible().unwrap_or(false) {
+        crate::place(&window);
+        let _ = window.eval("window.parloResizeRecovery && window.parloResizeRecovery()");
+    }
     #[cfg(windows)]
     {
         let raw = window.hwnd().ok().map(|handle| handle.0 as usize);
@@ -32,6 +35,33 @@ pub fn hide(handle: &AppHandle) {
     let _ = window.hide();
 }
 
+pub fn review_recovery(handle: &AppHandle) {
+    show(handle);
+    if let Some(window) = handle.get_webview_window(ISLAND) {
+        #[cfg(windows)]
+        if let Ok(raw) = window.hwnd() {
+            parlo_core::focus::no_activate(raw.0 as usize, false);
+        }
+        if let Err(error) = window.set_focus() {
+            crate::note(&format!(
+                "the dictation window could not receive focus: {error}"
+            ));
+        }
+        tell(
+            handle,
+            "window.parloReviewRecovery && window.parloReviewRecovery()",
+        );
+    }
+}
+
+pub fn copy_recovery(handle: &AppHandle) {
+    show(handle);
+    tell(
+        handle,
+        "window.parloCopyRecovery && window.parloCopyRecovery()",
+    );
+}
+
 pub fn toggle(handle: &AppHandle) {
     let Some(window) = handle.get_webview_window(ISLAND) else {
         return;
@@ -43,7 +73,6 @@ pub fn toggle(handle: &AppHandle) {
     }
 }
 
-#[cfg(windows)]
 fn tell(handle: &AppHandle, script: &str) {
     if let Some(window) = handle.get_webview_window(ISLAND) {
         let _ = window.eval(script);
@@ -81,14 +110,17 @@ pub fn listen(handle: AppHandle) {
     static FREE_MODS: AtomicU32 = AtomicU32::new(0);
     static CAPTIONS_KEY: AtomicU32 = AtomicU32::new(0);
     static CAPTIONS_MODS: AtomicU32 = AtomicU32::new(0);
-    static UNDO_KEY: AtomicU32 = AtomicU32::new(0);
-    static UNDO_MODS: AtomicU32 = AtomicU32::new(0);
+    static COMMAND_KEY: AtomicU32 = AtomicU32::new(0);
+    static COMMAND_MODS: AtomicU32 = AtomicU32::new(0);
+    static COPY_SHORTCUT: AtomicU32 = AtomicU32::new(0);
     static HELD: AtomicBool = AtomicBool::new(false);
     static RECORDING: AtomicBool = AtomicBool::new(false);
     static ESCAPE_LATCH: AtomicBool = AtomicBool::new(false);
     static FREE_LATCH: AtomicBool = AtomicBool::new(false);
     static CAPTIONS_LATCH: AtomicBool = AtomicBool::new(false);
-    static UNDO_LATCH: AtomicBool = AtomicBool::new(false);
+    static COMMAND_LATCH: AtomicBool = AtomicBool::new(false);
+    static COPY_LATCH: AtomicBool = AtomicBool::new(false);
+    static COPY_HELD_KEY: AtomicU32 = AtomicU32::new(0);
     static PRESSED_AT: Mutex<Option<Instant>> = Mutex::new(None);
     static PRESS: AtomicU32 = AtomicU32::new(0);
 
@@ -263,6 +295,16 @@ pub fn listen(handle: AppHandle) {
         });
     }
 
+    fn command() {
+        with_app(|handle| {
+            if island_visible(handle) {
+                tell(handle, "window.parloCommand && window.parloCommand()");
+            } else {
+                open(handle, "window.parloCommand && window.parloCommand()");
+            }
+        });
+    }
+
     fn key_up() {
         if let Ok(mut slot) = PRESSED_AT.lock() {
             *slot = None;
@@ -294,10 +336,34 @@ pub fn listen(handle: AppHandle) {
                     return 1;
                 }
             }
+            if released {
+                if entry.vk == FREE_KEY.load(Ordering::Relaxed) {
+                    FREE_LATCH.store(false, Ordering::Relaxed);
+                }
+                if entry.vk == CAPTIONS_KEY.load(Ordering::Relaxed) {
+                    CAPTIONS_LATCH.store(false, Ordering::Relaxed);
+                }
+                if entry.vk == COMMAND_KEY.load(Ordering::Relaxed) {
+                    COMMAND_LATCH.store(false, Ordering::Relaxed);
+                }
+                if entry.vk == COPY_HELD_KEY.load(Ordering::Relaxed)
+                    && COPY_LATCH.swap(false, Ordering::Relaxed)
+                {
+                    COPY_HELD_KEY.store(0, Ordering::Relaxed);
+                    return 1;
+                }
+            }
+            if pressed
+                && COPY_LATCH.load(Ordering::Relaxed)
+                && entry.vk == COPY_HELD_KEY.load(Ordering::Relaxed)
+            {
+                return 1;
+            }
             if pressed || released {
                 let held = modifiers_held();
+                let copy = COPY_SHORTCUT.load(Ordering::Relaxed);
                 let matches = |key: u32, modifiers: u32| {
-                    entry.vk == key && (modifiers == 0 || modifiers & !held == 0)
+                    parlo_core::hotkey::matches(entry.vk, held, key, modifiers)
                 };
                 if released
                     && HELD.load(Ordering::Relaxed)
@@ -334,14 +400,24 @@ pub fn listen(handle: AppHandle) {
                         CAPTIONS_LATCH.store(false, Ordering::Relaxed);
                     }
                 } else if matches(
-                    UNDO_KEY.load(Ordering::Relaxed),
-                    UNDO_MODS.load(Ordering::Relaxed),
+                    COMMAND_KEY.load(Ordering::Relaxed),
+                    COMMAND_MODS.load(Ordering::Relaxed),
                 ) {
-                    if pressed && !UNDO_LATCH.swap(true, Ordering::Relaxed) {
-                        with_app(crate::undo_last);
+                    if pressed && !COMMAND_LATCH.swap(true, Ordering::Relaxed) {
+                        command();
                     } else if released {
-                        UNDO_LATCH.store(false, Ordering::Relaxed);
+                        COMMAND_LATCH.store(false, Ordering::Relaxed);
                     }
+                } else if matches(copy & 0xffff, copy >> 16)
+                    && pressed
+                    && !COPY_LATCH.swap(true, Ordering::Relaxed)
+                {
+                    COPY_HELD_KEY.store(entry.vk, Ordering::Relaxed);
+                    with_app(|handle| {
+                        let handle = handle.clone();
+                        std::thread::spawn(move || copy_recovery(&handle));
+                    });
+                    return 1;
                 }
             }
         }
@@ -378,21 +454,32 @@ pub fn listen(handle: AppHandle) {
         parlo_core::shortcut::HANDS_FREE,
     );
     let captions = optional("captions", &stored.captions, parlo_core::shortcut::CAPTIONS);
-    let undo = optional("undo", &stored.undo, parlo_core::shortcut::UNDO);
+    let command = optional("command", &stored.command, parlo_core::shortcut::COMMAND);
+    let set_copy = |text: &str| {
+        let parsed = Shortcut::parse(text).ok();
+        COPY_SHORTCUT.store(
+            parsed.map_or(0, |key| key.key | (key.modifiers << 16)),
+            Ordering::Relaxed,
+        );
+    };
+    set_copy(&stored.copy_shortcut);
+    let unavailable_undo = stored.undo.clone();
     KEY.store(shortcut.key, Ordering::Relaxed);
     MODS.store(shortcut.modifiers, Ordering::Relaxed);
     FREE_KEY.store(free.key, Ordering::Relaxed);
     FREE_MODS.store(free.modifiers, Ordering::Relaxed);
     CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
     CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
-    UNDO_KEY.store(undo.key, Ordering::Relaxed);
-    UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
+    COMMAND_KEY.store(command.key, Ordering::Relaxed);
+    COMMAND_MODS.store(command.modifiers, Ordering::Relaxed);
     std::thread::spawn(move || {
         let mut seen = (
             stored.shortcut.clone(),
             stored.hands_free.clone(),
             stored.captions.clone(),
             stored.undo.clone(),
+            stored.copy_shortcut.clone(),
+            stored.command.clone(),
         );
         loop {
             std::thread::sleep(Duration::from_millis(750));
@@ -402,16 +489,20 @@ pub fn listen(handle: AppHandle) {
                 latest.hands_free.clone(),
                 latest.captions.clone(),
                 latest.undo.clone(),
+                latest.copy_shortcut.clone(),
+                latest.command.clone(),
             );
             if now == seen {
                 continue;
             }
             seen = now;
-            if let Some((dictation, free, captions, undo)) = parlo_core::shortcut::resolve(
+            set_copy(&latest.copy_shortcut);
+            if let Some((dictation, free, captions, _undo, command)) = parlo_core::shortcut::resolve(
                 &latest.shortcut,
                 &latest.hands_free,
                 &latest.captions,
                 &latest.undo,
+                &latest.command,
             ) {
                 KEY.store(dictation.key, Ordering::Relaxed);
                 MODS.store(dictation.modifiers, Ordering::Relaxed);
@@ -419,15 +510,16 @@ pub fn listen(handle: AppHandle) {
                 FREE_MODS.store(free.modifiers, Ordering::Relaxed);
                 CAPTIONS_KEY.store(captions.key, Ordering::Relaxed);
                 CAPTIONS_MODS.store(captions.modifiers, Ordering::Relaxed);
-                UNDO_KEY.store(undo.key, Ordering::Relaxed);
-                UNDO_MODS.store(undo.modifiers, Ordering::Relaxed);
+                COMMAND_KEY.store(command.key, Ordering::Relaxed);
+                COMMAND_MODS.store(command.modifiers, Ordering::Relaxed);
             }
             crate::note(&format!(
-                "the shortcuts changed: {} dictates, {} stays listening, {} toggles captions, {} takes the last dictation back",
+                "the shortcuts changed: {} dictates, {} stays listening, {} toggles captions, {} runs a command, {} is unavailable",
                 latest.shortcut,
                 free.text(),
                 captions.text(),
-                undo.text()
+                latest.command,
+                latest.undo
             ));
         }
     });
@@ -441,11 +533,12 @@ pub fn listen(handle: AppHandle) {
             return;
         }
         crate::note(&format!(
-            "shortcuts listening: {} opens the panel on a tap and records while held, {} stays listening, {} toggles captions, {} takes the last dictation back",
+            "shortcuts listening: {} opens the panel on a tap and records while held, {} stays listening, {} toggles captions, {} runs a command, {} is unavailable",
             shortcut.text(),
             free.text(),
             captions.text(),
-            undo.text()
+            command.text(),
+            unavailable_undo
         ));
         let mut message: Message = std::mem::zeroed();
         while GetMessageW(&mut message, std::ptr::null_mut(), 0, 0) > 0 {
@@ -466,6 +559,14 @@ pub fn listen(_handle: AppHandle) {
 
 #[cfg(test)]
 mod bridge_tests {
+    #[test]
+    fn shortcut_modifiers_match_exactly_and_releases_reset_latches() {
+        let hook = include_str!("island.rs");
+        assert!(hook.contains("parlo_core::hotkey::matches(entry.vk, held, key, modifiers)"));
+        assert!(hook.contains("if entry.vk == FREE_KEY.load(Ordering::Relaxed)"));
+        assert!(hook.contains("FREE_LATCH.store(false, Ordering::Relaxed)"));
+    }
+
     #[test]
     fn the_hook_drives_the_overlay_through_its_bridge() {
         let hook = include_str!("island.rs");
@@ -560,6 +661,15 @@ mod bridge_tests {
             .find("window.show()")
             .expect("show never shows the island");
         assert!(placed < shown, "the island is shown before it is placed");
+    }
+
+    #[test]
+    fn a_visible_island_is_not_repositioned() {
+        let hook = include_str!("island.rs");
+        let start = hook.find("pub fn show(").expect("there is no show");
+        let end = hook.find("pub fn hide(").expect("there is no hide");
+        let body = &hook[start..end];
+        assert!(body.contains("if !window.is_visible().unwrap_or(false)"));
     }
 
     #[test]
