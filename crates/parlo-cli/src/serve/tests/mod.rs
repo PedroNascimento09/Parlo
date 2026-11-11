@@ -175,6 +175,7 @@ impl Session {
                 undo: String::new(),
             }),
             target: Mutex::new(None),
+            live_text: Mutex::new(None),
             busy: AtomicBool::new(false),
             known: Mutex::new(None),
         }

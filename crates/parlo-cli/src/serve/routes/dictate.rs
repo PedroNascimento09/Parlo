@@ -23,6 +23,8 @@ struct InsertRequest {
     latency_ms: u64,
     #[serde(default)]
     polish: bool,
+    #[serde(default)]
+    live: bool,
 }
 
 const POLISH_GRACE_MS: u64 = 400;
@@ -92,7 +94,7 @@ fn handle(
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
                 .map(|()| Flow::Serve);
         }
-        return match crate::insert::undo_last() {
+        return match session.undo() {
             Ok(()) => respond_json(stream, "200 OK", "{\"undone\":true}").map(|()| Flow::Serve),
             Err(error) => {
                 respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
@@ -134,12 +136,16 @@ fn handle(
             .map(|()| Flow::Serve);
         }
         let latency = request.latency_ms.min(60_000);
-        let outcome = session.insert_text(&request.text, &request.replace, latency);
+        let outcome = if request.live {
+            session.live_text(&request.text, &request.replace)
+        } else {
+            session.insert_text(&request.text, &request.replace, latency)
+        };
         return match outcome {
             Ok(()) => {
                 let mut polished = String::new();
                 let mut polish_ms = 0u64;
-                if request.polish {
+                if request.polish && !request.live {
                     let began = Instant::now();
                     if let Ok(cleaned) = session.clean_text(request.text.trim(), None) {
                         polish_ms = began.elapsed().as_millis() as u64;

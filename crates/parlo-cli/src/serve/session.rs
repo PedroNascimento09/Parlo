@@ -33,6 +33,7 @@ pub(super) struct Session {
     pub(super) pipeline: Mutex<Pipeline>,
     pub(super) settings: RwLock<Chosen>,
     pub(super) target: Mutex<Option<Target>>,
+    pub(super) live_text: Mutex<Option<String>>,
     pub(super) busy: AtomicBool,
     pub(super) known: Mutex<Option<Vec<parlo_core::UnitState>>>,
 }
@@ -176,6 +177,7 @@ impl Session {
                 undo: stored.undo,
             }),
             target: Mutex::new(None),
+            live_text: Mutex::new(None),
             busy: AtomicBool::new(false),
             known: Mutex::new(None),
         })
@@ -253,8 +255,21 @@ impl Session {
             .lock()
             .map_err(|_| "the target field is unavailable".to_string())?;
         *stored = None;
+        self.clear_live();
         let (window, app) = insert::foreground()?;
         *stored = Some(Target { window, app });
+        Ok(())
+    }
+
+    fn clear_live(&self) {
+        if let Ok(mut live) = self.live_text.lock() {
+            *live = None;
+        }
+    }
+
+    pub(super) fn undo(&self) -> Result<(), String> {
+        insert::undo_last()?;
+        self.clear_live();
         Ok(())
     }
 
@@ -295,18 +310,66 @@ impl Session {
         latency_ms: u64,
     ) -> Result<(), String> {
         let window = self.target_window()?;
+        let mut live = self
+            .live_text
+            .lock()
+            .map_err(|_| "the live text is unavailable".to_string())?;
+        if replace.is_empty() && live.is_some() {
+            return Err(
+                "Parlo already inserted live text in the field and did not add a second copy."
+                    .to_string(),
+            );
+        }
         if replace.is_empty() {
             let field = insert::field();
             insert::replace_span(&*field, window, replace, text)?;
         } else {
             insert::replace_recorded(window, replace, text)?;
         }
+        if live.as_deref() == Some(replace) {
+            *live = None;
+        }
+        drop(live);
         if latency_ms > 0 {
             println!("the dictation landed in {latency_ms} ms after the key was released");
             if let Err(error) = crate::history::stamp_latency(latency_ms) {
                 println!("could not keep the dictation timing: {error}");
             }
         }
+        Ok(())
+    }
+
+    pub(super) fn live_text(&self, text: &str, replace: &str) -> Result<(), String> {
+        if text.is_empty() {
+            return Err("Parlo did not insert an empty live update.".to_string());
+        }
+        let window = self.target_window()?;
+        let mut live = self
+            .live_text
+            .lock()
+            .map_err(|_| "the live text is unavailable".to_string())?;
+        match live.as_deref() {
+            Some(current) if current != replace => {
+                return Err(
+                    "Parlo could not verify the live text in the field, so it did not replace it."
+                        .to_string(),
+                );
+            }
+            None if !replace.is_empty() => {
+                return Err(
+                    "Parlo could not verify the live text in the field, so it did not replace it."
+                        .to_string(),
+                );
+            }
+            _ => {}
+        }
+        if replace.is_empty() {
+            let field = insert::field();
+            insert::replace_span(&*field, window, replace, text)?;
+        } else {
+            insert::replace_recorded(window, replace, text)?;
+        }
+        *live = Some(text.to_string());
         Ok(())
     }
 

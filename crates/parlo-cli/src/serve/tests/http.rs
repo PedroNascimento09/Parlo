@@ -7,6 +7,7 @@ fn unsafe_insertions_and_undo_are_refused_over_http() {
         (r#"{"text":"hello"}"#, "409"),
         (r#"{"text":"hello","replace":"old"}"#, "409"),
         (r#"{"text":"hello","live":true}"#, "409"),
+        (r#"{"text":"hello","replace":"old","live":true}"#, "409"),
         (r#"{"text":"","replace":"old","live":true}"#, "400"),
     ] {
         let answer = send(port, "POST", "/insert", body);
