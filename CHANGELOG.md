@@ -12,6 +12,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - `parlo undo` on the command line removes the last dictation through the running server, which now writes its port and token to `address.json` in the data folder.
 - Turning Polish on now actually swaps the typed sentence for the cleaned one, and the target route reports a captured field as insertable instead of always refusing.
 
+### Changed
+
+- Dictation writes the final sentence once when recording stops. Streaming partials remain display only, so the field cannot receive a live draft plus the final sentence and Undo targets the text just typed.
+
 ## [0.2.9] - 11 November 2026
 
 ### Added
