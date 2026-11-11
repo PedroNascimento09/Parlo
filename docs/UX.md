@@ -12,9 +12,9 @@ Facts, read from the repository, not remembered.
 | --- | --- | --- |
 | Main window | `crates/parlo-cli/web/index.html`, 370 lines | One scrolling page: hero with a hold-to-speak button, a Live row, a Dictate row, four status lines, then languages, cleanup, vocabulary, meetings, model library, history, voice, models, dubbing, licences |
 | Global shortcut | `crates/parlo-app/src/island.rs` | `RegisterHotKey` on the configured combination, then toggles the island window visible or hidden |
-| Island | `crates/parlo-cli/web/island.html` | Separate window, opens the microphone on the shortcut, writes the live words into the target while you speak, and with Polish on waits and writes the final sentence when you stop; posts the WAV to `/dictate` and the text to `/insert` |
+| Island | `crates/parlo-cli/web/island.html` | Separate window, opens the microphone on the shortcut, shows the recognised words while you speak and writes the final sentence into the target when you stop; posts the WAV to `/dictate` and the text to `/insert` |
 | Tray | `crates/parlo-app/src/presence.rs` | Dictate, Live and Captions above a separator, Home, Library, Meetings, Voice and Settings below it, Quit last; a left click toggles the island |
-| Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` writes the live words and the final sentence into the retained target on Windows; paste is the fallback for the final sentence |
+| Capture and insertion | `crates/parlo-cli/src/serve.rs`, `insert.rs` | `SendInput` writes the final sentence into the retained target on Windows; paste is the fallback for the final sentence |
 | History | `crates/parlo-cli/src/history.rs` | Append-only JSONL, 200 entries, fields `at`, `text`, `translation`, `from`, `to` |
 
 ### What is wrong with it

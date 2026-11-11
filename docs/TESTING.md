@@ -7,8 +7,9 @@ that touches the island, the insertion path or the engine.
 ## What has to be true
 
 For each application below, copy and paste three dictations in a row. Each result
-must be complete, with no lost first word or duplicate text. Automatic insertion
-is disabled until Parlo can verify the target field and cursor.
+must be complete, with no lost first word or duplicate text. Insertion happens
+once when dictation stops; streaming partials are display only. Automated tests
+prove the payload order, not that a real field accepts the typed text.
 
 | Application | What to do | Run 1 | Run 2 | Run 3 |
 | --- | --- | --- | --- | --- |
