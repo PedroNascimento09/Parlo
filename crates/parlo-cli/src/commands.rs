@@ -16,6 +16,8 @@ const ENGLISH: &[(&str, &str)] = &[
     ("dash", " - "),
     ("hyphen", " - "),
     ("scratch that", SCRATCH),
+    ("delete last word", DELETE_WORD),
+    ("delete word", DELETE_WORD),
 ];
 
 const SPANISH: &[(&str, &str)] = &[
@@ -28,6 +30,8 @@ const SPANISH: &[(&str, &str)] = &[
     ("signo de interrogacion", "?"),
     ("signo de exclamacion", "!"),
     ("borra eso", SCRATCH),
+    ("borra ultima palabra", DELETE_WORD),
+    ("borra palabra", DELETE_WORD),
     ("numero siguiente", NEXT_NUMBER),
 ];
 
@@ -40,6 +44,8 @@ const FRENCH: &[(&str, &str)] = &[
     ("point d'interrogation", "?"),
     ("point d'exclamation", "!"),
     ("efface ca", SCRATCH),
+    ("efface dernier mot", DELETE_WORD),
+    ("efface le mot", DELETE_WORD),
     ("liste numerotee", NUMBERED_LIST),
     ("numero suivant", NEXT_NUMBER),
 ];
@@ -53,6 +59,8 @@ const GERMAN: &[(&str, &str)] = &[
     ("fragezeichen", "?"),
     ("ausrufezeichen", "!"),
     ("loesch das", SCRATCH),
+    ("loesch letzte wort", DELETE_WORD),
+    ("loesch wort", DELETE_WORD),
     ("nummerierte liste", NUMBERED_LIST),
     ("nachste nummer", NEXT_NUMBER),
     ("naechste nummer", NEXT_NUMBER),
@@ -72,6 +80,8 @@ const PORTUGUESE: &[(&str, &str)] = &[
     ("dois pontos", ":"),
     ("risca isso", SCRATCH),
     ("apaga isso", SCRATCH),
+    ("apaga ultima palavra", DELETE_WORD),
+    ("apaga palavra", DELETE_WORD),
     ("lista numerada", NUMBERED_LIST),
     ("numero seguinte", NEXT_NUMBER),
 ];
@@ -79,6 +89,7 @@ const PORTUGUESE: &[(&str, &str)] = &[
 const NUMBERED_LIST: &str = "\u{1}";
 const NEXT_NUMBER: &str = "\u{2}";
 const SCRATCH: &str = "\u{8}";
+const DELETE_WORD: &str = "\u{7}";
 
 pub fn apply(text: &str, language: &str) -> String {
     let commands = match language.split(['-', '_']).next().unwrap_or("") {
@@ -97,6 +108,8 @@ pub fn apply(text: &str, language: &str) -> String {
         if let Some((taken, piece)) = match_at(&words, index, commands) {
             if piece == SCRATCH {
                 scratch(&mut out);
+            } else if piece == DELETE_WORD {
+                delete_word(&mut out);
             } else if piece == NUMBERED_LIST || piece == NEXT_NUMBER {
                 number = if piece == NUMBERED_LIST {
                     1
@@ -174,6 +187,20 @@ fn fold(word: &str) -> String {
         }
     }
     out
+}
+
+fn delete_word(out: &mut String) {
+    while out.ends_with([' ', '\n']) {
+        out.pop();
+    }
+    while let Some(character) = out.pop() {
+        if character == ' ' || character == '\n' {
+            break;
+        }
+    }
+    while out.ends_with([' ', '\n']) {
+        out.pop();
+    }
 }
 
 fn scratch(out: &mut String) {
@@ -254,6 +281,19 @@ mod tests {
             "keep this."
         );
         assert_eq!(apply("wrong bit scratch that", "en"), "");
+    }
+
+    #[test]
+    fn delete_last_word_drops_only_the_previous_word() {
+        assert_eq!(
+            apply("hello brave world delete last word", "en"),
+            "hello brave"
+        );
+        assert_eq!(apply("delete last word", "en"), "");
+        assert_eq!(apply("olá mundo apaga ultima palavra", "pt"), "olá");
+        assert_eq!(apply("hola mundo borra palabra", "es"), "hola");
+        assert_eq!(apply("bonjour monde efface dernier mot", "fr"), "bonjour");
+        assert_eq!(apply("hallo welt loesch letzte wort", "de"), "hallo");
     }
 
     #[test]
