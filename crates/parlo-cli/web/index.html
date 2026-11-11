@@ -253,7 +253,7 @@ try {
     <header class="home-hero">
       <p class="home-date" id="home-date"></p>
       <h1 class="home-greeting" id="home-greeting">Hello again</h1>
-      <p class="home-lede">Say it once. Copy the result and paste it where you want it.</p>
+      <p class="home-lede" data-i18n="home.lede">Say it once. Parlo writes it where the cursor is, and nothing leaves this computer.</p>
     </header>
 
     <div class="home-primary">
@@ -263,8 +263,9 @@ try {
         <kbd id="status-shortcut" aria-label="Dictation shortcut" data-i18n-aria-label="home.shortcutLabel">Ctrl+Alt+D</kbd>
         <span data-i18n="home.andSpeak">and speak.</span>
       </p>
-      <p class="home-hint">Let go, then copy the sentence from the bar.</p>
-      <p class="stage-sub" hidden><span id="status-languages" data-i18n="text.Portuguese to English">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
+      <p class="home-hint" data-i18n="home.hint">Let go, and the sentence lands where the cursor is.</p>
+      <p class="home-undo"><kbd id="status-undo-shortcut">Ctrl+Alt+Z</kbd><span data-i18n="text.Undo shortcut">Undo shortcut</span></p>
+      <p class="stage-sub"><span id="status-languages" data-i18n="text.Portuguese to English">Portuguese to English</span><span class="stage-sep" aria-hidden="true">·</span><span id="status-mode">translating</span></p>
       <p class="home-privacy"><span class="home-dot" aria-hidden="true"></span><span data-i18n="home.stays">Stays on this computer</span></p>
     </div>
 
@@ -299,15 +300,13 @@ try {
     </section>
 
     <div class="home-grid">
-      <figure class="last home-last" id="home-last" hidden>
-        <figcaption class="last-label" id="home-last-label" data-i18n="home.last">Last thing you said</figcaption>
-        <blockquote class="last-text" id="home-last-text"></blockquote>
-        <p class="last-meta">
-          <span id="home-last-when"></span>
-          <span id="home-last-dot" aria-hidden="true">·</span>
-          <span id="home-last-app"></span>
-        </p>
-      </figure>
+      <section class="home-recent" id="home-recent" hidden>
+        <div class="home-recent-head">
+          <h2 class="home-label" data-i18n="text.Recent dictations">Recent dictations</h2>
+          <a class="home-link" href="#library/history" data-i18n="nav.library">Library</a>
+        </div>
+        <ul class="home-recent-list" id="home-recent-list"></ul>
+      </section>
       <section class="home-panel" aria-labelledby="home-ready-title">
         <h2 class="home-label" id="home-ready-title" data-i18n="home.readiness">Readiness</h2>
         <dl class="home-ready">

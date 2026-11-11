@@ -36,6 +36,7 @@ const progressFill = document.getElementById("update-fill");
 const progressNote = document.getElementById("update-note");
 const engineEl = document.getElementById("status-engine");
 const shortcutEl = document.getElementById("status-shortcut");
+const undoShortcutEl = document.getElementById("status-undo-shortcut");
 const insightsKey = document.getElementById("insights-key");
 const languagesEl = document.getElementById("status-languages");
 const modeEl = document.getElementById("status-mode");
@@ -775,6 +776,9 @@ async function refreshHealth() {
     const values = await response.json();
     currentShortcut = values.shortcut || "not set";
     shortcutEl.textContent = currentShortcut;
+    if (undoShortcutEl) {
+      undoShortcutEl.textContent = values.undo || "Ctrl+Alt+Z";
+    }
     insightsKey.textContent = currentShortcut;
     const translating = values.write
       ? values.write !== values.from
@@ -1697,12 +1701,8 @@ let catalogLast = [];
 const historyList = document.getElementById("history-list");
 const homeGreeting = document.getElementById("home-greeting");
 const homeDate = document.getElementById("home-date");
-const homeLast = document.getElementById("home-last");
-const homeLastText = document.getElementById("home-last-text");
-const homeLastWhen = document.getElementById("home-last-when");
-const homeLastApp = document.getElementById("home-last-app");
-const homeLastDot = document.getElementById("home-last-dot");
-const homeLastLabel = document.getElementById("home-last-label");
+const homeRecent = document.getElementById("home-recent");
+const homeRecentList = document.getElementById("home-recent-list");
 const homeSteps = document.getElementById("home-steps");
 const homeStepsDismiss = document.getElementById("home-steps-dismiss");
 
@@ -1759,26 +1759,41 @@ function paintHome() {
     const hasHistory = historyEntries.some((item) => (item.translation || item.text || "").trim());
     homeSteps.hidden = stepsDismissed() || hasHistory;
   }
-  if (homeLast) {
-    const entry = historyEntries.find((item) => (item.translation || item.text || "").trim());
-    if (entry) {
-      homeLastLabel.textContent = t("home.last", "Last thing you said");
-      homeLastText.textContent = (entry.translation || entry.text).trim();
-      homeLastWhen.textContent = new Intl.DateTimeFormat(locale, {
+  if (homeRecent && homeRecentList) {
+    const entries = [...historyEntries]
+      .reverse()
+      .filter((item) => (item.translation || item.text || "").trim())
+      .slice(0, 3);
+    homeRecentList.replaceChildren();
+    for (const entry of entries) {
+      const item = document.createElement("li");
+      item.className = "home-recent-item";
+      const text = document.createElement("p");
+      text.className = "home-recent-text";
+      text.textContent = (entry.translation || entry.text).trim();
+      const meta = document.createElement("p");
+      meta.className = "last-meta";
+      const when = document.createElement("span");
+      when.textContent = new Intl.DateTimeFormat(locale, {
         day: "numeric",
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date((entry.at || 0) * 1000));
+      meta.append(when);
       const app = knownApp(entry.app);
-      homeLastApp.textContent = app;
-      homeLastApp.hidden = !app;
-      homeLastDot.hidden = !app;
-      homeLast.classList.remove("empty");
-      homeLast.hidden = false;
-    } else {
-      homeLast.hidden = true;
+      if (app) {
+        const dot = document.createElement("span");
+        dot.setAttribute("aria-hidden", "true");
+        dot.textContent = "·";
+        const appEl = document.createElement("span");
+        appEl.textContent = app;
+        meta.append(dot, appEl);
+      }
+      item.append(text, meta);
+      homeRecentList.append(item);
     }
+    homeRecent.hidden = entries.length === 0;
   }
 }
 
