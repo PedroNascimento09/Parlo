@@ -20,8 +20,6 @@ struct InsertRequest {
     #[serde(default)]
     replace: String,
     #[serde(default)]
-    live: bool,
-    #[serde(default)]
     latency_ms: u64,
     #[serde(default)]
     polish: bool,
@@ -127,7 +125,7 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        if request.text.trim().is_empty() && (!request.live || request.replace.is_empty()) {
+        if request.text.trim().is_empty() {
             return respond_json(
                 stream,
                 "400 Bad Request",
@@ -136,16 +134,12 @@ fn handle(
             .map(|()| Flow::Serve);
         }
         let latency = request.latency_ms.min(60_000);
-        let outcome = if request.live {
-            session.live_text(&request.text, &request.replace)
-        } else {
-            session.insert_text(&request.text, &request.replace, latency)
-        };
+        let outcome = session.insert_text(&request.text, &request.replace, latency);
         return match outcome {
             Ok(()) => {
                 let mut polished = String::new();
                 let mut polish_ms = 0u64;
-                if request.polish && !request.live {
+                if request.polish {
                     let began = Instant::now();
                     if let Ok(cleaned) = session.clean_text(request.text.trim(), None) {
                         polish_ms = began.elapsed().as_millis() as u64;

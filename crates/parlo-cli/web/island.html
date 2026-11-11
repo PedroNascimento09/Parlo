@@ -676,14 +676,9 @@ let quietBlocks = 0;
 let partials = null;
 let tidy = localStorage.getItem("parlo-tidy") === "on";
 let whisper = localStorage.getItem("parlo-whisper") === "on";
-let liveInserted = "";
-let liveDesired = "";
 let liveBase = "";
 let liveConfirmed = "";
 let liveGuess = "";
-let liveRunning = false;
-let liveUncertain = false;
-let liveWaiters = [];
 let partialTicket = 0;
 let partialRunning = false;
 let starting = false;
@@ -1240,12 +1235,9 @@ async function begin() {
     streamFinal = "";
     finalStale = false;
     transcriptComplete = true;
-    liveInserted = "";
-    liveDesired = "";
     liveBase = "";
     liveConfirmed = "";
     liveGuess = "";
-    liveUncertain = false;
     silenceDetector = makeSilenceDetector();
     segmentStart = 0;
     audioBlocks = 0;
@@ -1628,6 +1620,10 @@ async function writeIntoField(text, signal, replace, latency, polish) {
   }
 }
 
+async function writeFinal(text, latency) {
+  return writeIntoField(text, undefined, "", latency, false);
+}
+
 function partialSettled(limitMs) {
   if (!partialRunning) {
     return Promise.resolve(true);
@@ -1645,78 +1641,6 @@ function partialSettled(limitMs) {
     };
     check();
   });
-}
-
-function liveSettled() {
-  if (!liveRunning) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => liveWaiters.push(resolve));
-}
-
-async function pumpLive() {
-  if (liveRunning || tidy) {
-    return;
-  }
-  liveRunning = true;
-  try {
-    while (!tidy && !busy && !paused && liveDesired && liveDesired !== liveInserted) {
-      const previous = liveInserted;
-      const next = liveDesired;
-      let response = null;
-      try {
-        response = await fetch("/insert", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-          body: JSON.stringify({ text: next, replace: previous, live: true }),
-        });
-      } catch (failure) {
-        liveUncertain = true;
-        break;
-      }
-      if (!response.ok) {
-        liveUncertain = true;
-        break;
-      }
-      liveInserted = next;
-    }
-  } finally {
-    liveRunning = false;
-    const waiting = liveWaiters;
-    liveWaiters = [];
-    for (const resolve of waiting) {
-      resolve();
-    }
-  }
-}
-
-function writeLive(text) {
-  if (tidy || liveUncertain || !text || text === liveInserted) {
-    return;
-  }
-  liveDesired = text;
-  pumpLive();
-}
-
-async function clearLive() {
-  if (!liveInserted) {
-    return true;
-  }
-  try {
-    const response = await fetch("/insert", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ text: "", replace: liveInserted, live: true }),
-      keepalive: true,
-    });
-    if (!response.ok) {
-      return false;
-    }
-    liveInserted = "";
-    return true;
-  } catch (failure) {
-    return false;
-  }
 }
 
 async function cancel() {
@@ -1741,9 +1665,6 @@ async function cancel() {
     controller.abort();
     controller = null;
   }
-  liveDesired = "";
-  await liveSettled();
-  const cleared = !liveUncertain && !finalRequest && await clearLive();
   liveBase = "";
   liveConfirmed = "";
   liveGuess = "";
@@ -1757,7 +1678,7 @@ async function cancel() {
       showRecovery(recovered, true);
       setState(t("island.cancelled", "Cancelled"), "Recognized text is available to copy. Later audio may not have been transcribed.", true);
     } else {
-      setState(t("island.cancelled", "Cancelled"), cleared ? t("island.nothingInserted", "Nothing was inserted.") : "Cancellation requested. Check your field for any text already written.", true);
+      setState(t("island.cancelled", "Cancelled"), finalRequest ? "Cancellation requested. Check your field for any text already written." : t("island.nothingInserted", "Nothing was inserted."), true);
     }
   } else {
     ready();
@@ -1924,7 +1845,6 @@ async function stopCommand() {
   report("processing");
   clearInterval(partials);
   partials = null;
-  liveDesired = "";
   const captured = release();
   partialTicket += 1;
   partialRunning = false;
@@ -2020,13 +1940,17 @@ async function stop() {
   report("processing");
   clearInterval(partials);
   partials = null;
-  liveDesired = "";
   if (tidy) {
     const hasUnsentTail = chunks.length > segmentStart;
     clearInterval(ticker);
     ticker = null;
     teardown();
     await segmentQueue;
+    if (ticket !== session) {
+      return;
+    }
+    lastText = segmentText;
+    const polished = segmentFailure || !segmentsWritten ? { written: false, reason: "" } : await writeFinal(segmentText, 0);
     if (ticket !== session) {
       return;
     }
@@ -2045,7 +1969,11 @@ async function stop() {
       report("error");
     } else {
       showRecovery(segmentText, false);
-      setState("Ready to copy", segmentWarning || "Review and copy the text, then paste it into your field.", false);
+      if (polished.written) {
+        setState("Written", segmentWarning || "The cleaned sentence is in your field. Undo removes it.", false);
+      } else {
+        setState("Ready to copy", polished.reason || segmentWarning || "Review and copy the text, then paste it into your field.", false);
+      }
       report("ready-to-copy");
     }
     if (lastText && !(await recoveryQueue) && ticket === session) {
@@ -2053,7 +1981,6 @@ async function stop() {
     }
     return;
   }
-  await liveSettled();
   if (ticket !== session) {
     return;
   }
@@ -2150,7 +2077,15 @@ async function stop() {
     lastText = text;
     showRecovery(text, false);
     recoveryShown = true;
-    setState("Ready to copy", result.note || "Review and copy the text, then paste it into your field.", false);
+    const written = await writeFinal(text, result.latency_ms);
+    if (ticket !== session) {
+      return;
+    }
+    if (written.written) {
+      setState("Written", result.note || "The sentence is in your field. Undo removes it.", false);
+    } else {
+      setState("Ready to copy", written.reason || result.note || "Review and copy the text, then paste it into your field.", false);
+    }
   } catch (failure) {
     if (ticket !== session) {
       return;

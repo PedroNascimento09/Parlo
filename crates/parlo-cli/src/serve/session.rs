@@ -310,16 +310,6 @@ impl Session {
         Ok(())
     }
 
-    pub(super) fn live_text(&self, text: &str, replace: &str) -> Result<(), String> {
-        let window = self.target_window()?;
-        if replace.is_empty() {
-            let field = insert::field();
-            insert::replace_span(&*field, window, replace, text)
-        } else {
-            insert::replace_recorded(window, replace, text)
-        }
-    }
-
     pub(super) fn clean_text(&self, text: &str, clean: Option<&str>) -> Result<String, String> {
         let _working = self.working();
         self.pipeline()
