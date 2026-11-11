@@ -6188,6 +6188,15 @@ function renderHistory() {
     }
     const listen = listenButton(entry.translation || entry.text, "swap");
     listen.title = t("text.Hear this dictation aloud", "Hear this dictation aloud");
+    const put = document.createElement("button");
+    put.type = "button";
+    put.className = "swap";
+    put.textContent = t("text.Insert", "Insert");
+    put.title = t(
+      "text.Insert this dictation where you last wrote",
+      "Insert",
+    );
+    put.addEventListener("click", () => insertHistory(entry, put));
     const star = document.createElement("button");
     star.type = "button";
     star.className = "swap";
@@ -6239,7 +6248,7 @@ function renderHistory() {
       title: when[0],
       meta: when.slice(1).join(" · "),
       body,
-      actions: [listen, star, correct, remove],
+      actions: [listen, put, star, correct, remove],
     });
   });
   const hasEntries = renderMedia(historyList, items, {
@@ -6298,6 +6307,21 @@ async function copyHistory(text) {
     historyNote.textContent = t("text.Copied to the clipboard. Paste it where you need it.", "Copied to the clipboard. Paste it where you need it.");
   } catch (failure) {
     setNote(historyNote, "The clipboard refused the text. Select it here and copy by hand.", "error");
+  }
+}
+
+async function insertHistory(entry, button) {
+  button.disabled = true;
+  try {
+    await historyPost("/history/reinsert", { id: entry.id });
+    historyNote.textContent = t(
+      "text.The dictation is in your field. Undo removes it.",
+      "The dictation is in your field. Undo removes it.",
+    );
+  } catch (failure) {
+    historyNote.textContent = failure.message;
+  } finally {
+    button.disabled = false;
   }
 }
 

@@ -1,19 +1,27 @@
 use super::super::auth::authorised;
 use super::super::http::{error_json, respond_json};
+use super::super::session::Session;
 use super::super::{json_string, parameter, respond_named, restyle_fields, text_field, Flow};
 use crate::serve::http::Stream;
 
+pub(crate) struct Request<'a> {
+    pub(crate) method: &'a str,
+    pub(crate) path: &'a str,
+    pub(crate) query: &'a str,
+    pub(crate) headers: &'a [(String, String)],
+    pub(crate) token: &'a str,
+    pub(crate) body: &'a [u8],
+    pub(crate) session: &'a Session,
+}
+
 pub(crate) fn route(
-    method: &str,
-    path: &str,
-    query: &str,
+    request: &Request<'_>,
     stream: &mut dyn Stream,
-    headers: &[(String, String)],
-    token: &str,
-    body: &[u8],
 ) -> Option<Result<Flow, String>> {
+    let (method, path) = (request.method, request.path);
     let handled = (path == "/profiles" && (method == "GET" || method == "POST"))
         || (method == "POST" && path == "/history/restyle")
+        || (method == "POST" && path == "/history/reinsert")
         || (method == "GET"
             && matches!(
                 path,
@@ -28,18 +36,19 @@ pub(crate) fn route(
     if !handled {
         return None;
     }
-    Some(handle(method, path, query, stream, headers, token, body))
+    Some(handle(request, stream))
 }
 
-fn handle(
-    method: &str,
-    path: &str,
-    query: &str,
-    stream: &mut dyn Stream,
-    headers: &[(String, String)],
-    token: &str,
-    body: &[u8],
-) -> Result<Flow, String> {
+fn handle(request: &Request<'_>, stream: &mut dyn Stream) -> Result<Flow, String> {
+    let (method, path, query, headers, token, body, session) = (
+        request.method,
+        request.path,
+        request.query,
+        request.headers,
+        request.token,
+        request.body,
+        request.session,
+    );
     if path == "/profiles" && (method == "GET" || method == "POST") {
         if !authorised(headers, token) {
             return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
@@ -125,6 +134,43 @@ fn handle(
                 .map(|()| Flow::Serve),
             Err(error) => {
                 respond_json(stream, "404 Not Found", &error_json(&error)).map(|()| Flow::Serve)
+            }
+        };
+    }
+
+    if method == "POST" && path == "/history/reinsert" {
+        if !authorised(headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        let request: serde_json::Value = match serde_json::from_slice(body) {
+            Ok(request) => request,
+            Err(error) => {
+                return respond_json(stream, "400 Bad Request", &error_json(&error.to_string()))
+                    .map(|()| Flow::Serve);
+            }
+        };
+        let id = text_field(&request, "id");
+        if id.is_empty() {
+            return respond_json(
+                stream,
+                "400 Bad Request",
+                "{\"error\":\"a dictation is named by its id\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        let Some(entry) = crate::history::get(&id) else {
+            return respond_json(
+                stream,
+                "404 Not Found",
+                "{\"error\":\"no dictation carries that id\"}",
+            )
+            .map(|()| Flow::Serve);
+        };
+        return match session.reinsert(&entry.text) {
+            Ok(()) => respond_json(stream, "200 OK", "{\"inserted\":true}").map(|()| Flow::Serve),
+            Err(error) => {
+                respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
             }
         };
     }

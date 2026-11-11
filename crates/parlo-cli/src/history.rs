@@ -247,6 +247,20 @@ pub fn remove(id: &str) -> Result<(), String> {
     write_entries(&path, &entries)
 }
 
+pub fn get(id: &str) -> Option<Entry> {
+    get_at(&path(), id)
+}
+
+fn get_at(path: &Path, id: &str) -> Option<Entry> {
+    let wanted = id.trim();
+    if wanted.is_empty() {
+        return None;
+    }
+    entries_at(path)
+        .into_iter()
+        .find(|entry| !entry.id.is_empty() && entry.id == wanted)
+}
+
 pub fn stamp_latency(ms: u64) -> Result<(), String> {
     if ms == 0 {
         return Ok(());

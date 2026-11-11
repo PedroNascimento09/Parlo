@@ -339,6 +339,15 @@ impl Session {
         Ok(())
     }
 
+    pub(super) fn reinsert(&self, text: &str) -> Result<(), String> {
+        if text.trim().is_empty() {
+            return Err("Parlo will not insert an empty dictation.".to_string());
+        }
+        let window = self.target_window()?;
+        let field = insert::field();
+        insert::replace_span(&*field, window, "", text)
+    }
+
     pub(super) fn live_text(&self, text: &str, replace: &str) -> Result<(), String> {
         if text.is_empty() {
             return Err("Parlo did not insert an empty live update.".to_string());

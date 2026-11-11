@@ -319,6 +319,68 @@ fn the_history_routes_report_a_missing_dictation() {
 }
 
 #[test]
+fn a_saved_dictation_is_reinserted_into_the_captured_field() {
+    struct Tidy;
+    impl Drop for Tidy {
+        fn drop(&mut self) {
+            let _ = crate::history::remove("keep-me");
+        }
+    }
+    let _tidy = Tidy;
+    let mut entry = crate::history::Entry::now(
+        "Bom dia a todos.",
+        "Good morning everyone.",
+        "pt",
+        "en",
+        "Notepad",
+        "dictate",
+    );
+    entry.id = "keep-me".to_string();
+    crate::history::append(&entry).unwrap();
+
+    let (port, stop) = start_server();
+    let unknown = send(port, "POST", "/history/reinsert", "{\"id\":\"missing\"}");
+    assert!(unknown.starts_with("HTTP/1.1 404"), "{unknown}");
+    let unnamed = send(port, "POST", "/history/reinsert", "{}");
+    assert!(unnamed.starts_with("HTTP/1.1 400"), "{unnamed}");
+    let without = send(port, "POST", "/history/reinsert", "{\"id\":\"keep-me\"}");
+    assert!(without.starts_with("HTTP/1.1 409"), "{without}");
+    stop.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    let log_dir = std::env::temp_dir().join(format!("parlo-reinsert-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&log_dir);
+    std::fs::create_dir_all(&log_dir).unwrap();
+    let log = log_dir.join("field.jsonl");
+    let previous_log = std::env::var("PARLO_FIELD_LOG").ok();
+    std::env::set_var("PARLO_FIELD_LOG", &log);
+
+    let session = Session::with_engine(
+        Box::new(RecordingEngine {
+            heard: Arc::new(Mutex::new(Vec::new())),
+        }),
+        "pt",
+        "en",
+    );
+    *session.target.lock().unwrap() = Some(crate::serve::session::Target {
+        window: 7,
+        app: "Notepad".to_string(),
+    });
+    let (port, stop) = start_server_with(session);
+    let inserted = send(port, "POST", "/history/reinsert", "{\"id\":\"keep-me\"}");
+    assert!(inserted.starts_with("HTTP/1.1 200"), "{inserted}");
+    assert_eq!(body_json(&inserted)["inserted"], true);
+    let seen = std::fs::read_to_string(&log).unwrap();
+    assert!(seen.contains("Bom dia a todos."), "{seen}");
+    stop.store(false, std::sync::atomic::Ordering::SeqCst);
+
+    match previous_log {
+        Some(value) => std::env::set_var("PARLO_FIELD_LOG", value),
+        None => std::env::remove_var("PARLO_FIELD_LOG"),
+    }
+    let _ = std::fs::remove_dir_all(&log_dir);
+}
+
+#[test]
 fn a_dub_project_is_imported_listed_and_deleted() {
     let (port, stop) = start_server();
     let refused = ask_with(

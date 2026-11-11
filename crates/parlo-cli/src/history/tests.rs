@@ -35,6 +35,20 @@ fn kept(path: &Path, text: &str) {
 }
 
 #[test]
+fn a_dictation_is_found_by_its_id() {
+    let path = scratch("get");
+    kept(&path, "bom dia");
+    kept(&path, "até logo");
+    let entries = entries_at(&path);
+    assert_eq!(entries.len(), 2);
+    let wanted = get_at(&path, &entries[1].id).unwrap();
+    assert_eq!(wanted.text, "até logo");
+    assert!(get_at(&path, "missing").is_none());
+    assert!(get_at(&path, "  ").is_none());
+    tidy(&path);
+}
+
+#[test]
 fn the_last_dictation_keeps_how_long_it_took_to_land() {
     let path = scratch("latency");
     kept(&path, "bom dia");

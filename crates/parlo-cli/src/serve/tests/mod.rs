@@ -397,6 +397,7 @@ const ROUTES: &[(&str, &str, bool)] = &[
     ("GET", "/history", true),
     ("GET", "/history/export", true),
     ("POST", "/history/clear", true),
+    ("POST", "/history/reinsert", true),
     ("ANY", "/history/favourite", false),
     ("ANY", "/history/edit", false),
     ("GET", "/locale", false),

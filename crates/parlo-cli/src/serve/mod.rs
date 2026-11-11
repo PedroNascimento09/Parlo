@@ -197,9 +197,18 @@ fn handle(
         return answer;
     }
 
-    if let Some(answer) =
-        routes::profiles_history::route(method, path, query, stream, &headers, token, &body)
-    {
+    if let Some(answer) = routes::profiles_history::route(
+        &routes::profiles_history::Request {
+            method,
+            path,
+            query,
+            headers: &headers,
+            token,
+            body: &body,
+            session,
+        },
+        stream,
+    ) {
         return answer;
     }
 
