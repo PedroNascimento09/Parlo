@@ -6,7 +6,6 @@ use parlo_core::{AudioFormat, Pipeline, PipelineConfig};
 
 use crate::insert;
 use crate::models;
-use crate::undo;
 
 use super::json_string;
 
@@ -19,6 +18,7 @@ pub(super) struct Chosen {
     pub(super) shortcut: String,
     pub(super) hands_free: String,
     pub(super) captions: String,
+    pub(super) copy_shortcut: String,
     pub(super) undo: String,
 }
 
@@ -170,6 +170,7 @@ impl Session {
                 shortcut: stored.shortcut,
                 hands_free: stored.hands_free,
                 captions: stored.captions,
+                copy_shortcut: stored.copy_shortcut,
                 undo: stored.undo,
             }),
             target: Mutex::new(None),
@@ -192,10 +193,11 @@ impl Session {
         let chosen = self.chosen();
         let same_backend = chosen.engine == engine && chosen.stt == stt;
         let same_pair = chosen.from == from && chosen.to == to;
-        let (shortcut, hands_free, captions, undo) = (
+        let (shortcut, hands_free, captions, copy_shortcut, undo) = (
             chosen.shortcut.clone(),
             chosen.hands_free.clone(),
             chosen.captions.clone(),
+            chosen.copy_shortcut.clone(),
             chosen.undo.clone(),
         );
         let mut kept = same_backend;
@@ -228,6 +230,7 @@ impl Session {
                 shortcut,
                 hands_free,
                 captions,
+                copy_shortcut,
                 undo,
             };
         }
@@ -241,10 +244,13 @@ impl Session {
     }
 
     pub(super) fn capture_target(&self) -> Result<(), String> {
+        let mut stored = self
+            .target
+            .lock()
+            .map_err(|_| "the target field is unavailable".to_string())?;
+        *stored = None;
         let (window, app) = insert::foreground()?;
-        if let Ok(mut stored) = self.target.lock() {
-            *stored = Some(Target { window, app });
-        }
+        *stored = Some(Target { window, app });
         Ok(())
     }
 
@@ -255,40 +261,32 @@ impl Session {
             .and_then(|slot| slot.as_ref().map(|target| target.app.clone()))
     }
 
-    pub(super) fn target(&self) -> Result<Target, String> {
-        self.target
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .clone()
-            .ok_or_else(|| "Parlo does not know which field to write into".to_string())
-    }
-
     pub(super) fn insert_text(
         &self,
         text: &str,
         replace: &str,
         latency_ms: u64,
     ) -> Result<(), String> {
-        let target = if insert::captured() {
-            Target {
-                window: 0,
-                app: "test".to_string(),
-            }
-        } else if self
-            .target
-            .lock()
-            .ok()
-            .and_then(|slot| slot.clone())
-            .is_none()
-        {
-            self.capture_target()?;
-            self.target()?
-        } else {
-            self.target()?
+        let window = match self.target.lock() {
+            Ok(target) => match target.as_ref() {
+                Some(target) => target.window,
+                None => {
+                    return Err(
+                        "Parlo has no window to write in. Copy the text and paste it yourself."
+                            .to_string(),
+                    )
+                }
+            },
+            Err(_) => return Err(
+                "Parlo cannot read the window it captured. Copy the text and paste it yourself."
+                    .to_string(),
+            ),
         };
+        if !replace.is_empty() {
+            return Err("Parlo cannot verify the previous text or cursor position, so it did not change the field.".to_string());
+        }
         let field = insert::field();
-        insert::replace_span(&*field, target.window, replace, text)?;
-        undo::remember(target.window, text);
+        insert::replace_span(&*field, window, replace, text)?;
         if latency_ms > 0 {
             println!("the dictation landed in {latency_ms} ms after the key was released");
             if let Err(error) = crate::history::stamp_latency(latency_ms) {
@@ -298,20 +296,11 @@ impl Session {
         Ok(())
     }
 
-    pub(super) fn live_text(&self, text: &str, replace: &str) -> Result<(), String> {
-        let target = if self
-            .target
-            .lock()
-            .ok()
-            .and_then(|slot| slot.clone())
-            .is_none()
-        {
-            self.capture_target()?;
-            self.target()?
-        } else {
-            self.target()?
-        };
-        insert::rewrite(target.window, replace, text)
+    pub(super) fn live_text(&self, _text: &str, _replace: &str) -> Result<(), String> {
+        Err(
+            "Parlo cannot verify the focused field. Copy the text and paste it yourself."
+                .to_string(),
+        )
     }
 
     pub(super) fn clean_text(&self, text: &str, clean: Option<&str>) -> Result<String, String> {
@@ -491,6 +480,11 @@ impl Session {
         target: &str,
         clean: Option<&str>,
     ) -> Result<(String, String), String> {
+        if let Ok(text) = std::env::var("PARLO_SELFTEST_TRANSCRIPT") {
+            if !text.trim().is_empty() {
+                return Ok((text.clone(), text));
+            }
+        }
         let _working = self.working();
         let target = if target.is_empty() {
             None
@@ -527,7 +521,7 @@ impl Session {
         let chosen = self.chosen();
         let stored = crate::config::load();
         format!(
-            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\",\"translation\":{}}}",
+            "{{\"engine\":\"{}\",\"stt\":\"{}\",\"from\":\"{}\",\"to\":\"{}\",\"write\":\"{}\",\"shortcut\":\"{}\",\"hands_free\":\"{}\",\"captions\":\"{}\",\"copy_shortcut\":\"{}\",\"undo\":\"{}\",\"recognisers\":[\"parakeet\",\"whisper\"],\"manage_memory\":{},\"unload\":{},\"name\":\"{}\",\"history_days\":{},\"compute\":\"{}\",\"channel\":\"{}\",\"share\":{},\"share_pin\":\"{}\",\"share_port\":{},\"locale\":\"{}\",\"translation\":{}}}",
             json_string(&chosen.engine),
             json_string(&chosen.stt),
             json_string(&chosen.from),
@@ -536,6 +530,7 @@ impl Session {
             json_string(&chosen.shortcut),
             json_string(&chosen.hands_free),
             json_string(&chosen.captions),
+            json_string(&chosen.copy_shortcut),
             json_string(&chosen.undo),
             stored.manage_memory,
             stored.unload,

@@ -6,6 +6,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Added
 
+- Dictation inserts at the cursor: the window captured on the shortcut is typed into when it is still in front on stop, with the clipboard as the fallback, on Windows, X11 and macOS.
+
 - Eleven more languages: Polish, Swedish, Czech, Danish, Finnish, Greek, Romanian, Hungarian, Turkish, Ukrainian and Catalan, each with a translation pack in both directions with English, a text-to-speech voice, and Italian, Dutch and Russian to English. The packs download on demand from the Argos index (Apache-2.0, OPUS-MT) and are marked experimental until measured here; dictation hears nine of them with Parakeet and Turkish and Catalan with Whisper.
 
 - `parlo bench dictate` measures the dictation path end to end on a fixed speech clip, with the synthetic tone kept for comparison, and compares the median with the recorded baseline.
@@ -14,7 +16,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
-- Dictation keeps its result in the bar for copying instead of sending unverified keystrokes to another application. Pending text is saved locally for recovery. An optional Windows copy shortcut is disabled by default. Automatic insertion, live replacement and Parlo's undo remain unavailable until the target field and cursor can be verified.
+- Dictation types the sentence into the window captured when the dictation started, at the cursor, only while that window is still in front. When the window moved, the text goes to the clipboard and the bar says so. Live replacement and Parlo's undo remain unavailable until the previous text and cursor can be verified.
 - Home gives the dictation shortcut more room, and the island's language choices show a clear keyboard focus ring.
 - Letting go of the key reuses the sentence the stream already closed on silence instead of transcribing the audio again: the text lands in 2 ms with Polish off, against 362 ms on the audio path, measured on a 2.8 s clip through the app's own server.
 - Polish never holds the text: the raw sentence is written first and the cleaned one replaces it when it arrives, within a 400 ms grace. A model that answers in 150 ms fills in behind a 2 ms insertion; a model that takes 1.2 s is dropped and the raw text stands.

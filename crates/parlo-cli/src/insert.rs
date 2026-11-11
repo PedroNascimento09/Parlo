@@ -8,10 +8,7 @@ mod win {
     const KEYEVENTF_KEYUP: u32 = 0x0002;
     const KEYEVENTF_UNICODE: u32 = 0x0004;
     const VK_RETURN: u16 = 0x0D;
-    const VK_BACK: u16 = 0x08;
     pub const SW_RESTORE: i32 = 9;
-    pub const VK_CONTROL: u16 = 0x11;
-    pub const VK_V: u16 = 0x56;
 
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -77,42 +74,12 @@ mod win {
             }
         }
 
-        pub fn key(vk: u16, released: bool) -> Self {
-            Self {
-                kind: INPUT_KEYBOARD,
-                union: Union {
-                    keyboard: KeyboardInput {
-                        vk,
-                        scan: 0,
-                        flags: if released { KEYEVENTF_KEYUP } else { 0 },
-                        time: 0,
-                        extra: 0,
-                    },
-                },
-            }
-        }
-
         pub fn enter(released: bool) -> Self {
             Self {
                 kind: INPUT_KEYBOARD,
                 union: Union {
                     keyboard: KeyboardInput {
                         vk: VK_RETURN,
-                        scan: 0,
-                        flags: if released { KEYEVENTF_KEYUP } else { 0 },
-                        time: 0,
-                        extra: 0,
-                    },
-                },
-            }
-        }
-
-        pub fn backspace(released: bool) -> Self {
-            Self {
-                kind: INPUT_KEYBOARD,
-                union: Union {
-                    keyboard: KeyboardInput {
-                        vk: VK_BACK,
                         scan: 0,
                         flags: if released { KEYEVENTF_KEYUP } else { 0 },
                         time: 0,
@@ -173,14 +140,6 @@ mod win {
                 .filter(|name| !name.is_empty())
         }
     }
-}
-
-pub fn common_prefix(previous: &str, next: &str) -> usize {
-    previous
-        .chars()
-        .zip(next.chars())
-        .take_while(|(before, after)| before == after)
-        .count()
 }
 
 #[cfg(windows)]
@@ -244,6 +203,9 @@ pub fn foreground() -> Result<(usize, String), String> {
 #[cfg(target_os = "macos")]
 pub fn foreground() -> Result<(usize, String), String> {
     let app = mac::frontmost()?;
+    if let Ok(mut slot) = CAPTURED_APP.lock() {
+        *slot = Some(app.clone());
+    }
     Ok((0, app))
 }
 
@@ -292,89 +254,6 @@ pub fn type_text(target: usize, text: &str) -> Result<(), String> {
     }
     let mut batch: Vec<Input> = Vec::new();
     for character in text.chars() {
-        if character == '\n' {
-            batch.push(Input::enter(false));
-            batch.push(Input::enter(true));
-        } else {
-            let mut units = [0u16; 2];
-            for unit in character.encode_utf16(&mut units) {
-                batch.push(Input::unicode(*unit, false));
-                batch.push(Input::unicode(*unit, true));
-            }
-        }
-        if batch.len() >= 256 {
-            send(&batch)?;
-            batch.clear();
-        }
-    }
-    if !batch.is_empty() {
-        send(&batch)?;
-    }
-    Ok(())
-}
-
-#[cfg(windows)]
-pub fn paste(target: usize, text: &str) -> Result<(), String> {
-    use win::*;
-    let window = target as Window;
-    if focus(window).is_err() {
-        return Err("the window you were writing in is not in front any more".to_string());
-    }
-    crate::clipboard::copy_for(text, std::time::Duration::from_millis(1_500))?;
-    let batch = [
-        Input::key(VK_CONTROL, false),
-        Input::key(VK_V, false),
-        Input::key(VK_V, true),
-        Input::key(VK_CONTROL, true),
-    ];
-    if let Err(error) = send(&batch) {
-        let _ = crate::clipboard::keep(text);
-        return Err(error);
-    }
-    Ok(())
-}
-
-#[cfg(windows)]
-pub fn erase(target: usize, characters: usize) -> Result<(), String> {
-    use win::*;
-    let window = target as Window;
-    if focus(window).is_err() {
-        return Err("the window you were writing in is not in front any more".to_string());
-    }
-    let mut batch: Vec<Input> = Vec::new();
-    for _ in 0..characters {
-        batch.push(Input::backspace(false));
-        batch.push(Input::backspace(true));
-        if batch.len() >= 256 {
-            send(&batch)?;
-            batch.clear();
-        }
-    }
-    if !batch.is_empty() {
-        send(&batch)?;
-    }
-    Ok(())
-}
-
-#[cfg(windows)]
-pub fn rewrite(target: usize, previous: &str, next: &str) -> Result<(), String> {
-    use win::*;
-    let window = target as Window;
-    if focus(window).is_err() {
-        return Err("the window you were writing in is not in front any more".to_string());
-    }
-    let common = common_prefix(previous, next);
-    let remove = previous.chars().count() - common;
-    let mut batch: Vec<Input> = Vec::new();
-    for _ in 0..remove {
-        batch.push(Input::backspace(false));
-        batch.push(Input::backspace(true));
-        if batch.len() >= 256 {
-            send(&batch)?;
-            batch.clear();
-        }
-    }
-    for character in next.chars().skip(common) {
         if character == '\n' {
             batch.push(Input::enter(false));
             batch.push(Input::enter(true));
@@ -474,21 +353,6 @@ mod x11 {
         )
         .map(|_| ())
     }
-
-    pub fn erase(characters: usize) -> Result<(), String> {
-        let count = characters.to_string();
-        run(
-            "xdotool",
-            &[
-                OsStr::new("key"),
-                OsStr::new("--clearmodifiers"),
-                OsStr::new("--repeat"),
-                OsStr::new(&count),
-                OsStr::new("BackSpace"),
-            ],
-        )
-        .map(|_| ())
-    }
 }
 
 #[cfg(target_os = "macos")]
@@ -567,93 +431,9 @@ pub fn type_text(_target: usize, text: &str) -> Result<(), String> {
     mac::run(&applescript_for(text)).map(|_| ())
 }
 
-#[cfg(target_os = "linux")]
-pub fn paste(target: usize, text: &str) -> Result<(), String> {
-    use std::ffi::OsStr;
-    if x11::active_window()? != target {
-        return Err("the window you were writing in is not in front any more".to_string());
-    }
-    crate::clipboard::copy_for(text, std::time::Duration::from_millis(1_500))?;
-    x11::run(
-        "xdotool",
-        &[
-            OsStr::new("key"),
-            OsStr::new("--clearmodifiers"),
-            OsStr::new("ctrl+v"),
-        ],
-    )
-    .map(|_| ())
-}
-
-#[cfg(target_os = "linux")]
-pub fn erase(target: usize, characters: usize) -> Result<(), String> {
-    if x11::active_window()? != target {
-        return Err("the window you were writing in is not in front any more".to_string());
-    }
-    x11::erase(characters)
-}
-
-#[cfg(any(target_os = "macos", test))]
-fn erase_script(characters: usize) -> String {
-    format!(
-        "tell application \"System Events\"\nrepeat {characters} times\nkey code 51\ndelay 0.01\nend repeat\nend tell"
-    )
-}
-
-#[cfg(target_os = "macos")]
-pub fn paste(_target: usize, text: &str) -> Result<(), String> {
-    let app = mac::frontmost()?;
-    let held = CAPTURED_APP
-        .lock()
-        .map_err(|_| "the program in front could not be read".to_string())?
-        .clone();
-    if held.as_deref() != Some(app.as_str()) {
-        return Err("the program you were writing in is not in front any more".to_string());
-    }
-    crate::clipboard::copy_for(text, std::time::Duration::from_millis(1_500))?;
-    mac::run("tell application \"System Events\" to keystroke \"v\" using command down").map(|_| ())
-}
-
-#[cfg(target_os = "macos")]
-pub fn erase(_target: usize, characters: usize) -> Result<(), String> {
-    let app = mac::frontmost()?;
-    let held = CAPTURED_APP
-        .lock()
-        .map_err(|_| "the program in front could not be read".to_string())?
-        .clone();
-    if held.as_deref() != Some(app.as_str()) {
-        return Err("the program you were writing in is not in front any more".to_string());
-    }
-    mac::run(&erase_script(characters)).map(|_| ())
-}
-
-#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
-pub fn paste(_target: usize, _text: &str) -> Result<(), String> {
-    Err(NO_FIELD.to_string())
-}
-
-#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
-pub fn erase(_target: usize, _characters: usize) -> Result<(), String> {
-    Err(NO_FIELD.to_string())
-}
-
 #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 pub fn type_text(_target: usize, _text: &str) -> Result<(), String> {
     Err(NO_FIELD.to_string())
-}
-
-#[cfg(not(windows))]
-pub fn rewrite(target: usize, previous: &str, next: &str) -> Result<(), String> {
-    let common = common_prefix(previous, next);
-    let remove = previous.chars().count() - common;
-    if remove > 0 {
-        erase(target, remove)?;
-    }
-    let rest: String = next.chars().skip(common).collect();
-    if !rest.is_empty() {
-        type_text(target, &rest)?;
-    }
-    Ok(())
 }
 
 #[cfg(test)]
@@ -661,22 +441,14 @@ mod tests;
 
 pub trait Field: Send + Sync {
     fn write(&self, window: usize, text: &str) -> Result<(), String>;
-    fn erase(&self, window: usize, characters: usize) -> Result<(), String>;
 }
 
 struct Native;
 
 impl Field for Native {
     fn write(&self, window: usize, text: &str) -> Result<(), String> {
-        match paste(window, text) {
-            Ok(()) => Ok(()),
-            Err(paste) => type_text(window, text)
-                .map_err(|typing| format!("{paste}; typing also failed: {typing}")),
-        }
-    }
-
-    fn erase(&self, window: usize, characters: usize) -> Result<(), String> {
-        erase(window, characters)
+        type_text(window, text)
+            .map_err(|error| format!("{error}. Copy the text and paste it yourself."))
     }
 }
 
@@ -689,13 +461,6 @@ struct Logged {
 impl Field for Logged {
     fn write(&self, window: usize, text: &str) -> Result<(), String> {
         event(&self.path, "write", window, text)
-    }
-
-    fn erase(&self, window: usize, characters: usize) -> Result<(), String> {
-        if std::env::var("PARLO_FIELD_REJECT").as_deref() == Ok("1") {
-            return Err("the field refused the edit".to_string());
-        }
-        event(&self.path, "erase", window, &characters.to_string())
     }
 }
 
@@ -741,24 +506,17 @@ pub fn field() -> Box<dyn Field> {
     }
 }
 
-pub fn captured() -> bool {
-    cfg!(debug_assertions) && logged().is_some()
-}
-
 pub fn replace_span(
     field: &dyn Field,
     window: usize,
     raw: &str,
     cleaned: &str,
 ) -> Result<(), String> {
-    let common = common_prefix(raw, cleaned);
-    let remove = raw.chars().count() - common;
-    if remove > 0 {
-        field.erase(window, remove)?;
+    if !raw.is_empty() {
+        return Err("Parlo cannot verify the previous text or cursor position, so it did not change the field.".to_string());
     }
-    let rest: String = cleaned.chars().skip(common).collect();
-    if !rest.is_empty() {
-        field.write(window, &rest)?;
+    if !cleaned.is_empty() {
+        field.write(window, cleaned)?;
     }
     Ok(())
 }
@@ -768,38 +526,28 @@ mod sink_tests {
     use super::*;
 
     #[test]
-    fn the_replacement_touches_only_the_changed_tail() {
-        let path = std::env::temp_dir().join(format!("parlo-field-{}.jsonl", std::process::id()));
-        let _ = std::fs::remove_file(&path);
-        std::env::set_var("PARLO_FIELD_LOG", &path);
-        std::env::remove_var("PARLO_FIELD_REJECT");
-        let field = field();
-        field.write(424242, "Bom dia.").unwrap();
-        replace_span(&*field, 424242, "Bom dia.", "Bom dia!").unwrap();
-        let events: Vec<serde_json::Value> = std::fs::read_to_string(&path)
-            .unwrap()
-            .lines()
-            .map(|line| serde_json::from_str(line).unwrap())
-            .filter(|event: &serde_json::Value| event["window"] == 424242)
-            .collect();
-        assert_eq!(events.len(), 3, "{events:?}");
-        assert_eq!(events[0]["op"], "write");
-        assert_eq!(events[0]["text"], "Bom dia.");
-        assert_eq!(events[1]["op"], "erase");
-        assert_eq!(events[1]["text"], "1");
-        assert_eq!(events[2]["text"], "!");
-        std::env::set_var("PARLO_FIELD_REJECT", "1");
-        field.write(424243, "Bom dia.").unwrap();
-        assert!(replace_span(&*field, 424243, "Bom dia.", "Bom dia!").is_err());
-        let refused: Vec<serde_json::Value> = std::fs::read_to_string(&path)
-            .unwrap()
-            .lines()
-            .map(|line| serde_json::from_str(line).unwrap())
-            .filter(|event: &serde_json::Value| event["window"] == 424243)
-            .collect();
-        assert_eq!(refused.len(), 1, "{refused:?}");
-        std::env::remove_var("PARLO_FIELD_REJECT");
-        std::env::remove_var("PARLO_FIELD_LOG");
-        let _ = std::fs::remove_file(&path);
+    fn native_field_refuses_windows_that_are_not_in_front() {
+        let field = Native;
+        for window in [0, 1, usize::MAX] {
+            assert!(field.write(window, "text").is_err());
+            assert!(field.write(window, "").is_err());
+        }
+    }
+
+    #[test]
+    fn a_replacement_never_erases_or_writes_without_verification() {
+        struct Recording(std::sync::Mutex<Vec<String>>);
+        impl Field for Recording {
+            fn write(&self, _window: usize, text: &str) -> Result<(), String> {
+                self.0.lock().unwrap().push(text.to_string());
+                Ok(())
+            }
+        }
+        let field = Recording(std::sync::Mutex::new(Vec::new()));
+        replace_span(&field, 1, "", "Bom dia.").unwrap();
+        assert!(replace_span(&field, 1, "Bom dia.", "Bom dia!").is_err());
+        assert!(replace_span(&field, 1, "Bom dia.", "Bom dia.").is_err());
+        assert!(replace_span(&field, 1, "Bom dia.", "").is_err());
+        assert_eq!(*field.0.lock().unwrap(), vec!["Bom dia."]);
     }
 }

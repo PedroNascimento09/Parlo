@@ -2,6 +2,10 @@
 
 Published numbers are the difference between a project people trust and a demo people stop believing. Parlo publishes what it measures and nothing else.
 
+## Recent recogniser-only check
+
+On Windows 11 with 12 logical CPUs, Parakeet int8 and four threads, the fixed 5.00 s Portuguese speech clip was decoded three times after one warm-up using `bench_dictate.py --runs 3 --threads 4 --clip speech --no-compare --json`. Cold model load took 4906.5 ms, the first write 523.4 ms, and the three later totals were 576.0, 530.5 and 556.0 ms (median 556.0 ms). This measures the recogniser script, not microphone capture, the app window or clipboard delivery. There was no same-session control, so it does not establish a speedup.
+
 ## Published results
 
 Reference machine: 12 core desktop CPU, no GPU, Windows 11, Python 3.12. Engine: Parakeet TDT 0.6B v3 int8 via sherpa-onnx, the OPUS-MT Portuguese to English package, Piper medium. Test audio: 4.95 s of Portuguese synthetic speech.
@@ -241,7 +245,7 @@ The polish never sits in front of the text. The island writes the raw sentence, 
 
 Two things had to be fixed to get here, and both were real bugs rather than setup. With cleanup off, the intelligence route ignored the mode and still called a configured model, so Polish off waited 1549 ms for a model it was not supposed to use. And the deterministic cleaner read a clarification marker at the start of a sentence as a self-correction and deleted what came before it, so "Bom dia. Isto é uma prova" came back as "uma prova", which made every polished dictation lose its opening.
 
-The replacement itself is exercised, not assumed. Insertion goes through one `Field` the server selects at start: the real one pastes into the captured window, and a recording one appends each write and erase to a file when `PARLO_FIELD_LOG` is set, so the test drives the real `parlo serve` without typing into any window. With the 150 ms model the log holds three events: the raw sentence at 0 ms, then an erase of one character and a write of `!` at 158 ms and 159 ms, and the field rebuilt from them is exactly the cleaned sentence asserted against the raw one. With the 1.2 s model the log holds the raw write alone, because the polish arrives at 1205 ms, past the grace. A sink that refuses the erase ("PARLO_FIELD_REJECT=1") leaves the same single write, so a failed replacement writes nothing extra and nothing twice.
+The replacement itself is exercised, not assumed. Insertion goes through one `Field` the server selects at start: the real one types into the captured window, and a recording one appends each write and erase to a file when `PARLO_FIELD_LOG` is set, so the test drives the real `parlo serve` without typing into any window. With the 150 ms model the log holds three events: the raw sentence at 0 ms, then an erase of one character and a write of `!` at 158 ms and 159 ms, and the field rebuilt from them is exactly the cleaned sentence asserted against the raw one. With the 1.2 s model the log holds the raw write alone, because the polish arrives at 1205 ms, past the grace. A sink that refuses the erase ("PARLO_FIELD_REJECT=1") leaves the same single write, so a failed replacement writes nothing extra and nothing twice.
 
 The first dictation no longer pays the engine load where it hurts. The recogniser takes 8671 ms to load on this machine, and it loads while the person is speaking, because the stream reads the audio as it arrives; letting go then costs the same 5 ms as any later dictation. Only a dictation that arrives with the engine cold and cannot use the stream, such as a translated one, still meets the load.
 

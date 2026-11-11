@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>Speech becomes text on your own computer.</b><br>
-  Hold a key, speak, and the sentence lands in the window you were already using, cleaned up.<br>
+  Hold a key, speak, then copy the sentence into the window you are using.<br>
   No account, no telemetry, no audio uploaded.
 </p>
 
@@ -13,7 +13,7 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-1e4f4a?style=flat-square"></a>
 </p>
 
-Parlo is a desktop program for dictation, live translation, captions, meetings and file dubbing. The recogniser, the translator and the voice run on the machine, from models downloaded once; after that, dictation, translation and captions work with the network off. Windows is validated end to end today; macOS and Linux build from the same source.
+Parlo is a desktop program for dictation, live translation, captions, meetings and file dubbing. The recogniser, the translator and the voice run on the machine, from models downloaded once; after that, dictation, translation and captions work with the network off. The current copy-only dictation flow has not been validated end to end on Windows; macOS and Linux build from the same source.
 
 <p align="center">
   <img src="docs/demo.gif" width="760" alt="The Parlo window: the home screen, the history with a Portuguese sentence and its English translation, and the counters for what was dictated">
@@ -53,7 +53,7 @@ Open Parlo and the Models panel lists what is missing. Press **Download models**
 
 | Task | What happens |
 |---|---|
-| Dictate into any program | `Ctrl+Alt+D` opens the bar on the monitor with the cursor. Speak and the sentence is typed into the window that had focus as it is recognised; with Polish on, Parlo waits and types the cleaned sentence when you stop. `Ctrl+Alt+Shift+D` keeps listening without holding a key, and `Escape` throws the phrase away. |
+| Dictate | `Ctrl+Alt+D` opens the bar. Speak, and when you let go the sentence is typed into the window you were in, at the cursor, while that window is still in front. If the window moved, Parlo puts the sentence on the clipboard instead and says so. Use Review dictation in the tray menu to focus and review the full result, then press Ctrl+Enter to copy it. Copy dictation in the tray copies it directly. `Ctrl+Alt+Shift+D` keeps listening without holding a key. |
 | Read while you speak | Live text shows your speech and the translation in two columns, in windows of about 2.5 seconds. `Ctrl+Alt+C` puts the same stream in a thin caption bar over a call or a video. |
 | Keep a meeting | Parlo records the room and writes a transcript with a time and a speaker on each line. Rename a speaker once and every line follows. Search it, ask what was decided, jump from an answer to the line and time behind it, and copy all of it as Markdown. |
 | Dub a file | Drop a video or audio file and get the same content in the other language, with subtitles synced to the original. The original background can stay under the new voice. |
@@ -77,13 +77,13 @@ The tray lists the three modes above a separator and the five destinations below
 
 | Keys | What happens |
 |---|---|
-| `Ctrl+Alt+D` | Opens the bar and dictates into the window that had the focus |
+| `Ctrl+Alt+D` | Opens the bar and dictates text to copy |
 | `Ctrl+Alt+Shift+D` | Keeps listening without holding any key |
 | `Ctrl+Alt+C` | Opens or closes captions |
-| `Ctrl+Alt+Z` | Takes back what the last dictation wrote |
+| `Ctrl+Alt+Z` | Unavailable until Parlo can verify the target field; use undo in the target application |
 | `Escape` | Discards the phrase, or stops live text, captions or a meeting in progress |
 
-Each key can be changed in Settings. Parlo checks the new combination on save, refuses one that repeats another, and gives the reason when Windows reports it as already taken.
+The dictation, hands-free and captions shortcuts can be changed in Settings. An optional global copy shortcut is disabled until you choose one. Parlo checks combinations on save and reports conflicts detected by Windows; other keyboard hooks may not be detectable. Global shortcuts are available on Windows only.
 
 ## From the terminal
 
@@ -115,13 +115,13 @@ No cloud provider number is published here, because none was measured with a rea
 
 ## Privacy
 
-Local mode makes no network call. Audio is not written to disk unless you pass an output path. The local API listens on loopback and uses a token the window generates at each start. The update check is the only call Parlo makes on its own, and it carries no audio and no identifier. A cloud provider is contacted only when you enable it, with your own key, over HTTPS or loopback. History, meetings, vocabulary and voice samples stay in your per-user data folder and can be deleted from the interface. No font, script or image loads from a CDN. [docs/PRIVACY.md](docs/PRIVACY.md) shows how to check this, command by command.
+Local mode makes no network call. Audio is not written to disk unless you pass an output path. The local API listens on loopback and uses a token the window generates at each start. The update check is the only call Parlo makes on its own, and it carries no audio and no identifier. A cloud provider is contacted only when you enable it, with your own key, over HTTPS or loopback. History, meetings, vocabulary, voice samples and the pending dictation recovery stay in your per-user data folder. Recovery text is stored unencrypted until discarded or a new dictation starts after copying; its Discard button removes the pending record. Filesystem backups may retain copies. No font, script or image loads from a CDN. [docs/PRIVACY.md](docs/PRIVACY.md) shows how to check this, command by command.
 
 ## Where Parlo stands
 
 - Beta. The build is unsigned, there is no signed `.msi`, `.dmg` or `.deb`, and SmartScreen may warn once.
-- Windows is validated end to end, window included. macOS and Linux are compiled and tested by CI, but the window has not been opened there.
-- The dictation shortcut exists on Windows only; elsewhere the text goes to the clipboard.
+- The current dictation flow has not been validated end to end on Windows. macOS and Linux are compiled and tested by CI, but the window has not been opened there.
+- The dictation shortcut exists on Windows only. Insertion types into the window captured when the dictation started, only while that window is still in front; otherwise the text goes to the clipboard. Parlo's undo is disabled because the cursor cannot yet be verified; undo in the target program.
 - Portuguese and English are the only pairs that install. The language list names others, and Parlo blocks them until their weights, licence and measured quality exist.
 - Dictation has been tested with the author's recordings, not with a panel of other speakers.
 - Meetings and captions read the microphone, not another app's audio, so routing the translation into a call still needs a virtual cable.
