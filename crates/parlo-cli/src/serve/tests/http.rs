@@ -3,14 +3,17 @@ use super::*;
 #[test]
 fn unsafe_insertions_and_undo_are_refused_over_http() {
     let (port, stop) = start_server();
-    for body in [
-        r#"{"text":"hello"}"#,
-        r#"{"text":"hello","replace":"old"}"#,
-        r#"{"text":"hello","live":true}"#,
-        r#"{"text":"","replace":"old","live":true}"#,
+    for (body, expected) in [
+        (r#"{"text":"hello"}"#, "409"),
+        (r#"{"text":"hello","replace":"old"}"#, "409"),
+        (r#"{"text":"hello","live":true}"#, "409"),
+        (r#"{"text":"","replace":"old","live":true}"#, "400"),
     ] {
         let answer = send(port, "POST", "/insert", body);
-        assert!(answer.starts_with("HTTP/1.1 409"), "{answer}");
+        assert!(
+            answer.starts_with(&format!("HTTP/1.1 {expected}")),
+            "{answer}"
+        );
         assert!(!answer.contains("\"inserted\":true"), "{answer}");
     }
     let answer = send(port, "POST", "/undo", "");
