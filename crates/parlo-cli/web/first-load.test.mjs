@@ -254,6 +254,11 @@ function stopHarness(overrides = {}) {
     liveBase: "",
     liveConfirmed: "",
     liveGuess: "",
+    liveInserted: "",
+    liveDesired: "",
+    liveRunning: false,
+    liveUncertain: false,
+    liveController: null,
     document: { body: { classList: { remove() {} } } },
     performance,
     AbortController,
@@ -278,7 +283,7 @@ function stopHarness(overrides = {}) {
     },
     ...overrides,
   };
-  vm.runInNewContext(`${sourceOf("writeFinal")}\n${sourceOf("stop")}\nthis.stop = stop;`, box);
+  vm.runInNewContext(`${sourceOf("writeFinal")}\n${sourceOf("liveSettled")}\n${sourceOf("stop")}\nthis.stop = stop;`, box);
   return { box, calls, track, processor };
 }
 
@@ -308,8 +313,15 @@ test("release stops capture before waiting and reprocesses an unsent tail", asyn
   assert.equal(processor.onaudioprocess, null);
   const request = calls.find((entry) => entry[0] === "fetch" && entry[1] === "/dictate");
   assert.equal(request[2].body, "complete wav");
-  assert.deepEqual(calls.filter((entry) => entry[0] === "insert"), [["insert", "complete words", undefined, "", undefined, false]]);
+  assert.deepEqual(calls.filter((entry) => entry[0] === "insert"), [["insert", "complete words", undefined, "", undefined, false, false]]);
   assert.deepEqual(calls.find((entry) => entry[0] === "recovery"), ["recovery", "complete words", false]);
+});
+
+test("an unchanged final text is not inserted a second time", async () => {
+  const { box, calls } = stopHarness({ liveInserted: "complete words" });
+  await box.stop();
+  assert.equal(calls.some((entry) => entry[0] === "insert"), false);
+  assert.deepEqual(calls.find((entry) => entry[0] === "state" && entry[1] === "Written").slice(1), ["Written", "The sentence is in your field. Undo removes it.", false]);
 });
 
 test("an unset write choice sends the spoken language on final audio", async () => {
@@ -331,7 +343,7 @@ test("a timed-out partial reprocesses all audio without starting an overlapping 
 test("polish finishes queued sentences and writes the final text once", async () => {
   const { box, calls } = stopHarness({ tidy: true });
   await box.stop();
-  assert.deepEqual(calls.filter((entry) => entry[0] === "insert"), [["insert", "First.", undefined, "", 0, false]]);
+  assert.deepEqual(calls.filter((entry) => entry[0] === "insert"), [["insert", "First.", undefined, "", 0, false, false]]);
   assert.equal(calls.some((entry) => entry[0] === "fetch"), false);
   assert.deepEqual(calls.find((entry) => entry[0] === "recovery"), ["recovery", "First.", false]);
   assert.equal(calls.some((entry) => entry[0] === "report" && entry[1] === "success"), false);
@@ -539,31 +551,40 @@ test("a failed transcription keeps earlier text and stops later work", async () 
   assert.equal(box.segmentUnsent, 0);
 });
 
-test("partial text is display only and the final transcript is written once", async () => {
+test("partial text is written live and the final transcript replaces it once", async () => {
   const requested = [];
   const shown = [];
   const partialBox = {
-    stream: {}, context: { sampleRate: 48000 }, paused: false, busy: false,
+    stream: {}, context: { sampleRate: 48000 }, paused: false, busy: false, tidy: false,
     partialRunning: false, transcriptComplete: true, streamFinal: "", finalStale: false,
-    chunks: [new Float32Array([1])], sentChunks: 0, partialTicket: 0,
-    liveBase: "", liveConfirmed: "", liveGuess: "", lastText: "", token: "token",
+    chunks: [new Float32Array([1])], sentChunks: 0, partialTicket: 0, session: 1,
+    liveBase: "", liveConfirmed: "", liveGuess: "", liveInserted: "", liveDesired: "",
+    liveRunning: false, liveUncertain: false, liveController: null,
+    lastText: "", token: "token", performance, setTimeout,
     localStorage: { getItem: () => "" }, WINDOW_SECONDS: 1, TARGET_RATE: 16000,
     encodeWav: () => "stream wav", downsample: (audio) => audio,
     saveRecovery() {}, setState: (...args) => shown.push(args), t: (_key, fallback) => fallback,
-    fetch: async (url) => { requested.push(url); return { ok: true, json: async () => [{ state: "partial", text: "partial words" }] }; },
+    fetch: async (url, options) => {
+      requested.push([url, options]);
+      if (url === "/insert") return { ok: true, json: async () => ({ inserted: true }) };
+      return { ok: true, json: async () => [{ state: "partial", text: "partial words" }] };
+    },
   };
-  vm.runInNewContext(`${sourceOf("combineWords")}\n${sourceOf("wordsOf")}\n${sourceOf("readLive")}\n${sourceOf("sendPartial")}\nthis.sendPartial = sendPartial;`, partialBox);
+  vm.runInNewContext(`${sourceOf("combineWords")}\n${sourceOf("wordsOf")}\n${sourceOf("readLive")}\n${sourceOf("writeIntoField")}\n${sourceOf("writeLive")}\n${sourceOf("pumpLive")}\n${sourceOf("liveSettled")}\n${sourceOf("sendPartial")}\nthis.sendPartial = sendPartial; this.liveSettled = liveSettled;`, partialBox);
   await partialBox.sendPartial(true);
+  assert.equal(await partialBox.liveSettled(100), true);
   assert.equal(partialBox.lastText, "partial words");
+  assert.equal(partialBox.liveInserted, "partial words");
   assert.deepEqual(shown.at(-1), ["Listening", "partial words", true]);
-  assert.deepEqual(requested, ["/listen/stream"]);
-  assert.doesNotMatch(island, /\blive:\s*true/);
-  assert.doesNotMatch(island, /function writeLive/);
+  assert.equal(requested[0][0], "/listen/stream");
+  assert.deepEqual(JSON.parse(requested[1][1].body), { text: "partial words", replace: "", latency_ms: 0, polish: false, live: true });
+  assert.match(island, /live: !!live/);
+  assert.match(island, /function writeLive/);
 
-  const { box, calls } = stopHarness();
+  const { box, calls } = stopHarness({ liveInserted: "partial words", liveDesired: "partial words" });
   await box.stop();
   assert.equal(box.lastText, "complete words");
-  assert.deepEqual(calls.filter((entry) => entry[0] === "insert"), [["insert", "complete words", undefined, "", undefined, false]]);
+  assert.deepEqual(calls.filter((entry) => entry[0] === "insert"), [["insert", "complete words", undefined, "partial words", undefined, false, false]]);
   assert.deepEqual(calls.find((entry) => entry[0] === "recovery"), ["recovery", "complete words", false]);
   assert.equal(box.busy, false);
   assert.equal(calls.at(-1)[1], "ready-to-copy");
@@ -607,7 +628,8 @@ test("cancel keeps completed segments visible for copying", async () => {
     stream: { getTracks: () => [] }, busy: false, controller: null,
     segmentPending: 0, segmentsWritten: 1, segmentText: "First sentence.", lastText: "First sentence.", recoveryText: "", recoveryQueue: Promise.resolve(true),
     processor: null, segmentController: null,
-    liveBase: "", liveConfirmed: "", liveGuess: "", session: 1, attempt: 0,
+    liveBase: "", liveConfirmed: "", liveGuess: "", liveInserted: "", liveDesired: "partial words",
+    liveRunning: false, liveUncertain: false, liveController: null, session: 1, attempt: 0,
     document: { body: { classList: { remove() {} } } },
     discard() {}, ready() {},
     showRecovery: (...args) => calls.push(["recovery", ...args]),
@@ -659,7 +681,8 @@ test("cancelled partial text survives dismissal and is copied only on confirmati
     recoveryTextEl: {}, copyRecoveryEl: { disabled: false }, clearRecoveryEl: { dataset: {} },
     resizeIsland: async () => {}, saveRecovery() {}, recoveryQueue: Promise.resolve(true), starting: false,
     processor: null, segmentController: null,
-    liveBase: "", liveConfirmed: "", liveGuess: "", session: 1, attempt: 0,
+    liveBase: "", liveConfirmed: "", liveGuess: "", liveInserted: "", liveDesired: "",
+    liveRunning: false, liveUncertain: false, liveController: null, session: 1, attempt: 0,
     token: "token", document: { body: { classList: {
       remove: (...names) => names.forEach((name) => classes.delete(name)),
       add: (name) => classes.add(name),

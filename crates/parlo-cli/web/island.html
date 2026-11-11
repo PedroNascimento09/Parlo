@@ -679,6 +679,11 @@ let whisper = localStorage.getItem("parlo-whisper") === "on";
 let liveBase = "";
 let liveConfirmed = "";
 let liveGuess = "";
+let liveInserted = "";
+let liveDesired = "";
+let liveRunning = false;
+let liveUncertain = false;
+let liveController = null;
 let partialTicket = 0;
 let partialRunning = false;
 let starting = false;
@@ -1238,6 +1243,12 @@ async function begin() {
     liveBase = "";
     liveConfirmed = "";
     liveGuess = "";
+    liveInserted = "";
+    liveDesired = "";
+    liveRunning = false;
+    liveUncertain = false;
+    if (liveController) liveController.abort();
+    liveController = new AbortController();
     silenceDetector = makeSilenceDetector();
     segmentStart = 0;
     audioBlocks = 0;
@@ -1355,6 +1366,7 @@ async function sendPartial(force) {
       if (!busy) {
         setState(t("island.listening", "Listening"), lastText, true);
       }
+      writeLive(lastText);
     }
   } catch (failure) {
     if (ticket === partialTicket) {
@@ -1409,6 +1421,7 @@ function resume() {
   paintPause();
   setState(t("island.listening", "Listening"), lastText, true);
   report("listening");
+  pumpLive();
 }
 
 function togglePause() {
@@ -1602,12 +1615,12 @@ function readLive(base, confirmed, guess, pieces) {
   };
 }
 
-async function writeIntoField(text, signal, replace, latency, polish) {
+async function writeIntoField(text, signal, replace, latency, polish, live) {
   try {
     const response = await fetch("/insert", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-      body: JSON.stringify({ text: text, replace: replace, latency_ms: latency || 0, polish: !!polish }),
+      body: JSON.stringify({ text: text, replace: replace, latency_ms: latency || 0, polish: !!polish, live: !!live }),
       signal,
     });
     const detail = await response.json().catch(() => ({}));
@@ -1620,8 +1633,68 @@ async function writeIntoField(text, signal, replace, latency, polish) {
   }
 }
 
-async function writeFinal(text, latency) {
-  return writeIntoField(text, undefined, "", latency, false);
+async function writeFinal(text, latency, replace) {
+  if (text === replace && replace) {
+    return { written: true, reason: "" };
+  }
+  return writeIntoField(text, undefined, replace || "", latency, false, false);
+}
+
+function writeLive(text) {
+  if (tidy || !text) {
+    return;
+  }
+  liveDesired = text;
+  pumpLive();
+}
+
+async function pumpLive() {
+  if (liveRunning || tidy || liveUncertain) {
+    return;
+  }
+  liveRunning = true;
+  const ticket = session;
+  try {
+    while (ticket === session && !busy && !paused && !liveUncertain && liveDesired && liveDesired !== liveInserted) {
+      const replace = liveInserted;
+      const next = liveDesired;
+      const outcome = await writeIntoField(next, liveController ? liveController.signal : undefined, replace, 0, false, true);
+      if (ticket !== session) {
+        break;
+      }
+      if (!outcome.written) {
+        liveUncertain = true;
+        if (!busy) {
+          setState("Live writing stopped", outcome.reason || "The live update could not be confirmed.", true);
+        }
+        break;
+      }
+      liveInserted = next;
+    }
+  } finally {
+    if (ticket === session) {
+      liveRunning = false;
+    }
+  }
+}
+
+function liveSettled(limitMs) {
+  if (!liveRunning) {
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    const started = performance.now();
+    const check = () => {
+      if (!liveRunning) {
+        resolve(true);
+      } else if (performance.now() - started > limitMs) {
+        resolve(false);
+      } else {
+        setTimeout(check, 15);
+      }
+    };
+    check();
+  });
 }
 
 function partialSettled(limitMs) {
@@ -1668,6 +1741,10 @@ async function cancel() {
   liveBase = "";
   liveConfirmed = "";
   liveGuess = "";
+  liveDesired = "";
+  if (liveController) liveController.abort();
+  liveController = null;
+  if (liveInserted || liveRunning) liveUncertain = true;
   attempt += 1;
   discard();
   busy = false;
@@ -1678,7 +1755,7 @@ async function cancel() {
       showRecovery(recovered, true);
       setState(t("island.cancelled", "Cancelled"), "Recognized text is available to copy. Later audio may not have been transcribed.", true);
     } else {
-      setState(t("island.cancelled", "Cancelled"), finalRequest ? "Cancellation requested. Check your field for any text already written." : t("island.nothingInserted", "Nothing was inserted."), true);
+      setState(t("island.cancelled", "Cancelled"), finalRequest || liveInserted ? "Cancellation requested. Check your field for any text already written." : t("island.nothingInserted", "Nothing was inserted."), true);
     }
   } else {
     ready();
@@ -1950,7 +2027,7 @@ async function stop() {
       return;
     }
     lastText = segmentText;
-    const polished = segmentFailure || !segmentsWritten ? { written: false, reason: "" } : await writeFinal(segmentText, 0);
+    const polished = segmentFailure || !segmentsWritten ? { written: false, reason: "" } : await writeFinal(segmentText, 0, liveInserted);
     if (ticket !== session) {
       return;
     }
@@ -1985,8 +2062,12 @@ async function stop() {
     return;
   }
   const settledInTime = await partialSettled(2500);
+  const liveFinished = await liveSettled(2500);
   if (ticket !== session) {
     return;
+  }
+  if (!liveFinished) {
+    liveUncertain = true;
   }
   if (!settledInTime || paused || sentChunks !== chunks.length) {
     transcriptComplete = false;
@@ -2077,7 +2158,9 @@ async function stop() {
     lastText = text;
     showRecovery(text, false);
     recoveryShown = true;
-    const written = await writeFinal(text, result.latency_ms);
+    const written = liveUncertain
+      ? { written: false, reason: "Live writing was not confirmed. Check the field before pasting." }
+      : await writeFinal(text, result.latency_ms, liveInserted);
     if (ticket !== session) {
       return;
     }
