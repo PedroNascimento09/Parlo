@@ -19,7 +19,7 @@ parlo-core.workspace = true
 arboard = "3"
 base64 = "0.22"
 rusqlite = { version = "0.32", features = ["bundled"] }
-cpal = "0.15"
+cpal = "0.18"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
