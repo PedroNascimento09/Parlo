@@ -122,7 +122,7 @@ try {
     <div class="gate-step" id="gate-name">
       <p class="gate-kicker" data-i18n="gate.welcome">Welcome</p>
       <h1 id="gate-title" data-i18n="gate.name.title">What should Parlo call you?</h1>
-      <p class="gate-note" data-i18n="gate.name.note">Only this computer keeps it.</p>
+      <p class="gate-note" data-i18n="gate.name.note">It stays on this computer, and nowhere else. Then: the two languages you use.</p>
       <label class="field" for="name-input">
         <span class="field-label" data-i18n="gate.name.label">Your name</span>
         <input id="name-input" class="field-input" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="">
@@ -133,8 +133,8 @@ try {
     </div>
     <div class="gate-step" id="gate-languages" hidden>
       <p class="gate-kicker" data-i18n="gate.languages.kicker">Languages</p>
-      <h1 data-i18n="gate.languages.title">Which two languages?</h1>
-      <p class="gate-note" data-i18n="gate.languages.note">You speak one; Parlo writes the other when translation is on.</p>
+      <h1 data-i18n="gate.languages.title">Which two languages do you use?</h1>
+      <p class="gate-note" data-i18n="gate.languages.note">The one you speak, and the one Parlo writes when translation is on. Then: we check the microphone.</p>
       <div class="gate-pair">
         <label class="field" for="gate-from">
           <span class="field-label" data-i18n="gate.from">I speak</span>
@@ -145,7 +145,7 @@ try {
         </label>
         <button id="gate-swap" class="swap" type="button" data-i18n="gate.swap">Swap</button>
         <label class="field" for="gate-to">
-          <span class="field-label" data-i18n="gate.to">They hear</span>
+          <span class="field-label" data-i18n="gate.to">Parlo writes</span>
           <select id="gate-to" class="field-input">
             <option value="pt" data-i18n="text.Portuguese">Portuguese</option>
             <option value="en" data-i18n="text.English">English</option>
@@ -159,10 +159,10 @@ try {
     </div>
     <div class="gate-step" id="gate-microphone" hidden>
       <p class="gate-kicker" data-i18n="gate.microphone.kicker">Microphone</p>
-      <h1 data-i18n="gate.microphone.title">Check the microphone.</h1>
-      <p class="gate-note" data-i18n="gate.microphone.note">Parlo asks Windows once. If it is blocked, open Settings &gt; Privacy &amp; security &gt; Microphone and allow desktop apps.</p>
+      <h1 data-i18n="gate.microphone.title">Let's check your microphone.</h1>
+      <p class="gate-note" data-i18n="gate.microphone.note">Parlo asks Windows for permission, once. If Windows says no, open Settings, then Privacy and security, then Microphone, and allow Parlo. Then: how you write.</p>
       <div class="gate-meter" aria-hidden="true"><span id="gate-mic-meter"></span></div>
-      <p class="gate-note" id="gate-mic-level" aria-live="polite" data-i18n="gate.microphone.idle">Tap Check it now, then speak. The bar moves when the microphone hears you.</p>
+      <p class="gate-note" id="gate-mic-level" aria-live="polite" data-i18n="gate.microphone.idle">Tap «Check it now» and say hello. The bar moves when it can hear you.</p>
       <div class="gate-actions">
         <button id="gate-mic-check" class="install" type="button" data-i18n="gate.microphone.check">Check it now</button>
         <button id="gate-mic-next" class="swap" type="button" disabled data-i18n="gate.continue">Continue</button>
@@ -173,7 +173,7 @@ try {
     <div class="gate-step" id="gate-style" hidden>
       <p class="gate-kicker" data-i18n="gate.style.kicker">Writing style</p>
       <h1 data-i18n="gate.style.title">How do you write?</h1>
-      <p class="gate-note" data-i18n="gate.style.note">Parlo shapes the punctuation to match.</p>
+      <p class="gate-note" data-i18n="gate.style.note">Parlo matches your punctuation. Then: the key that starts dictation.</p>
       <div class="style-cards" role="group" aria-label="Writing style" data-i18n-aria-label="style.title">
         <button class="style-card" data-style="formal" type="button">
           <span class="style-card-main">
@@ -205,8 +205,8 @@ try {
     <div class="gate-step" id="gate-shortcut" hidden>
       <p class="gate-kicker" data-i18n="gate.shortcut.kicker">Shortcut</p>
       <h1 data-i18n="gate.shortcut.title">One key, anywhere.</h1>
-      <p class="gate-note"><span data-i18n="gate.shortcut.hold">Hold</span> <kbd id="gate-shortcut-key">Ctrl+Alt+D</kbd> <span data-i18n="gate.shortcut.middle">in any program, speak, and let go.</span> <kbd>Escape</kbd> <span data-i18n="gate.shortcut.discard">throws the sentence away.</span></p>
-      <p class="gate-note" data-i18n="gate.shortcut.note2">You can change the key later in Settings, Shortcuts.</p>
+      <p class="gate-note"><span data-i18n="gate.shortcut.hold">Hold</span> <kbd id="gate-shortcut-key">Ctrl+Alt+D</kbd> <span data-i18n="gate.shortcut.middle">in any app, speak, and let go.</span> <kbd>Escape</kbd> <span data-i18n="gate.shortcut.discard">throws the sentence away.</span></p>
+      <p class="gate-note" data-i18n="gate.shortcut.note2">You can change the key later in Settings. Then: your first sentence.</p>
       <div class="gate-actions">
         <button id="gate-shortcut-try" class="swap" type="button" data-i18n="gate.shortcut.try">Try the shortcut</button>
         <button id="gate-shortcut-next" class="install" type="button" disabled data-i18n="gate.continue">Continue</button>
@@ -217,7 +217,7 @@ try {
     <div class="gate-step" id="gate-dictate" hidden>
       <p class="gate-kicker" data-i18n="gate.dictate.kicker">First sentence</p>
       <h1 data-i18n="gate.dictate.title">Say your first sentence.</h1>
-      <p class="gate-note" data-i18n="gate.dictate.note">Press Record, say one short sentence, then press Stop. Parlo writes it here and copies it, so you can paste it anywhere.</p>
+      <p class="gate-note" data-i18n="gate.dictate.note">Tap Record, say one short sentence, then tap Stop. Parlo writes it here and copies it for you. Then: the Home screen.</p>
       <div class="gate-actions">
         <button id="gate-dictate-record" class="install" type="button" data-i18n="gate.dictate.record">Record</button>
         <button id="gate-dictate-copy" class="swap" type="button" disabled data-i18n="gate.dictate.copy">Copy the sentence</button>
@@ -236,8 +236,8 @@ try {
 </section>
 
   <section class="welcome" id="welcome" aria-labelledby="welcome-title" hidden>
-    <h1 id="welcome-title" data-i18n="welcome.title">Speak once. Be heard.</h1>
-    <p class="welcome-lede"><span data-i18n="welcome.hold">Hold</span> <kbd id="welcome-key">Ctrl+Alt+D</kbd><span>, say a sentence, and let go. Copy the result and paste it where you want it.</span></p>
+    <h1 id="welcome-title" data-i18n="welcome.title">Say it. Parlo writes it.</h1>
+    <p class="welcome-lede"><span data-i18n="welcome.hold">Hold</span> <kbd id="welcome-key">Ctrl+Alt+D</kbd><span data-i18n="welcome.rest">, say a sentence, and let go. It appears where the cursor is, and your voice never leaves this computer.</span></p>
     <div class="welcome-actions">
       <button id="welcome-install" class="install welcome-install" type="button" data-i18n="welcome.install">Download the dictation model</button>
       <a id="welcome-more" class="welcome-more" href="#library/models" data-i18n="welcome.more">More models</a>
