@@ -2,6 +2,13 @@
 
 All notable changes are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org).
 
+## [0.2.9] - 11 November 2026
+
+### Added
+
+- Guided first-run onboarding in the island: a six-step Gate checks the microphone with a live meter, lets the person test the shortcut, and asks for a first dictated sentence that is written out and copied. Progress is kept in the browser, the whole guide can be skipped, and Settings can replay it at any time.
+- Complete interface translations in 21 languages. Every locale now carries all 1366 interface strings with zero fallbacks to English: Spanish, French, German, Italian, Dutch, Polish, Russian, Swedish, Danish, Finnish, Norwegian Bokmal, Czech, Romanian, Turkish, Ukrainian, Japanese, Korean, Chinese (Simplified) and Arabic join English and Portuguese.
+
 ## [0.2.8] - 11 November 2026
 
 ### Added
