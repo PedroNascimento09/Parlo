@@ -391,12 +391,14 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
-  .tidy {
+  .tidy,
+  .whisper {
     display: none;
     align-items: center;
     gap: 7px;
   }
-  body.ready .tidy { display: flex; }
+  body.ready .tidy,
+  body.ready .whisper { display: flex; }
   .switch-label {
     font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
     font-size: 9px;
@@ -544,6 +546,7 @@
     .write-menu,
     .write-option,
     .tidy,
+    .whisper,
     .switch,
     .switch .knob,
     .record,
@@ -578,6 +581,13 @@
         <span class="switch-label" id="tidy-label" data-i18n="island.cleanup">Polish</span>
         <span class="tidy-hint sr-only" id="tidy-hint" data-i18n="island.drops">Drops filler and repeats</span>
         <button type="button" class="switch" id="tidy" role="switch" aria-checked="false" aria-labelledby="tidy-label" aria-describedby="tidy-hint">
+          <span class="knob"></span>
+        </button>
+      </div>
+      <div class="whisper">
+        <span class="switch-label" id="whisper-label">Whisper</span>
+        <span class="whisper-hint sr-only" id="whisper-hint">Raises the microphone gain for quiet speech</span>
+        <button type="button" class="switch" id="whisper" role="switch" aria-checked="false" aria-labelledby="whisper-label" aria-describedby="whisper-hint">
           <span class="knob"></span>
         </button>
       </div>
@@ -623,6 +633,8 @@ const lineEl = document.getElementById("line");
 const hintEl = document.getElementById("hint");
 const tidyEl = document.getElementById("tidy");
 const tidyHint = document.getElementById("tidy-hint");
+const whisperEl = document.getElementById("whisper");
+const whisperHint = document.getElementById("whisper-hint");
 const recordEl = document.getElementById("record");
 const bars = [...document.querySelectorAll(".wave i")];
 const pauseEl = document.getElementById("pause");
@@ -663,6 +675,7 @@ let quietPeak = 0;
 let quietBlocks = 0;
 let partials = null;
 let tidy = localStorage.getItem("parlo-tidy") === "on";
+let whisper = localStorage.getItem("parlo-whisper") === "on";
 let liveInserted = "";
 let liveDesired = "";
 let liveBase = "";
@@ -999,7 +1012,7 @@ function measureQuiet(block) {
   }
   quietPeak = Math.max(quietPeak, peak);
   quietBlocks += 1;
-  if (quietBlocks === 8) {
+  if (quietBlocks === 8 && !whisper) {
     quietGain = quietPeak > 0 && quietPeak < 0.02 ? 4 : 1;
   }
 }
@@ -1121,7 +1134,7 @@ async function openMicrophone() {
     sink.gain.value = 0;
     chunks = [];
     sentChunks = 0;
-    quietGain = 1;
+    quietGain = whisper ? 4 : 1;
     quietPeak = 0;
     quietBlocks = 0;
     let voiceFrames = 0;
@@ -2235,6 +2248,13 @@ function paintTidy() {
     : t("island.keeps", "Keeps every spoken word");
 }
 
+function paintWhisper() {
+  whisperEl.setAttribute("aria-checked", String(whisper));
+  whisperHint.textContent = whisper
+    ? "Microphone gain is raised for quiet speech"
+    : "Raises the microphone gain for quiet speech";
+}
+
 const writeEl = document.getElementById("write");
 const writeMenu = document.getElementById("write-menu");
 const writeName = document.getElementById("write-name");
@@ -2418,6 +2438,12 @@ tidyEl.addEventListener("click", () => {
   paintTidy();
 });
 
+whisperEl.addEventListener("click", () => {
+  whisper = !whisper;
+  localStorage.setItem("parlo-whisper", whisper ? "on" : "off");
+  paintWhisper();
+});
+
 async function copyRecovery() {
   if (!recoveryText) {
     setState("Nothing to copy", "There is no dictation text to copy yet.", true);
@@ -2469,6 +2495,7 @@ document.getElementById("stop").addEventListener("click", () => {
 document.getElementById("dismiss").addEventListener("click", dismissIsland);
 
 paintTidy();
+paintWhisper();
 paintWrite();
 
 window.parloArm = arm;

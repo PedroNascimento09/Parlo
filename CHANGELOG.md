@@ -8,6 +8,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 - Dictation inserts at the cursor: the window captured on the shortcut is typed into when it is still in front on stop, with the clipboard as the fallback, on Windows, X11 and macOS.
 - Command Mode: the selection in the captured window can be copied and changed by a spoken command, with local text transforms only. The commands are make it formal, make it casual, make it excited, make it uppercase, make it lowercase, title case, make it shorter and bullets. The island shortcut for this is Ctrl+Alt+M.
+- Whisper mode: a switch in the island that forces the microphone gain to 4x from the first block, so the recogniser gets signal instead of silence at whisper level. The automatic quiet detection stays for unforced quiet; the forced gain is off until the user turns it on.
 
 - Eleven more languages: Polish, Swedish, Czech, Danish, Finnish, Greek, Romanian, Hungarian, Turkish, Ukrainian and Catalan, each with a translation pack in both directions with English, a text-to-speech voice, and Italian, Dutch and Russian to English. The packs download on demand from the Argos index (Apache-2.0, OPUS-MT) and are marked experimental until measured here; dictation hears nine of them with Parakeet and Turkish and Catalan with Whisper.
 

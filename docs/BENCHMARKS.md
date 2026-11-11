@@ -28,6 +28,10 @@ What changed: the engine trims leading and trailing silence before the encoder, 
 
 A machine under load stretches every run in a session, which is why the ruler also times the clip with trimming off. The control and the measured run share the conditions, so the percentage survives a busy laptop even when the absolute number does not.
 
+### Whisper gain on quiet speech
+
+The island can force a 4x microphone gain (Whisper mode) for very quiet speech. On the same 5.00 s Portuguese speech clip scaled to 4% of its level (peak 0.040, RMS 0.0067), decoded once per level with the cascade engine (`CascadeEngine`, Parakeet, four threads, trimming off), the recogniser returned an empty transcript against the full-level decode's twelve-word reference (word error rate 1.0). The same clip at 4x gain (peak 0.160, hard clipped like the island) decoded to ten of twelve reference words (0.25). So at whisper level the gain is the difference between nothing and a sentence; the auto-detection stays for unforced quiet, and this does not claim human whisper results, only that the recogniser needs signal above this floor.
+
 The synthetic tone is still there with `--clip tone`, with its own baseline in `docs/benchmarks/dictate.json`: 304.3 ms in a later session against the recorded 567.1 ms, and a post stage of 0 ms because the tone decodes to no words.
 
 ### Recogniser choice on modest hardware
