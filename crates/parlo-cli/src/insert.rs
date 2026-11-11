@@ -179,11 +179,37 @@ mod win {
 #[cfg(windows)]
 static LAST_TARGET: std::sync::Mutex<Option<usize>> = std::sync::Mutex::new(None);
 
-static LAST_INSERT: std::sync::Mutex<Option<(usize, String)>> = std::sync::Mutex::new(None);
+#[derive(Clone, PartialEq)]
+struct Record {
+    target: usize,
+    text: String,
+    previous: Option<String>,
+}
+
+static LAST_INSERT: std::sync::Mutex<Option<Record>> = std::sync::Mutex::new(None);
 
 fn remember_last(target: usize, text: &str) {
     if let Ok(mut slot) = LAST_INSERT.lock() {
-        *slot = Some((target, text.to_string()));
+        *slot = Some(Record {
+            target,
+            text: text.to_string(),
+            previous: None,
+        });
+    }
+}
+
+fn undo_step(record: &Record) -> (String, Option<String>, Option<Record>) {
+    match &record.previous {
+        Some(raw) => (
+            record.text.clone(),
+            Some(raw.clone()),
+            Some(Record {
+                target: record.target,
+                text: raw.clone(),
+                previous: Some(record.text.clone()),
+            }),
+        ),
+        None => (record.text.clone(), None, None),
     }
 }
 
@@ -191,7 +217,7 @@ pub fn replace_recorded(window: usize, raw: &str, cleaned: &str) -> Result<(), S
     let recorded = LAST_INSERT.lock().ok().and_then(|slot| slot.clone());
     let matches = recorded
         .as_ref()
-        .is_some_and(|(target, text)| *target == window && text == raw);
+        .is_some_and(|record| record.target == window && record.text == raw);
     if !matches {
         return Err("Parlo cannot verify the previous text or cursor position, so it did not change the field.".to_string());
     }
@@ -202,25 +228,40 @@ pub fn replace_recorded(window: usize, raw: &str, cleaned: &str) -> Result<(), S
         }
     } else {
         type_text(window, cleaned)?;
+        if let Ok(mut slot) = LAST_INSERT.lock() {
+            *slot = Some(Record {
+                target: window,
+                text: cleaned.to_string(),
+                previous: Some(raw.to_string()),
+            });
+        }
     }
     Ok(())
 }
 
-pub fn undo_last() -> Result<(), String> {
-    let (target, text) = LAST_INSERT
+pub fn undo_last() -> Result<bool, String> {
+    let record = LAST_INSERT
         .lock()
         .ok()
         .and_then(|slot| slot.clone())
         .ok_or_else(|| {
             "there is no dictation to undo; the last text Parlo typed is already gone".to_string()
         })?;
-    delete_back(target, &text)?;
+    let (gone, back, next) = undo_step(&record);
+    delete_back(record.target, &gone)?;
+    if let Some(raw) = back {
+        type_text(record.target, &raw)?;
+        if let Ok(mut slot) = LAST_INSERT.lock() {
+            *slot = next;
+        }
+        return Ok(true);
+    }
     if let Ok(mut slot) = LAST_INSERT.lock() {
-        if slot.as_ref() == Some(&(target, text.clone())) {
+        if slot.as_ref() == Some(&record) {
             *slot = None;
         }
     }
-    Ok(())
+    Ok(false)
 }
 
 #[cfg(windows)]

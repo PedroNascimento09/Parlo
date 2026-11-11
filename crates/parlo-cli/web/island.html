@@ -259,14 +259,26 @@
     padding: 6px 10px;
     cursor: pointer;
   }
-  .clear-recovery:focus-visible, .recovery-text:focus-visible {
+  .undo {
+    align-items: center;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .undo:focus-visible, .clear-recovery:focus-visible, .recovery-text:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
   .recovery-text[hidden],
   .copy-recovery[hidden],
-  .clear-recovery[hidden] { display: none; }
+  .clear-recovery[hidden],
+  .undo[hidden] { display: none; }
   .pause:active,
+  .undo:active,
   .stop:active,
   .copy-recovery:active,
   .record:active,
@@ -569,6 +581,7 @@
     <div class="actions">
       <button type="button" class="copy-recovery" id="copy-recovery" aria-keyshortcuts="Control+Enter" title="Copy text (Ctrl+Enter)">Copy text</button>
       <button type="button" class="clear-recovery" id="clear-recovery" hidden>Discard</button>
+      <button type="button" class="undo" id="undo" hidden>Undo</button>
       <button type="button" class="pause" id="pause" aria-pressed="false" data-i18n="island.pause">Pause</button>
       <button type="button" class="stop" id="stop" data-i18n="island.stop">Stop</button>
       <div class="write" role="group" aria-label="Write in" data-i18n-aria-label="island.writeIn">
@@ -641,6 +654,7 @@ const pauseEl = document.getElementById("pause");
 const copyRecoveryEl = document.getElementById("copy-recovery");
 const recoveryTextEl = document.getElementById("recovery-text");
 const clearRecoveryEl = document.getElementById("clear-recovery");
+const undoEl = document.getElementById("undo");
 const version = document.querySelector('meta[name="parlo-version"]').content;
 
 let stream = null;
@@ -652,6 +666,7 @@ let chunks = [];
 let ticker = null;
 let paused = false;
 let busy = false;
+let undoRedo = false;
 let lastText = "";
 let streamFinal = "";
 let finalStale = false;
@@ -894,6 +909,44 @@ async function clearRecovery() {
   }
   clearRecoveryEl.disabled = false;
   copyRecoveryEl.disabled = false;
+}
+
+function showUndo() {
+  undoRedo = false;
+  undoEl.hidden = false;
+  undoEl.disabled = false;
+  undoEl.textContent = t("text.Undo", "Undo");
+}
+
+function hideUndo() {
+  undoEl.hidden = true;
+}
+
+async function doUndo() {
+  if (undoEl.disabled) return;
+  undoEl.disabled = true;
+  try {
+    const response = await fetch("/undo", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || "Nothing to undo.");
+    }
+    const result = await response.json();
+    if (result.swapped) {
+      setState(t("text.Undone", "Undone"), t(undoRedo ? "text.The cleaned text is back in your field." : "text.The text before the cleanup is back in your field.", undoRedo ? "The cleaned text is back in your field." : "The text before the cleanup is back in your field."), false);
+      undoRedo = !undoRedo;
+    } else {
+      setState(t("text.Undone", "Undone"), t("text.The text Parlo wrote was removed from your field.", "The text Parlo wrote was removed from your field."), false);
+      hideUndo();
+    }
+  } catch (failure) {
+    setState(t("text.Undo failed", "Undo failed"), failure.message || "Nothing to undo.", true);
+  }
+  undoEl.disabled = false;
 }
 
 function noteWriteFailure(reason) {
@@ -1263,6 +1316,7 @@ async function begin() {
     segmentWarning = "";
     openWriteMenu(false);
     showRecovery("", false);
+    hideUndo();
     document.body.classList.remove("ready", "recovery");
     setState(t("island.listening", "Listening"), "", true);
     paintFirstLoad(hintEl, warmed);
@@ -2047,7 +2101,8 @@ async function stop() {
     } else {
       showRecovery(segmentText, false);
       if (polished.written) {
-        setState("Written", segmentWarning || "The cleaned sentence is in your field. Undo removes it.", false);
+        setState("Written", segmentWarning || t("text.The sentence is in your field. Undo brings back the words before cleanup.", "The sentence is in your field. Undo brings back the words before cleanup."), false);
+        showUndo();
         hideAfterDelay(4000);
       } else {
         setState(t("text.Ready to copy", "Ready to copy"), polished.reason || segmentWarning || "Review and copy the text, then paste it into your field.", false);
@@ -2166,7 +2221,8 @@ async function stop() {
       return;
     }
     if (written.written) {
-      setState("Written", result.note || "The sentence is in your field. Undo removes it.", false);
+      setState("Written", result.note || t("text.The sentence is in your field. Undo brings back the words before cleanup.", "The sentence is in your field. Undo brings back the words before cleanup."), false);
+      showUndo();
       hideAfterDelay(4000);
     } else {
       setState(t("text.Ready to copy", "Ready to copy"), written.reason || result.note || "Review and copy the text, then paste it into your field.", false);
@@ -2503,6 +2559,7 @@ async function copyRecovery() {
 
 copyRecoveryEl.addEventListener("click", copyRecovery);
 clearRecoveryEl.addEventListener("click", clearRecovery);
+undoEl.addEventListener("click", doUndo);
 
 recordEl.addEventListener("click", () => {
   begin();

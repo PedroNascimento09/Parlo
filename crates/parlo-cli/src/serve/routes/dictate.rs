@@ -95,7 +95,12 @@ fn handle(
                 .map(|()| Flow::Serve);
         }
         return match session.undo() {
-            Ok(()) => respond_json(stream, "200 OK", "{\"undone\":true}").map(|()| Flow::Serve),
+            Ok(swapped) => respond_json(
+                stream,
+                "200 OK",
+                &format!("{{\"undone\":true,\"swapped\":{swapped}}}"),
+            )
+            .map(|()| Flow::Serve),
             Err(error) => {
                 respond_json(stream, "409 Conflict", &error_json(&error)).map(|()| Flow::Serve)
             }

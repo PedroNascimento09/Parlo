@@ -267,10 +267,10 @@ impl Session {
         }
     }
 
-    pub(super) fn undo(&self) -> Result<(), String> {
-        insert::undo_last()?;
+    pub(super) fn undo(&self) -> Result<bool, String> {
+        let swapped = insert::undo_last()?;
         self.clear_live();
-        Ok(())
+        Ok(swapped)
     }
 
     pub(super) fn target_app(&self) -> Option<String> {

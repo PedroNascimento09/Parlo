@@ -248,6 +248,8 @@ function stopHarness(overrides = {}) {
     segmentText: "First.",
     writeSource: "en",
     token: "token",
+    undoEl: { hidden: true, disabled: false, textContent: "" },
+    undoRedo: false,
     controller: null,
     warmed: false,
     hintEl: {},
@@ -283,7 +285,7 @@ function stopHarness(overrides = {}) {
     },
     ...overrides,
   };
-  vm.runInNewContext(`${sourceOf("writeFinal")}\n${sourceOf("liveSettled")}\n${sourceOf("stop")}\nthis.stop = stop;`, box);
+  vm.runInNewContext(`${sourceOf("writeFinal")}\n${sourceOf("liveSettled")}\n${sourceOf("showUndo")}\n${sourceOf("hideUndo")}\n${sourceOf("stop")}\nthis.stop = stop;`, box);
   return { box, calls, track, processor };
 }
 
@@ -321,8 +323,68 @@ test("an unchanged final text is not inserted a second time", async () => {
   const { box, calls } = stopHarness({ liveInserted: "complete words" });
   await box.stop();
   assert.equal(calls.some((entry) => entry[0] === "insert"), false);
-  assert.deepEqual(calls.find((entry) => entry[0] === "state" && entry[1] === "Written").slice(1), ["Written", "The sentence is in your field. Undo removes it.", false]);
+  assert.deepEqual(calls.find((entry) => entry[0] === "state" && entry[1] === "Written").slice(1), ["Written", "The sentence is in your field. Undo brings back the words before cleanup.", false]);
   assert.deepEqual(calls.find((entry) => entry[0] === "hide"), ["hide", 4000]);
+});
+
+test("undo brings back the words before cleanup and then returns to the cleaned text", async () => {
+  const calls = [];
+  const undoEl = { hidden: true, disabled: false, textContent: "" };
+  const box = {
+    token: "token",
+    undoEl,
+    undoRedo: false,
+    fetch: async (url, options) => {
+      calls.push([url, options.method]);
+      return { ok: true, json: async () => ({ undone: true, swapped: true }) };
+    },
+    setState: (...args) => calls.push(["state", ...args]),
+    t: (_key, fallback) => fallback,
+  };
+  vm.runInNewContext(`${sourceOf("showUndo")}\n${sourceOf("hideUndo")}\n${sourceOf("doUndo")}\nthis.showUndo = showUndo;\nthis.doUndo = doUndo;`, box);
+  box.showUndo();
+  assert.equal(box.undoEl.hidden, false);
+  assert.equal(box.undoEl.textContent, "Undo");
+  await box.doUndo();
+  assert.deepEqual(calls.filter((entry) => entry[0] === "/undo"), [["/undo", "POST"]]);
+  assert.deepEqual(calls.find((entry) => entry[0] === "state"), ["state", "Undone", "The text before the cleanup is back in your field.", false]);
+  assert.equal(box.undoEl.hidden, false);
+  await box.doUndo();
+  assert.deepEqual(calls.filter((entry) => entry[0] === "state").at(-1), ["state", "Undone", "The cleaned text is back in your field.", false]);
+});
+
+test("undo over a plain insert removes the text and hides the button", async () => {
+  const calls = [];
+  const undoEl = { hidden: false, disabled: false, textContent: "Undo" };
+  const box = {
+    token: "token",
+    undoEl,
+    undoRedo: false,
+    fetch: async () => ({ ok: true, json: async () => ({ undone: true, swapped: false }) }),
+    setState: (...args) => calls.push(["state", ...args]),
+    t: (_key, fallback) => fallback,
+  };
+  vm.runInNewContext(`${sourceOf("hideUndo")}\n${sourceOf("doUndo")}\nthis.doUndo = doUndo;`, box);
+  await box.doUndo();
+  assert.deepEqual(calls.find((entry) => entry[0] === "state"), ["state", "Undone", "The text Parlo wrote was removed from your field.", false]);
+  assert.equal(box.undoEl.hidden, true);
+  assert.equal(box.undoEl.disabled, false);
+});
+
+test("undo when nothing was written degrades gracefully", async () => {
+  const calls = [];
+  const undoEl = { hidden: true, disabled: false, textContent: "" };
+  const box = {
+    token: "token",
+    undoEl,
+    undoRedo: false,
+    fetch: async () => ({ ok: false, status: 409, json: async () => ({ error: "there is no dictation to undo; the last text Parlo typed is already gone" }) }),
+    setState: (...args) => calls.push(["state", ...args]),
+    t: (_key, fallback) => fallback,
+  };
+  vm.runInNewContext(`${sourceOf("hideUndo")}\n${sourceOf("doUndo")}\nthis.doUndo = doUndo;`, box);
+  await box.doUndo();
+  assert.deepEqual(calls.find((entry) => entry[0] === "state"), ["state", "Undo failed", "there is no dictation to undo; the last text Parlo typed is already gone", true]);
 });
 
 test("an unset write choice sends the spoken language on final audio", async () => {

@@ -49,6 +49,40 @@ fn undo_with_nothing_typed_says_so() {
 }
 
 #[test]
+fn undo_over_a_cleanup_restores_the_words_before_it() {
+    let cleaned = Record {
+        target: 7,
+        text: "Clean sentence.".to_string(),
+        previous: Some("raw  words, uh sentence".to_string()),
+    };
+    let (gone, back, next) = undo_step(&cleaned);
+    assert_eq!(gone, "Clean sentence.");
+    assert_eq!(back.as_deref(), Some("raw  words, uh sentence"));
+    let record = next.expect("undo over a cleanup keeps the cleaned text for redo");
+    assert_eq!(record.text, "raw  words, uh sentence");
+    let (gone, back, next) = undo_step(&record);
+    assert_eq!(gone, "raw  words, uh sentence");
+    assert_eq!(back.as_deref(), Some("Clean sentence."));
+    assert_eq!(
+        next.expect("a second toggle stays available").text,
+        "Clean sentence."
+    );
+}
+
+#[test]
+fn undo_over_a_plain_insert_only_deletes() {
+    let fresh = Record {
+        target: 7,
+        text: "Typed words.".to_string(),
+        previous: None,
+    };
+    let (gone, back, next) = undo_step(&fresh);
+    assert_eq!(gone, "Typed words.");
+    assert!(back.is_none());
+    assert!(next.is_none());
+}
+
+#[test]
 fn a_newline_becomes_a_return_key() {
     let script = applescript_for("primeira\nsegunda");
     assert_eq!(script.matches("keystroke").count(), 2);
