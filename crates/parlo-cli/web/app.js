@@ -1743,7 +1743,7 @@ function paintHome() {
         hour: "2-digit",
         minute: "2-digit",
       }).format(new Date((entry.at || 0) * 1000));
-      const app = (entry.app || "").trim();
+      const app = knownApp(entry.app);
       homeLastApp.textContent = app;
       homeLastApp.hidden = !app;
       homeLastDot.hidden = !app;
@@ -5979,7 +5979,7 @@ async function loadHistory() {
 function fillHistoryApps() {
   const seen = new Set();
   for (const entry of historyEntries) {
-    const app = (entry.app || "").trim();
+    const app = knownApp(entry.app);
     if (app) {
       seen.add(app);
     }
@@ -5997,6 +5997,11 @@ function fillHistoryApps() {
     historyApp.append(option);
   }
   historyApp.value = seen.has(chosen) ? chosen : "";
+}
+
+function knownApp(app) {
+  const name = String(app || "").trim();
+  return name && name !== "unknown" ? name : "";
 }
 
 function matchesHistory(entry) {
@@ -6045,8 +6050,7 @@ function paintInsights() {
     if (!total) {
       continue;
     }
-    const raw = (entry.app || "").trim();
-    const name = raw && raw !== "unknown" ? raw : "Another app";
+    const name = knownApp(entry.app) || "Another app";
     apps.set(name, (apps.get(name) || 0) + total);
   }
   const ranked = [...apps.entries()].sort((left, right) => right[1] - left[1]).slice(0, 4);
@@ -6165,8 +6169,8 @@ function renderHistory() {
     if (entry.latency_ms > 0) {
       when.push(entry.latency_ms + " ms");
     }
-    const program = (entry.app || "").trim();
-    if (program && program !== "unknown") {
+    const program = knownApp(entry.app);
+    if (program) {
       when.push(program);
     }
     const words = document.createElement("button");
