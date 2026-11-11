@@ -7,9 +7,10 @@ that touches the island, the insertion path or the engine.
 ## What has to be true
 
 For each application below, copy and paste three dictations in a row. Each result
-must be complete, with no lost first word or duplicate text. Insertion happens
-once when dictation stops; streaming partials are display only. Automated tests
-prove the payload order, not that a real field accepts the typed text.
+must be complete, with no lost first word or duplicate text. Text is written
+live as you speak, each update replacing the previous fragment, and the final
+transcript replaces it once when dictation stops. Automated tests prove the
+payload order, not that a real field accepts the typed text.
 
 | Application | What to do | Run 1 | Run 2 | Run 3 |
 | --- | --- | --- | --- | --- |
@@ -29,7 +30,8 @@ Record the result for each application above.
 1. Dictate a short sentence, move the caret before the text settles and type a
    word. Check that the typed word and surrounding text remain intact.
 2. Start dictating, switch to a different window before the result arrives, and
-   check where the result lands. It must not change text in the wrong field.
+   check where the result lands. Live writing must stop and the final result
+   must be refused; nothing may be typed into the wrong field.
 3. Close the target while dictating. Confirm the failure is visible and the
    transcript can be recovered without recording again.
 4. Press Escape while recording. Check the resulting field and history for any

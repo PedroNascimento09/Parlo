@@ -14,7 +14,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ### Changed
 
-- Dictation writes the final sentence once when recording stops. Streaming partials remain display only, so the field cannot receive a live draft plus the final sentence and Undo targets the text just typed.
+- Dictation now writes live: partial transcripts appear in the field as you speak, each update replacing the previous fragment instead of duplicating it, and the final transcript replaces that fragment once when recording stops. Undo removes exactly the text Parlo inserted, and writing stops rather than stealing focus when the target window is no longer in front.
 
 ## [0.2.9] - 11 November 2026
 
