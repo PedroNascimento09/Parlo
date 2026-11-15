@@ -1,19 +1,18 @@
-const APP: &str = include_str!("../web/app.js");
-const CAPTIONS: &str = include_str!("../web/captions.html");
-
-fn function_body<'a>(source: &'a str, name: &str) -> &'a str {
-    let start = source
-        .find(&format!("function {name}("))
-        .unwrap_or_else(|| panic!("{name} is missing"));
-    let end = source[start..]
-        .find("\n}\n")
-        .map(|offset| start + offset)
-        .unwrap_or(source.len());
-    &source[start..end]
-}
-
+#[cfg(test)]
 mod tests {
-    use super::*;
+    const APP: &str = include_str!("../web/app.js");
+    const CAPTIONS: &str = include_str!("../web/captions.html");
+
+    fn function_body<'a>(source: &'a str, name: &str) -> &'a str {
+        let start = source
+            .find(&format!("function {name}("))
+            .unwrap_or_else(|| panic!("{name} is missing"));
+        let end = source[start..]
+            .find("\n}\n")
+            .map(|offset| start + offset)
+            .unwrap_or(source.len());
+        &source[start..end]
+    }
 
     #[test]
     fn every_control_the_app_binds_is_on_the_page() {

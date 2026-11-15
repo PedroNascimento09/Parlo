@@ -10,6 +10,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - The pending dictation recovery is now sealed with Windows account protection at rest instead of stored as plain text; older plain rows still open.
 - The native window now carries a content security policy instead of allowing any script.
 - `docs/README.md` now indexes every guide, so nothing in the folder is orphaned.
+- A test gate now fails when production Rust gains an `.unwrap()` outside tests, and the interface test scaffolding is no longer compiled into the release binary.
 
 ### Added
 
