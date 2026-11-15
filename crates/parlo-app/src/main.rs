@@ -413,3 +413,29 @@ fn now() -> u64 {
         .map(|elapsed| elapsed.as_secs())
         .unwrap_or_default()
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn the_window_config_carries_a_content_security_policy() {
+        let config =
+            std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/tauri.conf.json"))
+                .expect("the window config reads");
+        assert!(
+            !config.contains("\"csp\": null"),
+            "the window allows any script"
+        );
+        assert!(
+            config.contains("default-src 'self'"),
+            "the policy names its default"
+        );
+        assert!(
+            config.contains("object-src 'none'"),
+            "the policy blocks plugins"
+        );
+        assert!(
+            config.contains("frame-ancestors 'none'"),
+            "the policy blocks framing"
+        );
+    }
+}
