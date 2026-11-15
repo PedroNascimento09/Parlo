@@ -344,7 +344,7 @@ def catalog_problems(data: dict) -> list[str]:
             if not artifact.get(field):
                 problems.append(f"catalogue {identifier}: missing {field}")
         status = artifact.get("status")
-        if status not in ("verified", "unverified"):
+        if status not in ("verified", "unverified", "experimental"):
             problems.append(f"catalogue {identifier}: unknown status {status}")
         if status == "verified" and not artifact.get("attribution"):
             problems.append(f"catalogue {identifier}: verified without attribution")

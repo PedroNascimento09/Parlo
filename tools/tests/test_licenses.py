@@ -4,7 +4,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from licenses import Component, licence_problems, not_shipped_problems, policy, rust_components
+from licenses import (
+    Component,
+    catalog_problems,
+    licence_problems,
+    not_shipped_problems,
+    policy,
+    rust_components,
+)
 
 
 class NotShippedTests(unittest.TestCase):
@@ -29,6 +36,38 @@ class NotShippedTests(unittest.TestCase):
     def test_nothing_exempt_means_no_problems(self):
         self.assertEqual(not_shipped_problems({}, {"a": {"r-efi"}}), [])
 
+
+
+class CatalogStatusTests(unittest.TestCase):
+    def test_an_experimental_artifact_is_a_known_status(self):
+        data = {
+            "artifacts": [
+                {
+                    "id": "opus-mt-en-pl",
+                    "kind": "mt",
+                    "license": "Apache-2.0",
+                    "source": "https://github.com/argosopentech/argospm-index",
+                    "status": "experimental",
+                }
+            ]
+        }
+        self.assertEqual(catalog_problems(data), [])
+
+    def test_a_genuinely_unknown_status_is_rejected(self):
+        data = {
+            "artifacts": [
+                {
+                    "id": "mystery",
+                    "kind": "mt",
+                    "license": "Apache-2.0",
+                    "source": "https://example.invalid",
+                    "status": "shipped-and-proven-by-hand",
+                }
+            ]
+        }
+        problems = catalog_problems(data)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("unknown status", problems[0])
 
 
 class SqliteLicenceTests(unittest.TestCase):

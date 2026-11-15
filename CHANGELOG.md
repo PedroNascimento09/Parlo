@@ -6,6 +6,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [0.2.10] - 15 November 2026
 
+### Fixed
+
+- The licence gate now accepts the catalogue's `experimental` status. The gate only knew `verified` and `unverified`, so the release workflow failed at the licence step and the previous releases shipped without assets; the downloadable pairs stay marked experimental and unmeasured either way.
+
 ### Changed
 
 - Interface strings now live one file per language under `crates/parlo-cli/web/locales/` instead of a single 2.4 MB table, so editing one language no longer rewrites every other, and the server parses only the language it serves.
