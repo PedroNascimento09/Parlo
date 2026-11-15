@@ -19,8 +19,8 @@ Each channel is **Partial**: the manifest is complete and checked against the re
 `packaging/docker/Dockerfile` downloads the published Linux archive, checks it against the hash from `SHA256SUMS.txt` before unpacking it, and starts `parlo serve` as the unprivileged user `10001` on port `8787`:
 
 ```bash
-docker build -t parlo:0.2.9 packaging/docker
-docker run --rm -e PARLO_PIN=4821 -p 8787:8787 parlo:0.2.9
+docker build -t parlo:0.2.10 packaging/docker
+docker run --rm -e PARLO_PIN=4821 -p 8787:8787 parlo:0.2.10
 curl -H "x-parlo-pin: 4821" http://127.0.0.1:8787/v1/models
 ```
 

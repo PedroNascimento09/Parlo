@@ -4,6 +4,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.10] - 15 November 2026
+
 ### Changed
 
 - Interface strings now live one file per language under `crates/parlo-cli/web/locales/` instead of a single 2.4 MB table, so editing one language no longer rewrites every other, and the server parses only the language it serves.
@@ -24,9 +26,6 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - A "delete last word" voice command in English, Portuguese, Spanish, French and German, so a slip can be fixed without touching the keyboard.
 - `parlo undo` on the command line removes the last dictation through the running server, which now writes its port and token to `address.json` in the data folder.
 - Turning Polish on now actually swaps the typed sentence for the cleaned one, and the target route reports a captured field as insertable instead of always refusing.
-
-### Changed
-
 - Dictation now writes live: partial transcripts appear in the field as you speak, each update replacing the previous fragment instead of duplicating it, and the final transcript replaces that fragment once when recording stops. Undo removes exactly the text Parlo inserted, and writing stops rather than stealing focus when the target window is no longer in front.
 
 ## [0.2.9] - 11 November 2026
