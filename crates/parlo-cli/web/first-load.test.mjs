@@ -7,7 +7,8 @@ import vm from "node:vm";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const island = readFileSync(join(here, "island.html"), "utf8").replace(/\r\n/g, "\n");
-const locales = JSON.parse(readFileSync(join(here, "locales.json"), "utf8"));
+const localesMeta = JSON.parse(readFileSync(join(here, "locales/meta.json"), "utf8"));
+const locales = { ...localesMeta, strings: Object.fromEntries(localesMeta.locales.map((code) => [code, JSON.parse(readFileSync(join(here, `locales/${code}.json`), "utf8"))])) };
 const app = readFileSync(join(here, "app.js"), "utf8").replace(/\r\n/g, "\n");
 
 const strings = Object.values(locales).find(

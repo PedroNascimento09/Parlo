@@ -37,4 +37,4 @@ A language is supported when a test proves it, never because a model card mentio
 
 ## Interface languages
 
-`crates/parlo-cli/web/locales.json` carries the interface strings and a test fails when a locale leaves a key out or empty. Interface language and audio language are independent.
+`crates/parlo-cli/web/locales/` carries the interface strings, one file per language plus `meta.json` and a test fails when a locale leaves a key out or empty. Interface language and audio language are independent.

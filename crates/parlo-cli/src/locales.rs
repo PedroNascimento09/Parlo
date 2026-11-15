@@ -1,15 +1,51 @@
+use std::sync::OnceLock;
+
 use serde_json::{Map, Value};
 
 pub const DEFAULT: &str = "en";
 
-const TABLE: &str = include_str!("../web/locales.json");
+const META: &str = include_str!("../web/locales/meta.json");
 
-fn root() -> Value {
-    serde_json::from_str(TABLE).unwrap_or(Value::Null)
+const STRINGS: &[(&str, &str)] = &[
+    ("en", include_str!("../web/locales/en.json")),
+    ("pt", include_str!("../web/locales/pt.json")),
+    ("es", include_str!("../web/locales/es.json")),
+    ("fr", include_str!("../web/locales/fr.json")),
+    ("de", include_str!("../web/locales/de.json")),
+    ("it", include_str!("../web/locales/it.json")),
+    ("nl", include_str!("../web/locales/nl.json")),
+    ("pl", include_str!("../web/locales/pl.json")),
+    ("ru", include_str!("../web/locales/ru.json")),
+    ("sv", include_str!("../web/locales/sv.json")),
+    ("da", include_str!("../web/locales/da.json")),
+    ("fi", include_str!("../web/locales/fi.json")),
+    ("nb", include_str!("../web/locales/nb.json")),
+    ("cs", include_str!("../web/locales/cs.json")),
+    ("ro", include_str!("../web/locales/ro.json")),
+    ("tr", include_str!("../web/locales/tr.json")),
+    ("uk", include_str!("../web/locales/uk.json")),
+    ("ja", include_str!("../web/locales/ja.json")),
+    ("ko", include_str!("../web/locales/ko.json")),
+    ("zh", include_str!("../web/locales/zh.json")),
+    ("ar", include_str!("../web/locales/ar.json")),
+];
+
+fn meta() -> &'static Value {
+    static META_VALUE: OnceLock<Value> = OnceLock::new();
+    META_VALUE.get_or_init(|| serde_json::from_str(META).unwrap_or(Value::Null))
+}
+
+fn table(code: &str) -> Map<String, Value> {
+    STRINGS
+        .iter()
+        .find(|(name, _)| *name == code)
+        .and_then(|(_, text)| serde_json::from_str::<Value>(text).ok())
+        .and_then(|value| value.as_object().cloned())
+        .unwrap_or_default()
 }
 
 pub fn locales() -> Vec<String> {
-    root()
+    meta()
         .get("locales")
         .and_then(Value::as_array)
         .map(|rows| {
@@ -21,11 +57,11 @@ pub fn locales() -> Vec<String> {
 }
 
 pub fn available() -> Vec<(String, String)> {
-    let root = root();
+    let meta = meta();
     locales()
         .into_iter()
         .map(|code| {
-            let name = root
+            let name = meta
                 .pointer(&format!("/names/{code}"))
                 .and_then(Value::as_str)
                 .unwrap_or(&code)
@@ -48,19 +84,11 @@ pub fn check(value: &str) -> Result<String, String> {
 }
 
 pub fn strings(locale: &str) -> Map<String, Value> {
-    let root = root();
-    let mut merged = root
-        .pointer("/strings/en")
-        .and_then(Value::as_object)
-        .cloned()
-        .unwrap_or_default();
     let wanted = check(locale).unwrap_or_else(|_| DEFAULT.to_string());
-    if let Some(chosen) = root
-        .pointer(&format!("/strings/{wanted}"))
-        .and_then(Value::as_object)
-    {
-        for (key, value) in chosen {
-            merged.insert(key.clone(), value.clone());
+    let mut merged = table(DEFAULT);
+    if wanted != DEFAULT {
+        for (key, value) in table(&wanted) {
+            merged.insert(key, value);
         }
     }
     merged
@@ -75,6 +103,13 @@ mod tests {
         let keys = strings("en").keys().cloned().collect::<Vec<String>>();
         assert!(!keys.is_empty());
         assert_eq!(locales().len(), 21);
+        assert_eq!(STRINGS.len(), locales().len());
+        for (code, _) in STRINGS {
+            assert!(
+                locales().contains(&code.to_string()),
+                "{code} is not listed"
+            );
+        }
         for locale in locales() {
             let table = strings(&locale);
             for key in &keys {

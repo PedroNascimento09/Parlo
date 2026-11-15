@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Changed
+
+- Interface strings now live one file per language under `crates/parlo-cli/web/locales/` instead of a single 2.4 MB table, so editing one language no longer rewrites every other, and the server parses only the language it serves.
+
 ### Added
 
 - Undo for the last dictation: Parlo remembers what it typed, and the undo shortcut (Ctrl+Alt+Z by default) deletes exactly that text from the window it went to, on Windows, X11 and macOS. The tray menu and the settings carry the same control.
