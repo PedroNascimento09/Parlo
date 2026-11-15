@@ -46,6 +46,8 @@ The installer carries the programs, not the models. Each model is named with its
 
 Updates arrive inside the app, with the release notes beside the button, and a version is always a tagged release, never a commit.
 
+Package managers (winget, Homebrew, AUR, Snap, DEB, AppImage, Nix and Docker) have manifests under [packaging](packaging/README.md). Each channel is marked Partial there: the manifest is checked against the release workflow, but no install has been run end to end from this machine, so treat it as a recipe that may need a fix before it works.
+
 ## First run
 
 Open Parlo and the Models panel lists what is missing. Press **Download models** once. The first start takes about twenty seconds while the engine loads, and the window says so rather than looking stuck.
@@ -159,6 +161,7 @@ Neither check replaces code signing, which this build does not have yet. [Window
 - [Contributing](CONTRIBUTING.md) and [governance](GOVERNANCE.md) describe how changes land.
 - [Security policy](SECURITY.md) says how to report a vulnerability, and [support](SUPPORT.md) where to ask for help.
 - [Code of conduct](CODE_OF_CONDUCT.md) applies to every space this project uses.
+- If Parlo earns a place on your machine, starring the repository is the simplest way to help other people find it.
 
 ## License
 

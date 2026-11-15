@@ -13,6 +13,8 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - A test gate now fails when production Rust gains an `.unwrap()` outside tests, and the interface test scaffolding is no longer compiled into the release binary.
 - The sidecar protocol now has tests for malformed responses and non-finite samples, so a bad engine answer fails as an error instead of a panic.
 - The README now carries a CI badge beside the release and licence badges.
+- The README now points at the package manager manifests and asks readers to star the repository.
+- The stale `claims-match-the-build` branch is removed: its README draft claimed an end-to-end Windows validation and five settings groups that the current build does not have, and its language table predates the downloadable pairs; the CI badge and packaging pointer were salvaged into `main`.
 
 ### Added
 
