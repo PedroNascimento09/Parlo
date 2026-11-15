@@ -100,6 +100,35 @@ fn talks_to_the_python_sidecar_when_present() {
 }
 
 #[test]
+fn a_response_without_an_op_is_refused() {
+    let parsed: Result<Response, _> = serde_json::from_str(r#"{"text":"hello"}"#);
+    assert!(parsed.is_err());
+}
+
+#[test]
+fn a_bare_op_gets_every_default() {
+    let response: Response = serde_json::from_str(r#"{"op":"hello"}"#).unwrap();
+    assert_eq!(response.op, "hello");
+    assert!(response.pcm16.is_none());
+    assert!(response.events.is_empty());
+    assert!(response.target_languages.is_empty());
+}
+
+#[test]
+fn an_odd_trailing_byte_is_ignored() {
+    let decoded = decode_pcm16(&[0, 64, 255]);
+    assert_eq!(decoded.len(), 1);
+}
+
+#[test]
+fn non_finite_samples_encode_as_silence() {
+    for sample in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        let decoded = decode_pcm16(&BASE64.decode(encode_pcm16(&[sample])).unwrap());
+        assert!(decoded[0].abs() <= 1.0, "{sample} escaped the range");
+    }
+}
+
+#[test]
 fn parses_sidecar_errors() {
     let response: Response =
         serde_json::from_str(r#"{"op":"error","seq":1,"error":"torch is not installed"}"#).unwrap();

@@ -11,6 +11,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 - The native window now carries a content security policy instead of allowing any script.
 - `docs/README.md` now indexes every guide, so nothing in the folder is orphaned.
 - A test gate now fails when production Rust gains an `.unwrap()` outside tests, and the interface test scaffolding is no longer compiled into the release binary.
+- The sidecar protocol now has tests for malformed responses and non-finite samples, so a bad engine answer fails as an error instead of a panic.
 
 ### Added
 
