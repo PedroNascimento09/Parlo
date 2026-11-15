@@ -67,6 +67,16 @@ These are real and should be fixed before a 1.0 release:
 - The engine latency is a declaration, not a measurement.
 - Only mono PCM16 WAV is accepted by the CLI today.
 
+## Frontend: the app.js split, planned not started
+
+`crates/parlo-cli/web/app.js` is one 9 000-line classic script: top-level, no modules, shared global scope, 278 functions and 210 listeners. Splitting it is deferred, deliberately, until a browser pass exists, for three measured reasons:
+
+- Eleven test files read `app.js` as text (`interface.rs`, the Node suite, the serve tests) and slice named functions out of the source. A split must move those readers to a concatenated view of the new files or the suite goes red for the wrong reason.
+- A per-file `node --check` cannot see a duplicate top-level `const` across two classic scripts sharing one global scope; that collision breaks the page at runtime with no signal in CI today.
+- No automated test opens the page in a browser, so load order and DOM wiring have no proof beyond the source-string tests.
+
+The split, when it happens, is mechanical and ordered: first make the tests read a build step that concatenates the feature files in `index.html` order, then move one feature at a time (masthead, talk, meetings, settings, tools) keeping every name, then add a browser smoke test that opens the page and fails on a console error. Until then, changes to `app.js` stay small and covered by the existing source-string tests.
+
 ## Testing strategy
 
 Unit tests live next to the code they cover and focus on the boundaries that break in production: resampler continuity across blocks, ring buffer eviction order, voice gate hangover, WAV header validation, and pipeline frame accounting. CLI behaviour is covered by running `doctor`, `demo`, and `translate` in CI.
