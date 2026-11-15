@@ -53,17 +53,19 @@ fn recovery_request(
     connection
         .busy_timeout(std::time::Duration::from_secs(5))
         .map_err(|error| error.to_string())?;
-    connection.execute_batch("PRAGMA secure_delete = ON; CREATE TABLE IF NOT EXISTS pending (id INTEGER PRIMARY KEY CHECK (id = 1), text TEXT NOT NULL, partial INTEGER NOT NULL);").map_err(|error| error.to_string())?;
+    connection.execute_batch("PRAGMA secure_delete = ON; CREATE TABLE IF NOT EXISTS pending (id INTEGER PRIMARY KEY CHECK (id = 1), text BLOB NOT NULL, partial INTEGER NOT NULL);").map_err(|error| error.to_string())?;
     if let Some((text, partial)) = request {
         if text.is_empty() {
             connection
                 .execute("DELETE FROM pending WHERE id = 1", [])
                 .map_err(|error| error.to_string())?;
         } else {
-            connection.execute("INSERT INTO pending (id, text, partial) VALUES (1, ?1, ?2) ON CONFLICT(id) DO UPDATE SET text=excluded.text, partial=excluded.partial", params![text, partial]).map_err(|error| error.to_string())?;
+            let stored = parlo_core::crypto::seal(text.as_bytes())
+                .unwrap_or_else(|_| text.as_bytes().to_vec());
+            connection.execute("INSERT INTO pending (id, text, partial) VALUES (1, ?1, ?2) ON CONFLICT(id) DO UPDATE SET text=excluded.text, partial=excluded.partial", params![stored, partial]).map_err(|error| error.to_string())?;
         }
     }
-    let pending: Option<(String, bool)> = connection
+    let pending: Option<(Vec<u8>, bool)> = connection
         .query_row(
             "SELECT text, partial FROM pending WHERE id = 1",
             [],
@@ -71,6 +73,18 @@ fn recovery_request(
         )
         .optional()
         .map_err(|error| error.to_string())?;
+    let pending = pending
+        .map(|(stored, partial)| {
+            let text = if parlo_core::crypto::sealed(&stored) {
+                let opened =
+                    parlo_core::crypto::open(&stored).map_err(|error| error.to_string())?;
+                String::from_utf8(opened).map_err(|error| error.to_string())?
+            } else {
+                String::from_utf8(stored).map_err(|error| error.to_string())?
+            };
+            Ok::<(String, bool), String>((text, partial))
+        })
+        .transpose()?;
     Ok(match pending {
         Some((text, partial)) => serde_json::json!({"text": text, "partial": partial}),
         None => serde_json::json!({"text": "", "partial": false}),
@@ -240,6 +254,16 @@ mod recovery_tests {
             &path,
         )
         .unwrap();
+        #[cfg(windows)]
+        {
+            let on_disk = std::fs::read(&path).unwrap();
+            assert!(
+                !on_disk
+                    .windows(b"First sentence. Second.".len())
+                    .any(|window| window == b"First sentence. Second."),
+                "the recovery file carries the pending text in plain bytes"
+            );
+        }
         let restored = recovery_request("GET", b"", &path).unwrap();
         assert_eq!(restored["text"], "First sentence. Second.");
         assert_eq!(restored["partial"], true);

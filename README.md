@@ -115,7 +115,7 @@ No cloud provider number is published here, because none was measured with a rea
 
 ## Privacy
 
-Local mode makes no network call. Audio is not written to disk unless you pass an output path. The local API listens on loopback and uses a token the window generates at each start. The update check is the only call Parlo makes on its own, and it carries no audio and no identifier. A cloud provider is contacted only when you enable it, with your own key, over HTTPS or loopback. History, meetings, vocabulary, voice samples and the pending dictation recovery stay in your per-user data folder. Recovery text is stored unencrypted until discarded or a new dictation starts after copying; its Discard button removes the pending record. Filesystem backups may retain copies. No font, script or image loads from a CDN. [docs/PRIVACY.md](docs/PRIVACY.md) shows how to check this, command by command.
+Local mode makes no network call. Audio is not written to disk unless you pass an output path. The local API listens on loopback and uses a token the window generates at each start. The update check is the only call Parlo makes on its own, and it carries no audio and no identifier. A cloud provider is contacted only when you enable it, with your own key, over HTTPS or loopback. History, meetings, vocabulary, voice samples and the pending dictation recovery stay in your per-user data folder. Recovery text is sealed with Windows account protection on Windows until discarded or a new dictation starts after copying; its Discard button removes the pending record. Filesystem backups may retain copies. No font, script or image loads from a CDN. [docs/PRIVACY.md](docs/PRIVACY.md) shows how to check this, command by command.
 
 ## Where Parlo stands
 

@@ -7,6 +7,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Changed
 
 - Interface strings now live one file per language under `crates/parlo-cli/web/locales/` instead of a single 2.4 MB table, so editing one language no longer rewrites every other, and the server parses only the language it serves.
+- The pending dictation recovery is now sealed with Windows account protection at rest instead of stored as plain text; older plain rows still open.
 
 ### Added
 
