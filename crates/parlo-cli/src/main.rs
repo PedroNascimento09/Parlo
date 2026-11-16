@@ -11,6 +11,7 @@ mod actions;
 mod agents;
 mod ask;
 mod audiobook;
+mod autostart_cmd;
 mod batch;
 mod bench;
 mod calls;
@@ -101,6 +102,7 @@ fn main() -> ExitCode {
         Some("soak") => soak::command(&args[1..]),
         Some("pronounce") => pronounce::command(&args[1..]),
         Some("undo") => undo_command(),
+        Some("autostart") => autostart_cmd::command(&args[1..]),
         Some("update") => update_command(&args[1..]),
         Some("config") => config_cmd::command(&args[1..]),
         Some("snippet") => snippets::command(&args[1..]),
@@ -145,6 +147,7 @@ fn print_help() {
         "  pronounce [word] [--text TEXT]   show how a name is spoken before the engine says it"
     );
     println!("  undo                               take back what the last dictation wrote");
+    println!("  autostart [on|off]                 start Parlo when you sign in");
     println!("  demo [out.wav]                     run the pipeline on synthetic speech");
     println!("  bench [--json]                     measure every engine on this machine");
     println!("  bench dictate [--runs N] [--json]  measure end of audio to text, with the stages");
@@ -603,10 +606,12 @@ fn app_command(args: &[String]) -> Result<(), String> {
     let mut stt = stored.stt.clone();
     let mut from = stored.from.clone();
     let mut to = stored.to.clone();
+    let mut hidden = false;
     let mut index = 0;
 
     while index < args.len() {
         match args[index].as_str() {
+            "--hidden" => hidden = true,
             "--from" => {
                 index += 1;
                 from = args.get(index).cloned().ok_or("--from needs a value")?;
@@ -646,7 +651,11 @@ fn app_command(args: &[String]) -> Result<(), String> {
     let window = install::window_binary().ok_or_else(|| {
         "the Parlo window is not beside this program; install the latest release".to_string()
     })?;
-    Command::new(&window)
+    let mut command = Command::new(&window);
+    if hidden {
+        command.arg("--hidden");
+    }
+    command
         .spawn()
         .map_err(|error| format!("cannot open {}: {error}", window.display()))?;
     Ok(())

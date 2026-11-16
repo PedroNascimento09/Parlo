@@ -35,6 +35,9 @@ fn main() {
             let window = app
                 .get_webview_window("main")
                 .ok_or("the main window is missing")?;
+            if std::env::args().any(|arg| arg == "--hidden") {
+                let _ = window.hide();
+            }
             app.manage(Engine(Mutex::new(None)));
             app.manage(Address(Mutex::new(None)));
             if let Err(error) = presence::install(app.handle()) {

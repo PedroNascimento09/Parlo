@@ -45,6 +45,7 @@ pub(crate) fn doctor() -> Result<(), String> {
     println!("engine binary     {}", engine_binary());
     println!("models            {}", models_summary());
     println!("config            {}", config_summary());
+    println!("start at login    {}", crate::autostart_cmd::summary());
     println!("data              {}", config::data_root().display());
     println!("ffmpeg            {}", ffmpeg_version());
     println!();

@@ -1,8 +1,12 @@
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use std::sync::Mutex;
+
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Wry};
 
 const ICON: &[u8] = include_bytes!("../../../assets/parlo-256.png");
+
+pub struct AutostartItem(Mutex<Option<CheckMenuItem<Wry>>>);
 
 pub fn install(app: &AppHandle) -> tauri::Result<()> {
     let dictate = MenuItem::with_id(app, "dictate", "Dictate", true, None::<&str>)?;
@@ -16,6 +20,14 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
     let meetings = MenuItem::with_id(app, "meetings", "Meetings", true, None::<&str>)?;
     let voice = MenuItem::with_id(app, "voice", "Voice", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+    let autostart = CheckMenuItem::with_id(
+        app,
+        "autostart",
+        "Start at login",
+        true,
+        parlo_core::autostart::entry().is_some(),
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, "quit", "Quit Parlo", true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
@@ -33,9 +45,12 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
             &voice,
             &settings,
             &PredefinedMenuItem::separator(app)?,
+            &autostart,
             &quit,
         ],
     )?;
+
+    app.manage(AutostartItem(Mutex::new(Some(autostart))));
 
     let icon = tauri::image::Image::from_bytes(ICON)?;
     TrayIconBuilder::with_id("presence")
@@ -55,6 +70,7 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
             "meetings" => focus_hub(app, Some("meetings")),
             "voice" => focus_hub(app, Some("voice")),
             "settings" => focus_hub(app, Some("settings")),
+            "autostart" => toggle_autostart(app),
             "quit" => app.exit(0),
             _ => {}
         })
@@ -70,6 +86,28 @@ pub fn install(app: &AppHandle) -> tauri::Result<()> {
         })
         .build(app)?;
     Ok(())
+}
+
+fn toggle_autostart(app: &AppHandle) {
+    let outcome = if parlo_core::autostart::entry().is_some() {
+        parlo_core::autostart::disable()
+    } else {
+        std::env::current_exe()
+            .map_err(|error| error.to_string())
+            .map(|exe| format!("{} --hidden", parlo_core::autostart::quote(&exe)))
+            .and_then(|command| parlo_core::autostart::enable(&command))
+    };
+    if let Err(error) = outcome {
+        crate::note(&format!("start at login: {error}"));
+    }
+    let now_on = parlo_core::autostart::entry().is_some();
+    if let Some(state) = app.try_state::<AutostartItem>() {
+        if let Ok(slot) = state.0.lock() {
+            if let Some(item) = slot.as_ref() {
+                let _ = item.set_checked(now_on);
+            }
+        }
+    }
 }
 
 pub fn focus_hub(app: &AppHandle, section: Option<&str>) {

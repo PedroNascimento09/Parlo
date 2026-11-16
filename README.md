@@ -52,6 +52,8 @@ Package managers (winget, Homebrew, AUR, Snap, DEB, AppImage, Nix and Docker) ha
 
 Open Parlo and the Models panel lists what is missing. Press **Download models** once. The first start takes about twenty seconds while the engine loads, and the window says so rather than looking stuck.
 
+When the first sentence is written, turn on **Start at login** in the tray or run `parlo autostart on`: the shortcut then works from the moment you sign in, without opening Parlo by hand.
+
 ## What you can do
 
 | Task | What happens |

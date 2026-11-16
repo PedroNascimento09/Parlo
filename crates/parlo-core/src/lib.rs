@@ -1,4 +1,5 @@
 pub mod audio;
+pub mod autostart;
 pub mod crypto;
 pub mod device;
 pub mod engine;

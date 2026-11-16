@@ -78,6 +78,12 @@ The island settles at the bottom of the monitor where the cursor is, so on a two
 
 Three shortcuts live beside each other: the dictation key, `Ctrl+Alt+Shift+D` for hands free and `Ctrl+Alt+C` for captions. Each can be typed in its settings row, which validates it, refuses a combination another of the three already uses, refuses one Windows reports as taken by another program, and stores it. Ctrl, Alt, Shift or Win plus a letter, a digit, a function key or Space is accepted, and a bare key is refused because a global shortcut without a modifier would swallow typing everywhere. The new keys are registered the next time the window starts; until then the old ones still work, and the window log names whatever it registered, including the case where another program already owns the combination.
 
+## Start at login
+
+A dictation shortcut is only useful while Parlo is running, so the tray carries **Start at login** above Quit, and the same switch exists as `parlo autostart on`, `off` or `status`. It registers the program that ran the command, which is the window when it sits beside `parlo`, and the window opens hidden in that mode so signing in does not throw a panel over the desktop. `parlo doctor` prints the entry and where it points, which is also the quickest way to notice an entry left over from an older install folder.
+
+On Windows the entry is one value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; on macOS it is a launch agent in `~/Library/LaunchAgents`; on Linux a `.desktop` file in `~/.config/autostart`. Each one can be removed by the same command or by hand, and none of them needs administrator rights.
+
 ## What dictation leaves out
 
 People correct themselves while they talk, and the dictated text should be the sentence they meant rather than every word they said. Three modes decide how much of that is done, and the engine takes one of them from `PARLO_CASCADE_CLEAN`: `original` writes what the recogniser heard, `light` is the default and removes self-corrections, abandoned sentence starts, hesitations and accidental repetitions, and `intelligent` adds tidier spacing and a capital letter at the start.
