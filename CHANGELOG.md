@@ -4,6 +4,18 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.11] - 16 November 2026
+
+### Added
+
+- Start at login: the tray menu carries a **Start at login** item, and `parlo autostart on`, `off` or `status` do the same from a terminal. The entry points at the Parlo window, so the dictation shortcut is available from the first minute after signing in, and the window starts hidden instead of opening on every boot.
+- `parlo doctor` reports whether Parlo starts at login and where the entry points.
+
+### Fixed
+
+- The licence notices and the licence index are current again. The release workflow regenerates both and refuses to continue when the committed copy differs, so every release since v0.2.8 stopped at that check and shipped without downloadable assets.
+- A release now attaches the Windows installer from the Windows job alone, and a final job fails the run when an expected asset is missing or the release is still a draft, so a tag cannot go live with nothing to download.
+
 ## [0.2.10] - 15 November 2026
 
 ### Fixed
