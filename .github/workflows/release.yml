@@ -222,14 +222,22 @@ jobs:
         with:
           subject-path: build/installer/Parlo-Setup.exe
 
-      - name: Attach to release
+      - name: Attach the archive
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: |
             ${{ matrix.archive }}
             sbom.cdx.json
-            build/installer/Parlo-Setup.exe
+          generate_release_notes: false
+          overwrite_files: true
+
+      - name: Attach the installer
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: build/installer/Parlo-Setup.exe
           generate_release_notes: false
           overwrite_files: true
 
@@ -259,3 +267,40 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: assets/SHA256SUMS.txt
           overwrite_files: true
+
+  verify:
+    name: Verify the release is installable
+    needs: checksums
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check every expected asset is attached and the release is live
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          gh release view "$TAG" --repo "${{ github.repository }}" --json assets,isDraft > release.json
+          python - <<'PY'
+          import json
+          import sys
+
+          release = json.load(open("release.json"))
+          names = {asset["name"] for asset in release["assets"]}
+          expected = {
+              "parlo-linux-x86_64.tar.gz",
+              "parlo-macos-aarch64.tar.gz",
+              "parlo-windows-x86_64.zip",
+              "Parlo-Setup.exe",
+              "sbom.cdx.json",
+              "SHA256SUMS.txt",
+          }
+          missing = sorted(expected - names)
+          if missing:
+              print("missing assets: " + ", ".join(missing))
+              sys.exit(1)
+          if release["isDraft"]:
+              print("the release is still a draft, so nobody can download it")
+              sys.exit(1)
+          print("attached: " + ", ".join(sorted(names)))
+          PY
