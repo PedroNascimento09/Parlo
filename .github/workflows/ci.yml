@@ -59,13 +59,7 @@ jobs:
         run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Test
-        shell: bash
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            cargo test --workspace -- --test-threads=1
-          else
-            cargo test --workspace
-          fi
+        run: cargo test --workspace
 
       - name: Smoke test the CLI
         shell: bash

@@ -9,6 +9,9 @@ const MAX_BUFFER_SECONDS: f32 = 20.0;
 
 pub fn devices() -> Result<Vec<String>, String> {
     let host = cpal::default_host();
+    if host.default_output_device().is_none() {
+        return Ok(Vec::new());
+    }
     let devices = host.output_devices().map_err(|error| error.to_string())?;
     Ok(devices
         .map(|device| device.name().unwrap_or_else(|_| "unnamed".to_string()))
