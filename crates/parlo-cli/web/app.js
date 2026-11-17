@@ -180,6 +180,7 @@ let updateSequence = 0;
 let modelsTimer = null;
 let modelsPolling = false;
 let welcomeTimer = null;
+let quickStartTimer = null;
 let modelsDownloading = false;
 let chosenFile = null;
 let dubbing = false;
@@ -1032,6 +1033,40 @@ async function downloadChosenModels(units) {
   }
 }
 
+function stopQuickStart() {
+  clearInterval(quickStartTimer);
+  quickStartTimer = null;
+}
+
+async function downloadQuickStart() {
+  welcomeInstall.disabled = true;
+  setWelcomeStatus(
+    "Downloading the small model first. Dictation starts as soon as it lands; the full model follows in the background.",
+  );
+  try {
+    const response = await fetch("/models/quick-start", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok && response.status !== 409) {
+      throw new Error(detail.error || "The download could not start.");
+    }
+    startWelcomeClock();
+    stopQuickStart();
+    quickStartTimer = setInterval(async () => {
+      await loadModels();
+      if (modelState.dictation) {
+        stopQuickStart();
+        stopWelcomeClock();
+      }
+    }, 3000);
+  } catch (failure) {
+    setWelcomeStatus(failure.message || "The download could not start.");
+    welcomeInstall.disabled = false;
+  }
+}
+
 function reflectFirstRun(ready, dictation, downloading) {
   const firstRun = document.body.classList.contains("first-run");
   if (dictation) {
@@ -1073,11 +1108,11 @@ function reflectFirstRun(ready, dictation, downloading) {
   stopWelcomeClock();
   welcomeInstall.hidden = false;
   welcomeInstall.disabled = modelsPolling;
-  const parakeet = catalogEntries.find((item) => item.unit === "parakeet");
+  const whisper = catalogEntries.find((item) => item.unit === "whisper");
   welcomeInstall.textContent =
-    parakeet && parakeet.size_mb
-      ? "Download the dictation model · " + parakeet.size_mb + " MB"
-      : "Download the dictation model";
+    whisper && whisper.size_mb
+      ? "Start dictating now · " + whisper.size_mb + " MB first"
+      : "Start dictating now";
 }
 
 let modelState = { models: [], ready: false, dictation: false, downloading: false };
@@ -1579,7 +1614,7 @@ async function downloadModels(path = "/models") {
 }
 
 modelsInstall.addEventListener("click", () => downloadModels());
-welcomeInstall.addEventListener("click", () => downloadChosenModels(["parakeet"]));
+welcomeInstall.addEventListener("click", () => downloadQuickStart());
 
 modelsDictation.addEventListener("click", () => downloadModels("/models/dictation"));
 

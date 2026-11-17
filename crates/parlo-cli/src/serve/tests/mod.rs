@@ -425,6 +425,7 @@ const ROUTES: &[(&str, &str, bool)] = &[
     ("GET", "/models", false),
     ("POST", "/models", true),
     ("POST", "/models/dictation", true),
+    ("POST", "/models/quick-start", true),
     ("POST", "/models/rest", true),
     ("POST", "/models/download", true),
     ("POST", "/models/relocate", true),

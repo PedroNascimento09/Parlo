@@ -63,6 +63,17 @@ fn dictation_needs_the_recogniser_the_engine_will_use() {
 }
 
 #[test]
+fn the_quick_recogniser_is_the_small_one_and_comes_first() {
+    assert_eq!(quick_order(), ["whisper", "parakeet"]);
+    let whisper = crate::registry::model("whisper").unwrap().bytes;
+    let parakeet = crate::registry::model("parakeet").unwrap().bytes;
+    assert!(
+        whisper < parakeet,
+        "the first download must be the smaller of the two"
+    );
+}
+
+#[test]
 fn whisper_is_installed_only_when_the_weights_are_there() {
     let root = std::env::temp_dir().join(format!("parlo-whisper-{}", std::process::id()));
     let cache = root.join("hub");

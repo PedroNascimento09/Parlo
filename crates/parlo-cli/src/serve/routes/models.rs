@@ -97,6 +97,7 @@ pub(crate) fn route_actions(
             "POST",
             "/models/rest"
                 | "/models/download"
+                | "/models/quick-start"
                 | "/models/relocate"
                 | "/models/cancel"
                 | "/models/policy"
@@ -141,6 +142,25 @@ fn handle_action(
             )
             .map(|()| Flow::Serve);
         }
+        return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
+    }
+
+    if method == "POST" && path == "/models/quick-start" {
+        if !authorised(headers, token) {
+            return respond_json(stream, "401 Unauthorized", "{\"error\":\"wrong token\"}")
+                .map(|()| Flow::Serve);
+        }
+        if models::dictation_ready(&models::status()) {
+            return respond_json(
+                stream,
+                "409 Conflict",
+                "{\"error\":\"dictation is already installed\"}",
+            )
+            .map(|()| Flow::Serve);
+        }
+        std::thread::spawn(|| {
+            let _ = models::quick_start(|_, _| {}, || false);
+        });
         return respond_json(stream, "202 Accepted", "{\"started\":true}").map(|()| Flow::Serve);
     }
 

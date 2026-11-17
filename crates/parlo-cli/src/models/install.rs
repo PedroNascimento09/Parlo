@@ -91,6 +91,95 @@ pub fn install_blocking(units: &[&str]) -> Result<(), String> {
     }
 }
 
+pub fn quick_order() -> [&'static str; 2] {
+    ["whisper", "parakeet"]
+}
+
+fn recogniser_ready(id: &str) -> bool {
+    status()
+        .iter()
+        .any(|model| model.id == id && model.installed)
+}
+
+fn choose_available() -> Result<(), String> {
+    let models = status();
+    let available = quick_order().into_iter().rev().find(|id| {
+        models
+            .iter()
+            .any(|model| model.id == *id && model.installed)
+    });
+    let Some(id) = available else {
+        return Ok(());
+    };
+    let mut config = crate::config::load();
+    if config.stt == id {
+        return Ok(());
+    }
+    config.stt = id.to_string();
+    crate::config::save(&config)
+        .map(|_| ())
+        .map_err(|error| format!("the recogniser was not saved: {error}"))
+}
+
+fn wait_for(
+    id: &str,
+    progress: &mut impl FnMut(&str, f32),
+    cancelled: &impl Fn() -> bool,
+) -> Result<(), String> {
+    let deadline = Instant::now() + Duration::from_secs(3_600);
+    progress(id, 0.0);
+    loop {
+        if cancelled() {
+            return Ok(());
+        }
+        let current = status();
+        if current
+            .iter()
+            .any(|model| model.id == id && model.installed)
+        {
+            progress(id, 1.0);
+            return Ok(());
+        }
+        if Instant::now() > deadline {
+            return Err(format!("{id} did not finish downloading within an hour"));
+        }
+        if !downloading(&current) {
+            return Err(format!("the {id} download stopped before it finished"));
+        }
+        std::thread::sleep(Duration::from_millis(500));
+    }
+}
+
+pub fn quick_start(
+    mut progress: impl FnMut(&str, f32),
+    cancelled: impl Fn() -> bool,
+) -> Result<(), String> {
+    let mut failure = None;
+    for id in quick_order() {
+        if recogniser_ready(id) {
+            continue;
+        }
+        if cancelled() {
+            break;
+        }
+        let outcome = install(&[id]).and_then(|()| wait_for(id, &mut progress, &cancelled));
+        match outcome {
+            Ok(()) => {
+                if cancelled() {
+                    break;
+                }
+                choose_available()?;
+            }
+            Err(error) => failure = Some(error),
+        }
+    }
+    choose_available()?;
+    match failure {
+        Some(error) if !dictation_ready(&status()) => Err(error),
+        _ => Ok(()),
+    }
+}
+
 pub fn download_remaining(
     mut progress: impl FnMut(&str, f32),
     cancelled: impl Fn() -> bool,
