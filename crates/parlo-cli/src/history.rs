@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -9,6 +10,11 @@ pub const LIMIT: usize = 200;
 const SECONDS_PER_DAY: u64 = 86_400;
 
 static NEXT: AtomicU64 = AtomicU64::new(0);
+static WRITE: Mutex<()> = Mutex::new(());
+
+fn writing() -> MutexGuard<'static, ()> {
+    WRITE.lock().unwrap_or_else(|error| error.into_inner())
+}
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
@@ -64,7 +70,8 @@ pub fn append(entry: &Entry) -> Result<(), String> {
     if !worth_keeping(entry) {
         return Ok(());
     }
-    let _ = prune(crate::config::load().history_days);
+    let _writing = writing();
+    let _ = prune_at(&path(), crate::config::load().history_days, now_seconds());
     append_to(&path(), entry)
 }
 
@@ -78,6 +85,7 @@ pub fn export(days: u32) -> Result<String, String> {
 }
 
 pub fn prune(days: u32) -> Result<usize, String> {
+    let _writing = writing();
     prune_at(&path(), days, now_seconds())
 }
 
@@ -171,10 +179,12 @@ pub fn favourites(limit: usize) -> Vec<Entry> {
 }
 
 pub fn clear() -> Result<(), String> {
+    let _writing = writing();
     clear_at(&path())
 }
 
 pub fn favourite(id: &str, value: bool) -> Result<Entry, String> {
+    let _writing = writing();
     with_entry(&path(), id, |entry| entry.favourite = value)
 }
 
@@ -186,6 +196,7 @@ pub fn edit_with_suggestions(
     if spoken.is_empty() {
         return Err("a corrected sentence cannot be empty".to_string());
     }
+    let _writing = writing();
     let path = path();
     let heard = entries_at(&path)
         .into_iter()
@@ -237,6 +248,7 @@ fn words(text: &str) -> Vec<String> {
 }
 
 pub fn remove(id: &str) -> Result<(), String> {
+    let _writing = writing();
     let path = path();
     let mut entries = entries_at(&path);
     let before = entries.len();
@@ -265,6 +277,7 @@ pub fn stamp_latency(ms: u64) -> Result<(), String> {
     if ms == 0 {
         return Ok(());
     }
+    let _writing = writing();
     stamp_latency_at(&path(), ms)
 }
 
@@ -298,6 +311,7 @@ pub fn search_json(query: &str, limit: usize) -> String {
 }
 
 pub fn restyle(id: &str, style: &str) -> Result<Entry, String> {
+    let _writing = writing();
     restyle_at(&path(), id, style)
 }
 

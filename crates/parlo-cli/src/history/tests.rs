@@ -82,6 +82,32 @@ fn a_limit_returns_only_what_was_asked() {
 }
 
 #[test]
+fn dictations_written_at_the_same_time_all_survive() {
+    let ids: Vec<String> = (0..8)
+        .map(|index| format!("race-{}-{index}", std::process::id()))
+        .collect();
+    let handles: Vec<std::thread::JoinHandle<()>> = ids
+        .iter()
+        .cloned()
+        .map(|id| {
+            std::thread::spawn(move || {
+                let mut entry =
+                    Entry::now("frase concorrente", "", "pt", "en", "Notepad", "dictate");
+                entry.id = id;
+                append(&entry).unwrap();
+            })
+        })
+        .collect();
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    for id in &ids {
+        assert!(get(id).is_some(), "{id} was lost by a concurrent write");
+        let _ = remove(id);
+    }
+}
+
+#[test]
 fn the_store_keeps_a_bound() {
     let path = scratch("bound");
     for index in 0..(LIMIT + 5) {

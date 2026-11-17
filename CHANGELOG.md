@@ -4,6 +4,10 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Fixed
+
+- A dictation no longer vanishes from the history when another write lands at the same moment. Every change to the history now takes a lock, so a sentence dictated in the window and one dictated from a terminal no longer overwrite each other.
+
 ## [0.2.11] - 16 November 2026
 
 ### Added
