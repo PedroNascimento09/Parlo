@@ -293,7 +293,7 @@ def verify(part: Path, target: Path, written: int, sha256: str | None, size: int
 
 
 def install_voices(names=None) -> None:
-    for name in names or DEFAULT_VOICES:
+    for name in DEFAULT_VOICES if names is None else names:
         url, path = VOICES[name]
         files = (
             (path, f"{name}.onnx", url),

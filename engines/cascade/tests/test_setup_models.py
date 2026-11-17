@@ -36,6 +36,22 @@ class Response:
         return False
 
 
+class OnlyTest(unittest.TestCase):
+    def test_only_whisper_leaves_every_voice_out(self):
+        with mock.patch.object(setup_models, "install_voices") as voices, mock.patch.object(
+            setup_models, "warm_whisper"
+        ) as whisper, mock.patch.object(setup_models, "install_parakeet") as parakeet:
+            setup_models.main(["--only", "whisper"])
+        voices.assert_called_once_with([])
+        whisper.assert_called_once_with("base")
+        parakeet.assert_not_called()
+
+    def test_an_empty_voice_list_downloads_nothing(self):
+        with mock.patch.object(setup_models, "download") as download:
+            setup_models.install_voices([])
+        download.assert_not_called()
+
+
 class DownloadTest(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
