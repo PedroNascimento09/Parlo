@@ -658,6 +658,8 @@ fn press_copy() -> Result<(), String> {
 }
 
 pub fn copy_selection(window: usize) -> Result<String, String> {
+    #[cfg(target_os = "macos")]
+    let _ = window;
     #[cfg(windows)]
     if focus(window as win::Window).is_err() {
         return Err("the window you selected in is not in front any more".to_string());
