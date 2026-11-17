@@ -663,6 +663,54 @@ mod tests {
         fs::remove_file(path).unwrap();
     }
 
+    fn root() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("..")
+            .join("..")
+    }
+
+    fn manifest_version() -> String {
+        let manifest = fs::read_to_string(root().join("Cargo.toml")).unwrap();
+        manifest
+            .lines()
+            .find_map(|line| line.strip_prefix("version = \""))
+            .and_then(|line| line.split('"').next())
+            .map(str::to_string)
+            .expect("the workspace manifest carries a version")
+    }
+
+    #[test]
+    fn the_manifest_version_has_release_notes() {
+        let version = manifest_version();
+        let notes = root()
+            .join("docs")
+            .join("releases")
+            .join(format!("v{version}.md"));
+        assert!(notes.is_file(), "{} is missing", notes.display());
+    }
+
+    #[test]
+    fn the_changelog_names_the_manifest_version() {
+        let version = manifest_version();
+        let changelog = fs::read_to_string(root().join("CHANGELOG.md")).unwrap();
+        assert!(
+            changelog.contains(&format!("## [{version}]")),
+            "CHANGELOG.md has no section for {version}"
+        );
+    }
+
+    #[test]
+    fn the_archive_this_platform_downloads_is_built_by_the_workflow() {
+        let workflow =
+            fs::read_to_string(root().join(".github").join("workflows").join("release.yml"))
+                .unwrap();
+        assert!(
+            workflow.contains(archive_name()),
+            "the updater downloads {} but the release workflow never builds it",
+            archive_name()
+        );
+    }
+
     #[test]
     fn a_missing_build_is_reported() {
         let latest = Latest {
