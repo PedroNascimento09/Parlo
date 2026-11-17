@@ -4,6 +4,16 @@ Dictation is the one part of Parlo a test suite cannot prove, because it needs a
 real window in front of a real microphone. Run this matrix before every release
 that touches the island, the insertion path or the engine.
 
+The capture tests in `crates/parlo-cli/src/record.rs` open a real audio device, and
+they stay off unless asked: a runner with no sound card crashes inside the audio
+backend before any assertion runs. On a machine with a microphone, run them with
+
+```bash
+PARLO_AUDIO_TESTS=1 cargo test -p parlo-cli record::
+```
+
+Every other test in the workspace runs without that variable.
+
 ## What has to be true
 
 For each application below, copy and paste three dictations in a row. Each result

@@ -224,6 +224,14 @@ where
 mod capture_tests {
     use super::*;
 
+    fn audio_is_available() -> bool {
+        if std::env::var("PARLO_AUDIO_TESTS").as_deref() == Ok("1") {
+            return true;
+        }
+        eprintln!("skipped: set PARLO_AUDIO_TESTS=1 to drive a real audio device");
+        false
+    }
+
     fn default_device_and_config() -> Option<(cpal::Device, cpal::SupportedStreamConfig)> {
         let host = cpal::default_host();
         let device = host.default_input_device()?;
@@ -233,6 +241,9 @@ mod capture_tests {
 
     #[test]
     fn devices_lists_what_the_system_has() {
+        if !audio_is_available() {
+            return;
+        }
         let devices = devices().unwrap_or_default();
         for name in devices {
             assert!(!name.is_empty(), "a device name must not be blank");
@@ -241,6 +252,9 @@ mod capture_tests {
 
     #[test]
     fn default_input_can_be_opened_when_present() {
+        if !audio_is_available() {
+            return;
+        }
         if let Some((device, _supported)) = default_device_and_config() {
             let index = device_index_of(&device);
             let result = if let Some(index) = index {
@@ -271,6 +285,9 @@ mod capture_tests {
 
     #[test]
     fn short_capture_does_not_hang() {
+        if !audio_is_available() {
+            return;
+        }
         if let Some((device, _supported)) = default_device_and_config() {
             let index = device_index_of(&device);
             let result = capture(0.5, index);
@@ -287,6 +304,9 @@ mod capture_tests {
 
     #[test]
     fn chunks_deliver_blocks_while_stream_is_open() {
+        if !audio_is_available() {
+            return;
+        }
         if let Some((device, _supported)) = default_device_and_config() {
             let mut received = 0;
             let result = chunks(device, 0.5, |block| {
