@@ -4,9 +4,18 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+## [0.2.12] - 17 November 2026
+
+### Added
+
+- Parlo now offers the small dictation model first. The first-run button downloads Whisper base, starts dictating when it lands, and keeps Parakeet downloading in the background; when Parakeet arrives Parlo switches back to it. The first sentence no longer waits for the 671 MB model.
+- The update button replaces every program the release ships, not only the command line binary: the window, both engines, the WebView2 loader and the CLI, and it starts again whichever program was running.
+
 ### Fixed
 
 - A dictation no longer vanishes from the history when another write lands at the same moment. Every change to the history now takes a lock, so a sentence dictated in the window and one dictated from a terminal no longer overwrite each other.
+- `--only` now downloads only what was asked for. Choosing the Whisper model used to pull the Portuguese and English voices first, 121 MB that dictation never reads.
+- The updater works on macOS and Linux: it writes a shell script that waits for the process to exit, swaps the files and starts Parlo again. Only a Windows batch script existed before, so the button failed elsewhere.
 
 ## [0.2.11] - 16 November 2026
 
