@@ -48,6 +48,13 @@ fn seconds_field(body: &[u8], fallback: u64) -> u64 {
 }
 
 pub fn snapshot() -> String {
+    snapshot_with(
+        crate::record::devices().unwrap_or_default(),
+        crate::playback::devices().unwrap_or_default(),
+    )
+}
+
+fn snapshot_with(inputs: Vec<String>, outputs: Vec<String>) -> String {
     let hardware = crate::hardware::detect();
     let cores = crate::engines::detect_cores();
     let gpu = crate::engines::detect_gpu_memory_mb();
@@ -70,8 +77,6 @@ pub fn snapshot() -> String {
             })
         })
         .collect();
-    let inputs = crate::record::devices().unwrap_or_default();
-    let outputs = crate::playback::devices().unwrap_or_default();
     let guidance = microphone(&inputs);
     let executable = std::env::current_exe()
         .map(|path| path.display().to_string())
@@ -354,7 +359,8 @@ mod tests {
 
     #[test]
     fn the_snapshot_carries_what_every_tool_panel_reads() {
-        let value: serde_json::Value = serde_json::from_str(&snapshot()).unwrap();
+        let value: serde_json::Value =
+            serde_json::from_str(&snapshot_with(Vec::new(), Vec::new())).unwrap();
         for key in [
             "hardware",
             "profile",
