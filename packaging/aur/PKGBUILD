@@ -1,5 +1,5 @@
 pkgname=parlo-bin
-pkgver=0.2.11
+pkgver=0.2.12
 pkgrel=1
 pkgdesc="Offline dictation, translation and meetings"
 arch=('x86_64')
@@ -8,7 +8,7 @@ license=('Apache-2.0')
 depends=('gtk3' 'webkit2gtk-4.1' 'alsa-lib')
 options=('!strip' '!debug')
 source=("parlo-linux-x86_64.tar.gz::https://github.com/PedroNascimento09/Parlo/releases/download/v${pkgver}/parlo-linux-x86_64.tar.gz")
-sha256sums=('5600d387001d22c26472c2eec6f6bc3d07ef906f06a42cb7e3732b27987157fe')
+sha256sums=('bcb6d35b555a08b56912d5651c8c245aebe5517e33a57b7413c9bc5a656ea574')
 
 package() {
   install -Dm755 "${srcdir}/parlo" "${pkgdir}/usr/bin/parlo"

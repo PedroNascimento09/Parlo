@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
   pname = "parlo";
-  version = "0.2.11";
+  version = "0.2.12";
 
   src = fetchurl {
     url = "https://github.com/PedroNascimento09/Parlo/releases/download/v${version}/parlo-linux-x86_64.tar.gz";
-    hash = "sha256-VgDThwAdIsJkcsLuxva8PQfvkG8GpCy343MrJ5hxV/4=";
+    hash = "sha256-vLbTW1VaCLVpEtVlHIwkWuvlUX4zpXt0E8m8WmVupXQ=";
   };
 
   nativeBuildInputs = [ autoPatchelfHook ];

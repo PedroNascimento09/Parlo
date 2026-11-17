@@ -1,8 +1,8 @@
 #!/usr/bin/make -f
 
-VERSION := 0.2.11
+VERSION := 0.2.12
 URL := https://github.com/PedroNascimento09/Parlo/releases/download/v$(VERSION)/parlo-linux-x86_64.tar.gz
-SHA256 := 5600d387001d22c26472c2eec6f6bc3d07ef906f06a42cb7e3732b27987157fe
+SHA256 := bcb6d35b555a08b56912d5651c8c245aebe5517e33a57b7413c9bc5a656ea574
 
 %:
 	dh $@
