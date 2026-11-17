@@ -1038,6 +1038,18 @@ function stopQuickStart() {
   quickStartTimer = null;
 }
 
+async function applyRecogniser(stt) {
+  try {
+    await fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ stt }),
+    });
+  } catch (failure) {
+    setWelcomeStatus("The model is on disk, but this window could not switch to it. Reload the page.");
+  }
+}
+
 async function downloadQuickStart() {
   welcomeInstall.disabled = true;
   setWelcomeStatus(
@@ -1054,9 +1066,18 @@ async function downloadQuickStart() {
     }
     startWelcomeClock();
     stopQuickStart();
+    let applied = "";
+    const deadline = Date.now() + 10 * 60 * 1000;
     quickStartTimer = setInterval(async () => {
       await loadModels();
-      if (modelState.dictation) {
+      const models = modelState.models || [];
+      const onDisk = (id) => models.some((model) => model.id === id && model.installed);
+      const wanted = onDisk("parakeet") ? "parakeet" : onDisk("whisper") ? "whisper" : "";
+      if (wanted && wanted !== applied) {
+        await applyRecogniser(wanted);
+        applied = wanted;
+      }
+      if (applied === "parakeet" || Date.now() > deadline) {
         stopQuickStart();
         stopWelcomeClock();
       }
