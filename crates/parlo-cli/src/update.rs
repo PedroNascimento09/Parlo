@@ -36,6 +36,43 @@ pub fn binary_name() -> &'static str {
     }
 }
 
+pub fn app_name() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "parlo-app.exe"
+    } else {
+        "parlo-app"
+    }
+}
+
+pub fn payload_names() -> Vec<&'static str> {
+    let mut names = vec![binary_name(), app_name(), "parlo-engine", "parlo-engine-rs"];
+    if cfg!(target_os = "windows") {
+        names.push("WebView2Loader.dll");
+    }
+    names
+}
+
+pub fn payloads(staging: &Path, install: &Path) -> Vec<(PathBuf, PathBuf)> {
+    payload_names()
+        .into_iter()
+        .map(|name| (staging.join(name), install.join(name)))
+        .filter(|(from, _)| from.exists())
+        .collect()
+}
+
+pub fn restart_args(executable: &Path) -> &'static str {
+    let name = executable
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if name.starts_with("parlo-app") {
+        ""
+    } else {
+        "app"
+    }
+}
+
 #[derive(Clone)]
 pub struct Progress {
     pub running: bool,
@@ -374,7 +411,7 @@ pub fn install(latest: &Latest) -> Result<PathBuf, String> {
         return Err(format!("the archive did not contain {}", binary_name()));
     }
     report(true, "ready", 100, &latest.version);
-    Ok(binary)
+    Ok(directory)
 }
 
 fn checksum_for(sums: &str, name: &str) -> Result<String, String> {
@@ -429,24 +466,86 @@ fn verify_archive(path: &Path, expected: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn replacement_script(pid: u32, new_binary: &Path, current: &Path) -> String {
-    format!(
-        "@echo off\r\n:parlo_wait\r\ntasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto parlo_wait\r\n)\r\nmove /y \"{}\" \"{}\" >nul\r\nstart \"\" \"{}\" app\r\n",
-        new_binary.display(),
-        current.display(),
-        current.display()
-    )
+pub fn replacement_script(pid: u32, staging: &Path, install: &Path, restart: &Path) -> String {
+    let mut script = String::from("@echo off\r\n:parlo_wait\r\n");
+    script.push_str(&format!(
+        "tasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto parlo_wait\r\n)\r\n"
+    ));
+    for (from, to) in payloads(staging, install) {
+        let from = from.display().to_string();
+        let to = to.display().to_string();
+        let backup = format!("{to}.old");
+        script.push_str(&format!(
+            "if exist \"{to}\" rmdir /s /q \"{backup}\" >nul 2>nul\r\nif exist \"{to}\" del /f /q \"{backup}\" >nul 2>nul\r\nif exist \"{to}\" move /y \"{to}\" \"{backup}\" >nul 2>nul\r\nmove /y \"{from}\" \"{to}\" >nul\r\n"
+        ));
+    }
+    let args = restart_args(restart);
+    if args.is_empty() {
+        script.push_str(&format!("start \"\" \"{}\"\r\n", restart.display()));
+    } else {
+        script.push_str(&format!("start \"\" \"{}\" {args}\r\n", restart.display()));
+    }
+    script
 }
 
-pub fn schedule_replacement(new_binary: &Path) -> Result<PathBuf, String> {
+pub fn unix_replacement_script(pid: u32, staging: &Path, install: &Path, restart: &Path) -> String {
+    let mut script = String::from("#!/bin/sh\n");
+    script.push_str(&format!(
+        "while kill -0 {pid} 2>/dev/null; do sleep 1; done\n"
+    ));
+    for (from, to) in payloads(staging, install) {
+        script.push_str(&format!(
+            "rm -rf '{}'\nmv -f '{}' '{}'\n",
+            to.display(),
+            from.display(),
+            to.display()
+        ));
+    }
+    let args = restart_args(restart);
+    if args.is_empty() {
+        script.push_str(&format!(
+            "nohup '{}' >/dev/null 2>&1 &\n",
+            restart.display()
+        ));
+    } else {
+        script.push_str(&format!(
+            "nohup '{}' {args} >/dev/null 2>&1 &\n",
+            restart.display()
+        ));
+    }
+    script
+}
+
+pub fn schedule_replacement(staging: &Path) -> Result<PathBuf, String> {
     let current = std::env::current_exe().map_err(|error| error.to_string())?;
-    let script = std::env::temp_dir().join(format!("parlo-update-{}.cmd", std::process::id()));
-    let body = replacement_script(std::process::id(), new_binary, &current);
+    let install = current
+        .parent()
+        .ok_or_else(|| format!("{} has no folder", current.display()))?
+        .to_path_buf();
+    let extension = if cfg!(target_os = "windows") {
+        "cmd"
+    } else {
+        "sh"
+    };
+    let script =
+        std::env::temp_dir().join(format!("parlo-update-{}.{extension}", std::process::id()));
+    let body = if cfg!(target_os = "windows") {
+        replacement_script(std::process::id(), staging, &install, &current)
+    } else {
+        unix_replacement_script(std::process::id(), staging, &install, &current)
+    };
     fs::write(&script, body).map_err(|error| error.to_string())?;
-    Command::new("cmd")
-        .args(["/c", "start", "", &script.display().to_string()])
-        .spawn()
-        .map_err(|error| format!("cannot start the replacement: {error}"))?;
+    if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(["/c", "start", "", &script.display().to_string()])
+            .spawn()
+            .map_err(|error| format!("cannot start the replacement: {error}"))?;
+    } else {
+        Command::new("sh")
+            .arg(&script)
+            .spawn()
+            .map_err(|error| format!("cannot start the replacement: {error}"))?;
+    }
     Ok(script)
 }
 
@@ -517,16 +616,77 @@ mod tests {
         assert_eq!(percent_from_curl("no meter here"), None);
     }
 
+    fn staging_with_every_payload(tag: &str) -> PathBuf {
+        let staging =
+            std::env::temp_dir().join(format!("parlo-stage-{tag}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&staging);
+        fs::create_dir_all(&staging).unwrap();
+        for name in payload_names() {
+            if name.ends_with(".dll") || name == binary_name() || name == app_name() {
+                fs::write(staging.join(name), b"new").unwrap();
+            } else {
+                fs::create_dir_all(staging.join(name)).unwrap();
+                fs::write(staging.join(name).join("engine"), b"new").unwrap();
+            }
+        }
+        staging
+    }
+
     #[test]
-    fn the_replacement_waits_for_the_process_then_moves_and_starts_it() {
-        let script = replacement_script(
-            4242,
-            Path::new("C:/temp/new/parlo.exe"),
-            Path::new("C:/apps/parlo.exe"),
-        );
+    fn the_replacement_waits_then_moves_every_program_and_restarts() {
+        let staging = staging_with_every_payload("windows");
+        let install = Path::new("C:/apps/parlo");
+        let script = replacement_script(4242, &staging, install, &install.join(app_name()));
         assert!(script.contains("PID eq 4242"));
-        assert!(script.contains("move /y \"C:/temp/new/parlo.exe\" \"C:/apps/parlo.exe\""));
-        assert!(script.contains("start \"\" \"C:/apps/parlo.exe\" app"));
+        for name in payload_names() {
+            assert!(
+                script.contains(&format!(
+                    "move /y \"{}\" \"{}\"",
+                    staging.join(name).display(),
+                    install.join(name).display()
+                )),
+                "{name} is not replaced"
+            );
+        }
+        assert!(script.contains(&format!(
+            "start \"\" \"{}\"\r\n",
+            install.join(app_name()).display()
+        )));
+        fs::remove_dir_all(&staging).unwrap();
+    }
+
+    #[test]
+    fn the_unix_replacement_moves_every_program_and_starts_it_again() {
+        let staging = staging_with_every_payload("unix");
+        let install = Path::new("/opt/parlo");
+        let script = unix_replacement_script(77, &staging, install, &install.join(binary_name()));
+        assert!(script.starts_with("#!/bin/sh"));
+        assert!(script.contains("kill -0 77"));
+        for name in payload_names() {
+            assert!(
+                script.contains(&format!("mv -f '{}'", staging.join(name).display())),
+                "{name} is not replaced"
+            );
+        }
+        assert!(script.contains("nohup"));
+        fs::remove_dir_all(&staging).unwrap();
+    }
+
+    #[test]
+    fn only_what_the_archive_carries_is_replaced() {
+        let staging = std::env::temp_dir().join(format!("parlo-empty-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&staging);
+        fs::create_dir_all(&staging).unwrap();
+        assert!(payloads(&staging, Path::new("/opt/parlo")).is_empty());
+        fs::remove_dir_all(&staging).unwrap();
+    }
+
+    #[test]
+    fn the_restart_uses_the_program_that_was_running() {
+        assert_eq!(restart_args(Path::new("/opt/parlo/parlo")), "app");
+        assert_eq!(restart_args(Path::new("/opt/parlo/parlo-app")), "");
+        assert_eq!(restart_args(Path::new("C:/apps/parlo.exe")), "app");
+        assert_eq!(restart_args(Path::new("C:/apps/parlo-app.exe")), "");
     }
 
     #[test]

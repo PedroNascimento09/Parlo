@@ -593,10 +593,10 @@ fn update_command(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
 
-    let binary = update::install(&latest)?;
-    println!("  staged     {}", binary.display());
-    update::schedule_replacement(&binary)?;
-    println!("  replacing this binary two seconds after it exits");
+    let staging = update::install(&latest)?;
+    println!("  staged     {}", staging.display());
+    update::schedule_replacement(&staging)?;
+    println!("  replacing every program one second after this exits");
     Ok(())
 }
 

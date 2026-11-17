@@ -85,8 +85,8 @@ fn handle(
             return respond_json(stream, "409 Conflict", "{\"error\":\"already up to date\"}")
                 .map(|()| Flow::Serve);
         }
-        let binary = match update::install(&latest) {
-            Ok(binary) => binary,
+        let staging = match update::install(&latest) {
+            Ok(staging) => staging,
             Err(error) => {
                 return respond_json(
                     stream,
@@ -96,7 +96,7 @@ fn handle(
                 .map(|()| Flow::Serve)
             }
         };
-        if let Err(error) = update::schedule_replacement(&binary) {
+        if let Err(error) = update::schedule_replacement(&staging) {
             return respond_json(
                 stream,
                 "500 Internal Server Error",
