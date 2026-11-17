@@ -31,4 +31,4 @@ rustls-native-certs = "0.8.5"
 wasapi = "0.26"
 
 [dev-dependencies]
-rcgen = "0.13"
+rcgen = "0.14"
