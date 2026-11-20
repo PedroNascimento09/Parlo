@@ -6672,7 +6672,7 @@ function navigate(route, tab) {
   }
 }
 
-const ROUTE_KEYS = { 1: "home", 2: "library", 3: "voice", 4: "insights", 5: "settings" };
+const ROUTE_KEYS = { 1: "home", 2: "meetings", 3: "library", 4: "settings" };
 
 document.addEventListener("keydown", (event) => {
   if (!event.altKey || event.ctrlKey || event.metaKey) {
