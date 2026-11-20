@@ -48,7 +48,7 @@ jobs:
           python tools/licenses.py sbom --out sbom.cdx.json
           git diff --exit-code THIRD_PARTY_NOTICES.md LICENSES.md
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: licence-documents
           path: |
