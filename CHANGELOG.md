@@ -4,6 +4,14 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 
 ## [Unreleased]
 
+### Added
+
+- The window dictates on its own. Home carries a **Record a sentence** button: press it, speak, press Stop, and the sentence appears in the window and on the clipboard, from the same recogniser the shortcut uses. The global shortcut is no longer the only way in, which also gives macOS and Linux a working dictation surface while their shortcuts are missing.
+
+### Changed
+
+- Home is one action instead of three. The three-step guide that repeated what the first-run walkthrough already says is gone, and the dictation card now carries the one control a person needs.
+
 ## [0.2.12] - 17 November 2026
 
 ### Added

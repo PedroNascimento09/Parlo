@@ -187,6 +187,8 @@ let dubbing = false;
 let dubTimer = null;
 let dubProject = null;
 let issueCursor = -1;
+let homeTake = null;
+let homeTakeFrame = null;
 let savedSettings = { from: "pt", to: "en", stt: "parakeet" };
 let currentShortcut = "Ctrl+Alt+D";
 let settingsBusy = false;
@@ -1762,32 +1764,9 @@ const homeGreeting = document.getElementById("home-greeting");
 const homeDate = document.getElementById("home-date");
 const homeRecent = document.getElementById("home-recent");
 const homeRecentList = document.getElementById("home-recent-list");
-const homeSteps = document.getElementById("home-steps");
-const homeStepsDismiss = document.getElementById("home-steps-dismiss");
 
 function storedName() {
   return (localStorage.getItem("parlo.name") || "").trim();
-}
-
-const HOME_STEPS_DISMISSED = "parlo.homeStepsDismissed";
-
-if (homeStepsDismiss) {
-  homeStepsDismiss.addEventListener("click", () => {
-    try {
-      localStorage.setItem(HOME_STEPS_DISMISSED, "1");
-    } catch (failure) {
-      return;
-    }
-    homeSteps.hidden = true;
-  });
-}
-
-function stepsDismissed() {
-  try {
-    return localStorage.getItem(HOME_STEPS_DISMISSED) === "1";
-  } catch (failure) {
-    return false;
-  }
 }
 
 function paintHome() {
@@ -1813,10 +1792,6 @@ function paintHome() {
       day: "numeric",
       month: "long",
     }).format(new Date());
-  }
-  if (homeSteps) {
-    const hasHistory = historyEntries.some((item) => (item.translation || item.text || "").trim());
-    homeSteps.hidden = stepsDismissed() || hasHistory;
   }
   if (homeRecent && homeRecentList) {
     const entries = [...historyEntries]
@@ -6680,6 +6655,7 @@ function routeNow() {
   showRoute(parsed.route);
   if (parsed.route !== "home") {
     stopHomeMicCheck();
+    releaseHomeTake();
     if (homeMicNote) {
       homeMicNote.textContent = t("gate.microphone.idle", "Tap «Check it now» and say hello. The bar moves when it can hear you.");
     }
@@ -8253,6 +8229,209 @@ async function copyGateText(text) {
     area.remove();
     return done;
   }
+}
+
+const homeTakeRecord = document.getElementById("home-take-record");
+const homeTakeNote = document.getElementById("home-take-note");
+const homeTakeResult = document.getElementById("home-take-result");
+const homeTakeText = document.getElementById("home-take-text");
+const homeTakeCopy = document.getElementById("home-take-copy");
+const homeTakeMeter = document.getElementById("home-take-meter");
+const homeTakeFill = document.getElementById("home-take-fill");
+const HOME_TAKE_HINT = "The same model, for when the shortcut is not at hand.";
+
+function stopHomeTakeMeter() {
+  if (homeTakeFrame) {
+    cancelAnimationFrame(homeTakeFrame);
+    homeTakeFrame = null;
+  }
+  if (homeTakeFill) {
+    homeTakeFill.style.width = "0%";
+  }
+}
+
+function drawHomeTakeMeter() {
+  if (!homeTake || !homeTake.analyser) {
+    homeTakeFrame = null;
+    return;
+  }
+  homeTakeFrame = requestAnimationFrame(drawHomeTakeMeter);
+  homeTake.analyser.getFloatTimeDomainData(homeTake.levels);
+  let sum = 0;
+  for (let index = 0; index < homeTake.levels.length; index += 1) {
+    sum += homeTake.levels[index] * homeTake.levels[index];
+  }
+  const decibels = 20 * Math.log10(Math.sqrt(sum / homeTake.levels.length) + 1e-6);
+  const level = Math.min(1, Math.max(0, (decibels + 60) / 60));
+  if (homeTakeFill) {
+    homeTakeFill.style.width = (level * 100).toFixed(1) + "%";
+  }
+}
+
+function releaseHomeTake() {
+  if (!homeTake) {
+    return null;
+  }
+  const captured = homeTake;
+  homeTake = null;
+  stopHomeTakeMeter();
+  if (captured.timer) {
+    clearTimeout(captured.timer);
+  }
+  captured.processor.onaudioprocess = null;
+  captured.processor.disconnect();
+  captured.source.disconnect();
+  captured.sink.disconnect();
+  captured.stream.getTracks().forEach((track) => track.stop());
+  captured.context.close().catch(() => {});
+  if (homeTakeMeter) {
+    homeTakeMeter.hidden = true;
+  }
+  if (homeTakeRecord) {
+    homeTakeRecord.textContent = t("home.takeStart", "Record a sentence");
+  }
+  if (homeTakeNote) {
+    homeTakeNote.textContent = t("home.takeHint", HOME_TAKE_HINT);
+  }
+  return captured;
+}
+
+async function startHomeTake() {
+  if (homeTake) {
+    return;
+  }
+  homeTakeResult.hidden = true;
+  homeTakeCopy.hidden = true;
+  homeTakeRecord.disabled = true;
+  homeTakeNote.textContent = t("gate.dictate.waiting", "Waiting for the microphone…");
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    homeTakeNote.textContent = t("text.This browser cannot open a microphone.", "This browser cannot open a microphone.");
+    homeTakeRecord.disabled = false;
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
+    });
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const context = new AudioContext();
+    const source = context.createMediaStreamSource(stream);
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 1024;
+    const processor = context.createScriptProcessor(4096, 1, 1);
+    const sink = context.createGain();
+    sink.gain.value = 0;
+    const chunks = [];
+    processor.onaudioprocess = (event) => {
+      const block = event.inputBuffer.getChannelData(0);
+      const copy = new Float32Array(block.length);
+      copy.set(block);
+      chunks.push(copy);
+    };
+    source.connect(analyser);
+    source.connect(processor);
+    processor.connect(sink);
+    sink.connect(context.destination);
+    if (context.state === "suspended") {
+      await context.resume();
+    }
+    homeTake = {
+      stream,
+      context,
+      source,
+      processor,
+      sink,
+      analyser,
+      levels: new Float32Array(analyser.fftSize),
+      chunks,
+      rate: context.sampleRate,
+      timer: null,
+    };
+    if (homeTakeMeter) {
+      homeTakeMeter.hidden = false;
+    }
+    drawHomeTakeMeter();
+    homeTakeNote.textContent = t("gate.dictate.listening", "Listening. Say one short sentence, then press Stop.");
+    homeTakeRecord.textContent = t("gate.dictate.stop", "Stop");
+    homeTakeRecord.disabled = false;
+    homeTake.timer = setTimeout(() => finishHomeTake(), 30000);
+  } catch (failure) {
+    homeTakeNote.textContent = describeMicrophoneError(failure);
+    homeTakeRecord.disabled = false;
+  }
+}
+
+async function finishHomeTake() {
+  const captured = releaseHomeTake();
+  if (!captured) {
+    return;
+  }
+  homeTakeRecord.disabled = true;
+  homeTakeNote.textContent = t("gate.dictate.working", "Writing your sentence…");
+  const length = captured.chunks.reduce((total, chunk) => total + chunk.length, 0);
+  if (length < captured.rate * 0.4) {
+    homeTakeNote.textContent = t("gate.dictate.tooShort", "That was too short. Press Record and say a full sentence.");
+    homeTakeRecord.disabled = false;
+    return;
+  }
+  const merged = new Float32Array(length);
+  let offset = 0;
+  for (const chunk of captured.chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  try {
+    const wav = encodeWav(downsample(merged, captured.rate, TARGET_RATE), TARGET_RATE);
+    const response = await fetch("/dictate", {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav", Authorization: "Bearer " + token },
+      body: wav,
+    });
+    const detail = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(detail.error || "Parlo did not answer. Check that Parlo is still running and try again.");
+    }
+    const text = (detail.translation || "").trim() || (detail.text || "").trim();
+    if (!text) {
+      homeTakeNote.textContent = t("gate.dictate.nothingHeard", "Nothing was heard. Move closer to the microphone and try again.");
+      homeTakeRecord.disabled = false;
+      return;
+    }
+    homeTakeText.value = text;
+    homeTakeResult.hidden = false;
+    homeTakeCopy.hidden = false;
+    const copied = await copyGateText(text);
+    homeTakeNote.textContent = copied
+      ? t("gate.dictate.copied", "Copied. Paste it wherever you are writing.")
+      : t("gate.dictate.copyFailed", "Copy was refused by the browser. Select the sentence and copy it by hand.");
+    loadHistory();
+  } catch (failure) {
+    homeTakeNote.textContent = failure.message || "Parlo did not answer. Check that Parlo is still running and try again.";
+  }
+  homeTakeRecord.disabled = false;
+}
+
+if (homeTakeRecord) {
+  homeTakeRecord.addEventListener("click", () => {
+    if (homeTake) {
+      finishHomeTake();
+    } else {
+      startHomeTake();
+    }
+  });
+}
+
+if (homeTakeCopy) {
+  homeTakeCopy.addEventListener("click", async () => {
+    const text = homeTakeText.value.trim();
+    if (!text) {
+      return;
+    }
+    const copied = await copyGateText(text);
+    homeTakeNote.textContent = copied
+      ? t("gate.dictate.copied", "Copied. Paste it wherever you are writing.")
+      : t("gate.dictate.copyFailed", "Copy was refused by the browser. Select the sentence and copy it by hand.");
+  });
 }
 
 async function startGateDictate() {
