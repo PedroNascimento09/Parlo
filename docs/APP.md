@@ -117,7 +117,7 @@ The check prints the version it found. The update verifies the downloaded archiv
 
 ## First run
 
-A released archive starts with no models. The page loads, the record card says the microphone is ready, and the Models panel lists what is missing with one **Download models** button: about 800 MB into the user data folder, once, after which the machine can be offline for good. Nothing needs to be installed, and the uploads never happen.
+A released archive starts with no models. The page opens on a four-step guide: your name, the language pair, the microphone, and one sentence you say and watch appear. Every step can be skipped, and the guide does not return once it finishes. Then the record card says the microphone is ready, and the Models panel lists what is missing with one **Download models** button: about 800 MB into the user data folder, once, after which the machine can be offline for good. Nothing needs to be installed, and the uploads never happen.
 
 If dubbing is what you came for, `ffmpeg` must also be on `PATH`; the dub panel says so in a sentence instead of failing halfway through a file.
 

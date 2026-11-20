@@ -34,6 +34,7 @@ jobs:
           node --test crates/parlo-cli/web/history-insert.test.mjs
           node --test crates/parlo-cli/web/home-take.test.mjs
           node --test crates/parlo-cli/web/nav-focus.test.mjs
+          node --test crates/parlo-cli/web/onboarding-short.test.mjs
           node --test crates/parlo-cli/web/home-copy.test.mjs
           node --test crates/parlo-cli/web/mic-check.test.mjs
           node --test crates/parlo-cli/web/gate-plain-language.test.mjs

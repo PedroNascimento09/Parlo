@@ -113,7 +113,7 @@ try {
   </div>
 <section class="gate" id="name-gate" aria-labelledby="gate-title" hidden>
   <div class="gate-card">
-    <p class="gate-progress" id="gate-progress" data-i18n="text.Step 1 of 6">Step 1 of 6</p>
+    <p class="gate-progress" id="gate-progress">Step 1 of 4</p>
     <div class="gate-actions gate-top-actions">
       <button id="gate-skip-all" class="swap" type="button" data-i18n="gate.skipAll">Skip the guide</button>
     </div>
@@ -167,50 +167,6 @@ try {
         <button id="gate-mic-skip" class="swap" type="button" data-i18n="gate.skip">Skip</button>
       </div>
       <p class="gate-note" id="gate-mic-note" aria-live="polite"></p>
-    </div>
-    <div class="gate-step" id="gate-style" hidden>
-      <p class="gate-kicker" data-i18n="gate.style.kicker">Writing style</p>
-      <h1 data-i18n="gate.style.title">How do you write?</h1>
-      <p class="gate-note" data-i18n="gate.style.note">Parlo matches your punctuation. Then: the key that starts dictation.</p>
-      <div class="style-cards" role="group" aria-label="Writing style" data-i18n-aria-label="style.title">
-        <button class="style-card" data-style="formal" type="button">
-          <span class="style-card-main">
-            <span class="style-title" data-i18n="home.formal">Formal</span>
-            <span class="style-sub" data-i18n="style.formalSub">Full stops and capitals</span>
-          </span>
-          <span class="style-sample" data-i18n="style.formalSample">“If you are free, let us talk about the results.”</span>
-        </button>
-        <button class="style-card" data-style="casual" type="button">
-          <span class="style-card-main">
-            <span class="style-title" data-i18n="home.casual">Casual</span>
-            <span class="style-sub" data-i18n="style.casualSub">Lighter, closer to speech</span>
-          </span>
-          <span class="style-sample" data-i18n="style.casualSample">“hey if you're free let's talk about the results”</span>
-        </button>
-        <button class="style-card" data-style="excited" type="button">
-          <span class="style-card-main">
-            <span class="style-title" data-i18n="home.excited">Excited</span>
-            <span class="style-sub" data-i18n="style.excitedSub">Keeps the energy</span>
-          </span>
-          <span class="style-sample" data-i18n="style.excitedSample">“Hey, if you're free, let's talk about the results!”</span>
-        </button>
-      </div>
-      <div class="gate-actions">
-        <button id="style-skip" class="swap" type="button" data-i18n="gate.skip">Skip</button>
-        <button id="style-save" class="install" type="button" data-i18n="gate.continue">Continue</button>
-      </div>
-    </div>
-    <div class="gate-step" id="gate-shortcut" hidden>
-      <p class="gate-kicker" data-i18n="gate.shortcut.kicker">Shortcut</p>
-      <h1 data-i18n="gate.shortcut.title">One key, anywhere.</h1>
-      <p class="gate-note"><span data-i18n="gate.shortcut.hold">Hold</span> <kbd id="gate-shortcut-key">Ctrl+Alt+D</kbd> <span data-i18n="gate.shortcut.middle">in any app, speak, and let go.</span> <kbd>Escape</kbd> <span data-i18n="gate.shortcut.discard">throws the sentence away.</span></p>
-      <p class="gate-note" data-i18n="gate.shortcut.note2">You can change the key later in Settings. Then: your first sentence.</p>
-      <div class="gate-actions">
-        <button id="gate-shortcut-try" class="swap" type="button" data-i18n="gate.shortcut.try">Try the shortcut</button>
-        <button id="gate-shortcut-next" class="install" type="button" disabled data-i18n="gate.continue">Continue</button>
-        <button id="gate-shortcut-skip" class="swap" type="button" data-i18n="gate.skip">Skip</button>
-      </div>
-      <p class="gate-note" id="gate-shortcut-note" aria-live="polite"></p>
     </div>
     <div class="gate-step" id="gate-dictate" hidden>
       <p class="gate-kicker" data-i18n="gate.dictate.kicker">First sentence</p>

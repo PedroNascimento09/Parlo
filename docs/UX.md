@@ -232,13 +232,12 @@ Every message states what happened and what to do, never a status code alone, an
 
 ## J. Onboarding
 
-Under sixty seconds, five steps, no feature tour.
+Under sixty seconds, four steps, no feature tour.
 
-1. Language pair, two selects, remembered.
-2. Microphone permission, requested once, with the exact place to allow it if refused.
-3. Shortcut, prefilled, with a keycap that can be pressed to test.
-4. One sentence spoken: "Say a sentence, then press Enter." The text appears in the onboarding field itself, so the insertion path is proven, not described.
-5. Done: Home shows Ready, and one line says where the shortcut is and what Escape does.
+1. Name, then the language pair, two selects, remembered together.
+2. Microphone permission, requested once, with the exact place to allow it if refused. A refused microphone does not hold the guide: the step still moves on and says what to fix.
+3. One sentence spoken. The text appears in the onboarding field itself and is copied, so the path is proven, not described. When the microphone or the engine is missing, the same step opens the app with the reason written beside it.
+4. Done: Home. The shortcut, the writing style and everything else wait in Settings.
 
 Nothing about meetings, voice cloning, models or cloud in onboarding. Those are discovered later, on the pages that own them.
 

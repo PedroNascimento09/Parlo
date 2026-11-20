@@ -238,7 +238,30 @@ function showTranslation(encoded) {
   }
 }
 
+const MICROPHONE_WAIT_MS = 12000;
+
+function requestMicrophone(settings) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(Object.assign(new Error("the microphone did not answer"), { name: "TimeoutError" }));
+    }, MICROPHONE_WAIT_MS);
+    navigator.mediaDevices.getUserMedia(settings).then(
+      (stream) => {
+        clearTimeout(timer);
+        resolve(stream);
+      },
+      (failure) => {
+        clearTimeout(timer);
+        reject(failure);
+      },
+    );
+  });
+}
+
 function describeMicrophoneError(failure) {
+  if (failure && failure.name === "TimeoutError") {
+    return t("text.The microphone did not answer. Close the program using it, then try again.", "The microphone did not answer. Close the program using it, then try again.");
+  }
   if (failure && failure.name === "NotAllowedError") {
     return t("text.Windows blocked the microphone. Allow Parlo in Settings, Privacy, Microphone, then try again.", "Windows blocked the microphone. Allow Parlo in Settings, Privacy, Microphone, then try again.");
   }
@@ -7648,15 +7671,10 @@ const gateMicCheck = document.getElementById("gate-mic-check");
 const gateMicNext = document.getElementById("gate-mic-next");
 const gateMicSkip = document.getElementById("gate-mic-skip");
 const gateMicNote = document.getElementById("gate-mic-note");
-const gateShortcutKey = document.getElementById("gate-shortcut-key");
 const gateFinish = document.getElementById("gate-finish");
 const gateSkipAll = document.getElementById("gate-skip-all");
 const gateMicMeter = document.getElementById("gate-mic-meter");
 const gateMicLevel = document.getElementById("gate-mic-level");
-const gateShortcutTry = document.getElementById("gate-shortcut-try");
-const gateShortcutNext = document.getElementById("gate-shortcut-next");
-const gateShortcutSkip = document.getElementById("gate-shortcut-skip");
-const gateShortcutNote = document.getElementById("gate-shortcut-note");
 const gateDictateRecord = document.getElementById("gate-dictate-record");
 const gateDictateCopy = document.getElementById("gate-dictate-copy");
 const gateDictateSkip = document.getElementById("gate-dictate-skip");
@@ -7664,7 +7682,7 @@ const gateDictateResult = document.getElementById("gate-dictate-result");
 const gateDictateNote = document.getElementById("gate-dictate-note");
 const onboardingReview = document.getElementById("onboarding-review");
 const onboardingStatus = document.getElementById("onboarding-status");
-const GATE_STEPS = ["gate-name", "gate-languages", "gate-microphone", "gate-style", "gate-shortcut", "gate-dictate"];
+const GATE_STEPS = ["gate-name", "gate-languages", "gate-microphone", "gate-dictate"];
 const styleControls = [
   ...document.querySelectorAll(".style-card"),
   ...document.querySelectorAll(".style-chip"),
@@ -7708,7 +7726,6 @@ let gateMicFrame = null;
 let gateMicAnalyser = null;
 let gateMicLevels = null;
 let gateDictate = null;
-let gateShortcutArmed = false;
 
 function stopGateMicMeter() {
   if (gateMicFrame) {
@@ -7851,7 +7868,7 @@ if (homeMicCheck) {
     }
     homeMicNote.textContent = t("gate.microphone.waiting", "Waiting for Windows…");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await requestMicrophone({
         audio: { channelCount: 1, echoCancellation: true },
       });
       startHomeMicCheck(stream);
@@ -7907,7 +7924,6 @@ function gateStep(name) {
   if (name !== "gate-dictate") {
     stopGateDictate();
   }
-  gateShortcutArmed = false;
   for (const [position, id] of GATE_STEPS.entries()) {
     const step = document.getElementById(id);
     if (step) {
@@ -7927,7 +7943,6 @@ function gateStep(name) {
 function paintGate() {
   gateFrom.value = savedSettings.from;
   gateTo.value = savedSettings.to;
-  gateShortcutKey.textContent = currentShortcut || "Ctrl+Alt+D";
 }
 
 function storedStyle() {
@@ -8073,15 +8088,6 @@ for (const control of styleControls) {
   });
 }
 
-document.getElementById("style-save").addEventListener("click", () => {
-  paintGate();
-  gateStep("gate-shortcut");
-});
-document.getElementById("style-skip").addEventListener("click", () => {
-  paintGate();
-  gateStep("gate-shortcut");
-});
-
 function keepGatePair(changed) {
   if (gateFrom.value !== gateTo.value) {
     return;
@@ -8130,7 +8136,7 @@ gateMicCheck.addEventListener("click", async () => {
   gateMicCheck.disabled = true;
   gateMicNote.textContent = t("gate.microphone.waiting", "Waiting for Windows…");
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await requestMicrophone({
       audio: { channelCount: 1, echoCancellation: true },
     });
     startGateMicMeter(stream);
@@ -8146,68 +8152,12 @@ gateMicCheck.addEventListener("click", async () => {
   } catch (failure) {
     gateMicNote.textContent = describeMicrophoneError(failure);
     gateMicCheck.disabled = false;
+    gateMicNext.disabled = false;
   }
 });
 
-gateMicNext.addEventListener("click", () => gateStep("gate-style"));
-gateMicSkip.addEventListener("click", () => gateStep("gate-style"));
-
-function shortcutMatches(event) {
-  const parts = (currentShortcut || "Ctrl+Alt+D")
-    .split("+")
-    .map((part) => part.trim().toLowerCase())
-    .filter(Boolean);
-  const key = event.key.toLowerCase();
-  const keyPart = parts.find(
-    (part) => !["ctrl", "control", "alt", "shift", "command", "win", "super"].includes(part),
-  );
-  if (!keyPart || key !== keyPart) {
-    return false;
-  }
-  if (parts.includes("ctrl") || parts.includes("control")) {
-    if (!event.ctrlKey) return false;
-  }
-  if (parts.includes("alt") && !event.altKey) return false;
-  if (parts.includes("shift") && !event.shiftKey) return false;
-  return true;
-}
-
-if (gateShortcutTry) {
-  gateShortcutTry.addEventListener("click", () => {
-    gateShortcutArmed = true;
-    gateShortcutNote.textContent = t("gate.shortcut.listening", "Now press {shortcut}…", { shortcut: currentShortcut || "Ctrl+Alt+D" });
-    gateShortcutTry.disabled = true;
-    gateShortcutTry.focus();
-  });
-}
-
-document.addEventListener("keydown", (event) => {
-  if (!gateShortcutArmed) {
-    return;
-  }
-  if (event.key === "Escape") {
-    gateShortcutArmed = false;
-    gateShortcutTry.disabled = false;
-    gateShortcutNote.textContent = t("gate.shortcut.cancelled", "Shortcut test cancelled. You can skip this step.");
-    return;
-  }
-  if (!shortcutMatches(event)) {
-    return;
-  }
-  event.preventDefault();
-  gateShortcutArmed = false;
-  gateShortcutTry.disabled = false;
-  gateShortcutNote.textContent = t("gate.shortcut.ok", "That is the shortcut. It works here, so it works anywhere.");
-  gateShortcutNext.disabled = false;
-  gateShortcutNext.focus();
-});
-
-if (gateShortcutNext) {
-  gateShortcutNext.addEventListener("click", () => gateStep("gate-dictate"));
-}
-if (gateShortcutSkip) {
-  gateShortcutSkip.addEventListener("click", () => gateStep("gate-dictate"));
-}
+gateMicNext.addEventListener("click", () => gateStep("gate-dictate"));
+gateMicSkip.addEventListener("click", () => gateStep("gate-dictate"));
 
 async function copyGateText(text) {
   try {
@@ -8310,7 +8260,7 @@ async function startHomeTake() {
     return;
   }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await requestMicrophone({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
     });
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -8441,7 +8391,7 @@ async function startGateDictate() {
   gateDictateRecord.disabled = true;
   gateDictateNote.textContent = t("gate.dictate.waiting", "Waiting for the microphone…");
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({
+    const stream = await requestMicrophone({
       audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true },
     });
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -8481,6 +8431,8 @@ async function startGateDictate() {
   } catch (failure) {
     gateDictateNote.textContent = describeMicrophoneError(failure);
     gateDictateRecord.disabled = false;
+    gateFinish.disabled = false;
+    gateFinish.focus();
   }
 }
 
@@ -8544,6 +8496,8 @@ async function finishGateDictate() {
   } catch (failure) {
     gateDictateNote.textContent = failure.message || "Parlo did not answer. Check that Parlo is still running and try again.";
     gateDictateRecord.disabled = false;
+    gateFinish.disabled = false;
+    gateFinish.focus();
   }
 }
 

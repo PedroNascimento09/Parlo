@@ -78,7 +78,7 @@ The window is for setup and review. Daily use happens through the shortcut, the 
 - **Insights** counts words, minutes and programs, and the last four weeks, from what stays on this computer.
 - **Settings** has seven tabs: You, Languages, Dictation, Vocabulary, Models, Shortcuts and Advanced.
 
-The tray lists the three modes above a separator and the five destinations below it, and a left click opens the bar. First-run setup has five steps: your name, the language pair, the microphone, the writing style and the shortcut. Only the name is required, the other steps can be skipped, and setup does not return once finished.
+The tray lists the three modes above a separator and the five destinations below it, and a left click opens the bar. First-run setup is four steps: your name, the language pair, the microphone, and one sentence you say and watch appear. Every step can be skipped, and setup does not return once finished; the writing style and the shortcut wait in Settings.
 
 ## Shortcuts
 

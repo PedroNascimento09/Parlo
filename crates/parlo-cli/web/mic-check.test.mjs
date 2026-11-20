@@ -23,6 +23,7 @@ const KEYS = [
   "text.No microphone was found. Connect one and reload this page.",
   "text.Another program is using the microphone. Close it and try again.",
   "text.The microphone could not be opened. Check the input device in your system settings.",
+  "text.The microphone did not answer. Close the program using it, then try again.",
 ];
 
 test("the readiness panel carries the check button, note and live bar", () => {
@@ -39,7 +40,9 @@ test("the check reads the microphone and only then says ready", () => {
   const at = app.indexOf('homeMicCheck.addEventListener("click"');
   assert.ok(at > 0, "the home mic check handler exists");
   const handler = app.slice(at, app.indexOf("} catch (failure) {", at));
-  assert.match(handler, /navigator\.mediaDevices\.getUserMedia/);
+  assert.match(handler, /requestMicrophone\(/);
+  assert.match(app, /function requestMicrophone\(settings\)/);
+  assert.match(app, /navigator\.mediaDevices\.getUserMedia\(settings\)\.then\(/);
   assert.match(app, /localStorage\.setItem\("parlo\.mic", "ready"\)/);
   const granted = app.indexOf('localStorage.setItem("parlo.mic", "ready")');
   const caught = app.indexOf("} catch (failure) {", at);
@@ -55,6 +58,13 @@ test("each state is honest: waiting, open, heard, blocked, absent, busy and unsu
   assert.match(app, /failure\.name === "NotFoundError"/);
   assert.match(app, /failure\.name === "NotReadableError"/);
   assert.match(app, /homeMicNote\.textContent = describeMicrophoneError\(failure\)/);
+});
+
+test("a microphone that never answers gives up and says so", () => {
+  assert.match(app, /const MICROPHONE_WAIT_MS = \d+;/);
+  assert.match(app, /reject\(Object\.assign\(new Error\("the microphone did not answer"\), \{ name: "TimeoutError" \}\)\)/);
+  assert.match(app, /failure\.name === "TimeoutError"/);
+  assert.match(app, /text\.The microphone did not answer\. Close the program using it, then try again\./);
 });
 
 test("microphone errors speak the visitor language", () => {

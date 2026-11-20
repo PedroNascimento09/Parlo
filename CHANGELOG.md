@@ -11,6 +11,7 @@ All notable changes are documented here. The format follows [Keep a Changelog](h
 ### Changed
 
 - Home is one action instead of three. The three-step guide that repeated what the first-run walkthrough already says is gone, and the dictation card now carries the one control a person needs.
+- The first run is four steps instead of six: name, language pair, microphone, then the first sentence. The writing-style and shortcut screens are gone, because both settings live in Settings and neither produced anything the person could use; the microphone step now moves on after a refusal, and the last step opens the app with the reason written beside it when the microphone or the engine is missing. The progress line counts the steps that exist.
 - The rail lists four destinations instead of six. **Voice** and **Insights** moved into Settings, under Sections, and the `Alt` number keys now follow the order the rail shows; `Alt+2` opens Meetings, which it never did.
 
 ## [0.2.12] - 17 November 2026
