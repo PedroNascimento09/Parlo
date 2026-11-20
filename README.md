@@ -14,7 +14,9 @@
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-1e4f4a?style=flat-square"></a>
 </p>
 
-Parlo is a desktop program for dictation, live translation, captions, meetings and file dubbing. The recogniser, the translator and the voice run on the machine, from models downloaded once; after that, dictation, translation and captions work with the network off. Typing into other applications has not been validated end to end on Windows yet; macOS and Linux build from the same source.
+Parlo is dictation for your own computer. Hold one key, speak, let go, and the sentence is typed into whatever you were writing in. The recogniser runs on the machine, from a model downloaded once, and no audio is uploaded.
+
+It also translates what you say, shows captions, keeps a meeting and dubs a file. Those are extra keys on the same offline engine, not the reason to install it. Typing into other applications has not been validated end to end on Windows yet; macOS and Linux build from the same source.
 
 <p align="center">
   <img src="docs/demo.gif" width="760" alt="The Parlo window: the home screen, the history with a Portuguese sentence and its English translation, and the counters for what was dictated">
